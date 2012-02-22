@@ -253,7 +253,12 @@ class ArbWave(gtk.Window):
     vbox = VBox()
     self.add(vbox)
     vbox.pack_start( merge.get_widget('/MenuBar'), False, False, 0 )
-    vbox.pack_start( hpack( merge.get_widget('/ToolBar'), gtk.VSeparator(), self.toolbar ), False )
+    vbox.pack_start( # MENU BAR LOCATION
+      hpack( merge.get_widget('/ToolBar'),
+             Args(gtk.VSeparator(), False),
+             Args(gtk.VSeparator(), False),
+             self.toolbar
+           ), False )
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )

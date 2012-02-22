@@ -5,8 +5,7 @@ import matplotlib
 from matplotlib.figure import Figure
 
 from matplotlib.backends.backend_gtkagg import \
-  FigureCanvasGTKAgg as FigCanvas, \
-  NavigationToolbar2GTKAgg as NavigationToolbar
+  FigureCanvasGTKAgg as FigCanvas
 
 from matplotlib.transforms import Bbox, TransformedBbox, \
      blended_transform_factory
@@ -16,8 +15,12 @@ from mpl_toolkits.axes_grid1.inset_locator import BboxPatch, BboxConnector,\
 
 from mpl_toolkits.axes_grid import Divider, Size
 
+from matplotlib.widgets import MultiCursor, SpanSelector
+
 import numpy as np
 import pylab
+
+from plotter_toolbar import NavigationToolbar
 
 
 def connect_bbox( bbox1, bbox2,
@@ -82,8 +85,9 @@ def zoom_effect(ax1, ax2, **kwargs):
   return c1, c2, bbox_patch1, bbox_patch2, p
 
 class ScrollMaster:
-  def __init__(self, axes, axes_basis ):
-    self.axes = axes
+  def __init__(self, axes, axes2, axes_basis ):
+    self.axes       = axes
+    self.axes2      = axes2
     self.axes_basis = axes_basis
 
   def onpress(self,event):
@@ -123,6 +127,18 @@ class ScrollMaster:
         event.canvas.draw()
 
 
+  def onselect_horizontal(self, xmin, xmax):
+    self.axes.set_xlim(xmin, xmax)
+    self.axes.figure.canvas.draw()
+
+  def onselect_vertical1(self, ymin, ymax):
+    self.axes.set_ylim(ymin, ymax)
+    self.axes.figure.canvas.draw()
+
+  def onselect_vertical2(self, ymin, ymax):
+    self.axes2.set_ylim(ymin, ymax)
+    self.axes2.figure.canvas.draw()
+
 
 def init_plot():
   dpi = 100
@@ -133,9 +149,9 @@ def init_plot():
   fig = Figure(figsize=(3.0, 3.0), dpi=dpi)
   canvas = FigCanvas(fig)
 
-  rect = [.1, .1, .8, .7 ]
+  rect = [.1, .01, .88, .85 ]
   horiz = [ Size.Scaled(1.0) ]
-  vert  = [ Size.Scaled(0.1), Size.Scaled(.20), Size.Scaled(1.), Size.Fixed(.1), Size.Scaled(1.0) ]
+  vert  = [ Size.Scaled(0.4), Size.Scaled(.4), Size.Scaled(1.), Size.Fixed(.1), Size.Scaled(1.0) ]
   divider = Divider(fig, rect, horiz, vert, aspect=False )
   axes = dict()
   # ##### ANALOG AXES #####
@@ -149,6 +165,7 @@ def init_plot():
   axes['analog'].set_ylabel('Output (V)')
   #axes['analog'].xaxis.set_label_position('top')
   axes['analog'].xaxis.set_ticks_position('top')
+  axes['analog'].set_xlabel('Time (s)')
   pylab.setp(axes['analog'].get_xticklabels(), fontsize=8)
   pylab.setp(axes['analog'].get_yticklabels(), fontsize=8)
 
@@ -163,9 +180,80 @@ def init_plot():
   axes['t'] = fig.add_axes( rect, label='time' )
   axes['t'].set_axes_locator( divider.new_locator(nx=0, ny=0) )
   axes['t'].set_yticks(())
-  axes['t'].set_xlabel('Time (s)')
+  #axes['t'].set_xlabel('Time (s)')
+  axes['t'].set_xticklabels(())
 
-  axes['__scroll_master'] = ScrollMaster( axes['analog'], axes['t'] )
+
+  # set up GUI interactions and widgets
+  axes['multi'] = MultiCursor(
+    canvas,
+    (axes['analog'], axes['digital'], axes['t']),
+    color='r', lw=1,
+    useblit=True,
+  )
+
+  axes['__scroll_master'] = ScrollMaster(
+    axes['analog'], axes['digital'], axes['t']
+  )
+
+  axes['hspan-controls'] = dict()
+  axes['vspan-controls'] = dict()
+
+
+  # set useblit True on gtkagg for enhanced performance
+  axes['hspan-controls']['analog'] = SpanSelector(
+    axes['analog'],
+    axes['__scroll_master'].onselect_horizontal,
+    'horizontal',
+    useblit=True,
+    rectprops=dict(alpha=0.5, facecolor='green'),
+  )
+  setattr(axes['hspan-controls']['analog'], 'visible', False )
+
+  axes['vspan-controls']['analog'] = SpanSelector(
+    axes['analog'],
+    axes['__scroll_master'].onselect_vertical1,
+    'vertical',
+    useblit=True,
+    rectprops=dict(alpha=0.5, facecolor='green'),
+  )
+  setattr(axes['vspan-controls']['analog'], 'visible', False )
+
+
+
+  # set useblit True on gtkagg for enhanced performance
+  axes['hspan-controls']['digital'] = SpanSelector(
+    axes['digital'],
+    axes['__scroll_master'].onselect_horizontal,
+    'horizontal',
+    useblit=True,
+    rectprops=dict(alpha=0.5, facecolor='green'),
+  )
+  setattr(axes['hspan-controls']['digital'], 'visible', False )
+
+  axes['vspan-controls']['digital'] = SpanSelector(
+    axes['digital'],
+    axes['__scroll_master'].onselect_vertical2,
+    'vertical',
+    useblit=True,
+    rectprops=dict(alpha=0.5, facecolor='green'),
+  )
+  setattr(axes['vspan-controls']['digital'], 'visible', False )
+
+
+
+  # set useblit True on gtkagg for enhanced performance
+  axes['hspan-controls']['t'] = SpanSelector(
+    axes['t'],
+    axes['__scroll_master'].onselect_horizontal,
+    'horizontal',
+    useblit=False,
+    rectprops=dict(alpha=0.5, facecolor='red'),
+  )
+  setattr(axes['hspan-controls']['t'], 'visible', False )
+
+
+
   canvas.mpl_connect('scroll_event', axes['__scroll_master'].onscroll)
   #canvas.connect('key-press-event', axes['__scroll_master'].onpress)
   zoom_effect( axes['digital'], axes['t'] )
@@ -203,7 +291,12 @@ def init_plot():
 
 def create(win):
   axes, fig, canvas = init_plot()
-  toolbar = NavigationToolbar(canvas, win)
+  toolbar = NavigationToolbar(
+    canvas, win,
+    axes['hspan-controls'].values(),
+    axes['vspan-controls'].values(),
+  )
+  toolbar.toolitems = tuple( toolbar.toolitems[0:-2] )
 
   # self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
   # self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
