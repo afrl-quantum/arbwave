@@ -72,6 +72,7 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
       self.mode = 'zoom hspan'
       self.canvas.widgetlock(self)
     else:
+      self.mode = ''
       self.canvas.widgetlock.release(self)
 
     for s in self.hspan_controls:
@@ -104,6 +105,7 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
       self.mode = 'zoom vspan'
       self.canvas.widgetlock(self)
     else:
+      self.mode = ''
       self.canvas.widgetlock.release(self)
 
     for s in self.vspan_controls:

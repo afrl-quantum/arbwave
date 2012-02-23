@@ -151,7 +151,7 @@ def init_plot():
 
   rect = [.1, .01, .88, .85 ]
   horiz = [ Size.Scaled(1.0) ]
-  vert  = [ Size.Scaled(0.4), Size.Scaled(.4), Size.Scaled(1.), Size.Fixed(.1), Size.Scaled(1.0) ]
+  vert  = [ Size.Fixed(0.23), Size.Fixed(.25), Size.Scaled(1.), Size.Fixed(.1), Size.Scaled(1.0) ]
   divider = Divider(fig, rect, horiz, vert, aspect=False )
   axes = dict()
   # ##### ANALOG AXES #####
