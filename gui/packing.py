@@ -23,6 +23,20 @@ def hpack(*items, **kwargs):
       hbox.pack_start(i)
   return hbox
 
+
+def vpack(*items, **kwargs):
+  args = default_boxpack
+  args.update( kwargs )
+  vbox = gtk.VBox(spacing=args['spacing'])
+  vbox.set_border_width(args['border'])
+  for i in items:
+    if i.__class__ is Args:
+      vbox.pack_start(*i.args, **i.kwargs)
+    else:
+      vbox.pack_start(i)
+  return vbox
+
+
 def VBox(**kwargs):
   args = default_boxpack
   args.update( kwargs )
