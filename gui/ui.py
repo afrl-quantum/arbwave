@@ -8,167 +8,11 @@ import gtk, gobject
 import sys
 
 # local packages
-import about
-from packing import Args, hpack, VBox
-import plotter
+import about, configure, plotter, stores, edit
+from packing import Args as PArgs, hpack, vpack, VBox
 import tmpconfig
 
-
-def load_channels_combobox( cell, editable, path, channels ):
-  chls = gtk.ListStore(int,str)
-  for i in xrange( len(channels) ):
-    chls.append( [i, str(i) + ': ' + channels[i][0]] )
-
-  editable.set_property("model", chls)
-
-def load_devices_combobox( cell, editable, path ):
-  devls = gtk.ListStore(str)
-  for i in tmpconfig.devs:
-    devls.append( [i] )
-
-  editable.set_property("model", devls)
-
-def create_channel_list_store():
-  return gtk.ListStore( gobject.TYPE_STRING, # Label
-                        gobject.TYPE_STRING, # device
-                        gobject.TYPE_STRING, # value
-                        gobject.TYPE_BOOLEAN ) #enabled
-
-def create_waveform_tree_store():
-  return gtk.TreeStore( gobject.TYPE_STRING, # channel
-                        gobject.TYPE_STRING, # Time
-                        gobject.TYPE_STRING, # value
-                        gobject.TYPE_BOOLEAN ) #enabled
-
-def load_waveform_tree_store(tree_store, config):
-  # places the global people data into the list
-  # we form a simple tree.
-  for item in config.keys():
-    parent = tree_store.append(
-      None,
-      (item, None, None, True)
-    )
-    for task in config[item]:
-      tree_store.append(
-          parent,
-          (task[0], task[1], task[2], True)
-      )
-
-def set_item( cell, path, new_item, waveforms, ITEM ):
-  waveforms[path][ITEM] = new_item
-
-def toggle_item( cell, path, waveforms, ITEM ):
-  """
-  Sets the toggled state on the toggle button to true or false.
-  """
-  model[path][ITEM] = not model[path][ITEM]
-
-def GTVC(*args,**kwargs):
-  c = gtk.TreeViewColumn(*args,**kwargs)
-  c.set_property('resizable', True)
-  return c
-
-def create_channel_editor():
-  LABEL   =0
-  DEVICE  =1
-  VALUE   =2
-  ENABLE  =3
-
-  channels = create_channel_list_store()
-  channel_editor = {
-    'view'      : gtk.TreeView( channels ),
-    'renderers' : {
-      'label'   : gtk.CellRendererText(),
-      'device'  : gtk.CellRendererCombo(),
-      'value'   : gtk.CellRendererText(),
-      'enable'  : gtk.CellRendererToggle(),
-    },
-  }
-  R = channel_editor['renderers']
-  channel_editor.update({
-    'columns' : {
-      'label'   : GTVC( 'Label',   R['label'],    text=LABEL ),
-      'device'  : GTVC( 'Device',  R['device'], text=DEVICE ),
-      'value'   : GTVC( 'Value',   R['value'],  text=VALUE ),
-      'enable'  : GTVC( 'Enabled', R['enable'], text=ENABLE ),
-    },
-  })
-
-  R['label'].set_property( 'editable', True )
-  R['label'].connect( 'edited', set_item, channels, LABEL )
-
-  R['device'].set_property( 'editable', True )
-  R['device'].set_property("text-column", 1)
-  R['device'].connect( 'edited', set_item, channels, DEVICE )
-  R['device'].connect( 'editing-started', load_devices_combobox )
-
-  R['value'].set_property( 'editable', True )
-  R['value'].connect( 'edited', set_item, channels, VALUE )
-
-  R['enable'].set_property( 'activatable', True )
-  R['enable'].connect( 'toggled', toggle_item, channels, ENABLE )
-
-  C = channel_editor['columns']
-  V = channel_editor['view']
-  C['enable'].add_attribute( R['enable'], 'active', ENABLE )
-  V.set_property( 'hover_selection', True )
-  V.append_column( C['label'] )
-  V.append_column( C['device'] )
-  V.append_column( C['value'] )
-  V.append_column( C['enable'] )
-  return channels, channel_editor
-
-def create_waveform_editor(channels):
-  CHANNEL =0
-  TIME    =1
-  VALUE   =2
-  ENABLE  =3
-
-  waveforms = create_waveform_tree_store()
-  waveform_editor = {
-    'view'      : gtk.TreeView( waveforms ),
-    'renderers' : {
-      'channel' : gtk.CellRendererCombo(),
-      'time'    : gtk.CellRendererText(),
-      'value'   : gtk.CellRendererText(),
-      'enable'  : gtk.CellRendererToggle(),
-    },
-  }
-  R = waveform_editor['renderers']
-  waveform_editor.update({
-    'columns' : {
-      'channel' : GTVC( 'Channel', R['channel'], text=CHANNEL ),
-      'time'    : GTVC( 'Time',    R['time'],    text=TIME ),
-      'value'   : GTVC( 'Value',   R['value'],   text=VALUE ),
-      'enable'  : GTVC( 'Enabled', R['enable'],  text=ENABLE ),
-    },
-  })
-
-  R['channel'].set_property( 'editable', True )
-  R['channel'].set_property("text-column", 1)
-  R['channel'].connect( 'edited', set_item, waveforms, CHANNEL )
-  R['channel'].connect( 'editing-started', load_channels_combobox, channels )
-
-  R['time'].set_property( 'editable', True )
-  R['time'].connect( 'edited', set_item, waveforms, TIME )
-
-  R['value'].set_property( 'editable', True )
-  R['value'].connect( 'edited', set_item, waveforms, VALUE )
-
-  R['enable'].set_property( 'activatable', True )
-  R['enable'].connect( 'toggled', toggle_item, waveforms, ENABLE )
-
-  C = waveform_editor['columns']
-  V = waveform_editor['view']
-  C['enable'].add_attribute( R['enable'], 'active', ENABLE )
-  V.set_property( 'hover_selection', True )
-  V.append_column( C['channel'] )
-  V.append_column( C['time'] )
-  V.append_column( C['value'] )
-  V.append_column( C['enable'] )
-
-  return waveforms, waveform_editor
-
+from .. import backend
 
 
 
@@ -205,9 +49,22 @@ ui_info = \
     <separator/>
     <toolitem action='Run'/>
   </toolbar>
+  <toolbar  name='ChannelToolBar'>
+    <toolitem action='CH:Add'/>
+    <toolitem action='CH:Delete'/>
+    <separator/>
+    <toolitem action='CH:Up'/>
+    <toolitem action='CH:Down'/>
+  </toolbar>
+  <toolbar  name='WaveformToolBar'>
+    <toolitem action='WF:Add'/>
+    <toolitem action='WF:Delete'/>
+    <separator/>
+    <toolitem action='WF:Up'/>
+    <toolitem action='WF:Down'/>
+  </toolbar>
 </ui>'''
 
-VERSION = 'arbwave-0.0.1'
 
 class ArbWave(gtk.Window):
   def __init__(self, parent=None):
@@ -228,37 +85,54 @@ class ArbWave(gtk.Window):
     except gobject.GError, msg:
         print "building menus failed: %s" % msg
 
+    # LOAD THE STORAGE
+    self.channels = stores.Channels()
+    self.waveforms = stores.Waveforms()
+    self.signals = stores.Signals()
+
     #  ###### SET UP THE PANEL #######
-    self.channels, self.channel_editor = create_channel_editor()
-    self.waveforms, self.waveform_editor = create_waveform_editor(self.channels)
+    self.channel_editor  = edit.channels.create(self.channels)
+    self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
     self.axes, self.fig, self.canvas, self.toolbar = plotter.create(self)
+
 
     chlabel = gtk.Label('Channels')
     chlabel.set_property('angle', 90)
-    self.channel_editor['view'].set_size_request( 100, 200 )
+    chtools = merge.get_widget('/ChannelToolBar')
+    chtools.set_property('orientation', gtk.ORIENTATION_VERTICAL )
+    chtools.set_property('icon-size', gtk.ICON_SIZE_MENU)
+    chtools.set_property('toolbar-style', gtk.TOOLBAR_ICONS)
+    self.channel_editor['view'].set_size_request( 100, 210 )
     chbox = gtk.EventBox()
     chbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
-    chbox.add(hpack( Args(chlabel,False), self.channel_editor['view']))
+    chbox.add(
+      hpack(
+        PArgs( vpack(chtools, PArgs(chlabel,False)), False),
+        self.channel_editor['view']
+      )
+    )
+
 
     wlabel = gtk.Label('Waveforms')
     wlabel.set_property('angle', 90)
-    self.waveform_editor['view'].set_size_request( -1, 200 )
+    wtools = merge.get_widget('/WaveformToolBar')
+    wtools.set_property('orientation', gtk.ORIENTATION_VERTICAL )
+    wtools.set_property('icon-size', gtk.ICON_SIZE_MENU)
+    wtools.set_property('toolbar-style', gtk.TOOLBAR_ICONS)
+    self.waveform_editor['view'].set_size_request( -1, -1 )
     wbox = gtk.EventBox()
     wbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
-    wbox.add(hpack( Args(wlabel,False), self.waveform_editor['view']))
+    wbox.add(
+      hpack(
+        PArgs( vpack(wtools, PArgs(wlabel,False)), False),
+        self.waveform_editor['view']
+      )
+    )
+
 
     self.canvas.set_size_request( 800, 200 )
     #self.canvas_scroll = gtk.HScale()
 
-    vbox = VBox()
-    self.add(vbox)
-    vbox.pack_start( merge.get_widget('/MenuBar'), False, False, 0 )
-    vbox.pack_start( # MENU BAR LOCATION
-      hpack( merge.get_widget('/ToolBar'),
-             Args(gtk.VSeparator(), False),
-             Args(gtk.VSeparator(), False),
-             self.toolbar
-           ), False )
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )
@@ -269,7 +143,17 @@ class ArbWave(gtk.Window):
     body = gtk.VPaned()
     body.pack1( top, True )
     body.pack2( bottom, True )
-    vbox.pack_start( body )
+
+    self.add( vpack(
+        PArgs( merge.get_widget('/MenuBar'), False, False, 0 ),
+        PArgs( # MENU BAR LOCATION
+          hpack( merge.get_widget('/ToolBar'),
+                 PArgs(gtk.VSeparator(), False),
+                 PArgs(gtk.VSeparator(), False),
+                 self.toolbar
+          ), False ),
+        body
+    ))
 
     self.show_all()
 
@@ -320,6 +204,43 @@ class ArbWave(gtk.Window):
         '_About', '<control>A',                    # label, accelerator
         'About',                                   # tooltip
         self.activate_action ),
+
+      # CHANNEL EDITOR
+      ( 'CH:Add', gtk.STOCK_ADD,                   # name, stock id
+        None, None,                                # label, accelerator
+        'Add channel after current channel',       # tooltip
+        self.activate_action ),
+      ( 'CH:Delete', gtk.STOCK_DELETE,             # name, stock id
+        None, None,                                # label, accelerator
+        'Delete current channel',                  # tooltip
+        self.activate_action ),
+      ( 'CH:Up', gtk.STOCK_GO_UP,                  # name, stock id
+        None, None,                                # label, accelerator
+        'Move current channel up',                 # tooltip
+        self.activate_action ),
+      ( 'CH:Down', gtk.STOCK_GO_DOWN,              # name, stock id
+        None, None,                                # label, accelerator
+        'Move current channel up',                 # tooltip
+        self.activate_action ),
+
+      # WAVEFORM EDITOR
+      ( 'WF:Add', gtk.STOCK_ADD,                   # name, stock id
+        None, None,                                # label, accelerator
+        'Add waveform element after '
+        'current waveform element',                # tooltip
+        self.activate_action ),
+      ( 'WF:Delete', gtk.STOCK_DELETE,             # name, stock id
+        None, None,                                # label, accelerator
+        'Delete current waveform element',         # tooltip
+        self.activate_action ),
+      ( 'WF:Up', gtk.STOCK_GO_UP,                  # name, stock id
+        None, None,                                # label, accelerator
+        'Move current waveform element up',        # tooltip
+        self.activate_action ),
+      ( 'WF:Down', gtk.STOCK_GO_DOWN,              # name, stock id
+        None, None,                                # label, accelerator
+        'Move current waveform element up',        # tooltip
+        self.activate_action ),
     )
 
     # GtkToggleActionEntry
@@ -328,8 +249,14 @@ class ArbWave(gtk.Window):
          '_Run', '<control>space',                 # label, accelerator
         'Activate waveform output',                # tooltip
         self.activate_action,
-        True ),                                    # is_active
+        False ),                                    # is_active
     )
+
+    def switch_play_stop_icons(action):
+      if action.get_property('stock-id') == gtk.STOCK_MEDIA_PLAY:
+        action.set_property('stock-id', gtk.STOCK_MEDIA_STOP)
+      else:
+        action.set_property('stock-id', gtk.STOCK_MEDIA_PLAY)
 
     #     # Create the menubar and toolbar
     action_group = gtk.ActionGroup('ArbWaveGUIActions')
@@ -338,10 +265,18 @@ class ArbWave(gtk.Window):
 
     # Finish off with creating references to each of the actual actions
     self.actions = {
-      'Quit'      : lambda: self.destroy(),
-      'Configure' : lambda: sys.stderr.write('configuring...\n'),
-      'Run'       : lambda: sys.stderr.write('running...\n'),
-      'About'     : lambda: about.show(),
+      'Quit'      : lambda a: self.destroy(),
+      'Configure' : lambda a: configure.show(self, self),
+      'Run'       : switch_play_stop_icons,
+      'About'     : lambda a: about.show(),
+      'CH:Add'    : lambda a: sys.stderr.write('Add channel\n'),
+      'CH:Delete' : lambda a: sys.stderr.write('Delete channel\n'),
+      'CH:Up'     : lambda a: sys.stderr.write('Move channel up\n'),
+      'CH:Down'   : lambda a: sys.stderr.write('Move channel down\n'),
+      'WF:Add'    : lambda a: sys.stderr.write('Add waveform element\n'),
+      'WF:Delete' : lambda a: sys.stderr.write('Delete waveform element\n'),
+      'WF:Up'     : lambda a: sys.stderr.write('Move waveform element up\n'),
+      'WF:Down'   : lambda a: sys.stderr.write('Move waveform element down\n'),
     }
 
     return action_group
@@ -351,5 +286,5 @@ class ArbWave(gtk.Window):
       raise LookupError(
         'Could not find application action: "'+action.get_name()+'"'
       )
-    self.actions[action.get_name()]()
+    self.actions[action.get_name()](action)
 
