@@ -4,8 +4,8 @@
 Arbitrary waveform generator for digital and analog signals.
 """
 
-import gtk
 import gui
+import gtk
 
 def main():
   gui.ArbWave()
