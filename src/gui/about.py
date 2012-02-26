@@ -6,7 +6,7 @@ AUTHORS = [
 ]
 
 import gtk
-import version
+from .. import version
 
 def show():
   dialog = gtk.AboutDialog()

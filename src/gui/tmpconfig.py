@@ -17,16 +17,6 @@ config =  {
     ["Z Current", '10 * v/x', '10']
   ],
 } 
-devs = dict.fromkeys([
-  '/dev0/ao0',
-  '/dev0/ao1',
-  '/dev0/ao2',
-  '/dev0/ao3',
-  '/viewpoint/io0',
-  '/viewpoint/io1',
-  '/viewpoint/io2',
-  '/viewpoint/io3',
-])
 ### END TEMPORARY CONFIG ###
 
 
