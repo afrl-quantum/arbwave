@@ -1,0 +1,9 @@
+1.  Verify that all the devices of a particular loaded configuration file are
+    valid.
+    It is probably critical that this verification and subsequent error handling
+    is not done just after loading a file.  It may certainly be desirable to
+    edit/view a configuration on a computer without devices.  This the proper
+    time for verification is probably at the time that the run button is
+    depressed.  Once verification has happened, perhaps we might just cache the
+    result and only re-evaluate the validity of the current configuration if
+    something has changed.
