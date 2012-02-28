@@ -10,7 +10,7 @@ import sys
 # local packages
 import about, configure, plotter, stores, edit
 from packing import Args as PArgs, hpack, vpack, VBox
-import tmpconfig
+import storage
 
 from .. import backend
 
@@ -265,6 +265,7 @@ class ArbWave(gtk.Window):
 
     # Finish off with creating references to each of the actual actions
     self.actions = {
+      'Open'      : lambda a: storage.gtk_tools.gtk_open_handler(a,self),
       'Quit'      : lambda a: self.destroy(),
       'Configure' : lambda a: configure.show(self, self),
       'Run'       : switch_play_stop_icons,
@@ -287,4 +288,22 @@ class ArbWave(gtk.Window):
         'Could not find application action: "'+action.get_name()+'"'
       )
     self.actions[action.get_name()](action)
+
+
+  def getvars(self):
+    return {
+      'channels'  : self.channels.representation(),
+      'waveforms' : self.waveforms.representation(),
+      'signals'   : self.signals.representation(),
+    }
+
+  def setvars(self, vardict):
+    if 'channels' in vardict:
+      self.channels.load( vardict['channels'] )
+
+    if 'waveforms' in vardict:
+      self.waveforms.load( vardict['waveforms'] )
+
+    if 'signals' in vardict:
+      self.signals.load( vardict['signals'] )
 

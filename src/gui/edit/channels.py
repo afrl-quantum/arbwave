@@ -2,12 +2,14 @@
 import gtk
 
 from helpers import *
+from ... import backend
 
 def load_devices_combobox( cell, editable, path ):
   devls = gtk.ListStore(str)
-  for i in tmpconfig.devs:
+  for i in backend.analog:
     devls.append( [i] )
-
+  for i in backend.digital:
+    devls.append( [i] )
   editable.set_property("model", devls)
 
 def create(channels):
