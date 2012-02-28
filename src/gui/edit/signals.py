@@ -1,5 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, gobject
+import gtk
 from helpers import *
 
 def create(signals):

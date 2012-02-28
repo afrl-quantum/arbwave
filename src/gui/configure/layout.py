@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import gtk, sys
+import gobject
 
 from ..packing import Args as PArgs, VBox, hpack, vpack
 from .. import edit
