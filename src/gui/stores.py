@@ -1,14 +1,14 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk, gobject
+import gtk
 
 class Channels(gtk.ListStore):
   def __init__(self):
     gtk.ListStore.__init__(self,
-      gobject.TYPE_STRING,  # Label
-      gobject.TYPE_STRING,  # device
-      gobject.TYPE_STRING,  # value
-      gobject.TYPE_BOOLEAN, #enabled
+      str,  # Label
+      str,  # device
+      str,  # value
+      bool, #enabled
     )
 
   def dict(self):
@@ -28,10 +28,10 @@ class Channels(gtk.ListStore):
 class Waveforms(gtk.TreeStore):
   def __init__(self):
     gtk.TreeStore.__init__(self,
-      gobject.TYPE_STRING,  # channel
-      gobject.TYPE_STRING,  # Time
-      gobject.TYPE_STRING,  # value
-      gobject.TYPE_BOOLEAN, #enabled
+      str,  # channel
+      str,  # Time
+      str,  # value
+      bool, #enabled
     )
 
   def load(self,config):
@@ -46,9 +46,9 @@ class Waveforms(gtk.TreeStore):
 class Signals(gtk.ListStore):
   def __init__(self):
     gtk.ListStore.__init__(self,
-      gobject.TYPE_STRING,  # Source
-      gobject.TYPE_STRING,  # Destination
-      gobject.TYPE_BOOLEAN, # invert-polarity
+      str,  # Source
+      str,  # Destination
+      bool, # invert-polarity
     )
 
   def list(self):
