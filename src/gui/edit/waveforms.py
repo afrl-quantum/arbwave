@@ -36,7 +36,8 @@ def create(waveforms,channels):
   })
 
   R['channel'].set_property( 'editable', True )
-  R['channel'].set_property("text-column", 1)
+  R['channel'].set_property('text-column', 1)
+  R['channel'].set_property('has-entry', False)
   R['channel'].connect( 'edited', set_item, waveforms, CHANNEL )
   R['channel'].connect( 'editing-started', load_channels_combobox, channels )
 
