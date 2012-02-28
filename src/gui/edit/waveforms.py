@@ -11,11 +11,6 @@ def load_channels_combobox( cell, editable, path, channels ):
   editable.set_property("model", chls)
 
 def create(waveforms,channels):
-  CHANNEL =0
-  TIME    =1
-  VALUE   =2
-  ENABLE  =3
-
   waveform_editor = {
     'view'      : gtk.TreeView( waveforms ),
     'renderers' : {
@@ -28,31 +23,31 @@ def create(waveforms,channels):
   R = waveform_editor['renderers']
   waveform_editor.update({
     'columns' : {
-      'channel' : GTVC( 'Channel', R['channel'], text=CHANNEL ),
-      'time'    : GTVC( 'Time',    R['time'],    text=TIME ),
-      'value'   : GTVC( 'Value',   R['value'],   text=VALUE ),
-      'enable'  : GTVC( 'Enabled', R['enable'],  text=ENABLE ),
+      'channel' : GTVC( 'Channel', R['channel'], text=waveforms.CHANNEL ),
+      'time'    : GTVC( 'Time',    R['time'],    text=waveforms.TIME ),
+      'value'   : GTVC( 'Value',   R['value'],   text=waveforms.VALUE ),
+      'enable'  : GTVC( 'Enabled', R['enable'] ),
     },
   })
 
   R['channel'].set_property( 'editable', True )
   R['channel'].set_property('text-column', 1)
   R['channel'].set_property('has-entry', False)
-  R['channel'].connect( 'edited', set_item, waveforms, CHANNEL )
+  R['channel'].connect( 'edited', set_item, waveforms, waveforms.CHANNEL )
   R['channel'].connect( 'editing-started', load_channels_combobox, channels )
 
   R['time'].set_property( 'editable', True )
-  R['time'].connect( 'edited', set_item, waveforms, TIME )
+  R['time'].connect( 'edited', set_item, waveforms, waveforms.TIME )
 
   R['value'].set_property( 'editable', True )
-  R['value'].connect( 'edited', set_item, waveforms, VALUE )
+  R['value'].connect( 'edited', set_item, waveforms, waveforms.VALUE )
 
   R['enable'].set_property( 'activatable', True )
-  R['enable'].connect( 'toggled', toggle_item, waveforms, ENABLE )
+  R['enable'].connect( 'toggled', toggle_item, waveforms, waveforms.ENABLE )
 
   C = waveform_editor['columns']
   V = waveform_editor['view']
-  C['enable'].add_attribute( R['enable'], 'active', ENABLE )
+  C['enable'].add_attribute( R['enable'], 'active', waveforms.ENABLE )
   V.set_property( 'hover_selection', True )
   V.append_column( C['channel'] )
   V.append_column( C['time'] )
