@@ -15,17 +15,17 @@ class Channels(gtk.ListStore):
       str,  # device
       str,  # scaling
       str,  # value
-      bool, # enabled
+      bool, # enable
     )
 
   def dict(self):
     D = dict()
     for i in iter(self):
       D[ i[0] ] = {
-        'device'  : i[1],
-        'scaling' : i[2],
-        'value'   : i[3],
-        'enabled' : i[4],
+        'device'  : i[Channels.DEVICE],
+        'scaling' : i[Channels.SCALING],
+        'value'   : i[Channels.VALUE],
+        'enable'  : i[Channels.ENABLE],
       }
     return D
 
@@ -36,7 +36,7 @@ class Channels(gtk.ListStore):
         i[1]['device'],
         i[1]['scaling'],
         i[1]['value'],
-        i[1]['enabled'],
+        i[1]['enable'],
       ])
 
   def representation(self):
@@ -55,7 +55,7 @@ class Waveforms(gtk.TreeStore):
       str,  # channel
       str,  # Time
       str,  # value
-      bool, # enabled
+      bool, # enable
       str,  # script
     )
 
@@ -65,16 +65,17 @@ class Waveforms(gtk.TreeStore):
       if i.parent is not None:
         raise RuntimeError('Parented item at root-level of waveform tree')
       D = dict()
-      D['group-label'] = i[CHANNEL]
-      D['script'] = i[SCRIPT]
-      D['time-step'] = i[TIME]
+      D['group-label' ] = i[Waveforms.CHANNEL]
+      D['script'      ] = i[Waveforms.SCRIPT]
+      D['time-step'   ] = i[Waveforms.TIME]
+      D['enable'      ] = i[Waveforms.ENABLE]
       l = D['elements'] = list()
       for j in i.iterchildren():
         l.append({
-          'channel' : j[CHANNEL],
-          'time'    : j[TIME],
-          'value'   : j[VALUE],
-          'enabled' : j[ENABLED],
+          'channel' : j[Waveforms.CHANNEL],
+          'time'    : j[Waveforms.TIME],
+          'value'   : j[Waveforms.VALUE],
+          'enable'  : j[Waveforms.ENABLE],
         })
 
       L.append( D )  # finish group by appending to list of groups
@@ -86,11 +87,11 @@ class Waveforms(gtk.TreeStore):
     # we form a simple tree.
     for i in L:
       parent = self.append( None,
-        (i['group-label'], i['time-step'], None, i['enabled'], i['script'])
+        (i['group-label'], i['time-step'], None, i['enable'], i['script'])
       )
       for e in i['elements']:
         self.append( parent,
-          (e['channel'], e['time'], e['value'], e['enabled'], None)
+          (e['channel'], e['time'], e['value'], e['enable'], None)
         )
 
   def representation(self):
@@ -113,9 +114,9 @@ class Signals(gtk.ListStore):
     L = list()
     for i in iter(self):
       L.append({
-        'source'  : i[0],
-        'dest'    : i[1],
-        'invert'  : i[2],
+        'source'  : i[Signals.SOURCE],
+        'dest'    : i[Signals.DEST],
+        'invert'  : i[Signals.INVERT],
       })
     return L
 

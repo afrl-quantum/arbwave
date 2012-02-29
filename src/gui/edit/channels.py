@@ -29,7 +29,7 @@ def create(channels):
       'label'   : GTVC( 'Label',   R['label'],  text=channels.LABEL ),
       'device'  : GTVC( 'Device',  R['device'], text=channels.DEVICE ),
       'scaling' : GTVC( 'Scaling', R['value'],  text=channels.SCALING ),
-      'value'   : GTVC( 'Value',   R['value'],  text=channels.VALUE ),
+      'value'   : GTVC( 'Value',   R['scaling'],text=channels.VALUE ),
       'enable'  : GTVC( 'Enabled', R['enable'] ),
     },
   })
