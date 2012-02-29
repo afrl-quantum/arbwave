@@ -35,7 +35,7 @@ def create(channels):
   })
 
   R['label'].set_property( 'editable', True )
-  R['label'].connect( 'edited', set_item, channels, channels.LABEL )
+  R['label'].connect( 'edited', set_item, channels, channels.LABEL, True )
 
   R['device'].set_property( 'editable', True )
   R['device'].set_property("text-column", 0)

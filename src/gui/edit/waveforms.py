@@ -4,9 +4,9 @@ import gtk
 from helpers import *
 
 def load_channels_combobox( cell, editable, path, channels ):
-  chls = gtk.ListStore(int,str)
-  for i in xrange( len(channels) ):
-    chls.append( [i, str(i) + ': ' + channels[i][0]] )
+  chls = gtk.ListStore(str)
+  for i in iter(channels):
+    chls.append([ i[channels.LABEL] ])
 
   editable.set_property("model", chls)
 
@@ -31,7 +31,7 @@ def create(waveforms,channels):
   })
 
   R['channel'].set_property( 'editable', True )
-  R['channel'].set_property('text-column', 1)
+  R['channel'].set_property('text-column', 0)
   R['channel'].set_property('has-entry', False)
   R['channel'].connect( 'edited', set_item, waveforms, waveforms.CHANNEL )
   R['channel'].connect( 'editing-started', load_channels_combobox, channels )
