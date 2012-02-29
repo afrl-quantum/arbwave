@@ -102,13 +102,17 @@ class ArbWave(gtk.Window):
     chtools.set_property('orientation', gtk.ORIENTATION_VERTICAL )
     chtools.set_property('icon-size', gtk.ICON_SIZE_MENU)
     chtools.set_property('toolbar-style', gtk.TOOLBAR_ICONS)
-    self.channel_editor['view'].set_size_request( 100, 210 )
+    chew = gtk.ScrolledWindow()
+    chew.set_size_request( -1, 210 )
+    chew.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+    chew.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    chew.add( self.channel_editor['view'] )
     chbox = gtk.EventBox()
     chbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
     chbox.add(
       hpack(
         PArgs( vpack(chtools, PArgs(chlabel,False)), False),
-        self.channel_editor['view']
+        chew,
       )
     )
 
@@ -119,13 +123,17 @@ class ArbWave(gtk.Window):
     wtools.set_property('orientation', gtk.ORIENTATION_VERTICAL )
     wtools.set_property('icon-size', gtk.ICON_SIZE_MENU)
     wtools.set_property('toolbar-style', gtk.TOOLBAR_ICONS)
-    self.waveform_editor['view'].set_size_request( -1, -1 )
+    wew = gtk.ScrolledWindow()
+    wew.set_size_request(-1,-1)
+    wew.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+    wew.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    wew.add( self.waveform_editor['view'] )
     wbox = gtk.EventBox()
     wbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
     wbox.add(
       hpack(
         PArgs( vpack(wtools, PArgs(wlabel,False)), False),
-        self.waveform_editor['view']
+        wew,
       )
     )
 
