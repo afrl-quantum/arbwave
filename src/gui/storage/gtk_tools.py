@@ -41,16 +41,21 @@ def get_file(doopen=True):
 
 def gtk_open_handler(action, stor):
   try:
-    F = open( get_file() )
+    stor.config_file = get_file()
+    F = open( stor.config_file )
   except TypeError:
     return # this happens when get_file returns None
   V = readvars( F )
   F.close()
   stor.setvars( V )
 
-def gtk_save_handler(action, stor):
+def gtk_save_handler(action, stor, force_new=False):
   try:
-    F = open( get_file(False), 'w' )
+    if (not force_new) and 'config_file' in dir(stor):
+      F = open( stor.config_file, 'w' )
+    else:
+      stor.config_file = get_file(False)
+      F = open( stor.config_file, 'w' )
   except TypeError:
     return # this happens when get_file returns None
   writevars( F, stor.getvars() )
