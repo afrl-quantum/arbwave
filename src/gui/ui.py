@@ -273,7 +273,10 @@ class ArbWave(gtk.Window):
 
     # Finish off with creating references to each of the actual actions
     self.actions = {
+      'New'       : lambda a: self.clearvars(),
       'Open'      : lambda a: storage.gtk_tools.gtk_open_handler(a,self),
+      'Save'      : lambda a: storage.gtk_tools.gtk_save_handler(a,self),
+      'SaveAs'    : lambda a: storage.gtk_tools.gtk_save_handler(a,self, True),
       'Quit'      : lambda a: self.destroy(),
       'Configure' : lambda a: configure.show(self, self),
       'Run'       : switch_play_stop_icons,
@@ -314,4 +317,9 @@ class ArbWave(gtk.Window):
 
     if 'signals' in vardict:
       self.signals.load( vardict['signals'] )
+
+  def clearvars(self):
+    self.channels.clear()
+    self.waveforms.clear()
+    self.signals.clear()
 
