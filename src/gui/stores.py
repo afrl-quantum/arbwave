@@ -30,6 +30,7 @@ class Channels(gtk.ListStore):
     return D
 
   def load(self, D):
+    self.clear()
     for i in D.items():
       self.append([
         i[0],
@@ -83,6 +84,7 @@ class Waveforms(gtk.TreeStore):
     return L
 
   def load(self,L):
+    self.clear()
     # places the global people data into the list
     # we form a simple tree.
     for i in L:
@@ -121,6 +123,7 @@ class Signals(gtk.ListStore):
     return L
 
   def load(self, L):
+    self.clear()
     for i in L:
       self.append([
         i['source'],
