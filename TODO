@@ -1,9 +1,29 @@
 1.  Verify that all the devices of a particular loaded configuration file are
-    valid.
-    It is probably critical that this verification and subsequent error handling
-    is not done just after loading a file.  It may certainly be desirable to
-    edit/view a configuration on a computer without devices.  This the proper
-    time for verification is probably at the time that the run button is
-    depressed.  Once verification has happened, perhaps we might just cache the
-    result and only re-evaluate the validity of the current configuration if
-    something has changed.
+  valid.
+  It is probably critical that this verification and subsequent error handling
+  is not done just after loading a file.  It may certainly be desirable to
+  edit/view a configuration on a computer without devices.  This the proper
+  time for verification is probably at the time that the run button is
+  depressed.  Once verification has happened, perhaps we might just cache the
+  result and only re-evaluate the validity of the current configuration if
+  something has changed.
+
+2.  Have hardware update when some setting on the front panel changes.
+  This update should ONLY update the hardware that actually changed.
+    a.  This might be accomplished by the individual hardware each storing a last
+      copy of the configuration assigned to it and comparing the new
+      configuration to it.  This would probably be the easiest way to implement
+      this feature.
+      This might also allow the hardware drivers to actually only select a
+      portion of their configuration to update (if this is feasible).  This
+      might actually end up providing the least lag time on average (as measured
+      from mouse/key click to hardware output).
+
+    b.  This _could_ also be accomplished by the program where it senses whether
+      a set of changes applies to which hardware.  this _might_ be faster,
+      though slightly more complicated.
+
+  I cannot see a reason why updates should be made to _all_ hardware
+  regardless of which hardware is really effected by a particular change.  It
+  seems that user-responsiveness _could_ be significantly improved by only
+  updating hardware that needs updating.
