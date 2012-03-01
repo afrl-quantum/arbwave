@@ -57,6 +57,7 @@ ui_info = \
     <toolitem action='CH:Down'/>
   </toolbar>
   <toolbar  name='WaveformToolBar'>
+    <toolitem action='WF:Add:group'/>
     <toolitem action='WF:Add'/>
     <toolitem action='WF:Delete'/>
     <separator/>
@@ -232,6 +233,11 @@ class ArbWave(gtk.Window):
         self.activate_action ),
 
       # WAVEFORM EDITOR
+      ( 'WF:Add:group', gtk.STOCK_NEW,             # name, stock id
+        None, None,                                # label, accelerator
+        'Add waveform group after '
+        'current waveform group',                  # tooltip
+        self.activate_action ),
       ( 'WF:Add', gtk.STOCK_ADD,                   # name, stock id
         None, None,                                # label, accelerator
         'Add waveform element after '
@@ -266,6 +272,37 @@ class ArbWave(gtk.Window):
       else:
         action.set_property('stock-id', gtk.STOCK_MEDIA_PLAY)
 
+    def add_waveform_group(action):
+      i = self.waveform_editor['view'].get_selection().get_selected()[1]
+      if not i: # append new grouping to end
+        self.waveforms.append( None )
+      elif self.waveforms[i].parent:
+        self.waveforms.insert_before( None, self.waveforms[i].parent.iter )
+      else:
+        self.waveforms.insert_before( None, i )
+
+    def add_waveform(action):
+      i = self.waveform_editor['view'].get_selection().get_selected()[1]
+      if not i: # append new element to last group
+        if len( self.waveforms ) == 0:
+          self.waveforms.append( None ) # create last if necessary
+        n = self.waveforms.append( self.waveforms[-1].iter )
+      elif not self.waveforms[i].parent:
+        n = self.waveforms.append( i )
+      else:
+        n = self.waveforms.insert_before( self.waveforms[i].parent.iter, i )
+      self.waveform_editor['view'].expand_to_path( self.waveforms[n].path )
+
+    def delrow( action, stor, ed ):
+      i = ed.get_selection().get_selected()[1]
+      n = stor.iter_next( i )
+      stor.remove( i )
+      if n:
+        ed.get_selection().select_iter( n )
+
+    def addrow( action, stor, ed ):
+      stor.insert_before( ed.get_selection().get_selected()[1] )
+
     #     # Create the menubar and toolbar
     action_group = gtk.ActionGroup('ArbWaveGUIActions')
     action_group.add_actions(entries)
@@ -274,19 +311,20 @@ class ArbWave(gtk.Window):
     # Finish off with creating references to each of the actual actions
     self.actions = {
       'New'       : lambda a: self.clearvars(),
-      'Open'      : lambda a: storage.gtk_tools.gtk_open_handler(a,self),
-      'Save'      : lambda a: storage.gtk_tools.gtk_save_handler(a,self),
-      'SaveAs'    : lambda a: storage.gtk_tools.gtk_save_handler(a,self, True),
+      'Open'      : ( storage.gtk_tools.gtk_open_handler, self ),
+      'Save'      : ( storage.gtk_tools.gtk_save_handler, self ),
+      'SaveAs'    : ( storage.gtk_tools.gtk_save_handler, self, True),
       'Quit'      : lambda a: self.destroy(),
       'Configure' : lambda a: configure.show(self, self),
       'Run'       : switch_play_stop_icons,
       'About'     : lambda a: about.show(),
-      'CH:Add'    : lambda a: sys.stderr.write('Add channel\n'),
-      'CH:Delete' : lambda a: sys.stderr.write('Delete channel\n'),
+      'CH:Add'    : ( addrow, self.channels, self.channel_editor['view'] ),
+      'CH:Delete' : ( delrow, self.channels, self.channel_editor['view'] ),
       'CH:Up'     : lambda a: sys.stderr.write('Move channel up\n'),
       'CH:Down'   : lambda a: sys.stderr.write('Move channel down\n'),
-      'WF:Add'    : lambda a: sys.stderr.write('Add waveform element\n'),
-      'WF:Delete' : lambda a: sys.stderr.write('Delete waveform element\n'),
+      'WF:Add:group': add_waveform_group,
+      'WF:Add'    : add_waveform,
+      'WF:Delete' : ( delrow, self.waveforms, self.waveform_editor['view'] ),
       'WF:Up'     : lambda a: sys.stderr.write('Move waveform element up\n'),
       'WF:Down'   : lambda a: sys.stderr.write('Move waveform element down\n'),
     }
@@ -298,7 +336,11 @@ class ArbWave(gtk.Window):
       raise LookupError(
         'Could not find application action: "'+action.get_name()+'"'
       )
-    self.actions[action.get_name()](action)
+    A = self.actions[action.get_name()]
+    if type(A) in [ tuple, list ]:
+      A[0](action, *A[1:])
+    else:
+      A(action)
 
 
   def getvars(self):
