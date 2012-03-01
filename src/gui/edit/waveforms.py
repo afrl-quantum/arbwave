@@ -48,7 +48,7 @@ def create(waveforms,channels):
   C = waveform_editor['columns']
   V = waveform_editor['view']
   C['enable'].add_attribute( R['enable'], 'active', waveforms.ENABLE )
-  V.set_property( 'hover_selection', True )
+  #V.set_property( 'hover_selection', True )
   V.append_column( C['channel'] )
   V.append_column( C['time'] )
   V.append_column( C['value'] )

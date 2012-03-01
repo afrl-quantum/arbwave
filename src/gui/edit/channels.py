@@ -54,7 +54,7 @@ def create(channels):
   C = channel_editor['columns']
   V = channel_editor['view']
   C['enable'].add_attribute( R['enable'], 'active', channels.ENABLE )
-  V.set_property( 'hover_selection', True )
+  #V.set_property( 'hover_selection', True )
   V.append_column( C['label'] )
   V.append_column( C['device'] )
   V.append_column( C['scaling'] )
