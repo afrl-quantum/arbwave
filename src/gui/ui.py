@@ -76,6 +76,17 @@ class ArbWave(gtk.Window):
     except AttributeError:
       self.connect('destroy', lambda *w: gtk.main_quit())
 
+
+    # LOAD THE STORAGE
+    self.channels = stores.Channels()
+    self.waveforms = stores.Waveforms()
+    self.signals = stores.Signals()
+    self.channel_editor  = edit.channels.create(self.channels)
+    self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
+    self.axes, self.fig, self.canvas, self.toolbar = plotter.create(self)
+
+
+    #  ###### SET UP THE PANEL #######
     merge = gtk.UIManager()
     self.set_data("ui-manager", merge)
     merge.insert_action_group(self.create_action_group(), 0)
@@ -84,17 +95,6 @@ class ArbWave(gtk.Window):
         mergeid = merge.add_ui_from_string(ui_info)
     except gobject.GError, msg:
         print "building menus failed: %s" % msg
-
-    # LOAD THE STORAGE
-    self.channels = stores.Channels()
-    self.waveforms = stores.Waveforms()
-    self.signals = stores.Signals()
-
-    #  ###### SET UP THE PANEL #######
-    self.channel_editor  = edit.channels.create(self.channels)
-    self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
-    self.axes, self.fig, self.canvas, self.toolbar = plotter.create(self)
-
 
     chlabel = gtk.Label('Channels')
     chlabel.set_property('angle', 90)
