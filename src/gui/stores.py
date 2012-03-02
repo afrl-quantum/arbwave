@@ -2,6 +2,8 @@
 
 import gtk
 
+import edit
+
 class Channels(gtk.ListStore):
   LABEL   =0
   DEVICE  =1
@@ -133,4 +135,39 @@ class Signals(gtk.ListStore):
     
   def representation(self):
     return self.list()
+
+
+class Script:
+  def __init__(self, text='', title='Script', parent=None, test_locals=dict()):
+    self.editor = None
+    self.text   = text
+    self.title  = title
+    self.parent = parent
+    self.test_locals = test_locals
+
+  def __str__(self):
+    return self.text
+
+  def set_text(self, t):
+    self.text = t
+
+  def get_text(self):
+    return self.text
+
+  def load(self, t):
+    self.set_text(t)
+
+  def representation(self):
+    return str(self)
+
+  def edit(self):
+
+    def unset_editor(*args):
+      self.editor = None
+
+    if not self.editor:
+      self.editor = edit.script.Editor( self.title, self.parent, target=self )
+      self.editor.connect('destroy', unset_editor)
+
+    self.editor.present()
 

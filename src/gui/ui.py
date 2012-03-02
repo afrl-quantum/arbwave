@@ -35,6 +35,7 @@ ui_info = \
       <separator/>
       -->
       <menuitem action='Configure'/>
+      <menuitem action='Script'/>
     </menu>
     <menu action='HelpMenu'>
       <menuitem action='About'/>
@@ -46,6 +47,7 @@ ui_info = \
     <toolitem action='Save'/>
     <separator/>
     <toolitem action='Configure'/>
+    <toolitem action='Script'/>
     <separator/>
     <toolitem action='Run'/>
   </toolbar>
@@ -79,6 +81,17 @@ class ArbWave(gtk.Window):
 
 
     # LOAD THE STORAGE
+    self.script = stores.Script(
+      '# This script sets global variables and/or functions.\n' \
+      '# All other scripts and processing will be done in this context.\n' \
+      '# NOTE:  This script will be executed after editing to test for \n' \
+      '#        syntax errors.  These local variables exist during this \n' \
+      '#        test phase:\n' \
+      '#    __TEST_SYNTAX__ = True\n',
+      title='Global Variables/Functions...',
+      parent=self,
+      test_locals={'__TEST_SYNTAX__' : True},
+    )
     self.channels = stores.Channels()
     self.waveforms = stores.Waveforms()
     self.signals = stores.Signals()
@@ -206,8 +219,12 @@ class ArbWave(gtk.Window):
       #   'Paste text',                              # tooltip
       #   self.activate_action ),
       ( 'Configure', gtk.STOCK_PREFERENCES,        # name, stock id
-        '_Configure', None,                        # label, accelerator
+        '_Configure Devices', None,                # label, accelerator
         'Configure triggers, backplane, etc.',     # tooltip
+        self.activate_action ),
+      ( 'Script', gtk.STOCK_EDIT,                  # name, stock id
+        'Edit Global _Script', None,               # label, accelerator
+        'Set global variables, define global functions...',# tooltip
         self.activate_action ),
       ( 'About', None,                             # name, stock id
         '_About', '<control>A',                    # label, accelerator
@@ -303,6 +320,7 @@ class ArbWave(gtk.Window):
     def addrow( action, stor, ed ):
       stor.insert_before( ed.get_selection().get_selected()[1] )
 
+
     #     # Create the menubar and toolbar
     action_group = gtk.ActionGroup('ArbWaveGUIActions')
     action_group.add_actions(entries)
@@ -316,6 +334,7 @@ class ArbWave(gtk.Window):
       'SaveAs'    : ( storage.gtk_tools.gtk_save_handler, self, True),
       'Quit'      : lambda a: self.destroy(),
       'Configure' : lambda a: configure.show(self, self),
+      'Script'    : lambda a: self.script.edit(),
       'Run'       : switch_play_stop_icons,
       'About'     : lambda a: about.show(),
       'CH:Add'    : ( addrow, self.channels, self.channel_editor['view'] ),
@@ -345,6 +364,7 @@ class ArbWave(gtk.Window):
 
   def getvars(self):
     return {
+      'global_script': self.script,
       'channels'  : self.channels.representation(),
       'waveforms' : self.waveforms.representation(),
       'signals'   : self.signals.representation(),
@@ -359,6 +379,9 @@ class ArbWave(gtk.Window):
 
     if 'signals' in vardict:
       self.signals.load( vardict['signals'] )
+
+    if 'global_script' in vardict:
+      self.script = vardict['global_script']
 
   def clearvars(self):
     self.channels.clear()
