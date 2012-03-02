@@ -44,7 +44,7 @@ def create(signals):
   C = signal_editor['columns']
   V = signal_editor['view']
   C['invert'].add_attribute( R['invert'], 'active', signals.INVERT )
-  V.set_property( 'hover_selection', True )
+  #V.set_property( 'hover_selection', True )
   V.append_column( C['source'] )
   V.append_column( C['dest'] )
   V.append_column( C['invert'] )

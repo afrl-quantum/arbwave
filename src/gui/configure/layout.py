@@ -27,17 +27,22 @@ class ConfigDialog(gtk.Dialog):
     )
 
 
+    # LOAD THE STORAGE
+    self.store = store
+    self.signal_editor = edit.signals.create(store.signals)
+
+
+    # ###### SET UP THE PANEL ######
     merge = gtk.UIManager()
     self.set_data("ui-manager", merge)
     merge.insert_action_group(self.create_action_group(), 0)
     self.add_accel_group(merge.get_accel_group())
     try:
-        mergeid = merge.add_ui_from_string(ui_info)
+      mergeid = merge.add_ui_from_string(ui_info)
     except gobject.GError, msg:
-        print "building menus failed: %s" % msg
+      print "building menus failed: %s" % msg
 
 
-    signal_editor = edit.signals.create(store.signals)
     siglabel = gtk.Label('Signal\nRoutes')
     siglabel.set_property('angle', 90)
     sigtools = merge.get_widget('/SignalToolBar')
@@ -49,7 +54,7 @@ class ConfigDialog(gtk.Dialog):
     sigbox.set_size_request(300,190)
     sigbox.add( hpack(
       PArgs( vpack(sigtools, PArgs(siglabel,False)), False ),
-      signal_editor['view']
+      self.signal_editor['view']
     ))
     self.vbox.pack_start(sigbox)
 
@@ -95,11 +100,23 @@ class ConfigDialog(gtk.Dialog):
     action_group = gtk.ActionGroup('ConfigActions')
     action_group.add_actions(entries)
     action_group.add_toggle_actions(toggle_entries)
+
+
+    def delrow( action, stor, ed ):
+      i = ed.get_selection().get_selected()[1]
+      n = stor.iter_next( i )
+      stor.remove( i )
+      if n:
+        ed.get_selection().select_iter( n )
+
+    def addrow( action, stor, ed ):
+      stor.insert_before( ed.get_selection().get_selected()[1] )
+
   
     # Finish off with creating references to each of the actual actions
     self.actions = {
-      'SIG:Add'    : lambda: sys.stderr.write('Add waveform element\n'),
-      'SIG:Delete' : lambda: sys.stderr.write('Delete waveform element\n'),
+      'SIG:Add'    : (addrow, self.store.signals, self.signal_editor['view']),
+      'SIG:Delete' : (delrow, self.store.signals, self.signal_editor['view']),
       'SIG:Up'     : lambda: sys.stderr.write('Move waveform element up\n'),
       'SIG:Down'   : lambda: sys.stderr.write('Move waveform element down\n'),
     }
@@ -111,7 +128,11 @@ class ConfigDialog(gtk.Dialog):
       raise LookupError(
         'Could not find application action: "'+action.get_name()+'"'
       )
-    self.actions[action.get_name()]()
+    A = self.actions[action.get_name()]
+    if type(A) in [ tuple, list ]:
+      A[0](action, *A[1:])
+    else:
+      A(action)
 
 
 def show(win, store):

@@ -93,9 +93,9 @@ class ArbWave(gtk.Window):
     merge.insert_action_group(self.create_action_group(), 0)
     self.add_accel_group(merge.get_accel_group())
     try:
-        mergeid = merge.add_ui_from_string(ui_info)
+      mergeid = merge.add_ui_from_string(ui_info)
     except gobject.GError, msg:
-        print "building menus failed: %s" % msg
+      print "building menus failed: %s" % msg
 
     chlabel = gtk.Label('Channels')
     chlabel.set_property('angle', 90)
