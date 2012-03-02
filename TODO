@@ -27,3 +27,9 @@
   regardless of which hardware is really effected by a particular change.  It
   seems that user-responsiveness _could_ be significantly improved by only
   updating hardware that needs updating.
+
+3.  Have some syntax highlighting in the script editor.  There is a simpler
+  version in the pygtk-demo program (not the demos, but the demo program
+  itsself).  This isn't perfect, but will be much easier to port, maintain than
+  perhaps using a full-fledged editor that we have to import from some other
+  project.
