@@ -148,6 +148,9 @@ class Script:
   def __str__(self):
     return self.text
 
+  def clear(self):
+    self.text = ''
+
   def set_text(self, t):
     self.text = t
 

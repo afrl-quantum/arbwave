@@ -364,7 +364,7 @@ class ArbWave(gtk.Window):
 
   def getvars(self):
     return {
-      'global_script': self.script,
+      'global_script': self.script.representation(),
       'channels'  : self.channels.representation(),
       'waveforms' : self.waveforms.representation(),
       'signals'   : self.signals.representation(),
@@ -381,10 +381,11 @@ class ArbWave(gtk.Window):
       self.signals.load( vardict['signals'] )
 
     if 'global_script' in vardict:
-      self.script = vardict['global_script']
+      self.script.load( vardict['global_script'] )
 
   def clearvars(self):
     self.channels.clear()
     self.waveforms.clear()
     self.signals.clear()
+    self.script.clear()
 
