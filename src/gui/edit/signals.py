@@ -4,11 +4,23 @@ from helpers import *
 
 from ... import backend
 
+device_combobox_tree = gtk.TreeStore(str,str)
+
+def build_device_combobox_tree():
+  global device_combobox_tree
+  T = device_combobox_tree
+  T.clear()
+
+  add_paths_to_combobox_tree( T, backend.backplane )
+
+
+
 def load_signals_combobox( cell, editable, path ):
-  sigls = gtk.ListStore(str)
-  for i in backend.backplane:
-    sigls.append( [i] )
-  editable.set_property("model", sigls)
+  global device_combobox_tree
+  if len(device_combobox_tree) < 1:
+    build_device_combobox_tree()
+  editable.set_property("model", device_combobox_tree)
+  prep_combobox_for_tree(editable)
 
 
 def create(signals):
