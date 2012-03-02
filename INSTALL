@@ -1,0 +1,26 @@
+Installation Instructions
+*************************
+
+This project depends on several other python-related projects and these must
+first be installed.
+
+Third-party dependencies:
+  Python packages:
+    python (2.X)
+    pygtk
+      - including of course the Gtk runtime.
+    numpy
+      - generally included as part of scipy and required for matplotlib
+    matplotlib
+
+Supported Hardware:
+  Drivers will automatically detect which underlying vendor-provided drivers are
+  available.
+
+  Supported:
+    --none as of yet--
+
+  Future support:
+    Viewpoint
+    National Instruments NI-DAQmx
+
