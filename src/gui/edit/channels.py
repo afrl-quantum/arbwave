@@ -4,13 +4,24 @@ import gtk
 from helpers import *
 from ... import backend
 
+device_combobox_tree = gtk.TreeStore(str,str)
+
+def build_device_combobox_tree():
+  global device_combobox_tree
+  T = device_combobox_tree
+  T.clear()
+
+  add_paths_to_combobox_tree( T, backend.analog,  'Analog'  )
+  add_paths_to_combobox_tree( T, backend.digital, 'Digital' )
+
+
+
 def load_devices_combobox( cell, editable, path ):
-  devls = gtk.ListStore(str)
-  for i in backend.analog:
-    devls.append( [i] )
-  for i in backend.digital:
-    devls.append( [i] )
-  editable.set_property("model", devls)
+  global device_combobox_tree
+  if len(device_combobox_tree) < 1:
+    build_device_combobox_tree()
+  editable.set_property("model", device_combobox_tree)
+  prep_combobox_for_tree(editable)
 
 def create(channels):
   channel_editor = {
