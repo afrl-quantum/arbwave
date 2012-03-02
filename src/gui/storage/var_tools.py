@@ -11,10 +11,8 @@ def writevars( F, vardict ):
     pprint.pprint(i[1], F )
     F.write('\n')
 
-def readvars( F ):
-  if not F:
+def readvars( source, globals=globals(), **locals ):
+  if not source:
     return None
-  exec(F)
-  retval = copy.copy( locals() )
-  retval.pop('F')
-  return retval
+  exec source in globals, locals
+  return locals
