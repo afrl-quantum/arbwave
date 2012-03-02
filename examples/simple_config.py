@@ -1,106 +1,68 @@
-# vim: ts=2:sw=2:tw=80:nowrap
+channels = \
+{'MOT Detuning': {'device': '/dev0/ao0',
+                  'enable': True,
+                  'scaling': 'min(10,max(-10,{value}/1.5))',
+                  'value': '10*300'},
+ 'MOT Power': {'device': '/dev0/ao1',
+               'enable': True,
+               'scaling': 'min(10,max(-10,{value}))',
+               'value': '10*300'},
+ 'U Current': {'device': '/dev0/ao2',
+               'enable': True,
+               'scaling': 'min(10,max(-10,{value}))',
+               'value': '10*300'},
+ 'Z Current': {'device': '/dev0/ao3',
+               'enable': True,
+               'scaling': 'min(10,max(-10,{value}))',
+               'value': '10*300'}}
 
-### BEGIN TEMPORARY CONFIG ###
-channels = {
-  'MOT Detuning' : {
-    'device'  : '/dev0/ao0',
-    'scaling' : 'min(10,max(-10,{value}/1.5))',
-    'value'   : '10*300',
-    'enable'  : True,
-  },
+waveforms = \
+[{'elements': [{'channel': 'MOT Detuning',
+                'enable': True,
+                'time': 'v + 1',
+                'value': '1.3'}],
+  'enable': True,
+  'group-label': 'MOT Loading',
+  'script': '',
+  'time-step': '0.001*ms'},
+ {'elements': [{'channel': 'MOT Detuning',
+                'enable': True,
+                'time': '100',
+                'value': '100m'}],
+  'enable': True,
+  'group-label': 'Compressed MOT',
+  'script': '',
+  'time-step': 'us'},
+ {'elements': [{'channel': 'MOT Power',
+                'enable': True,
+                'time': 'capture_dt',
+                'value': '10m'},
+               {'channel': 'U current',
+                'enable': True,
+                'time': 'capture_dt',
+                'value': '10m'},
+               {'channel': 'Z current',
+                'enable': True,
+                'time': 'capture_dt',
+                'value': '10m'}],
+  'enable': True,
+  'group-label': 'Magnetic Capture',
+  'script': 'capture_dt = 100',
+  'time-step': 'ms'},
+ {'elements': [{'channel': 'Z current',
+                'enable': True,
+                'time': '10 * v/x',
+                'value': '10'}],
+  'enable': True,
+  'group-label': 'Magnetic Release',
+  'script': '',
+  'time-step': 'ms'}]
 
-  'MOT Power' : {
-    'device'  : '/dev0/ao1',
-    'scaling' : 'min(10,max(-10,{value}))',
-    'value'   : '10*300',
-    'enable'  : True,
-  },
+global_script = \
+'# This script sets global variables and/or functions.\n# All other scripts and processing will be done in this context.\n# NOTE:  This script will be executed after editing to test for \n#        syntax errors.  These local variables exist during this \n#        test phase:\n#    __TEST_SYNTAX__ = True\n\ndef fun():\n\tprint "Aren\'t we having a bunch of fun!?"\n\nfun()\n\nnap_time = 8*60*60\t\t# in seconds'
 
-  'U Current' : {
-    'device'  : '/dev0/ao2',
-    'scaling' : 'min(10,max(-10,{value}))',
-    'value'   : '10*300',
-    'enable'  : True,
-  },
-
-  'Z Current' : {
-    'device'  : '/dev0/ao3',
-    'scaling' : 'min(10,max(-10,{value}))',
-    'value'   : '10*300',
-    'enable'  : True,
-  },
-}
-
-waveforms =  [
-  { 'group-label' : 'MOT Loading',
-    'script'      : '',
-    'time-step'   : '0.001*ms',
-    'elements'    : [
-      { 'channel' : 'MOT Detuning',
-        'time'    : 'v + 1',
-        'value'   : '1.3',
-        'enable'  : True},
-    ],
-    'enable'      : True,
-  },
-  { 'group-label' : 'Compressed MOT',
-    'script'      : '',
-    'time-step'   : 'us',
-    'elements'    : [
-      { 'channel' : 'MOT Detuning',
-        'time'    : '100',
-        'value'   : '100m',
-        'enable'  : True},
-    ],
-    'enable'      : True,
-  },
-  { 'group-label' : 'Magnetic Capture',
-    'script'      : 'capture_dt = 100',
-    'time-step'   : 'ms',
-    'elements'    : [
-      { 'channel' : 'MOT Power',
-        'time'    : 'capture_dt',
-        'value'   : '10m',
-        'enable'  : True},
-      { 'channel' : 'U current',
-        'time'    : 'capture_dt',
-        'value'   : '10m',
-        'enable'  : True},
-      { 'channel' : 'Z current',
-        'time'    : 'capture_dt',
-        'value'   : '10m',
-        'enable'  : True},
-    ],
-    'enable'      : True,
-  },
-  { 'group-label' : 'Magnetic Release',
-    'script'      : '',
-    'time-step'   : 'ms',
-    'elements'    : [
-      { 'channel' : 'Z current',
-        'time'    : '10 * v/x',
-        'value'   : '10',
-        'enable'  : True},
-    ],
-    'enable'      : True,
-  },
-] 
-
-signals = [
-  { 'source'  : '10MHz',
-    'dest'    : 'PXI0',
-    'invert'  : False,
-  },
-  { 'source'  : 'Ext01',
-    'dest'    : 'PXI4',
-    'invert'  : False,
-  },
-  { 'source'  : 'Ext02',
-    'dest'    : 'PXI5',
-    'invert'  : False,
-  },
-]
-### END TEMPORARY CONFIG ###
-
-
+signals = \
+[{'dest': 'PXI0', 'invert': False, 'source': '10MHz'},
+ {'dest': 'PXI4', 'invert': False, 'source': 'Ext01'},
+ {'dest': 'PXI5', 'invert': False, 'source': 'Ext02'}]
 
