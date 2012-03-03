@@ -68,6 +68,13 @@ ui_info = \
   </toolbar>
 </ui>'''
 
+default_script = \
+  '# This script sets global variables and/or functions.\n' \
+  '# All other scripts and processing will be done in this context.\n' \
+  '# NOTE:  This script will be executed after editing to test for \n' \
+  '#        syntax errors.  These local variables exist during this \n' \
+  '#        test phase:\n' \
+  '#    __TEST_SYNTAX__ = True\n'
 
 class ArbWave(gtk.Window):
   def __init__(self, parent=None):
@@ -82,12 +89,7 @@ class ArbWave(gtk.Window):
 
     # LOAD THE STORAGE
     self.script = stores.Script(
-      '# This script sets global variables and/or functions.\n' \
-      '# All other scripts and processing will be done in this context.\n' \
-      '# NOTE:  This script will be executed after editing to test for \n' \
-      '#        syntax errors.  These local variables exist during this \n' \
-      '#        test phase:\n' \
-      '#    __TEST_SYNTAX__ = True\n',
+      default_script,
       title='Global Variables/Functions...',
       parent=self,
       test_locals={'__TEST_SYNTAX__' : True},
@@ -387,5 +389,5 @@ class ArbWave(gtk.Window):
     self.channels.clear()
     self.waveforms.clear()
     self.signals.clear()
-    self.script.clear()
+    self.script.set_text(default_script)
 

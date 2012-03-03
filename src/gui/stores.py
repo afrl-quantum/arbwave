@@ -149,10 +149,12 @@ class Script:
     return self.text
 
   def clear(self):
-    self.text = ''
+    self.set_text('')
 
   def set_text(self, t):
     self.text = t
+    if self.editor:
+      self.editor.set_text( t )
 
   def get_text(self):
     return self.text
