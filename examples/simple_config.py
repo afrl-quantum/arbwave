@@ -59,7 +59,31 @@ waveforms = \
   'time-step': 'ms'}]
 
 global_script = \
-'# This script sets global variables and/or functions.\n# All other scripts and processing will be done in this context.\n# NOTE:  This script will be executed after editing to test for \n#        syntax errors.  These local variables exist during this \n#        test phase:\n#    __TEST_SYNTAX__ = True\n\ndef fun():\n\tprint "Aren\'t we having a bunch of fun!?"\n\nfun()\n\nnap_time = 8*60*60\t\t# in seconds'
+"""# This script sets global variables and/or functions.
+# All other scripts and processing will be done in this context.
+from math import pi
+
+cm = 0.01
+some_variable = pi * ( 10*cm )**2.0
+
+def onstart():
+	'''Called when 'play' button is clicked'''
+	pass
+
+def onstop():
+	'''Called when 'stop' button is clicked.'''
+	pass
+
+import arbwave
+def loop_control(*args, **kwargs):
+	for i in [1,2,3]:
+		for j in [1,2,3]:
+			arbwave.update()
+
+arbwave.connect( 'start', onstart )
+arbwave.connect( 'stop', onstop )
+#arbwave.set_loop_control( loop_control )
+"""
 
 signals = \
 [{'dest': 'PXI0', 'invert': False, 'source': '10MHz'},
