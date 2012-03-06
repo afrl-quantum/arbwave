@@ -136,6 +136,7 @@ class Editor(gtk.Dialog):
 
     if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL]:
       self.hide()
+      self.set_text( self.target.get_text() )
 
 
 def edit(title='Edit Script', parent=None, text=''):
