@@ -68,13 +68,28 @@ ui_info = \
   </toolbar>
 </ui>'''
 
-default_script = \
-  '# This script sets global variables and/or functions.\n' \
-  '# All other scripts and processing will be done in this context.\n' \
-  '# NOTE:  This script will be executed after editing to test for \n' \
-  '#        syntax errors.  These local variables exist during this \n' \
-  '#        test phase:\n' \
-  '#    __TEST_SYNTAX__ = True\n'
+default_script = """\
+# This script sets global variables and/or functions.
+# All other scripts and processing will be done in this context.
+
+def onstart():
+	'''Called when 'play' button is clicked'''
+	pass
+
+def onstop():
+	'''Called when 'stop' button is clicked.'''
+	pass
+
+import arbwave
+def loop_control(*args, **kwargs):
+	for i in [1,2,3]:
+		for j in [1,2,3]:
+			arbwave.update()
+
+arbwave.connect( 'start', onstart )
+arbwave.connect( 'stop', onstop )
+#arbwave.set_loop_control( loop_control )
+"""
 
 class ArbWave(gtk.Window):
   def __init__(self, parent=None):
