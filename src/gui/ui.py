@@ -107,7 +107,6 @@ class ArbWave(gtk.Window):
       default_script,
       title='Global Variables/Functions...',
       parent=self,
-      test_locals={'__TEST_SYNTAX__' : True},
     )
     self.channels = stores.Channels()
     self.waveforms = stores.Waveforms()

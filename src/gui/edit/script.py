@@ -6,8 +6,6 @@ import sys
 
 import gtk
 
-from ..storage.var_tools import readvars
-
 class Editor(gtk.Dialog):
   def __init__(self, title='Edit Script', parent=None, target=None):
     gtk.Dialog.__init__(self, title, parent,
@@ -120,19 +118,13 @@ class Editor(gtk.Dialog):
 
   def respond(self, dialog, response_id):
     if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_APPLY] and self.target:
-      # We first attempt to execute the code in a sandbox for error checking
       try:
-        if 'test_locals' in dir(self.target):
-          test_locals = self.target.test_locals
-        else:
-          test_locals = dict()
-        readvars( self.get_text(), **test_locals )
+        self.target.set_text( self.get_text() )
+        self.unset_changes()
       except:
-        self.update_statusbar('  Syntax error!!!!')
+        # It looks like the target rejected our text...
+        self.update_statusbar('  Could not save text!!!!')
         return
-
-      self.target.set_text( self.get_text() )
-      self.unset_changes()
 
     if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL]:
       self.hide()

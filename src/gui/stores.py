@@ -132,18 +132,17 @@ class Signals(gtk.ListStore):
         i['dest'],
         i['invert'],
       ])
-    
+
   def representation(self):
     return self.list()
 
 
 class Script:
-  def __init__(self, text='', title='Script', parent=None, test_locals=dict()):
+  def __init__(self, text='', title='Script', parent=None):
     self.editor = None
     self.text   = text
     self.title  = title
     self.parent = parent
-    self.test_locals = test_locals
 
   def __str__(self):
     return self.text
