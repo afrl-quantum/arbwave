@@ -114,7 +114,7 @@ class ArbWave(gtk.Window):
     self.signals = stores.Signals( changed=self.update )
     self.channel_editor  = edit.channels.create(self.channels)
     self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
-    self.axes, self.fig, self.canvas, self.toolbar = plotter.create(self)
+    self.plotter = plotter.create(self)
     self.allow_updates = True
 
 
@@ -170,14 +170,14 @@ class ArbWave(gtk.Window):
     )
 
 
-    self.canvas.set_size_request( 800, 200 )
+    self.plotter['canvas'].set_size_request( 800, 200 )
     #self.canvas_scroll = gtk.HScale()
 
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )
     bottom = VBox()
-    bottom.pack_start( self.canvas )
+    bottom.pack_start( self.plotter['canvas'] )
     #bottom.pack_start( self.canvas_scroll, False, False )
 
     body = gtk.VPaned()
@@ -190,7 +190,7 @@ class ArbWave(gtk.Window):
           hpack( merge.get_widget('/ToolBar'),
                  PArgs(gtk.VSeparator(), False),
                  PArgs(gtk.VSeparator(), False),
-                 self.toolbar
+                 self.plotter['toolbar'],
           ), False ),
         body
     ))

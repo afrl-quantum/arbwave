@@ -302,4 +302,9 @@ def create(win):
   # self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
   # self.ymin_control = BoundControlBox(self.panel, -1, "Y min", 0)
   # self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 100)
-  return axes, fig, canvas, toolbar
+  return {
+    'axes'    : axes,
+    'fig'     : fig,
+    'canvas'  : canvas,
+    'toolbar' : toolbar,
+  }
