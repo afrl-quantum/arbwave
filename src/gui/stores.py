@@ -28,19 +28,19 @@ class TreeModelDispatcher:
 
   def row_changed(self, model, path, iter,
                   callback, *args, **kwargs):
-    callback(*args, **kwargs)
+    callback(self, *args, **kwargs)
 
   def row_deleted(self, model, path,
                   callback, *args, **kwargs):
-    callback(*args, **kwargs)
+    callback(self, *args, **kwargs)
 
   def row_inserted(self, model, path, iter,
                   callback, *args, **kwargs):
-    callback(*args, **kwargs)
+    callback(self, *args, **kwargs)
 
   def rows_reordered(self, model, path, iter, new_order,
                   callback, *args, **kwargs):
-    callback(*args, **kwargs)
+    callback(self, *args, **kwargs)
 
 
 
@@ -210,7 +210,7 @@ class Script:
       self.editor.set_text( t )
     if self.onchange:
       self.onchange['callable'](
-        *self.onchange['args'], **self.onchange['kwargs']
+        self, *self.onchange['args'], **self.onchange['kwargs']
       )
 
   def get_text(self):

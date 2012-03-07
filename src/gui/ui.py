@@ -416,16 +416,22 @@ class ArbWave(gtk.Window):
     self.script.set_text(default_script)
 
 
-  def update(self):
+  def update(self, item):
     """
     This is the main callback function for 'changed' type signals.  This
     callback will collect the current inputs and send them to the processor.
     The processor will transform the descriptions into per-channel waveforms,
     plot them and send them to the backend drivers.
+
+    item : should generally be one of [channels, waveforms, signals, script]
     """
 
     if not self.allow_updates:
       return
 
+    if item not in [
+      None, self.channels, self.waveforms, self.signals, self.script
+    ]:
+      raise TypeError('Unknown item sent to update()')
     print 'updating something...'
 
