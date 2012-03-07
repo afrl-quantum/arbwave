@@ -77,7 +77,11 @@ def onstop():
 import arbwave
 def loop_control(*args, **kwargs):
 	for i in [1,2,3]:
+    global some_variable
+    some_variable += 1
 		for j in [1,2,3]:
+      global other_variable
+      other_variable +=2
 			arbwave.update()
 
 arbwave.connect( 'start', onstart )
