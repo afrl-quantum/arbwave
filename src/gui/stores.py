@@ -4,14 +4,54 @@ import gtk
 
 import edit
 
-class Channels(gtk.ListStore):
+
+class TreeModelDispatcher:
+  """
+  Simple signal aggregation for any changes to a single 'changed' signal.
+  """
+  def __init__(self, Model, changed=None):
+    self.Model = Model
+    if changed:
+      self.connect( 'changed', changed )
+
+  def connect(self, signal, callback, *args, **kwargs):
+    if signal == 'changed':
+      for i in [
+        ('row-changed',    self.row_changed   ),
+        ('row-deleted',    self.row_deleted   ),
+        ('row-inserted',   self.row_inserted  ),
+        ('rows-reordered', self.rows_reordered),
+      ]:
+        self.Model.connect(self, i[0],i[1], callback, *args, **kwargs )
+    else:
+      self.Model.connect(self, signal, callback, *args, **kwargs)
+
+  def row_changed(self, model, path, iter,
+                  callback, *args, **kwargs):
+    callback(*args, **kwargs)
+
+  def row_deleted(self, model, path,
+                  callback, *args, **kwargs):
+    callback(*args, **kwargs)
+
+  def row_inserted(self, model, path, iter,
+                  callback, *args, **kwargs):
+    callback(*args, **kwargs)
+
+  def rows_reordered(self, model, path, iter, new_order,
+                  callback, *args, **kwargs):
+    callback(*args, **kwargs)
+
+
+
+class Channels(TreeModelDispatcher, gtk.ListStore):
   LABEL   =0
   DEVICE  =1
   SCALING =2
   VALUE   =3
   ENABLE  =4
 
-  def __init__(self):
+  def __init__(self, **kwargs):
     gtk.ListStore.__init__(self,
       str,  # Label
       str,  # device
@@ -19,6 +59,9 @@ class Channels(gtk.ListStore):
       str,  # value
       bool, # enable
     )
+
+    TreeModelDispatcher.__init__(self, gtk.ListStore, **kwargs)
+
 
   def dict(self):
     D = dict()
@@ -46,14 +89,14 @@ class Channels(gtk.ListStore):
     return self.dict()
 
 
-class Waveforms(gtk.TreeStore):
+class Waveforms(TreeModelDispatcher, gtk.TreeStore):
   CHANNEL =0
   TIME    =1
   VALUE   =2
   ENABLE  =3
   SCRIPT  =4
 
-  def __init__(self):
+  def __init__(self, **kwargs):
     gtk.TreeStore.__init__(self,
       str,  # channel
       str,  # Time
@@ -61,6 +104,9 @@ class Waveforms(gtk.TreeStore):
       bool, # enable
       str,  # script
     )
+
+    TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
+
 
   def list(self):
     L = list()
@@ -102,17 +148,20 @@ class Waveforms(gtk.TreeStore):
     return self.list()
 
 
-class Signals(gtk.ListStore):
+class Signals(TreeModelDispatcher, gtk.ListStore):
   SOURCE  =0
   DEST    =1
   INVERT  =2
 
-  def __init__(self):
+  def __init__(self, **kwargs):
     gtk.ListStore.__init__(self,
       str,  # Source
       str,  # Destination
       bool, # invert-polarity
     )
+
+    TreeModelDispatcher.__init__(self, gtk.ListStore, **kwargs)
+
 
   def list(self):
     L = list()
@@ -138,11 +187,16 @@ class Signals(gtk.ListStore):
 
 
 class Script:
-  def __init__(self, text='', title='Script', parent=None):
+  def __init__(self, text='', title='Script', parent=None,
+                changed=None, *changed_args, **changed_kwargs):
     self.editor = None
     self.text   = text
     self.title  = title
     self.parent = parent
+    self.onchange = None
+
+    if changed:
+      self.connect( 'changed', changed, *changed_args, **changed_kwargs )
 
   def __str__(self):
     return self.text
@@ -154,6 +208,10 @@ class Script:
     self.text = t
     if self.editor:
       self.editor.set_text( t )
+    if self.onchange:
+      self.onchange['callable'](
+        *self.onchange['args'], **self.onchange['kwargs']
+      )
 
   def get_text(self):
     return self.text
@@ -163,6 +221,16 @@ class Script:
 
   def representation(self):
     return str(self)
+
+  def connect(self, signal, callback, *args, **kwargs):
+    if signal == 'changed':
+      self.onchange = {
+        'callable'  : callback,
+        'args'      : args,
+        'kwargs'    : kwargs,
+      }
+    else:
+      raise TypeError('unkown signal ' + signal)
 
   def edit(self):
 

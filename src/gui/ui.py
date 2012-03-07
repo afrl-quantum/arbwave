@@ -107,13 +107,15 @@ class ArbWave(gtk.Window):
       default_script,
       title='Global Variables/Functions...',
       parent=self,
+      changed=self.update,
     )
-    self.channels = stores.Channels()
-    self.waveforms = stores.Waveforms()
-    self.signals = stores.Signals()
+    self.channels = stores.Channels( changed=self.update )
+    self.waveforms = stores.Waveforms( changed=self.update )
+    self.signals = stores.Signals( changed=self.update )
     self.channel_editor  = edit.channels.create(self.channels)
     self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
     self.axes, self.fig, self.canvas, self.toolbar = plotter.create(self)
+    self.allow_updates = True
 
 
     #  ###### SET UP THE PANEL #######
@@ -388,6 +390,9 @@ class ArbWave(gtk.Window):
     }
 
   def setvars(self, vardict):
+    # suspend all updates
+    self.allow_updates = False
+
     if 'channels' in vardict:
       self.channels.load( vardict['channels'] )
 
@@ -400,9 +405,27 @@ class ArbWave(gtk.Window):
     if 'global_script' in vardict:
       self.script.load( vardict['global_script'] )
 
+    # re-enable updates and directly call for an update
+    self.allow_updates = True
+    self.update()
+
   def clearvars(self):
     self.channels.clear()
     self.waveforms.clear()
     self.signals.clear()
     self.script.set_text(default_script)
+
+
+  def update(self):
+    """
+    This is the main callback function for 'changed' type signals.  This
+    callback will collect the current inputs and send them to the processor.
+    The processor will transform the descriptions into per-channel waveforms,
+    plot them and send them to the backend drivers.
+    """
+
+    if not self.allow_updates:
+      return
+
+    print 'updating something...'
 
