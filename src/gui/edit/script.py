@@ -121,9 +121,10 @@ class Editor(gtk.Dialog):
       try:
         self.target.set_text( self.get_text() )
         self.unset_changes()
-      except:
+      except Exception, e:
         # It looks like the target rejected our text...
         self.update_statusbar('  Could not save text!!!!')
+        print e
         return
 
     if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL]:
