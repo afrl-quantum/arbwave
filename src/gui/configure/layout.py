@@ -104,10 +104,11 @@ class ConfigDialog(gtk.Dialog):
 
     def delrow( action, stor, ed ):
       i = ed.get_selection().get_selected()[1]
-      n = stor.iter_next( i )
-      stor.remove( i )
-      if n:
-        ed.get_selection().select_iter( n )
+      if i:
+        n = stor.iter_next( i )
+        stor.remove( i )
+        if n:
+          ed.get_selection().select_iter( n )
 
     def addrow( action, stor, ed ):
       stor.insert_before( ed.get_selection().get_selected()[1] )

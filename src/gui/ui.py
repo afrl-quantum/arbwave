@@ -125,7 +125,7 @@ class ArbWave(gtk.Window):
     try:
       mergeid = merge.add_ui_from_string(ui_info)
     except gobject.GError, msg:
-      print "building menus failed: %s" % msg
+      print 'building menus failed: {msg}'.format(msg=msg)
 
     chlabel = gtk.Label('Channels')
     chlabel.set_property('angle', 90)
@@ -329,10 +329,11 @@ class ArbWave(gtk.Window):
 
     def delrow( action, stor, ed ):
       i = ed.get_selection().get_selected()[1]
-      n = stor.iter_next( i )
-      stor.remove( i )
-      if n:
-        ed.get_selection().select_iter( n )
+      if i:
+        n = stor.iter_next( i )
+        stor.remove( i )
+        if n:
+          ed.get_selection().select_iter( n )
 
     def addrow( action, stor, ed ):
       stor.insert_before( ed.get_selection().get_selected()[1] )
