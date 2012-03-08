@@ -8,7 +8,8 @@ import gtk, gobject
 import sys
 
 # local packages
-import about, configure, plotter, stores, edit
+import about, configure, stores, edit
+from plotter import Plotter
 from packing import Args as PArgs, hpack, vpack, VBox
 import storage
 
@@ -114,7 +115,8 @@ class ArbWave(gtk.Window):
     self.signals = stores.Signals( changed=self.update )
     self.channel_editor  = edit.channels.create(self.channels)
     self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
-    self.plotter = plotter.create(self)
+    self.plotter = Plotter( self )
+    # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = True
 
 
@@ -170,14 +172,14 @@ class ArbWave(gtk.Window):
     )
 
 
-    self.plotter['canvas'].set_size_request( 800, 200 )
+    self.plotter.canvas.set_size_request( 800, 200 )
     #self.canvas_scroll = gtk.HScale()
 
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )
     bottom = VBox()
-    bottom.pack_start( self.plotter['canvas'] )
+    bottom.pack_start( self.plotter.canvas )
     #bottom.pack_start( self.canvas_scroll, False, False )
 
     body = gtk.VPaned()
@@ -190,7 +192,7 @@ class ArbWave(gtk.Window):
           hpack( merge.get_widget('/ToolBar'),
                  PArgs(gtk.VSeparator(), False),
                  PArgs(gtk.VSeparator(), False),
-                 self.plotter['toolbar'],
+                 self.plotter.toolbar,
           ), False ),
         body
     ))

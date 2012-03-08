@@ -1,5 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+"""
+Build the plotter gui and its interactions.
+"""
 
 import matplotlib
 from matplotlib.figure import Figure
@@ -17,11 +20,7 @@ from mpl_toolkits.axes_grid import Divider, Size
 
 from matplotlib.widgets import MultiCursor, SpanSelector
 
-import numpy as np
 import pylab
-
-from plotter_toolbar import NavigationToolbar
-
 
 def connect_bbox( bbox1, bbox2,
                   loc1a, loc2a, loc1b, loc2b,
@@ -258,10 +257,6 @@ def init_plot():
   #canvas.connect('key-press-event', axes['__scroll_master'].onpress)
   zoom_effect( axes['digital'], axes['t'] )
 
-  axes['analog'].plot( np.arange(0.,3.,.01), np.sin(2*np.pi* np.arange(0.,3.,.01) ) )
-  axes['t'].set_xlim(0.,3.)
-  axes['analog'].set_xlim(1.,2.)
-
   # plot the data as a line series, and save the reference
   # to the plotted line series
   #
@@ -288,23 +283,3 @@ def init_plot():
   # frame  = leg.get_frame()
   # frame.set_facecolor('0.80')    # set the frame face color to light gray
   return axes, fig, canvas
-
-def create(win):
-  axes, fig, canvas = init_plot()
-  toolbar = NavigationToolbar(
-    canvas, win,
-    axes['hspan-controls'].values(),
-    axes['vspan-controls'].values(),
-  )
-  toolbar.toolitems = tuple( toolbar.toolitems[0:-2] )
-
-  # self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
-  # self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
-  # self.ymin_control = BoundControlBox(self.panel, -1, "Y min", 0)
-  # self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 100)
-  return {
-    'axes'    : axes,
-    'fig'     : fig,
-    'canvas'  : canvas,
-    'toolbar' : toolbar,
-  }
