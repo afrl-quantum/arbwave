@@ -44,6 +44,6 @@ class Plotter:
       self.axes[a].axvline(
         x=self.max_x,
         ymin=-1e300,ymax=1e300,
-        c="red",
+        c="blue",
         linewidth=1,
         zorder=0 )
