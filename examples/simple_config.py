@@ -23,16 +23,14 @@ waveforms = \
                 'value': '1.3'}],
   'enable': True,
   'group-label': 'MOT Loading',
-  'script': '',
-  'time-step': '0.001*ms'},
+  'script': ''},
  {'elements': [{'channel': 'MOT Detuning',
                 'enable': True,
                 'time': '100',
                 'value': '100m'}],
   'enable': True,
   'group-label': 'Compressed MOT',
-  'script': '',
-  'time-step': 'us'},
+  'script': ''},
  {'elements': [{'channel': 'MOT Power',
                 'enable': True,
                 'time': 'capture_dt',
@@ -47,16 +45,14 @@ waveforms = \
                 'value': '10m'}],
   'enable': True,
   'group-label': 'Magnetic Capture',
-  'script': 'capture_dt = 100',
-  'time-step': 'ms'},
+  'script': 'capture_dt = 100'},
  {'elements': [{'channel': 'Z current',
                 'enable': True,
                 'time': '10 * v/x',
                 'value': '10'}],
   'enable': True,
   'group-label': 'Magnetic Release',
-  'script': '',
-  'time-step': 'ms'}]
+  'script': ''}]
 
 global_script = \
 """# This script sets global variables and/or functions.

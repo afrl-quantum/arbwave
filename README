@@ -1,1 +1,22 @@
 Python based arbitrary waveform generator.
+
+
+Sample/Update rates:
+  There will be two types of sample- or update-rates permissable.
+  1.  Static update rates.
+    An example of this would be a hardware card that updates a channel for every
+    clock pulse and this clock pulse rate is fixed.  For hardware devices
+    configured to operate with this type of update clock, the number of samples
+    to update will automatically be calculated to the nearest clock pulse.
+  2.  Arbitrary timing update rates.
+    Some hardware devices may be configured to use an arbitrary timing signal as
+    the update clock.  An example of this would be when a channel from a
+    Viewpoint DIO-64 card is configured to be used as a clock for other devices.
+    For this type of configuration, the clock rate will automatically change
+    such that the minimum number of clocks are emitted to support all
+    channels/devices tied to the clock.  Clock pulses will designed to allow
+    all voltage transitions as specified at their transition time within the
+    maximum clock resolution possible (the internal clock rate of the DIO-64 for
+    example).  In other words, a single waveform element may have a variable
+    clock depending on whether other waveform channels similarly clocked need to
+    have transitions in the mean time.

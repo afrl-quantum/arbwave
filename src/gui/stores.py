@@ -116,7 +116,6 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
       D = dict()
       D['group-label' ] = i[Waveforms.CHANNEL]
       D['script'      ] = i[Waveforms.SCRIPT]
-      D['time-step'   ] = i[Waveforms.TIME]
       D['enable'      ] = i[Waveforms.ENABLE]
       l = D['elements'] = list()
       for j in i.iterchildren():
@@ -137,12 +136,10 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
     # we form a simple tree.
     for i in L:
       parent = self.append( None,
-        (i['group-label'], i['time-step'], None, i['enable'], i['script'])
-      )
+        (i['group-label'], None, None, i['enable'], i['script']) )
       for e in i['elements']:
         self.append( parent,
-          (e['channel'], e['time'], e['value'], e['enable'], None)
-        )
+          (e['channel'], e['time'], e['value'], e['enable'], None) )
 
   def representation(self):
     return self.list()

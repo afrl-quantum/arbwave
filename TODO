@@ -33,3 +33,19 @@
   itsself).  This isn't perfect, but will be much easier to port, maintain than
   perhaps using a full-fledged editor that we have to import from some other
   project.
+
+4.  Figure out how to handle automatic clocking for ramps where it is probably
+  desirable to specify the resolution of the ramp.  Somehow, we need to specify
+  a time resolution for these kind of pieces.  Perhaps in the 'time' column, we
+  allow the user to specify a tuple like '(duration, step)'.  Then, when we are
+  processing the time column and discovering all the transition for
+  automatically creating the clocks and local time, we sense whether a time-cell
+  has a tuple/list type or a simple numeric type.
+
+  Generally, for automatic clocking we need to determine the time of all
+  possible voltage/logic transitions for each device clock (it might be possible
+  to have different arbitrary clocks for different devices).  Then, once we have
+  the location of all necessary clock pulses, we loop through each 'value' cell
+  and use the local set of the arbitrary clock pulses to determine how many
+  samples to create for each value.
+
