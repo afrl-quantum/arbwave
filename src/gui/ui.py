@@ -14,6 +14,7 @@ from packing import Args as PArgs, hpack, vpack, VBox
 import storage
 
 from .. import backend
+from ..processor import Processor
 
 
 
@@ -116,6 +117,8 @@ class ArbWave(gtk.Window):
     self.channel_editor  = edit.channels.create(self.channels)
     self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
     self.plotter = Plotter( self )
+    self.processor = Processor( self.plotter )
+    self.running = False
     # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = True
 
@@ -303,11 +306,17 @@ class ArbWave(gtk.Window):
         False ),                                    # is_active
     )
 
-    def switch_play_stop_icons(action):
+    def run_waveforms(action):
+      # first, make sure that we switch the icons, and set the "run" variable
       if action.get_property('stock-id') == gtk.STOCK_MEDIA_PLAY:
         action.set_property('stock-id', gtk.STOCK_MEDIA_STOP)
+        self.running = True
       else:
         action.set_property('stock-id', gtk.STOCK_MEDIA_PLAY)
+        self.running = False
+
+      # now update the output...
+      self.update()
 
     def add_waveform_group(action):
       i = self.waveform_editor['view'].get_selection().get_selected()[1]
@@ -356,7 +365,7 @@ class ArbWave(gtk.Window):
       'Quit'      : lambda a: self.destroy(),
       'Configure' : lambda a: configure.show(self, self),
       'Script'    : lambda a: self.script.edit(),
-      'Run'       : switch_play_stop_icons,
+      'Run'       : run_waveforms,
       'About'     : lambda a: about.show(),
       'CH:Add'    : ( addrow, self.channels, self.channel_editor['view'] ),
       'CH:Delete' : ( delrow, self.channels, self.channel_editor['view'] ),
@@ -418,7 +427,7 @@ class ArbWave(gtk.Window):
     self.script.set_text(default_script)
 
 
-  def update(self, item):
+  def update(self, item=None):
     """
     This is the main callback function for 'changed' type signals.  This
     callback will collect the current inputs and send them to the processor.
@@ -429,11 +438,29 @@ class ArbWave(gtk.Window):
     """
 
     if not self.allow_updates:
-      return
+      return # updates temporarily disabled
 
     if item not in [
-      None, self.channels, self.waveforms, self.signals, self.script
+      None, self.channels, self.waveforms, self.signals, self.script,
     ]:
       raise TypeError('Unknown item sent to update()')
-    print 'updating something...'
+
+    update_plot = update_output = False
+    if item in [None, self.channels, self.waveforms, self.signals, self.script]:
+      update_plot = True
+    if self.running:
+      if update_plot:
+        update_output = True
+    elif item in [ None, self.channels, self.signals, self.script ]:
+      update_output = True
+
+    self.processor.update(
+      self.channels.representation(),
+      self.waveforms.representation(),
+      self.signals.representation(),
+      self.script.representation(),
+      update_plot=update_plot,
+      update_output=update_output,
+      run=self.running,
+    )
 
