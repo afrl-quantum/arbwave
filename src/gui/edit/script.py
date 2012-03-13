@@ -7,13 +7,19 @@ import sys
 import gtk
 
 class Editor(gtk.Dialog):
-  def __init__(self, title='Edit Script', parent=None, target=None):
-    gtk.Dialog.__init__(self, title, parent,
-      gtk.DIALOG_DESTROY_WITH_PARENT,
-      (gtk.STOCK_SAVE, gtk.RESPONSE_OK,
-       gtk.STOCK_APPLY, gtk.RESPONSE_APPLY,
-       gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-    )
+  def __init__(self, title='Edit Script', parent=None, target=None, model=False):
+    actions = [
+      gtk.STOCK_SAVE,   gtk.RESPONSE_OK,
+      gtk.STOCK_APPLY,  gtk.RESPONSE_APPLY,
+      gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL
+    ]
+    flags = gtk.DIALOG_DESTROY_WITH_PARENT
+    if model:
+      flags |= gtk.DIALOG_MODAL
+      actions.pop(2)
+      actions.pop(2)
+
+    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
 
     # MECHANICS
     self.unset_changes()
@@ -127,19 +133,22 @@ class Editor(gtk.Dialog):
         print e
         return
 
-    if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL]:
+    if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL] and self.target:
       self.hide()
       self.set_text( self.target.get_text() )
 
 
 def edit(title='Edit Script', parent=None, text=''):
-  ed = Editor( title=title, parent=parent )
+  ed = Editor( title=title, parent=parent, model=True )
   if text:
     ed.set_text(text)
-  if ed.run() in [ gtk.RESPONSE_OK, gtk.RESPONSE_APPLY ]:
-    return True, ed.get_text()
-  else:
-    return False, ''
+  try:
+    if ed.run() in [ gtk.RESPONSE_OK, gtk.RESPONSE_APPLY ]:
+      return True, ed.get_text()
+    else:
+      return False, text
+  finally:
+    ed.destroy()
 
 
 def main(argv):
