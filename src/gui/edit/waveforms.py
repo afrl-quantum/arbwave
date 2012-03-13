@@ -16,6 +16,7 @@ def create(waveforms,channels):
     'renderers' : {
       'channel' : gtk.CellRendererCombo(),
       'time'    : gtk.CellRendererText(),
+      'duration': gtk.CellRendererText(),
       'value'   : gtk.CellRendererText(),
       'enable'  : gtk.CellRendererToggle(),
     },
@@ -25,6 +26,7 @@ def create(waveforms,channels):
     'columns' : {
       'channel' : GTVC( 'Channel', R['channel'], text=waveforms.CHANNEL ),
       'time'    : GTVC( 'Time',    R['time'],    text=waveforms.TIME ),
+      'duration': GTVC( 'Duration',R['duration'],text=waveforms.DURATION ),
       'value'   : GTVC( 'Value',   R['value'],   text=waveforms.VALUE ),
       'enable'  : GTVC( 'Enabled', R['enable'] ),
     },
@@ -39,6 +41,9 @@ def create(waveforms,channels):
   R['time'].set_property( 'editable', True )
   R['time'].connect( 'edited', set_item, waveforms, waveforms.TIME )
 
+  R['duration'].set_property( 'editable', True )
+  R['duration'].connect( 'edited', set_item, waveforms, waveforms.DURATION )
+
   R['value'].set_property( 'editable', True )
   R['value'].connect( 'edited', set_item, waveforms, waveforms.VALUE )
 
@@ -51,6 +56,7 @@ def create(waveforms,channels):
   #V.set_property( 'hover_selection', True )
   V.append_column( C['channel'] )
   V.append_column( C['time'] )
+  V.append_column( C['duration'] )
   V.append_column( C['value'] )
   V.append_column( C['enable'] )
 
