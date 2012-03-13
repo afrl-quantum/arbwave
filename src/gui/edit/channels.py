@@ -65,7 +65,22 @@ def create(channels):
   C = channel_editor['columns']
   V = channel_editor['view']
   C['enable'].add_attribute( R['enable'], 'active', channels.ENABLE )
+
+  def query_tooltip(widget, x, y, keyboard_tip, tooltip):
+    try:
+      model, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
+      value = model.get(iter, 0)
+      tooltip.set_markup("<b>Path %s:</b> %s" %(path[0], value[0]))
+      widget.set_tooltip_row(tooltip, path)
+      return True
+    except:
+      return False
+
+
   #V.set_property( 'hover_selection', True )
+  V.set_property( 'has_tooltip', True )
+  V.connect('query-tooltip', query_tooltip)
+  V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
   V.append_column( C['label'] )
   V.append_column( C['device'] )
   V.append_column( C['scaling'] )
