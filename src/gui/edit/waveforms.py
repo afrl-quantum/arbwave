@@ -57,10 +57,13 @@ def mkUIManager():
 
 def load_channels_combobox( cell, editable, path, channels ):
   chls = gtk.ListStore(str)
-  for i in iter(channels):
-    chls.append([ i[channels.LABEL] ])
-
   editable.set_property("model", chls)
+
+  if not( len(path) == 1 and type(editable.child) is gtk.Entry ):
+    editable.child.set_property('editable', False)
+    for i in iter(channels):
+      chls.append([ i[channels.LABEL] ])
+
 
 
 def query_tooltip(widget, x, y, keyboard_tip, tooltip):
@@ -120,7 +123,7 @@ def create(waveforms,channels):
 
   R['channel'].set_property( 'editable', True )
   R['channel'].set_property('text-column', 0)
-  R['channel'].set_property('has-entry', False)
+  R['channel'].set_property('has-entry', True)
   R['channel'].connect( 'edited', set_item, waveforms, waveforms.CHANNEL )
   R['channel'].connect( 'editing-started', load_channels_combobox, channels )
 
