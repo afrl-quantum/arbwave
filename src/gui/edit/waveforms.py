@@ -99,96 +99,127 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
     return False
 
 
-def create(waveforms,channels):
-  waveform_editor = {
-    'view'      : gtk.TreeView( waveforms ),
-    'renderers' : {
+def button_press_handler(treeview, event, ui_manager, popup):
+  if event.button == 3:
+    x = int(event.x)
+    y = int(event.y)
+    time = event.time
+    pthinfo = treeview.get_path_at_pos(x, y)
+    if pthinfo is not None:
+      path, col, cellx, celly = pthinfo
+      if len(path) == 1:
+        treeview.grab_focus()
+        treeview.set_cursor( path, col, 0)
+        waveforms = treeview.get_model()
+        row = waveforms[path]
+
+        # reset Async action
+        async = ui_manager.get_action('/WFG:Edit/WFG:Async')
+        async.set_active( row[waveforms.ASYNC] )
+        handler = dict()
+        handler['id'] = \
+          async.connect('activate', toggle_async, row, waveforms.ASYNC,
+                        async, handler)
+
+        # reset Script action
+        script = ui_manager.get_action('/WFG:Edit/WFG:Script')
+        handler = dict()
+        handler['id'] = \
+          script.connect('activate', edit_script, row, waveforms.SCRIPT,
+                         script, handler)
+
+        popup.popup( None, None, None, event.button, time )
+    return True
+
+
+class Waveforms:
+  def __init__(self, waveforms, channels, add_undo=None):
+    self.add_undo = add_undo
+    self.waveforms = waveforms
+
+    V = self.view = gtk.TreeView( waveforms )
+
+    R = {
       'channel' : gtk.CellRendererCombo(),
       'time'    : gtk.CellRendererText(),
       'duration': gtk.CellRendererText(),
       'value'   : gtk.CellRendererText(),
       'enable'  : gtk.CellRendererToggle(),
-    },
-  }
-  R = waveform_editor['renderers']
-  waveform_editor.update({
-    'columns' : {
+    }
+
+    R['channel'].set_property( 'editable', True )
+    R['channel'].set_property('text-column', 0)
+    R['channel'].set_property('has-entry', True)
+    R['channel'].connect( 'edited', set_item, waveforms, waveforms.CHANNEL )
+    R['channel'].connect( 'editing-started', load_channels_combobox, channels )
+
+    R['time'].set_property( 'editable', True )
+    R['time'].connect( 'edited', set_item, waveforms, waveforms.TIME )
+
+    R['duration'].set_property( 'editable', True )
+    R['duration'].connect( 'edited', set_item, waveforms, waveforms.DURATION )
+
+    R['value'].set_property( 'editable', True )
+    R['value'].connect( 'edited', set_item, waveforms, waveforms.VALUE )
+
+    R['enable'].set_property( 'activatable', True )
+    R['enable'].connect( 'toggled', toggle_item, waveforms, waveforms.ENABLE )
+
+    C = {
       'channel' : GTVC( 'Channel', R['channel'], text=waveforms.CHANNEL ),
       'time'    : GTVC( 'Time',    R['time'],    text=waveforms.TIME ),
       'duration': GTVC( 'Duration',R['duration'],text=waveforms.DURATION ),
       'value'   : GTVC( 'Value',   R['value'],   text=waveforms.VALUE ),
       'enable'  : GTVC( 'Enabled', R['enable'] ),
-    },
-  })
+    }
 
-  R['channel'].set_property( 'editable', True )
-  R['channel'].set_property('text-column', 0)
-  R['channel'].set_property('has-entry', True)
-  R['channel'].connect( 'edited', set_item, waveforms, waveforms.CHANNEL )
-  R['channel'].connect( 'editing-started', load_channels_combobox, channels )
+    C['enable'].add_attribute( R['enable'], 'active', waveforms.ENABLE )
 
-  R['time'].set_property( 'editable', True )
-  R['time'].connect( 'edited', set_item, waveforms, waveforms.TIME )
+    #V.set_property( 'hover_selection', True )
+    V.set_property( 'has_tooltip', True )
+    V.connect('query-tooltip', query_tooltip)
+    V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
+    V.append_column( C['channel'  ] )
+    V.append_column( C['time'     ] )
+    V.append_column( C['duration' ] )
+    V.append_column( C['value'    ] )
+    V.append_column( C['enable'   ] )
 
-  R['duration'].set_property( 'editable', True )
-  R['duration'].connect( 'edited', set_item, waveforms, waveforms.DURATION )
+    ui_manager = mkUIManager()
+    V.connect('button-press-event',
+      button_press_handler,
+      ui_manager,
+      ui_manager.get_widget('/WFG:Edit') )
 
-  R['value'].set_property( 'editable', True )
-  R['value'].connect( 'edited', set_item, waveforms, waveforms.VALUE )
 
-  R['enable'].set_property( 'activatable', True )
-  R['enable'].connect( 'toggled', toggle_item, waveforms, waveforms.ENABLE )
+  def insert_waveform_group(self):
+    i = self.view.get_selection().get_selected()[1]
+    if not i: # append new grouping to end
+      self.waveforms.append( None )
+    elif self.waveforms[i].parent:
+      self.waveforms.insert_before( None, self.waveforms[i].parent.iter )
+    else:
+      self.waveforms.insert_before( None, i )
 
-  C = waveform_editor['columns']
-  V = waveform_editor['view']
-  C['enable'].add_attribute( R['enable'], 'active', waveforms.ENABLE )
 
-  #V.set_property( 'hover_selection', True )
-  V.set_property( 'has_tooltip', True )
-  V.connect('query-tooltip', query_tooltip)
-  V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
-  V.append_column( C['channel'] )
-  V.append_column( C['time'] )
-  V.append_column( C['duration'] )
-  V.append_column( C['value'] )
-  V.append_column( C['enable'] )
+  def insert_waveform(self):
+    i = self.view.get_selection().get_selected()[1]
+    if not i: # append new element to last group
+      if len( self.waveforms ) == 0:
+        self.waveforms.append( None ) # create last if necessary
+      n = self.waveforms.append( self.waveforms[-1].iter )
+    elif not self.waveforms[i].parent:
+      n = self.waveforms.append( i )
+    else:
+      n = self.waveforms.insert_before( self.waveforms[i].parent.iter, i )
+    self.view.expand_to_path( self.waveforms[n].path )
 
-  def button_press_handler(treeview, event, ui_manager, popup):
-    if event.button == 3:
-      x = int(event.x)
-      y = int(event.y)
-      time = event.time
-      pthinfo = treeview.get_path_at_pos(x, y)
-      if pthinfo is not None:
-        path, col, cellx, celly = pthinfo
-        if len(path) == 1:
-          treeview.grab_focus()
-          treeview.set_cursor( path, col, 0)
-          waveforms = treeview.get_model()
-          row = waveforms[path]
 
-          # reset Async action
-          async = ui_manager.get_action('/WFG:Edit/WFG:Async')
-          async.set_active( row[waveforms.ASYNC] )
-          handler = dict()
-          handler['id'] = \
-            async.connect('activate', toggle_async, row, waveforms.ASYNC,
-                          async, handler)
 
-          # reset Script action
-          script = ui_manager.get_action('/WFG:Edit/WFG:Script')
-          handler = dict()
-          handler['id'] = \
-            script.connect('activate', edit_script, row, waveforms.SCRIPT,
-                           script, handler)
-
-          popup.popup( None, None, None, event.button, time )
-      return True
-
-  ui_manager = mkUIManager()
-  V.connect('button-press-event',
-    button_press_handler,
-    ui_manager,
-    ui_manager.get_widget('/WFG:Edit') )
-
-  return waveform_editor
+  def delete_row(self):
+    i = self.view.get_selection().get_selected()[1]
+    if i:
+      n = self.waveforms.iter_next( i )
+      self.waveforms.remove( i )
+      if n:
+        self.view.get_selection().select_iter( n )

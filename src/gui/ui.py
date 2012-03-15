@@ -126,8 +126,9 @@ class ArbWave(gtk.Window):
     )
     self.waveforms = stores.Waveforms( changed=self.update )
     self.signals = stores.Signals( changed=self.update )
-    self.channel_editor  = edit.channels.create(self.channels)
-    self.waveform_editor = edit.waveforms.create(self.waveforms, self.channels)
+    self.channel_editor = edit.Channels( self.channels, self.add_undo )
+    self.waveform_editor = \
+      edit.Waveforms(self.waveforms, self.channels, self.add_undo)
     self.plotter = Plotter( self )
     self.processor = Processor( self.plotter )
     self.running = False
@@ -155,7 +156,7 @@ class ArbWave(gtk.Window):
     chew.set_size_request( -1, -1 )
     chew.set_shadow_type(gtk.SHADOW_ETCHED_IN)
     chew.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
-    chew.add( self.channel_editor['view'] )
+    chew.add( self.channel_editor.view )
     chbox = gtk.EventBox()
     chbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
     chbox.add(
@@ -176,7 +177,7 @@ class ArbWave(gtk.Window):
     wew.set_size_request(-1,225)
     wew.set_shadow_type(gtk.SHADOW_ETCHED_IN)
     wew.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
-    wew.add( self.waveform_editor['view'] )
+    wew.add( self.waveform_editor.view )
     wbox = gtk.EventBox()
     wbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
     wbox.add(
@@ -330,39 +331,6 @@ class ArbWave(gtk.Window):
       # now update the output...
       self.update()
 
-    def add_waveform_group(action):
-      i = self.waveform_editor['view'].get_selection().get_selected()[1]
-      if not i: # append new grouping to end
-        self.waveforms.append( None )
-      elif self.waveforms[i].parent:
-        self.waveforms.insert_before( None, self.waveforms[i].parent.iter )
-      else:
-        self.waveforms.insert_before( None, i )
-
-    def add_waveform(action):
-      i = self.waveform_editor['view'].get_selection().get_selected()[1]
-      if not i: # append new element to last group
-        if len( self.waveforms ) == 0:
-          self.waveforms.append( None ) # create last if necessary
-        n = self.waveforms.append( self.waveforms[-1].iter )
-      elif not self.waveforms[i].parent:
-        n = self.waveforms.append( i )
-      else:
-        n = self.waveforms.insert_before( self.waveforms[i].parent.iter, i )
-      self.waveform_editor['view'].expand_to_path( self.waveforms[n].path )
-
-    def delrow( action, stor, ed ):
-      i = ed.get_selection().get_selected()[1]
-      if i:
-        n = stor.iter_next( i )
-        stor.remove( i )
-        if n:
-          ed.get_selection().select_iter( n )
-
-    def addrow( action, stor, ed ):
-      stor.insert_before( ed.get_selection().get_selected()[1] )
-
-
     #     # Create the menubar and toolbar
     action_group = gtk.ActionGroup('ArbWaveGUIActions')
     action_group.add_actions(entries)
@@ -379,13 +347,13 @@ class ArbWave(gtk.Window):
       'Script'    : lambda a: self.script.edit(),
       'Run'       : run_waveforms,
       'About'     : lambda a: about.show(),
-      'CH:Add'    : ( addrow, self.channels, self.channel_editor['view'] ),
-      'CH:Delete' : ( delrow, self.channels, self.channel_editor['view'] ),
+      'CH:Add'    : lambda a: self.channel_editor.insert_row(),
+      'CH:Delete' : lambda a: self.channel_editor.delete_row(),
       'CH:Up'     : lambda a: sys.stderr.write('Move channel up\n'),
       'CH:Down'   : lambda a: sys.stderr.write('Move channel down\n'),
-      'WF:Add:group': add_waveform_group,
-      'WF:Add'    : add_waveform,
-      'WF:Delete' : ( delrow, self.waveforms, self.waveform_editor['view'] ),
+      'WF:Add:group': lambda a: self.waveform_editor.insert_waveform_group(),
+      'WF:Add'    : lambda a: self.waveform_editor.insert_waveform(),
+      'WF:Delete' : lambda a: self.waveform_editor.delete_row(),
       'WF:Up'     : lambda a: sys.stderr.write('Move waveform element up\n'),
       'WF:Down'   : lambda a: sys.stderr.write('Move waveform element down\n'),
     }

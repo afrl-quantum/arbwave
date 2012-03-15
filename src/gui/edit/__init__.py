@@ -1,1 +1,3 @@
-import signals, channels, waveforms, script
+import signals, script
+from channels import Channels
+from waveforms import Waveforms
