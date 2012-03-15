@@ -104,11 +104,18 @@ class ArbWave(gtk.Window):
       self.connect('destroy', lambda *w: gtk.main_quit())
 
 
+    #  ###### SET UP THE UNDO/REDO STACK AND CALLBACKS ######
+    self.undo = list()
+    self.redo = list()
+    self.connect('key-press-event', self.do_keypress)
+
+
     # LOAD THE STORAGE
     self.script = stores.Script(
       default_script,
       title='Global Variables/Functions...',
       parent=self,
+      undo=self.undo,
       changed=self.update,
     )
     self.channels = stores.Channels(
@@ -480,3 +487,21 @@ class ArbWave(gtk.Window):
 
   def channels_rows_reordered(self, model, path, iter, new_order):
     self.update(model)
+
+  def do_keypress(self, widget, event):
+    if   event.state == gtk.gdk.CONTROL_MASK and event.keyval == 122:
+      try:
+        change = self.undo.pop()
+        change.undo()
+        self.redo.append( change )
+      except IndexError:
+        pass
+      return True
+    elif event.state == gtk.gdk.CONTROL_MASK and event.keyval == 121:
+      try:
+        change = self.redo.pop()
+        change.redo()
+        self.undo.append( change )
+      except IndexError:
+        pass
+      return True

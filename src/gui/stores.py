@@ -214,13 +214,30 @@ class Signals(TreeModelDispatcher, gtk.ListStore):
     return self.list()
 
 
+class ScriptUndo:
+  def __init__(self, old_text, new_text, script):
+    self.old_text = old_text
+    self.new_text = new_text
+    self.script = script
+
+  def undo(self):
+    self.script.set_text( self.old_text, skip_undo=True )
+    self.script.edit() # show the editor
+
+  def redo(self):
+    self.script.set_text( self.new_text, skip_undo=True )
+    self.script.edit() # show the editor
+
+
 class Script:
-  def __init__(self, text='', title='Script', parent=None,
-                changed=None, *changed_args, **changed_kwargs):
+  def __init__( self, text='', title='Script', parent=None,
+                undo=None,
+                changed=None, *changed_args, **changed_kwargs ):
     self.editor = None
     self.text   = text
     self.title  = title
     self.parent = parent
+    self.undo   = undo
     self.onchange = None
 
     if changed:
@@ -232,7 +249,10 @@ class Script:
   def clear(self):
     self.set_text('')
 
-  def set_text(self, t):
+  def set_text(self, t, skip_undo=False):
+    if not ( skip_undo or self.undo is None ):
+      self.undo.append( ScriptUndo(self.text, t, self) )
+
     self.text = t
     if self.editor:
       self.editor.set_text( t )
