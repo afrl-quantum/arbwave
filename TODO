@@ -49,3 +49,27 @@
   and use the local set of the arbitrary clock pulses to determine how many
   samples to create for each value.
 
+5.  Implement a 'control-z' undo stack (and with it a redo stack).
+  The first notion for doing this is to implement a robust and non-instrusive
+  way of recovering from mistakes in the input.  The mode of operation is:
+    1. User enters something
+      a. The new input gets saved to internal memory in the appropriate location
+      b. The change is added to the undo stack
+        This stack entry should probably be a callable that was added by the
+        various editors.  Thus each item on the stack has all of the information
+        to undo its associated change.
+    2. This change triggers a process pipline
+    3. The processor causes an error and halts the pipeline
+    4. The user is shown an error in some fashion
+      Perhaps the top item in the stack should be used to show the error
+      specifically for the change.  In other words, each item in the stack could
+      be a class that 1) knows how to undo itsself and 2) knows how to highlight
+      or otherwise indicate an error for the exact data entry "control" (control
+      as in a labview sense).
+    5. The user can either correct the error or pop off the last change with a
+      control-z keystroke.
+
+  Obviously, if we implement something like this stack, it is only natural to
+  implement a redo stack.  An item that is popped off of the undo stack should
+  simply be added to the redo stack.  Any subsequent user input should thus
+  discard the remaining contents of the redo stack.
