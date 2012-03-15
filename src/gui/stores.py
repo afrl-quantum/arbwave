@@ -4,15 +4,36 @@ import gtk
 
 import edit
 
+def retlist( *args ):
+  return args
+
+def fixargs( args ):
+  try:
+    return retlist(*args)
+  except:
+    return [args]
 
 class TreeModelDispatcher:
   """
   Simple signal aggregation for any changes to a single 'changed' signal.
   """
-  def __init__(self, Model, changed=None):
+  def __init__( self, Model,
+                changed=None,
+                row_changed=None,
+                row_deleted=None,
+                row_inserted=None,
+                rows_reordered=None ):
     self.Model = Model
     if changed:
-      self.connect( 'changed', changed )
+      self.connect( 'changed', *fixargs(changed) )
+    if row_changed:
+      self.connect( 'row-changed', *fixargs(row_changed) )
+    if row_deleted:
+      self.connect( 'row-deleted', *fixargs(row_deleted) )
+    if row_inserted:
+      self.connect( 'row-inserted', *fixargs(row_inserted) )
+    if rows_reordered:
+      self.connect( 'rows-reordered', *fixargs(rows_reordered) )
 
   def connect(self, signal, callback, *args, **kwargs):
     if signal == 'changed':
