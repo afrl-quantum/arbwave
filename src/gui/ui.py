@@ -381,6 +381,9 @@ class ArbWave(gtk.Window):
     }
 
   def setvars(self, vardict):
+    self.undo = list()  # remove all current undo items
+    self.redo = list()  # remove all current undo items
+
     # suspend all updates
     self.allow_updates = False
 
@@ -401,6 +404,8 @@ class ArbWave(gtk.Window):
     self.update()
 
   def clearvars(self):
+    self.undo = list()  # remove all current undo items
+    self.redo = list()  # remove all current undo items
     self.channels.clear()
     self.waveforms.clear()
     self.signals.clear()
