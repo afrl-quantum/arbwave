@@ -52,21 +52,26 @@ class Channels:
     }
 
     R['label'].set_property( 'editable', True )
-    R['label'].connect( 'edited', set_item, channels, channels.LABEL, True )
+    R['label'].connect( 'edited', set_item,
+                        channels, channels.LABEL, self.add_undo, True )
 
     R['device'].set_property( 'editable', True )
     R['device'].set_property("text-column", 0)
-    R['device'].connect( 'edited', set_item, channels, channels.DEVICE )
+    R['device'].connect( 'edited', set_item,
+                         channels, channels.DEVICE, self.add_undo )
     R['device'].connect( 'editing-started', load_devices_combobox )
 
     R['value'].set_property( 'editable', True )
-    R['value'].connect( 'edited', set_item, channels, channels.VALUE )
+    R['value'].connect( 'edited', set_item,
+                        channels, channels.VALUE, self.add_undo )
 
     R['scaling'].set_property( 'editable', True )
-    R['scaling'].connect( 'edited', set_item, channels, channels.SCALING )
+    R['scaling'].connect( 'edited', set_item,
+                          channels, channels.SCALING, self.add_undo )
 
     R['enable'].set_property( 'activatable', True )
-    R['enable'].connect( 'toggled', toggle_item, channels, channels.ENABLE )
+    R['enable'].connect( 'toggled', toggle_item,
+                          channels, channels.ENABLE, self.add_undo )
 
     C = {
       'label'   : GTVC( 'Label',   R['label'],  text=channels.LABEL ),
@@ -90,12 +95,37 @@ class Channels:
 
 
   def insert_row(self):
-    self.channels.insert_before( self.view.get_selection().get_selected()[1] )
+    i = self.channels.insert_before(self.view.get_selection().get_selected()[1])
+    self.add_undo( ListUndo(i, self.channels) )
 
   def delete_row(self):
     i = self.view.get_selection().get_selected()[1]
     if i:
       n = self.channels.iter_next( i )
+      self.add_undo( ListUndo(i, self.channels, deletion=True) )
       self.channels.remove( i )
       if n:
         self.view.get_selection().select_iter( n )
+
+
+class ListUndo:
+  def __init__(self, iter, model, deletion=False):
+    self.model = model
+    self.path = model.get_path( iter )
+    self.position = self.path[0]
+    self.new_row = list(model[iter])
+    self.deletion = deletion
+
+  def delete(self):
+    self.model.remove( self.model.get_iter(self.path) )
+
+  def insert(self):
+    self.model.insert( self.position, self.new_row )
+
+  def redo(self):
+    if self.deletion: self.delete()
+    else:             self.insert()
+
+  def undo(self):
+    if self.deletion: self.insert()
+    else:             self.delete()

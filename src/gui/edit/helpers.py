@@ -7,14 +7,28 @@ def GTVC(*args,**kwargs):
   return c
 
 
-def set_item( cell, path, new_item, model, ITEM, unique=False ):
+class Undo:
+  """Generic TreeModel Undo class"""
+  def __init__(self, old_item, new_item, model, row, col):
+    self.old_item = old_item
+    self.new_item = new_item
+    self.model    = model
+    self.row      = row
+    self.col      = col
+
+  def undo(self):
+    self.model[self.row][self.col] = self.old_item
+
+  def redo(self):
+    self.model[self.row][self.col] = self.new_item
+
+
+def set_item( cell, path, new_item, model, ITEM, add_undo=None, unique=False ):
   """
     if unique is True, this searches through the immediate chlidren for
       duplicate names before allowing the edit.
   """
-  if not unique:
-    model[path][ITEM] = new_item
-  else:
+  if unique:
     i = model.get_iter_first()
     for i in iter(model):
       if ( (type(path) is str and \
@@ -23,12 +37,17 @@ def set_item( cell, path, new_item, model, ITEM, unique=False ):
            i[ITEM] == new_item:
         print 'Please use unique labels'
         return
-    model[path][ITEM] = new_item
 
-def toggle_item( cell, path, model, ITEM ):
+  if add_undo is not None:
+    add_undo( Undo(model[path][ITEM], new_item, model, path, ITEM) )
+  model[path][ITEM] = new_item
+
+def toggle_item( cell, path, model, ITEM, add_undo=None ):
   """
   Sets the toggled state on the toggle button to true or false.
   """
+  if add_undo is not None:
+    add_undo( Undo(model[path][ITEM], not model[path][ITEM], model, path, ITEM) )
   model[path][ITEM] = not model[path][ITEM]
 
 

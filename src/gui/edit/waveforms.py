@@ -132,6 +132,8 @@ def button_press_handler(treeview, event, ui_manager, popup):
     return True
 
 
+
+
 class Waveforms:
   def __init__(self, waveforms, channels, add_undo=None):
     self.add_undo = add_undo
@@ -150,20 +152,25 @@ class Waveforms:
     R['channel'].set_property( 'editable', True )
     R['channel'].set_property('text-column', 0)
     R['channel'].set_property('has-entry', True)
-    R['channel'].connect( 'edited', set_item, waveforms, waveforms.CHANNEL )
+    R['channel'].connect( 'edited', set_item,
+                          waveforms, waveforms.CHANNEL, self.add_undo )
     R['channel'].connect( 'editing-started', load_channels_combobox, channels )
 
     R['time'].set_property( 'editable', True )
-    R['time'].connect( 'edited', set_item, waveforms, waveforms.TIME )
+    R['time'].connect( 'edited', set_item,
+                       waveforms, waveforms.TIME, self.add_undo )
 
     R['duration'].set_property( 'editable', True )
-    R['duration'].connect( 'edited', set_item, waveforms, waveforms.DURATION )
+    R['duration'].connect( 'edited', set_item,
+                           waveforms, waveforms.DURATION, self.add_undo )
 
     R['value'].set_property( 'editable', True )
-    R['value'].connect( 'edited', set_item, waveforms, waveforms.VALUE )
+    R['value'].connect( 'edited', set_item,
+                        waveforms, waveforms.VALUE, self.add_undo )
 
     R['enable'].set_property( 'activatable', True )
-    R['enable'].connect( 'toggled', toggle_item, waveforms, waveforms.ENABLE )
+    R['enable'].connect( 'toggled', toggle_item,
+                         waveforms, waveforms.ENABLE, self.add_undo )
 
     C = {
       'channel' : GTVC( 'Channel', R['channel'], text=waveforms.CHANNEL ),
@@ -195,24 +202,28 @@ class Waveforms:
   def insert_waveform_group(self):
     i = self.view.get_selection().get_selected()[1]
     if not i: # append new grouping to end
-      self.waveforms.append( None )
+      n = self.waveforms.append( None )
     elif self.waveforms[i].parent:
-      self.waveforms.insert_before( None, self.waveforms[i].parent.iter )
+      n = self.waveforms.insert_before( None, self.waveforms[i].parent.iter )
     else:
-      self.waveforms.insert_before( None, i )
+      n = self.waveforms.insert_before( None, i )
+    self.add_undo( TreeUndo(n, self.waveforms, self.view) )
 
 
   def insert_waveform(self):
+    p = None
     i = self.view.get_selection().get_selected()[1]
     if not i: # append new element to last group
       if len( self.waveforms ) == 0:
-        self.waveforms.append( None ) # create last if necessary
+        p = self.waveforms.append( None ) # create last if necessary
       n = self.waveforms.append( self.waveforms[-1].iter )
-    elif not self.waveforms[i].parent:
+    elif not self.waveforms[i].parent: #append to selected group
       n = self.waveforms.append( i )
-    else:
+    else: # insert into group before selected item
       n = self.waveforms.insert_before( self.waveforms[i].parent.iter, i )
     self.view.expand_to_path( self.waveforms[n].path )
+
+    self.add_undo( TreeUndo(n, self.waveforms, self.view, new_parent=p) )
 
 
 
@@ -220,6 +231,54 @@ class Waveforms:
     i = self.view.get_selection().get_selected()[1]
     if i:
       n = self.waveforms.iter_next( i )
+      self.add_undo( TreeUndo(i, self.waveforms, self.view, deletion=True) )
       self.waveforms.remove( i )
       if n:
         self.view.get_selection().select_iter( n )
+
+
+class NullUndo:
+  def undo(self):
+    pass
+  def redo(self):
+    pass
+
+class TreeUndo:
+  def __init__(self, iter, model, view, deletion=False, new_parent=None):
+    self.model = model
+    self.view = view
+    self.path = model.get_path( iter )
+    self.position = self.path[-1]
+    self.parent_path = self.path[:-1]
+    self.new_row = list(model[iter])
+    self.deletion = deletion
+    self.parent_undo = NullUndo()
+    if new_parent:
+      self.parent_undo = TreeUndo( new_parent, model, view, deletion )
+
+  def delete(self):
+    self.model.remove( self.model.get_iter(self.path) )
+
+  def insert(self):
+    if self.parent_path:
+      parent = self.model.get_iter( self.parent_path )
+    else:
+      parent = None
+    n = self.model.insert( parent, self.position, self.new_row )
+    self.view.expand_to_path( self.model[n].path )
+
+  def redo(self):
+    if self.deletion:
+      self.delete()
+      self.parent_undo.redo()
+    else:
+      self.parent_undo.redo()
+      self.insert()
+
+  def undo(self):
+    if self.deletion:
+      self.parent_undo.undo()
+      self.insert()
+    else:
+      self.delete()
+      self.parent_undo.undo()
