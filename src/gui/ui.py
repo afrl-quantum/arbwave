@@ -115,7 +115,7 @@ class ArbWave(gtk.Window):
       default_script,
       title='Global Variables/Functions...',
       parent=self,
-      undo=self.undo,
+      add_undo=self.add_undo,
       changed=self.update,
     )
     self.channels = stores.Channels(
@@ -487,6 +487,10 @@ class ArbWave(gtk.Window):
 
   def channels_rows_reordered(self, model, path, iter, new_order):
     self.update(model)
+
+  def add_undo(self, undo_item ):
+    self.undo.append( undo_item )
+    self.redo = list()  # remove all current undo items
 
   def do_keypress(self, widget, event):
     if   event.state == gtk.gdk.CONTROL_MASK and event.keyval == 122:

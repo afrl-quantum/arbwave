@@ -20,13 +20,13 @@ class Undo:
 
 class Script:
   def __init__( self, text='', title='Script', parent=None,
-                undo=None,
+                add_undo=None,
                 changed=None, *changed_args, **changed_kwargs ):
-    self.editor = None
-    self.text   = text
-    self.title  = title
-    self.parent = parent
-    self.undo   = undo
+    self.editor   = None
+    self.text     = text
+    self.title    = title
+    self.parent   = parent
+    self.add_undo = add_undo
     self.onchange = None
 
     if changed:
@@ -39,8 +39,8 @@ class Script:
     self.set_text('')
 
   def set_text(self, t, skip_undo=False):
-    if not ( skip_undo or self.undo is None ):
-      self.undo.append( Undo(self.text, t, self) )
+    if not ( skip_undo or self.add_undo is None ):
+      self.add_undo( Undo(self.text, t, self) )
 
     self.text = t
     if self.editor:
