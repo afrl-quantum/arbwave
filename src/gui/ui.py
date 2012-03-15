@@ -111,7 +111,12 @@ class ArbWave(gtk.Window):
       parent=self,
       changed=self.update,
     )
-    self.channels = stores.Channels( changed=self.update )
+    self.channels = stores.Channels(
+      row_changed=(self.channels_row_changed),
+      row_deleted=(self.channels_row_deleted),
+      row_inserted=(self.channels_row_inserted),
+      rows_reordered=(self.channels_rows_reordered),
+    )
     self.waveforms = stores.Waveforms( changed=self.update )
     self.signals = stores.Signals( changed=self.update )
     self.channel_editor  = edit.channels.create(self.channels)
@@ -464,3 +469,14 @@ class ArbWave(gtk.Window):
       run=self.running,
     )
 
+  def channels_row_changed(self, model, path, iter):
+    self.update(model)
+
+  def channels_row_deleted(self, model, path):
+    self.update(model)
+
+  def channels_row_inserted(self, model, path, iter):
+    self.update(model)
+
+  def channels_rows_reordered(self, model, path, iter, new_order):
+    self.update(model)
