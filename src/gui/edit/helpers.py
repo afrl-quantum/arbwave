@@ -38,6 +38,9 @@ def set_item( cell, path, new_item, model, ITEM, add_undo=None, unique=False ):
         print 'Please use unique labels'
         return
 
+  if model[path][ITEM] == new_item:
+    return  # avoid triggering a change if there is not actually a change
+
   if add_undo is not None:
     add_undo( Undo(model[path][ITEM], new_item, model, path, ITEM) )
   model[path][ITEM] = new_item
