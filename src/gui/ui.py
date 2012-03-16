@@ -108,6 +108,8 @@ class ArbWave(gtk.Window):
     self.undo = list()
     self.redo = list()
     self.connect('key-press-event', self.do_keypress)
+    self.next_untested_undo = 0 # index of the last undo item that successfully
+                                # updated hardware and plots
 
 
     # LOAD THE STORAGE
@@ -380,9 +382,13 @@ class ArbWave(gtk.Window):
       'signals'   : self.signals.representation(),
     }
 
-  def setvars(self, vardict):
+  def clearundo(self):
     self.undo = list()  # remove all current undo items
     self.redo = list()  # remove all current undo items
+    self.next_untested_undo = 0
+
+  def setvars(self, vardict):
+    self.clearundo()
 
     # suspend all updates
     self.allow_updates = False
@@ -404,8 +410,7 @@ class ArbWave(gtk.Window):
     self.update()
 
   def clearvars(self):
-    self.undo = list()  # remove all current undo items
-    self.redo = list()  # remove all current undo items
+    self.clearundo()
     self.channels.clear()
     self.waveforms.clear()
     self.signals.clear()
@@ -425,29 +430,36 @@ class ArbWave(gtk.Window):
     if not self.allow_updates:
       return # updates temporarily disabled
 
-    if item not in [
-      None, self.channels, self.waveforms, self.signals, self.script,
-    ]:
-      raise TypeError('Unknown item sent to update()')
+    try:
+      if item not in [
+        None, self.channels, self.waveforms, self.signals, self.script,
+      ]:
+        raise TypeError('Unknown item sent to update()')
 
-    update_plot = update_output = False
-    if item in [None, self.channels, self.waveforms, self.signals, self.script]:
-      update_plot = True
-    if self.running:
-      if update_plot:
+      update_plot = update_output = False
+      if item in [None, self.channels, self.waveforms, self.signals, self.script]:
+        update_plot = True
+      if self.running:
+        if update_plot:
+          update_output = True
+      elif item in [ None, self.channels, self.signals, self.script ]:
         update_output = True
-    elif item in [ None, self.channels, self.signals, self.script ]:
-      update_output = True
 
-    self.processor.update(
-      self.channels.representation(),
-      self.waveforms.representation(),
-      self.signals.representation(),
-      self.script.representation(),
-      update_plot=update_plot,
-      update_output=update_output,
-      run=self.running,
-    )
+      self.processor.update(
+        self.channels.representation(),
+        self.waveforms.representation(),
+        self.signals.representation(),
+        self.script.representation(),
+        update_plot=update_plot,
+        update_output=update_output,
+        run=self.running,
+      )
+      self.next_untested_undo = len(self.undo)
+    except Exception, e:
+      print 'Could not update output; ' \
+            'Number of changes since last successful update: ', \
+            len(self.undo) - self.next_untested_undo
+      raise e
 
   def channels_row_changed(self, model, path, iter):
     self.update(model)
@@ -466,7 +478,9 @@ class ArbWave(gtk.Window):
     self.redo = list()  # remove all current undo items
 
   def do_keypress(self, widget, event):
+    """Implement keypress handlers on the main window"""
     if   event.state == gtk.gdk.CONTROL_MASK and event.keyval == 122:
+      # Control-Z  :  UNDO
       try:
         change = self.undo.pop()
         change.undo()
@@ -475,6 +489,7 @@ class ArbWave(gtk.Window):
         pass
       return True
     elif event.state == gtk.gdk.CONTROL_MASK and event.keyval == 121:
+      # Control-Y  :  REDO
       try:
         change = self.redo.pop()
         change.redo()
