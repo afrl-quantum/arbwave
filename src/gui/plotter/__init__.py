@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 import gui
 from plotter_toolbar import NavigationToolbar
-import digital
+import digital, analog
 
 
 class Plotter:
@@ -26,6 +26,16 @@ class Plotter:
     #self.axes['analog'].set_xlim(1.,2.)
 
     self.plot_digital( digital.example_signals )
+    self.plot_analog( analog.example_signals )
+
+  def plot_analog(self, signals, **kwargs ):
+    """
+      kwargs:
+        'end_padding' : how much to pad the end of the signal with in order to
+                        satisfy the demand that end-transitions be honored
+    """
+    max_x = analog.plot( self.axes['analog'], signals, **kwargs )
+    self.update_t_axes(max_x)
 
   def plot_digital(self, signals, **kwargs ):
     """
