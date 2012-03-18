@@ -12,7 +12,7 @@ class Plotter:
       self.axes['hspan-controls'].values(),
       self.axes['vspan-controls'].values(),
     )
-    self.toolbar.toolitems = tuple( self.toolbar.toolitems[0:-2] )
+    self.axes['__scroll_master'].toolbar = self.toolbar
     self.max_x = 0.0
 
     # self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)

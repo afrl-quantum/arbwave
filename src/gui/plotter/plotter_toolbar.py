@@ -53,6 +53,13 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
     NavigationToolbar2GTKAgg.pan(self,*args)
 
 
+  def home(self,*args):
+    """This version of 'home' resets the history, instead of just clipping it to
+    this view"""
+    NavigationToolbar2GTKAgg.home(self,*args)
+    self.update() # reset the history...
+
+
   def hspan(self,*args):
     'Activate the horizontal span selector tool'
     if self._active == 'HSPAN':
@@ -84,6 +91,10 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
       setattr(s, 'visible', False)
 
     self.set_message(self.mode)
+
+    # push the current view to define home if stack is empty
+    if self._views.empty():
+      self.push_current()
 
 
   def vspan(self,*args):
@@ -118,3 +129,6 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
 
     self.set_message(self.mode)
 
+    # push the current view to define home if stack is empty
+    if self._views.empty():
+      self.push_current()

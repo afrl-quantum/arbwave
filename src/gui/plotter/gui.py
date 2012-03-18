@@ -88,11 +88,16 @@ class ScrollMaster:
     self.axes       = axes
     self.axes2      = axes2
     self.axes_basis = axes_basis
+    self.toolbar    = None
 
   def onpress(self,event):
     print 'hi'
 
   def onscroll(self,event):
+    # push the current view to define home if stack is empty
+    if self.toolbar and self.toolbar._views.empty():
+      self.toolbar.push_current()
+
     event.canvas.grab_focus()
     if event.key is None:
       x0 = self.axes.get_xlim()
@@ -105,6 +110,7 @@ class ScrollMaster:
         x1 = ( x0[0]+step, x0[1]+step )
         self.axes.set_xlim(x1)
         event.canvas.draw()
+        if self.toolbar: self.toolbar.push_current()
 
     elif event.key is 'control':
       x0 = self.axes.get_xlim()
@@ -124,19 +130,23 @@ class ScrollMaster:
           x1 = ( xc-xr/2.0, xc+xr/2.0 )
         self.axes.set_xlim(x1)
         event.canvas.draw()
+        if self.toolbar: self.toolbar.push_current()
 
 
   def onselect_horizontal(self, xmin, xmax):
     self.axes.set_xlim(xmin, xmax)
     self.axes.figure.canvas.draw()
+    if self.toolbar: self.toolbar.push_current()
 
   def onselect_vertical1(self, ymin, ymax):
     self.axes.set_ylim(ymin, ymax)
     self.axes.figure.canvas.draw()
+    if self.toolbar: self.toolbar.push_current()
 
   def onselect_vertical2(self, ymin, ymax):
     self.axes2.set_ylim(ymin, ymax)
     self.axes2.figure.canvas.draw()
+    if self.toolbar: self.toolbar.push_current()
 
 
 def init_plot():
