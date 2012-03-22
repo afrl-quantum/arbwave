@@ -1,5 +1,6 @@
 
-import gobject
+import gtk, gobject
+from gui_callbacks import do_gui_operation
 
 class CallFunc:
   def __init__(self,C,A,K):
@@ -12,13 +13,11 @@ class CallFunc:
 
 class StopGeneration(Exception): pass
 
-def plot_stuff( data ):
+def plot_stuff( plotter, analog, digital ):
   print 'trying to plot stuff...'
 
 def send_to_plotter( plotter, analog, digital ):
-  gobject.idle_add( plot_stuff,
-    {'plotter': plotter, 'analog':None, 'digital':None }
-  )
+  do_gui_operation( plot_stuff, plotter, analog, digital )
 
 
 

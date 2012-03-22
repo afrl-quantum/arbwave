@@ -5,9 +5,8 @@ to more explicit channel-specific full waveforms.
 """
 
 import sys, threading
-import gobject
 import engine
-
+from gui_callbacks import do_gui_operation
 
 class Processor:
   def __init__(self, plotter):
@@ -80,7 +79,7 @@ class Processor:
       self.lock.acquire()
       self.running = False
       self.engine_thread = None
-      gobject.idle_add( show_stopped )
+      do_gui_operation( show_stopped )
       self.end_condition.notify()
     finally:
       self.lock.release()
