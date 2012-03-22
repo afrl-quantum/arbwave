@@ -73,3 +73,5 @@
   implement a redo stack.  An item that is popped off of the undo stack should
   simply be added to the redo stack.  Any subsequent user input should thus
   discard the remaining contents of the redo stack.
+
+DONE--mostly,  error depiction should follow implementation of processor
