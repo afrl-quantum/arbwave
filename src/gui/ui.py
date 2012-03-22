@@ -7,9 +7,6 @@ import gtk, gobject
 
 import sys
 
-# this is necessary to ensure that threads can be launched!!!!
-gobject.threads_init()
-
 # local packages
 import about, configure, stores, edit
 from plotter import Plotter
