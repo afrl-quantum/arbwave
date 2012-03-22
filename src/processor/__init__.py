@@ -4,35 +4,120 @@ This package is responsible for the logic that converts waveforms descriptions
 to more explicit channel-specific full waveforms.
 """
 
-import threading
+import sys, threading
+import gobject
+import engine
+
 
 class Processor:
   def __init__(self, plotter):
-    self.plotter = plotter
-    self.lock = threading.Lock()
+    self.Globals = dict()
+    self.engine = engine.Arbwave(plotter)
+    sys.modules['arbwave'] = self.engine # fake arbwave module
+    self.running = False
+    self.engine_thread = None
 
-  def update(self, channels, waveforms, signals, script,
-             update_plot, update_output, run):
+    self.lock = threading.Lock()
+    self.end_condition = threading.Condition( self.lock )
+
+
+  def update(self, channels, waveforms, signals, script, toggle_run, show_stopped):
     """
-    Using classes should call this function.  This function ensures a first
-    come, first served policy on updating plots and hardware output.
+    Updates that are driven from user-interface changes sent to the engine.
     """
     try:
       self.lock.acquire()
-      self._update(channels, waveforms, signals, script,
-                   update_plot, update_output, run)
+
+      if self.running:
+        self.stop(toggle_run) # might be a race condition
+        toggle_run = False
+
+      # First:  update the global script environment
+      if script[1]:
+        self.engine.clear_callbacks()
+        exec script[0] in self.Globals
+
+      # set engine inputs
+      self.engine.channels  = channels
+      self.engine.waveforms = waveforms
+      self.engine.signals   = signals
+
+      if self.running or toggle_run:
+        self.start( show_stopped )
+      else:
+        if channels[1] or script[1] or signals[1]:
+          self.engine.update_static()
+
+        # TODO:  have more fine-grained change information:
+        #   Instead of just "did channels change" have
+        #   1.  channel labels changed
+        #   2.  channel calibration changed
+        #   3.  channel device(s) changed
+        #   4.  channel static value changed
+        #   With this information, we would more correctly only update plots or
+        #   static output when the corresponding information has changed.
+        if channels[1] or script[1] or signals[1] or waveforms[1]:
+          self.engine.update_plotter()
     finally:
       self.lock.release()
 
-  def _update(self, channels, waveforms, signals, script,
-              update_plot, update_output, run):
-    """
-    Internal function only.  This is the real meat of update().
-    """
-    if update_plot:
-      print 'updating plot...'
-    if update_output:
-      if run:
-        print 'setup waveform output'
-      else:
-        print 'setup static output'
+
+  def run_loop(self, show_stopped):
+    assert callable(show_stopped), 'expected callable show_stopped'
+    if self.engine.start:
+      exec 'import arbwave\narbwave.start()' in self.Globals
+
+    try:
+      exec 'import arbwave\narbwave.loop_control()' in self.Globals
+    except engine.StopGeneration: pass
+
+    self.engine.halt() # ensure that generation is stopped!
+
+    if self.engine.stop:
+      exec 'import arbwave\narbwave.stop()' in self.Globals
+
+    try:
+      self.lock.acquire()
+      self.running = False
+      self.engine_thread = None
+      gobject.idle_add( show_stopped )
+      self.end_condition.notify()
+    finally:
+      self.lock.release()
+
+
+  def start(self, show_stopped): # start a continuous (re)cycling
+    self.engine.request_stop(False)
+
+    if self.engine.loop_control:
+      assert self.engine_thread is None, 'Already existing engine thread?!!'
+
+      # run the loop control inside its own thread
+      self.engine_thread = threading.Thread(
+        target=self.run_loop,
+        kwargs={ 'show_stopped' : show_stopped },
+      )
+      self.engine_thread.daemon = True # ensure thread exits if program exits
+      self.engine_thread.start()
+
+    else: # we try to do continuous recycling--> don't call show_stopped()
+      if not self.running and self.engine.start:
+        exec 'import arbwave\narbwave.start()' in self.Globals
+      self.engine.update(continuous=True)
+    self.running = True
+
+
+  def stop(self, toggle_run):
+    if self.engine_thread:
+      # we get a copy because self.engine_thread will be nulled by thread
+      t = self.engine_thread
+      self.engine.request_stop()
+      self.end_condition.wait()
+      t.join()
+    elif toggle_run:
+      self.engine.halt()
+      if self.engine.stop:
+        exec 'import arbwave\narbwave.stop()' in self.Globals
+    if toggle_run:
+      self.running = False
+

@@ -7,6 +7,9 @@ import gtk, gobject
 
 import sys
 
+# this is necessary to ensure that threads can be launched!!!!
+gobject.threads_init()
+
 # local packages
 import about, configure, stores, edit
 from plotter import Plotter
@@ -133,7 +136,6 @@ class ArbWave(gtk.Window):
       edit.Waveforms(self.waveforms, self.channels, self.add_undo)
     self.plotter = Plotter( self )
     self.processor = Processor( self.plotter )
-    self.running = False
     # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = True
 
@@ -322,16 +324,18 @@ class ArbWave(gtk.Window):
     )
 
     def run_waveforms(action):
-      # first, make sure that we switch the icons, and set the "run" variable
+      def show_stopped():
+        action.set_property('stock-id', gtk.STOCK_MEDIA_PLAY)
+
+      # make sure that we switch the icons, and then update output
       if action.get_property('stock-id') == gtk.STOCK_MEDIA_PLAY:
         action.set_property('stock-id', gtk.STOCK_MEDIA_STOP)
-        self.running = True
       else:
-        action.set_property('stock-id', gtk.STOCK_MEDIA_PLAY)
-        self.running = False
+        show_stopped()
+        show_stopped = None
 
       # now update the output...
-      self.update()
+      self.update( toggle_run=True, show_stopped=show_stopped )
 
     #     # Create the menubar and toolbar
     action_group = gtk.ActionGroup('ArbWaveGUIActions')
@@ -417,7 +421,7 @@ class ArbWave(gtk.Window):
     self.script.set_text(default_script)
 
 
-  def update(self, item=None):
+  def update(self, item=None, toggle_run=False, show_stopped=None):
     """
     This is the main callback function for 'changed' type signals.  This
     callback will collect the current inputs and send them to the processor.
@@ -425,6 +429,9 @@ class ArbWave(gtk.Window):
     plot them and send them to the backend drivers.
 
     item : should generally be one of [channels, waveforms, signals, script]
+
+    show_stopped : if not None, then waveforms will be generated.  This should be a
+    callable that will indicate back to the user that running has ceased.
     """
 
     if not self.allow_updates:
@@ -436,23 +443,16 @@ class ArbWave(gtk.Window):
       ]:
         raise TypeError('Unknown item sent to update()')
 
-      update_plot = update_output = False
-      if item in [None, self.channels, self.waveforms, self.signals, self.script]:
-        update_plot = True
-      if self.running:
-        if update_plot:
-          update_output = True
-      elif item in [ None, self.channels, self.signals, self.script ]:
-        update_output = True
+      assert show_stopped is None or callable(show_stopped), \
+        'expected callable show_stopped'
 
       self.processor.update(
-        self.channels.representation(),
-        self.waveforms.representation(),
-        self.signals.representation(),
-        self.script.representation(),
-        update_plot=update_plot,
-        update_output=update_output,
-        run=self.running,
+        ( self.channels.representation(),   item in [ None, self.channels] ),
+        ( self.waveforms.representation(),  item in [ None, self.waveforms] ),
+        ( self.signals.representation(),    item in [ None, self.signals] ),
+        ( self.script.representation(),     item in [ None, self.script] ),
+        toggle_run=toggle_run,
+        show_stopped=show_stopped,
       )
       self.next_untested_undo = len(self.undo)
     except Exception, e:

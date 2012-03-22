@@ -97,30 +97,32 @@ global_script = \
 # All other scripts and processing will be done in this context.
 from math import pi
 
+print 'updating global environment...'
 cm = 0.01
 some_variable = pi * ( 10*cm )**2.0
+other_variable = 1
 
 def onstart():
 	'''Called when 'play' button is clicked'''
-	pass
+	print 'starting!!!!'
 
 def onstop():
 	'''Called when 'stop' button is clicked.'''
-	pass
+	print 'stopping!!!!'
 
-import arbwave
+import arbwave, time
 def loop_control(*args, **kwargs):
+	global some_variable, other_variable
 	for i in [1,2,3]:
-    global some_variable
-    some_variable += 1
+		some_variable += 1
 		for j in [1,2,3]:
-      global other_variable
-      other_variable +=2
+			other_variable +=2
 			arbwave.update()
+			time.sleep(2)
 
 arbwave.connect( 'start', onstart )
 arbwave.connect( 'stop', onstop )
-#arbwave.set_loop_control( loop_control )
+arbwave.set_loop_control( loop_control )
 """
 
 signals = \
