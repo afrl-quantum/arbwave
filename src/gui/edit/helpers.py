@@ -112,3 +112,33 @@ def prep_combobox_for_tree(cbox):
   cbox.pack_start( renderer )
   cbox.add_attribute( renderer, 'text', 1 )
   cbox.set_cell_data_func( renderer, is_sensitive )
+
+
+
+popup_handlers = dict()
+
+def popup_button_press_handler(treeview, event, ui_manager, popup, actions):
+  global popup_handlers
+  if event.button == 3:
+    x = int(event.x)
+    y = int(event.y)
+    time = event.time
+    pthinfo = treeview.get_path_at_pos(x, y)
+    if pthinfo is not None:
+      path, col, cellx, celly = pthinfo
+      if len(path) == 1:
+        treeview.grab_focus()
+        treeview.set_cursor( path, col, 0)
+        model = treeview.get_model()
+
+        for a in actions:
+          act = ui_manager.get_action(a[0])
+          if a[0] in popup_handlers and popup_handlers[a[0]]:
+            act.disconnect( popup_handlers[a[0]] )
+          if a[1] == toggle_item:
+            act.set_active( model[path][a[2]] )
+          popup_handlers[a[0]] = \
+            act.connect('activate', a[1], path, model, *a[2:])
+
+        popup.popup( None, None, None, event.button, time )
+    return True

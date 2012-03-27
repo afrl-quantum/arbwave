@@ -1,8 +1,59 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk
+import gtk, gobject
 
 from helpers import *
 from ... import backend
+
+ui_info = \
+"""<ui>
+  <popup name='CH:Edit'>
+    <menuitem action='CH:Scaling'/>
+    <separator/>
+    <menuitem action='CH:Device'/>
+  </popup>
+</ui>"""
+
+
+def edit_device(action, path, model, add_undo=None):
+  print 'should edit the device settings (clock, trigger,...)'
+
+def edit_scaling(action, path, model, ITEM, add_undo=None):
+  #row[col] = do_script_edit(text=row[col])[1]
+  print 'should edit the scaling...'
+
+def create_action_group():
+  # GtkActionEntry
+  entries = (
+    ( 'CH:Scaling', None,               # name, stock id
+      'Scaling...', None,     # label, accelerator
+      'Edit Scaling'),          # tooltip
+    ( 'CH:Device', None,                # name, stock id
+      'Device Settings', None,          # label, accelerator
+      'Device Settings'),               # tooltip
+  )
+
+  # GtkToggleActionEntry
+  toggle_entries = (
+  )
+
+  #     # Create the menubar and toolbar
+  action_group = gtk.ActionGroup('ConfigActions')
+  action_group.add_actions(entries)
+  action_group.add_toggle_actions(toggle_entries)
+  return action_group
+
+def mkUIManager():
+  merge = gtk.UIManager()
+  merge.insert_action_group(create_action_group(), 0)
+  try:
+    mergeid = merge.add_ui_from_string(ui_info)
+  except gobject.GError, msg:
+    print 'building popup menu failed: ' + msg
+  return merge
+
+
+
+
 
 device_combobox_tree = gtk.TreeStore(str,str)
 
@@ -27,13 +78,24 @@ def load_devices_combobox( cell, editable, path ):
 
 def query_tooltip(widget, x, y, keyboard_tip, tooltip):
   try:
-    model, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
-    value = model.get(iter, 0)
-    tooltip.set_markup("<b>Path %s:</b> %s" %(path[0], value[0]))
+    channels, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
+    markup = ''
+    sep = ''
+
+    enable, scaling = channels.get(iter, channels.ENABLE, channels.SCALING)
+    markup += \
+      '<b>Scaling</b>:  {scaling}' \
+      ''.format(**locals())
+
+    tooltip.set_markup(markup)
     widget.set_tooltip_row(tooltip, path)
     return True
   except:
     return False
+
+
+
+
 
 
 class Channels:
@@ -88,10 +150,19 @@ class Channels:
     V.connect('query-tooltip', query_tooltip)
     V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
     V.append_column( C['label'  ] )
-    V.append_column( C['device' ] )
-    V.append_column( C['scaling'] )
+    #V.append_column( C['scaling'] )
     V.append_column( C['value'  ] )
     V.append_column( C['enable' ] )
+    V.append_column( C['device' ] )
+
+    ui_manager = mkUIManager()
+    V.connect('button-press-event',
+      popup_button_press_handler,
+      ui_manager,
+      ui_manager.get_widget('/CH:Edit'),
+      [('/CH:Edit/CH:Scaling', edit_scaling, channels.SCALING, self.add_undo),
+       ('/CH:Edit/CH:Device',  edit_device,                    self.add_undo)],
+    )
 
 
   def insert_row(self):

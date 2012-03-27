@@ -13,19 +13,14 @@ ui_info = \
   </popup>
 </ui>"""
 
-def edit_script(action, row, col, A, handler):
-  row[col] = do_script_edit(text=row[col])[1]
-  A.disconnect( handler['id'] )
-
-def toggle_async(action, row, col, A, handler):
-  row[col] = not row[col]
-  A.disconnect( handler['id'] )
+def edit_script(action, path, model, add_undo=None):
+  model[path][col] = do_script_edit(text=model[path][col])[1]
 
 def create_action_group():
   # GtkActionEntry
   entries = (
     ( 'WFG:Script', None,               # name, stock id
-      'Edit Local Script', None,        # label, accelerator
+      'Local Script...', None,        # label, accelerator
       'Edit local script'),             # tooltip
   )
 
@@ -106,38 +101,6 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
     return False
 
 
-def button_press_handler(treeview, event, ui_manager, popup):
-  if event.button == 3:
-    x = int(event.x)
-    y = int(event.y)
-    time = event.time
-    pthinfo = treeview.get_path_at_pos(x, y)
-    if pthinfo is not None:
-      path, col, cellx, celly = pthinfo
-      if len(path) == 1:
-        treeview.grab_focus()
-        treeview.set_cursor( path, col, 0)
-        waveforms = treeview.get_model()
-        row = waveforms[path]
-
-        # reset Async action
-        async = ui_manager.get_action('/WFG:Edit/WFG:Async')
-        async.set_active( row[waveforms.ASYNC] )
-        handler = dict()
-        handler['id'] = \
-          async.connect('activate', toggle_async, row, waveforms.ASYNC,
-                        async, handler)
-
-        # reset Script action
-        script = ui_manager.get_action('/WFG:Edit/WFG:Script')
-        handler = dict()
-        handler['id'] = \
-          script.connect('activate', edit_script, row, waveforms.SCRIPT,
-                         script, handler)
-
-        popup.popup( None, None, None, event.button, time )
-    return True
-
 
 
 
@@ -202,9 +165,13 @@ class Waveforms:
 
     ui_manager = mkUIManager()
     V.connect('button-press-event',
-      button_press_handler,
+      popup_button_press_handler,
       ui_manager,
-      ui_manager.get_widget('/WFG:Edit') )
+      ui_manager.get_widget('/WFG:Edit'),
+      [('/WFG:Edit/WFG:Async', toggle_item,  waveforms.ASYNC,  self.add_undo),
+       ('/WFG:Edit/WFG:Script', edit_script, waveforms.SCRIPT, self.add_undo)],
+    )
+
 
 
   def insert_waveform_group(self):
