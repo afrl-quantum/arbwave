@@ -59,10 +59,17 @@ def load_channels_combobox( cell, editable, path, channels ):
   chls = gtk.ListStore(str)
   editable.set_property("model", chls)
 
+  # ensure that group-level items edit text and do not use drop down
   if not( len(path) == 1 and type(editable.child) is gtk.Entry ):
     editable.child.set_property('editable', False)
     for i in iter(channels):
       chls.append([ i[channels.LABEL] ])
+
+def allow_value_edit( cell, editable, path ):
+  """Ensure that group-level items cannot edit value"""
+  assert type(editable) is gtk.Entry, 'value type is not gtk.Entry(?)!'
+  if len(path) == 1:
+    editable.set_property('editable', False)
 
 
 
@@ -167,6 +174,7 @@ class Waveforms:
     R['value'].set_property( 'editable', True )
     R['value'].connect( 'edited', set_item,
                         waveforms, waveforms.VALUE, self.add_undo )
+    R['value'].connect( 'editing-started', allow_value_edit )
 
     R['enable'].set_property( 'activatable', True )
     R['enable'].connect( 'toggled', toggle_item,

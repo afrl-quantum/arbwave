@@ -59,7 +59,7 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
     # we form a simple tree.
     for i in L:
       parent = self.append( None,
-        (i['group-label'], i['time'], i['duration'], None,
+        (i['group-label'], i['time'], i['duration'], '',
          i['enable'], i['script'], i['asynchronous']) )
       for e in i['elements']:
         self.append( parent,
