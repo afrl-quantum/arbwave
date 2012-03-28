@@ -45,7 +45,7 @@ class Processor:
         self.start( show_stopped )
       else:
         if channels[1] or script[1] or signals[1]:
-          self.engine.update_static()
+          exec 'import arbwave\narbwave.update_static()' in self.Globals
 
         # TODO:  have more fine-grained change information:
         #   Instead of just "did channels change" have
@@ -56,7 +56,7 @@ class Processor:
         #   With this information, we would more correctly only update plots or
         #   static output when the corresponding information has changed.
         if channels[1] or script[1] or signals[1] or waveforms[1]:
-          self.engine.update_plotter()
+          exec 'import arbwave\narbwave.update_plotter()' in self.Globals
     finally:
       self.lock.release()
 
@@ -102,7 +102,7 @@ class Processor:
     else: # we try to do continuous recycling--> don't call show_stopped()
       if not self.running and self.engine.start:
         exec 'import arbwave\narbwave.start()' in self.Globals
-      self.engine.update(continuous=True)
+      exec 'import arbwave\narbwave.update(continuous=True)' in self.Globals
     self.running = True
 
 

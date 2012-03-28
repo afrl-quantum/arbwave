@@ -2,19 +2,19 @@ channels = \
 {'MOT Detuning': {'device': '/dev0/ao0',
                   'enable': True,
                   'scaling': 'min(10,max(-10,{value}/1.5))',
-                  'value': '10*300'},
+                  'value': '12*MHz'},
  'MOT Power': {'device': '/dev0/ao1',
                'enable': True,
                'scaling': 'min(10,max(-10,{value}))',
-               'value': '10*300'},
+               'value': '20*mW'},
  'U Current': {'device': '/dev0/ao2',
                'enable': True,
                'scaling': 'min(10,max(-10,{value}))',
-               'value': '10*300'},
+               'value': '20*A'},
  'Z Current': {'device': '/dev0/ao3',
                'enable': True,
                'scaling': 'min(10,max(-10,{value}))',
-               'value': '10*300'}}
+               'value': '25*A'}}
 
 waveforms = \
 [{'elements': [{'channel': 'MOT Detuning',
@@ -37,7 +37,7 @@ waveforms = \
                 'enable': True,
                 'time': 't',
                 'duration' : '5*ms',
-                'value': 'ramp(Vf=40*MHz, exponent=.5)'},
+                'value': 'ramp(to=40*MHz, exponent=.5)'},
                {'channel': 'MOT Power',
                 'enable': True,
                 'time': 't',
@@ -95,10 +95,11 @@ waveforms = \
 global_script = \
 """# This script sets global variables and/or functions.
 # All other scripts and processing will be done in this context.
-from math import pi
+from physical.unit import *
+from physical.constant import *
+from physical import unit
 
 print 'updating global environment...'
-cm = 0.01
 some_variable = pi * ( 10*cm )**2.0
 other_variable = 1
 
@@ -114,7 +115,7 @@ import arbwave, time
 def loop_control(*args, **kwargs):
 	global some_variable, other_variable
 	for i in [1,2,3]:
-		some_variable += 1
+		some_variable += mm**2.0
 		for j in [1,2,3]:
 			other_variable +=2
 			arbwave.update()

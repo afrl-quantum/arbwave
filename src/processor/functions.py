@@ -18,8 +18,8 @@ class Ramp:
     """
     self.Vi = Vi
     self.t = t
-  def __call__(self, Vf, exponent):
-    return self.Vi - self.t**exponent * (self.Vi - Vf)
+  def __call__(self, to, exponent):
+    return self.Vi - self.t**exponent * (self.Vi - to)
 
 registered = {
   'ramp' : Ramp,
