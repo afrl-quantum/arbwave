@@ -8,3 +8,8 @@ class Base:
   def __str__(self):
     return self.name
 
+  def prefix(self):
+    return self.name.split('/')[0]
+
+  def device(self):
+    pass
