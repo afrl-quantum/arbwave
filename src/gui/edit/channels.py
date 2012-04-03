@@ -62,8 +62,8 @@ def build_device_combobox_tree():
   T = device_combobox_tree
   T.clear()
 
-  add_paths_to_combobox_tree( T, backend.analog,  'Analog'  )
-  add_paths_to_combobox_tree( T, backend.digital, 'Digital' )
+  add_paths_to_combobox_tree( T, backend.analog,  'Analog',  skip_CAT=0 )
+  add_paths_to_combobox_tree( T, backend.digital, 'Digital', skip_CAT=0 )
 
 
 

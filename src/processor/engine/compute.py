@@ -1,9 +1,11 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+from numpy import MachAr
 import bisect
+
+from ... import backend
 from common import *
 import physical
-from numpy import MachAr
 
 machine_arch = MachAr()
 def cmpeps( a, b ):
@@ -80,6 +82,7 @@ def waveforms( channels, waveforms, signals, globals=None ):
     # 2.  establish local start time and durations...
     L['t'] = t
     t_start = eval( group['time'], globals, L )
+    ZT.unitsMatch(t_start, 'expected dimensions of time')
     try:    dt,  ddt = eval( group['duration'], globals, L )
     except: dt = ddt = eval( group['duration'], globals, L )
     assert (dt > ZT and ddt > ZT), 'durations MUST be > 0!'
@@ -88,8 +91,11 @@ def waveforms( channels, waveforms, signals, globals=None ):
     t_locals = dict()
     for e in group['elements']:
       chan = e['channel']
-
       if not ( chan and e['enable'] and channels[chan]['enable'] ):
+        continue
+
+      dev = channels[chan]['device']
+      if not dev:
         continue
 
       L['dt'] = dt
@@ -99,6 +105,7 @@ def waveforms( channels, waveforms, signals, globals=None ):
       t_locals.setdefault(chan, t_start)
       L['t'] = t_locals[ chan ]
       t_start_e = eval( e['time'], globals, L )
+      ZT.unitsMatch(t_start_e, 'expected dimensions of time')
       if not e['duration']:
                 dt_e,  ddt_e = dt, ddt
       else:
@@ -121,8 +128,18 @@ def waveforms( channels, waveforms, signals, globals=None ):
         value = eval( e['value'], globals, L )
         # TODO:  apply scaling and range checks...
 
+        if   dev.startswith('Analog/')  or dev in backend.analog:
+          physical.unit.V.unitsMatch( value, 'analog channels expect units=V' )
+          value = float(value) # set value in SI units
+        elif dev.startswith('Digital/') or dev in backend.digital:
+          assert type(value) in [bool, int, float], \
+            'digital channels must have [True,False,==0,!=0] type of values'
+          value = bool(value) # set value as boolean
+        else:
+          raise RuntimeError("Cannot determine type of channel '"+chan+"'")
+
         # insert (t, dt, value) tuple in SI units
-        bisect.insort_right( ce, UE(float(t_e), float(ddt_e), float(value)) )
+        bisect.insort_right( ce, UE(float(t_e), float(ddt_e), value) )
 
         t_e += ddt_e
 

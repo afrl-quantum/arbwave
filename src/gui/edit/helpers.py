@@ -76,7 +76,7 @@ def add_path_to_combobox_tree(T, p, k, M):
       else:
         M[si] = T.append( M['/'.join(p[0:i])], ('/'.join(p[k:(i+1)]), p[i]) )
 
-def add_paths_to_combobox_tree( T, P, category=None, M=None ):
+def add_paths_to_combobox_tree( T, P, category=None, M=None, skip_CAT=None ):
   """
     Add a set of paths to the gtk.TreeStore in T.
 
@@ -85,11 +85,16 @@ def add_paths_to_combobox_tree( T, P, category=None, M=None ):
     P : The set of paths as 'path/to/device'
 
     category : A subcategory to which these set of paths should be organized.
-      [OPTIONAL]
+        [OPTIONAL]
 
     M : dictionary that maps 'path/to/device' to tree node.  This is for
         parenting subsequent nodes properly.  This is only necessary if you will
         call add_paths more than once for the same category.
+        [OPTIONAL]
+
+    skip_CAT : How many elmements of the category path should be skipped with
+        assigning actual path values. This defaults to skipping all category
+        path elements.
         [OPTIONAL]
   """
   if category is None:
@@ -99,8 +104,11 @@ def add_paths_to_combobox_tree( T, P, category=None, M=None ):
   if M is None:
     M = dict()
 
+  if skip_CAT is None:
+    skip_CAT = len(CAT)
+
   for c in P:
-    add_path_to_combobox_tree( T, CAT + c.split('/'), len(CAT), M )
+    add_path_to_combobox_tree( T, CAT + c.split('/'), skip_CAT, M )
 
 def prep_combobox_for_tree(cbox):
   # This ensures you can't select "Analog" or Dev2 instead of ni/Dev2/ao0
