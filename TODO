@@ -75,3 +75,14 @@
   discard the remaining contents of the redo stack.
 
 DONE--mostly,  error depiction should follow implementation of processor
+
+6.  Create fancier entry "widgets":
+  1.  for digital channels: the user should just have to select a button that
+      toggles the item between True and False, instead of needing to enter some
+      text.
+  2.  for analog channels: allow for automatic updates when the user presses the
+      up/down arrows next to a number in the text entry (without losing edit
+      control).  This should emulate the automatic update feature in labview
+      numeric-text-entry controls.  This allows the user to press the up or down
+      while looking at a screen or something in order to optimize the value of
+      some particular number in the python expression that is being edited.
