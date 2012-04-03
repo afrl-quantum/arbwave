@@ -62,7 +62,7 @@ waveforms = \
                {'channel': 'Z current',
                 'enable': True,
                 'time': 't',
-                'duration':',.1*ms',
+                'duration':'dt,.1*ms',
                 'value': 'ramp(50*A, 2)'}],
   'enable': True,
   'asynchronous' : False,
