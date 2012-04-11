@@ -2,6 +2,8 @@
 """
 Utilities for plotting digital signals
 """
+import pylab
+
 import numpy as np
 from common import *
 
@@ -18,23 +20,16 @@ def mkbbars( L, dt ):
   return [ (L[i][0], dt[i])   for i in xrange(len(L))  if L[i][2] ]
 
 
-def plot( ax, signals, end_padding=-1 ):
-  """
-    end_padding : how much to pad the end of the signal with in order to
-                  satisfy the demand that end-transitions be honored.
-                  If no padding is specified (or end_padding<0) 0.001 of total
-                  time will be used.
-  """
-  #start by finding the maximum time
-  t_final = get_t_final( signals )
-  if end_padding < 0:
+def plot( ax, signals, t_final=None ):
+  if t_final is None:
+    #start by finding the maximum time
+    t_final = get_t_final( signals )
     t_final *= 1.001
-  else:
-    t_final += end_padding
 
   channels = signals.items()
   channels.sort( lambda (k1,v1),(k2,v2): cmp(k2,k1) ) # reverse lexical sort
 
+  ax.clear()
   labels = list()
   i = 0
   for c in channels:
@@ -50,6 +45,8 @@ def plot( ax, signals, end_padding=-1 ):
   ax.set_xlabel('Time (s)')
   ax.set_yticks( np.r_[0.5:i] )
   ax.set_yticklabels(labels)
+  pylab.setp(ax.get_xticklabels(), fontsize=8)
+  pylab.setp(ax.get_yticklabels(), fontsize=8)
   ax.grid(True)
   return t_final
 

@@ -2,6 +2,8 @@
 """
 Utilities for plotting analog signals
 """
+import pylab
+
 import numpy as np
 from common import *
 
@@ -9,40 +11,43 @@ fc=get_face_color
 ls=get_linestyle
 
 
-def mkxy( L, dt ):
+def mkxy( L, dt, Vi ):
   assert len(L) == len(dt), 'analog plot:  dt length calculated incorrectly'
   x = list()
   y = list()
   for i in xrange(len(L)):
     # L[i] : [ <start_time>, <number-of-samples>, <value> ]
     # dt[i]: <duration of ith sequence, in (s) >
-    sub_dt = float(dt[i]) / L[i][1]
-    ti = L[i][0]
-    tf = (L[i][0]+dt[i])
-    # the -.5*sub_dt is to ensure that precision problems don't make us include
-    # the end point
-    x += list(np.arange( ti, (tf-0.5*sub_dt), sub_dt ))
-    y += list( np.ones( L[i][1] ) * L[i][2] )
+
+    if Vi is None:
+      x.append( L[i][0] )
+      y.append( L[i][2] )
+    else:
+      x += [ L[i][0], L[i][0] ]
+      y += [ Vi, L[i][2] ]
+    Vi = L[i][2]
+
+    # sub_dt = float(dt[i]) / L[i][1]
+
+    # ti = L[i][0]
+    # tf = (L[i][0]+dt[i])
+    # # the -.5*sub_dt is to ensure that precision problems don't make us include
+    # # the end point
+    # x += list(np.arange( ti, (tf-0.5*sub_dt), sub_dt ))
+    # y += list( np.ones( L[i][1] ) * L[i][2] )
   return x, y
 
 
-def plot( ax, signals, end_padding=-1 ):
-  """
-    end_padding : how much to pad the end of the signal with in order to
-                  satisfy the demand that end-transitions be honored.
-                  If no padding is specified (or end_padding<0) 0.001 of total
-                  time will be used.
-  """
-  #start by finding the maximum time
-  t_final = get_t_final( signals )
-  if end_padding < 0:
+def plot( ax, signals, t_final=None ):
+  if t_final is None:
+    #start by finding the maximum time
+    t_final = get_t_final( signals )
     t_final *= 1.001
-  else:
-    t_final += end_padding
 
   channels = signals.items()
   channels.sort( lambda (k1,v1),(k2,v2): cmp(k2,k1) ) # reverse lexical sort
 
+  ax.clear()
   labels = list()
   i = 0
   for c in channels:
@@ -51,8 +56,10 @@ def plot( ax, signals, end_padding=-1 ):
 
     x = list()
     y = list()
+    Vi = None
     for g in c[1].items():
-      xg, yg = mkxy( g[1], dt[ g[0] ] )
+      xg, yg = mkxy( g[1], dt[ g[0] ], Vi )
+      Vi = yg[-1]
       x += xg
       y += yg
       s = max(1, int(.05 * len(xg)))
@@ -64,13 +71,15 @@ def plot( ax, signals, end_padding=-1 ):
     y.append( y[-1] )
 
     #ax.plot( x, y, color=fc(i), linewidth=2 )
-    ax.plot( x, y, color=fc(i), linewidth=2 )
+    ax.plot( x, y, color=fc(i), linewidth=2, marker='o' )
     i += 1
 
-  ax.set_xlabel('Time (s)')
+  #ax.set_xlabel('Time (s)')
   #ax.set_yticks( np.r_[0.5:i] )
   #ax.set_yticklabels(labels)
-  ax.legend( labels, loc=(-0.25,0) )
+  #ax.legend( labels, loc=(-0.25,0) )
+  pylab.setp(ax.get_xticklabels(), fontsize=8)
+  pylab.setp(ax.get_yticklabels(), fontsize=8)
   ax.grid(True)
   return t_final
 

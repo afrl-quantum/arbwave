@@ -2,8 +2,16 @@
 
 from ..gui_callbacks import do_gui_operation
 
-def plot_stuff( plotter, analog, digital ):
-  print 'trying to plot stuff...'
+def plot_stuff( plotter, analog, digital, transitions ):
+  t_final = max(transitions)
+  if analog or digital:
+    plotter.start()
+  if analog:
+    plotter.plot_analog( analog, t_final=t_final )
+  if digital:
+    plotter.plot_digital( digital, t_final=t_final )
+  if analog or digital:
+    plotter.finish(t_final=t_final)
 
-def to_plotter( plotter, analog, digital ):
-  do_gui_operation( plot_stuff, plotter, analog, digital )
+def to_plotter( plotter, analog, digital, transitions ):
+  do_gui_operation( plot_stuff, plotter, analog, digital, transitions )

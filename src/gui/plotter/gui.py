@@ -20,8 +20,6 @@ from mpl_toolkits.axes_grid import Divider, Size
 
 from matplotlib.widgets import MultiCursor, SpanSelector
 
-import pylab
-
 def connect_bbox( bbox1, bbox2,
                   loc1a, loc2a, loc1b, loc2b,
                   prop_lines, prop_patches=None, prop_patches2_update=None):
@@ -174,16 +172,12 @@ def init_plot():
   axes['analog'].set_ylabel('Output (V)')
   #axes['analog'].xaxis.set_label_position('top')
   axes['analog'].xaxis.set_ticks_position('top')
-  axes['analog'].set_xlabel('Time (s)')
-  pylab.setp(axes['analog'].get_xticklabels(), fontsize=8)
-  pylab.setp(axes['analog'].get_yticklabels(), fontsize=8)
+  #axes['analog'].set_xlabel('Time (s)')
 
   # ##### DIGITAL AXES #####
   axes['digital'] = fig.add_axes(rect, label='digital', navigate=True, sharex=axes['analog'] )
   axes['digital'].set_axes_locator( divider.new_locator(nx=0, ny=2) )
   #axes['digital'].xaxis.set_ticks_position('top')
-  pylab.setp(axes['digital'].get_xticklabels(), fontsize=8)
-  pylab.setp(axes['digital'].get_yticklabels(), fontsize=8)
 
   # ##### SCROLL INDICATOR AXES #####
   axes['t'] = fig.add_axes( rect, label='time' )

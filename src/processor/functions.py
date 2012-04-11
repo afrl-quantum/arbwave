@@ -11,28 +11,34 @@ class Ramp:
   """
   Ramp from initial value to final value with a given exponent.
   """
-  def __init__(self, Vi, t):
+  def __init__(self, Vi, dt):
     """
     Vi  : initial value from which to ramp
-    t   : normalized time, where t=1 is the end of the current waveform element.
-    """
+    dt  : normalized time step, where t=1 is the end of the current waveform
+          element.
+          Note that the first data point (i.e. t=0) is implicitly given by the
+          value Vi.
+   """
     self.Vi = Vi
-    self.t = t
-  def __call__(self, to, exponent):
-    return self.Vi - self.t**exponent * (self.Vi - to)
+    self.dt = dt
+    self.t = 0.0
+  def __call__(self, to, exponent, _from=None ):
+    if not _from:
+      _from = self.Vi
+    return _from - (self.t+self.dt)**exponent * (_from - to), 1.0
 
 registered = {
   'ramp' : Ramp,
 }
 
-def get(Vi,t):
+def get(Vi,dt):
   """
-  Get all functions for initial value Vi and time t.
+  Get all functions for initial value Vi and time step dt.
 
   This function is used to return a dictionary of functions to be added to
   locals while evaluating values.
   """
   retval = dict()
   for f in registered:
-    retval[f] = registered[f](Vi,t)
+    retval[f] = registered[f](Vi,dt)
   return retval

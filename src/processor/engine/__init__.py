@@ -56,13 +56,13 @@ class Arbwave:
     if continuous:
       print 'requesting continuous regeneration...'
 
-    analog, digital = \
+    analog, digital, transitions = \
       compute.waveforms( self.channels[0],
                          self.waveforms[0],
                          self.signals[0],
                          globals=globals )
 
-    send.to_plotter( self.plotter, analog, digital )
+    send.to_plotter( self.plotter, analog, digital, transitions )
 
 
   def halt(self):
@@ -84,13 +84,13 @@ class Arbwave:
     """
     exec global_load
 
-    analog, digital = \
+    analog, digital, transitions = \
       compute.waveforms( self.channels[0],
                          self.waveforms[0],
                          self.signals[0],
                          globals=globals )
 
-    send.to_plotter( self.plotter, analog=None, digital=None )
+    send.to_plotter( self.plotter, analog, digital, transitions )
 
 
   def request_stop(self, request=True):
