@@ -73,6 +73,9 @@ ui_info = \
 default_script = """\
 # This script sets global variables and/or functions.
 # All other scripts and processing will be done in this context.
+from physical.unit import *
+from physical.constant import *
+from physical import unit
 
 def onstart():
 	'''Called when 'play' button is clicked'''
