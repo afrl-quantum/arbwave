@@ -25,18 +25,23 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
 
   def dict(self):
     D = dict()
+    order = 0
     for i in iter(self):
       D[ i[0] ] = {
         'device'  : i[Channels.DEVICE],
         'scaling' : i[Channels.SCALING],
         'value'   : i[Channels.VALUE],
         'enable'  : i[Channels.ENABLE],
+        'order'   : order,
       }
+      order += 1
     return D
 
   def load(self, D):
     self.clear()
-    for i in D.items():
+    items = D.items()
+    items.sort(key=lambda i: i[1]['order'])
+    for i in items:
       self.append([
         i[0],
         i[1]['device'],

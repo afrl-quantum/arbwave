@@ -107,6 +107,8 @@ def add_paths_to_combobox_tree( T, P, category=None, M=None, skip_CAT=None ):
   if skip_CAT is None:
     skip_CAT = len(CAT)
 
+  P = list(P)
+  P.sort()
   for c in P:
     add_path_to_combobox_tree( T, CAT + c.split('/'), skip_CAT, M )
 
