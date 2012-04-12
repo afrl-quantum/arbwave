@@ -14,8 +14,8 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
   ASYNC   =6
 
 
-  default_group = ( '', 't',       '', '', True,   '', False )
-  default_element=( '', 't', 'dt,ddt', '', True, None, None  )
+  default_group = ( '', 't', '', '', True,   '', False )
+  default_element=( '', 't', '', '', True, None, None  )
 
   def __init__(self, **kwargs):
     gtk.TreeStore.__init__(self,
