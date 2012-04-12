@@ -17,6 +17,8 @@ def cmpeps( a, b, scale_eps=1.0 ):
   else:
     return 0
 
+class OverlapError(Exception):
+  pass
 
 class UniqueElement:
   """
@@ -36,8 +38,8 @@ class UniqueElement:
     #elif cmpeps(self.t, other.t)==0 and cmpeps(self.dt, other.dt)==0:
     #  return 0
     else:
-      raise KeyError('overlapping waveform elements compared [' \
-                     + str(self) + ',' + str(other) + ']!')
+      raise OverlapError('overlapping waveform elements compared [' \
+                         + str(self) + ',' + str(other) + ']!')
 
   def __repr__(self):
     return '({t},{dt},{v},g={g})' \
@@ -110,7 +112,7 @@ def waveforms( channels, waveforms, signals, globals=None ):
 
       if ci['type']:
         pass
-      if   dev.startswith('Analog/')  or dev in backend.analog:
+      elif   dev.startswith('Analog/')  or dev in backend.analog:
         ci['type'] = 'analog'
       elif dev.startswith('Digital/') or dev in backend.digital:
         ci['type'] = 'digital'
@@ -134,14 +136,10 @@ def waveforms( channels, waveforms, signals, globals=None ):
       assert ddt_e <= dt_e, 'ddt MUST be <= dt!'
 
       # ensure that transitions occur on clock pulses...
-      t_start_e = clock_period * round(t_start_e/clock_period)
-      t_locals[chan] = max(t_locals[chan], t_start_e+dt_e)
-      dt_e      = clock_period * (round(dt_e/clock_period) - 1)
-      # for ddt_e, we first try to get the closest integer number of steps
-      # then, we find the closest integer number of steps that coincide with
-      # with clock pulses
+      t_locals[chan]  = max(t_locals[chan], t_start_e+dt_e)
+
+      # get the closest integer number of steps
       ddt_e     = dt_e / round(dt_e/ddt_e)
-      ddt_e     = clock_period * int(ddt_e/clock_period)
 
       assert (dt_e > ZT and ddt_e > ZT), 'durations MUSt be > 0!'
       assert ddt_e <= dt_e, 'ddt MUST be <= dt!'
@@ -158,9 +156,12 @@ def waveforms( channels, waveforms, signals, globals=None ):
       funs = functions.get(Vi, ddt_e/dt_e)
       L.update( funs )
 
-      t_end_e = t_start_e + dt_e
+      t_end_e = clock_period * (round((t_start_e + dt_e)/clock_period) - 1)
       t_e = t_start_e
       while cmpeps(t_e, t_end_e, physical.unit.s) < 0:
+        # fix times to be exactly on a clock pulse...
+        t_e_fixed = clock_period * round(t_e/clock_period)
+
         L['t'] = t_e
 
         # change time for built-in functions
@@ -186,11 +187,20 @@ def waveforms( channels, waveforms, signals, globals=None ):
         else:
           raise RuntimeError("type of channel '"+chan+"' reset?!")
 
-        t_e_si = float(t_e + placement*ddt_e)
-        ddt_e_si = float( min(clock_period, (1.-placement)* ddt_e) )
+        # fix again after applying  placement...
+        if placement > 0.0:
+          t_e_fixed = clock_period * round((t_e + placement*ddt_e)/clock_period -1)
+        ddt_e_fixed = t_e + ddt_e - t_e_fixed
+
+
+        t_e_si = float(t_e_fixed)
+        ddt_e_si = float( max(clock_period, ddt_e_fixed) )
 
         # insert (t, dt, value) tuple in SI units
-        bisect.insort_right( ce, UE(t_e_si, ddt_e_si, value, groupNum) )
+        try:
+          bisect.insort_right( ce, UE(t_e_si, ddt_e_si, value, groupNum) )
+        except OverlapError, e:
+          raise OverlapError( '{c}: {e}'.format(c=chan,e=e) )
         transitions.append( t_e_si )
 
         t_e += ddt_e
