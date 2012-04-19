@@ -7,16 +7,18 @@ from dispatcher import TreeModelDispatcher
 class Channels(TreeModelDispatcher, gtk.ListStore):
   LABEL   =0
   DEVICE  =1
-  SCALING =2
-  VALUE   =3
-  ENABLE  =4
+  VALUE   =2
+  SCALING =3
+  UNITS   =4
+  ENABLE  =5
 
   def __init__(self, **kwargs):
     gtk.ListStore.__init__(self,
       str,  # Label
       str,  # device
-      str,  # scaling
       str,  # value
+      object, # scaling
+      str,  # units
       bool, # enable
     )
 
@@ -27,13 +29,19 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
     D = dict()
     order = 0
     for i in iter(self):
-      D[ i[0] ] = {
+      D[ i[Channels.LABEL] ] = {
         'device'  : i[Channels.DEVICE],
-        'scaling' : i[Channels.SCALING],
         'value'   : i[Channels.VALUE],
+        'scaling' : list(),
+        'units'   : i[Channels.UNITS],
         'enable'  : i[Channels.ENABLE],
         'order'   : order,
       }
+      if i[Channels.SCALING]:
+        slist = D[ i[Channels.LABEL] ]['scaling']
+        for row in i[Channels.SCALING]:
+          slist.append( (row[0], row[1]) )
+
       order += 1
     return D
 
@@ -42,11 +50,16 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
     items = D.items()
     items.sort(key=lambda i: i[1]['order'])
     for i in items:
+      slist = gtk.ListStore(str,str)
+      for row in i[1]['scaling']:
+        slist.append( row )
+
       self.append([
         i[0],
         i[1]['device'],
-        i[1]['scaling'],
         i[1]['value'],
+        slist,
+        i[1]['units'],
         i[1]['enable'],
       ])
 

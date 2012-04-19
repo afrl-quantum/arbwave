@@ -116,6 +116,8 @@ class ArbWave(gtk.Window):
 
 
     # LOAD THE STORAGE
+    self.plotter = Plotter( self )
+    self.processor = Processor( self.plotter )
     self.script = stores.Script(
       default_script,
       title='Global Variables/Functions...',
@@ -131,11 +133,13 @@ class ArbWave(gtk.Window):
     )
     self.waveforms = stores.Waveforms( changed=self.update )
     self.signals = stores.Signals( changed=self.update )
-    self.channel_editor = edit.Channels( self.channels, self.add_undo )
+    self.channel_editor = edit.Channels(
+      channels=self.channels,
+      processor=self.processor,
+      parent=self,
+      add_undo=self.add_undo )
     self.waveform_editor = \
       edit.Waveforms(self.waveforms, self.channels, self.add_undo)
-    self.plotter = Plotter( self )
-    self.processor = Processor( self.plotter )
     # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = True
 

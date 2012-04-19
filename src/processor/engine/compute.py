@@ -96,6 +96,8 @@ def waveforms( channels, waveforms, signals, globals=None ):
     assert (dt > ZT and ddt > ZT), 'durations MUST be > 0!'
     assert ddt <= dt, 'ddt MUST be <= dt!'
 
+    max_time = 0.0
+
     t_locals = dict()
     for e in group['elements']:
       chan = e['channel']
@@ -197,6 +199,7 @@ def waveforms( channels, waveforms, signals, globals=None ):
         ddt_e_si = float( max(clock_period, ddt_e_fixed) )
 
         # insert (t, dt, value) tuple in SI units
+        max_time = max( max_time, t_e_si + ddt_e_si )
         try:
           bisect.insort_right( ce, UE(t_e_si, ddt_e_si, value, groupNum) )
         except OverlapError, e:
@@ -205,6 +208,7 @@ def waveforms( channels, waveforms, signals, globals=None ):
 
         t_e += ddt_e
 
+    transitions.append( max_time )
 
     if not group['asynchronous']:
       t = max(t, t_start+dt)

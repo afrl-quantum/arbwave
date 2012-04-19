@@ -20,6 +20,10 @@ class Processor:
     self.end_condition = threading.Condition( self.lock )
 
 
+  def get_globals(self):
+    return self.Globals
+
+
   def update(self, channels, waveforms, signals, script, toggle_run, show_stopped):
     """
     Updates that are driven from user-interface changes sent to the engine.

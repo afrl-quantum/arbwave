@@ -2,6 +2,7 @@
 import gtk, gobject
 
 from helpers import *
+import scaling
 from ... import backend
 
 ui_info = \
@@ -17,9 +18,6 @@ ui_info = \
 def edit_device(action, path, model, add_undo=None):
   print 'should edit the device settings (clock, trigger,...)'
 
-def edit_scaling(action, path, model, ITEM, add_undo=None):
-  #row[col] = do_script_edit(text=row[col])[1]
-  print 'should edit the scaling...'
 
 def create_action_group():
   # GtkActionEntry
@@ -82,10 +80,18 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
     markup = ''
     sep = ''
 
-    enable, scaling = channels.get(iter, channels.ENABLE, channels.SCALING)
+    enable, units, scaling = channels.get(iter,
+      channels.ENABLE,
+      channels.UNITS,
+      channels.SCALING)
     markup += \
-      '<b>Scaling</b>:  {scaling}' \
+      '<b>Dimensions</b>:  {units}' \
       ''.format(**locals())
+    if scaling and len(scaling):
+      markup += \
+      '\n<b>Linear Lookup Table</b>:\n'
+      for r in scaling:
+        markup += '\t{x}\t{y}\n'.format(x=r[0], y=r[1])
 
     tooltip.set_markup(markup)
     widget.set_tooltip_row(tooltip, path)
@@ -99,16 +105,18 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
 
 
 class Channels:
-  def __init__(self, channels, add_undo=None):
+  def __init__(self, channels, processor, parent=None, add_undo=None):
+    self.parent = parent
     self.add_undo = add_undo
     self.channels = channels
+    self.processor = processor
+    self.scaling_editor = None
 
     V = self.view = gtk.TreeView( channels )
 
     R = {
       'label'   : gtk.CellRendererText(),
       'device'  : gtk.CellRendererCombo(),
-      'scaling' : gtk.CellRendererText(),
       'value'   : gtk.CellRendererText(),
       'enable'  : gtk.CellRendererToggle(),
     }
@@ -127,10 +135,6 @@ class Channels:
     R['value'].connect( 'edited', set_item,
                         channels, channels.VALUE, self.add_undo )
 
-    R['scaling'].set_property( 'editable', True )
-    R['scaling'].connect( 'edited', set_item,
-                          channels, channels.SCALING, self.add_undo )
-
     R['enable'].set_property( 'activatable', True )
     R['enable'].connect( 'toggled', toggle_item,
                           channels, channels.ENABLE, self.add_undo )
@@ -138,7 +142,6 @@ class Channels:
     C = {
       'label'   : GTVC( 'Label',   R['label'],  text=channels.LABEL ),
       'device'  : GTVC( 'Device',  R['device'], text=channels.DEVICE ),
-      'scaling' : GTVC( 'Scaling', R['scaling'],text=channels.SCALING ),
       'value'   : GTVC( 'Value',   R['value'],  text=channels.VALUE ),
       'enable'  : GTVC( 'Enabled', R['enable'] ),
     }
@@ -150,7 +153,6 @@ class Channels:
     V.connect('query-tooltip', query_tooltip)
     V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
     V.append_column( C['label'  ] )
-    #V.append_column( C['scaling'] )
     V.append_column( C['value'  ] )
     V.append_column( C['enable' ] )
     V.append_column( C['device' ] )
@@ -160,9 +162,25 @@ class Channels:
       popup_button_press_handler,
       ui_manager,
       ui_manager.get_widget('/CH:Edit'),
-      [('/CH:Edit/CH:Scaling', edit_scaling, channels.SCALING, self.add_undo),
-       ('/CH:Edit/CH:Device',  edit_device,                    self.add_undo)],
+      [('/CH:Edit/CH:Scaling', self.edit_scaling),
+       ('/CH:Edit/CH:Device',  edit_device, self.add_undo)],
     )
+
+
+  def edit_scaling(self, action, path, model):
+    def unset_editor(*args):
+      self.scaling_editor = None
+
+    if not self.scaling_editor:
+      self.scaling_editor = scaling.Editor(
+        channels=self.channels,
+        parent=self.parent,
+        globals_src=lambda: self.processor.get_globals(),
+        add_undo=self.add_undo,
+      )
+      self.scaling_editor.connect('destroy', unset_editor)
+      self.scaling_editor.set_channel(model[path][model.LABEL])
+    self.scaling_editor.present()
 
 
   def insert_row(self):

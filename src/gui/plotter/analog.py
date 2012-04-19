@@ -63,15 +63,14 @@ def plot( ax, signals, t_final=None ):
       x += xg
       y += yg
       s = max(1, int(.05 * len(xg)))
-      ax.plot( np.array(xg)[::s], np.array(yg)[::s], get_marker(g[0]), color=fc(i) )
+      #ax.plot( np.array(xg)[::s], np.array(yg)[::s], get_marker(g[0]), color=fc(i) )
     # By definition, each final transition is supposed to be honored as a fixed
     # value.  This final data point just ensures that this hold is plotted for
     # each channel until all channels have finished.
     x.append( t_final )
     y.append( y[-1] )
 
-    #ax.plot( x, y, color=fc(i), linewidth=2 )
-    ax.plot( x, y, color=fc(i), linewidth=2, marker='o' )
+    ax.plot( x, y, color=fc(i), linewidth=2 )
     i += 1
 
   #ax.set_xlabel('Time (s)')
