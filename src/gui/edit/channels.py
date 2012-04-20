@@ -80,18 +80,24 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
     markup = ''
     sep = ''
 
-    enable, units, scaling = channels.get(iter,
+    enable, units, scaling, order, smooth = channels.get(iter,
       channels.ENABLE,
       channels.UNITS,
-      channels.SCALING)
+      channels.SCALING,
+      channels.INTERP_ORDER,
+      channels.INTERP_SMOOTHING)
     markup += \
       '<b>Dimensions</b>:  {units}' \
-      ''.format(**locals())
+      .format(**locals())
     if scaling and len(scaling):
       markup += \
-      '\n<b>Linear Lookup Table</b>:\n'
+      '\n<b>UnivariateSpline(x,y,order,smooth)</b>:\n' \
+      '\torder  : {order}\n' \
+      '\tsmooth : {smooth}\n' \
+      '\t(x,y)  :\n' \
+      .format(**locals())
       for r in scaling:
-        markup += '\t{x}\t{y}\n'.format(x=r[0], y=r[1])
+        markup += '\t\t{x}\t{y}\n'.format(x=r[0], y=r[1])
 
     tooltip.set_markup(markup)
     widget.set_tooltip_row(tooltip, path)

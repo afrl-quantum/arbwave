@@ -15,6 +15,7 @@ from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as Navig
 import pylab
 
 import numpy as np
+from scipy.interpolate import UnivariateSpline
 
 from helpers import *
 import spreadsheet
@@ -127,13 +128,46 @@ class Editor(gtk.Dialog):
 
     self.units.connect('activate', update_units_label)
     self.units.set_text('V')
+
+
+    self.order = gtk.SpinButton()
+    self.order.set_range(1,5)
+    self.order.set_increments(1,2)
+    def update_order(entry):
+      if self.chan:
+        self.chan[self.channels.INTERP_ORDER] = self.order.get_value_as_int()
+        self.update_plot()
+
+    self.order.connect('value-changed', update_order)
+    self.order.set_value(1)
+
+
+    self.smoothing = gtk.SpinButton(digits=3)
+    self.smoothing.set_range(0,10000000)
+    self.smoothing.set_increments(0.5,1)
+    def update_smoothing(entry):
+      if self.chan:
+        self.chan[self.channels.INTERP_SMOOTHING] = self.smoothing.get_value()
+        self.update_plot()
+
+    self.smoothing.connect('value-changed', update_smoothing)
+    self.smoothing.set_value(0)
+
+
     ubox = gtk.HBox()
     ubox.pack_start( self.channel_select )
     ubox.pack_start( gtk.Label('Output Scale/Units:  ') )
     ubox.pack_start( self.units )
 
+    pbox = gtk.HBox()
+    pbox.pack_start( gtk.Label('Interpolation:      Order:' ) )
+    pbox.pack_start( self.order )
+    pbox.pack_start( gtk.Label('Smoothing:' ) )
+    pbox.pack_start( self.smoothing )
+
     bottom = gtk.VBox()
     bottom.pack_start(ubox, False, False)
+    bottom.pack_start(pbox, False, False)
     bottom.pack_start(sw)
 
     body = gtk.VPaned()
@@ -248,9 +282,18 @@ class Editor(gtk.Dialog):
     D = D.items()
     D.sort(key=lambda v: v[0]) # sort by x
     D = np.array(D)
+
     if len(D):
-      self.plot( D[:,0], D[:,1], 'o-' )
-    
+      if len(D) > 1:
+        s = UnivariateSpline(D[:,0], D[:,1],
+          k=self.order.get_value_as_int(),
+          s=self.smoothing.get_value(),
+        )
+        xs = np.linspace(D[0,0],D[-1,0], 5*len(D))
+        self.plot( D[:,0], D[:,1], 'o', xs, s(xs) )
+      else:
+        self.plot( D[:,0], D[:,1], 'o' )
+
 
   # def insert_row(self):
   #   i = self.channels.insert_before(self.view.get_selection().get_selected()[1])
@@ -310,15 +353,18 @@ def main(argv):
   exec Global_script in Globals
 
   class Channels(gtk.ListStore):
-    LABEL = 0
-    UNITS = 1
-    SCALING = 2
+    LABEL            = 0
+    UNITS            = 1
+    SCALING          = 2
+    INTERP_ORDER     = 3
+    INTERP_SMOOTHING = 4
+    DEVICE           = 5
     def __init__(self):
-      gtk.ListStore.__init__(self, str, str, gtk.ListStore)
+      gtk.ListStore.__init__(self, str, str, gtk.ListStore, int, float, str)
 
   channels = Channels()
-  channels.append(( 'MOT Detuning', 'MHz', gtk.ListStore(str,str) ))
-  channels.append(( 'MOT Power', 'mW', gtk.ListStore(str,str) ))
+  channels.append(( 'MOT Detuning', 'MHz', gtk.ListStore(str,str), 1, 0, 'Analog' ))
+  channels.append(( 'MOT Power', 'mW', gtk.ListStore(str,str), 1, 0, 'Analog' ))
   edit(channels, globals=Globals)
 
 if __name__ == '__main__':

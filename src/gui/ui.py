@@ -119,7 +119,7 @@ class ArbWave(gtk.Window):
     self.plotter = Plotter( self )
     self.processor = Processor( self.plotter )
     self.script = stores.Script(
-      default_script,
+      '',
       title='Global Variables/Functions...',
       parent=self,
       add_undo=self.add_undo,
@@ -142,6 +142,9 @@ class ArbWave(gtk.Window):
       edit.Waveforms(self.waveforms, self.channels, self.add_undo)
     # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = True
+
+    # ensure that the default_script is executed for default the global env
+    self.script.set_text( default_script )
 
 
     #  ###### SET UP THE PANEL #######
