@@ -12,6 +12,7 @@ import about, configure, stores, edit
 from plotter import Plotter
 from packing import Args as PArgs, hpack, vpack, VBox
 import storage
+from notification import Notification
 
 from .. import backend
 from ..processor import Processor
@@ -96,6 +97,11 @@ arbwave.connect( 'stop', onstop )
 #arbwave.set_loop_control( loop_control )
 """
 
+def notify_position(w):
+  pos = w.get_position()
+  sz  = w.get_size()
+  return ( int(pos[0] + sz[0]*.5), pos[1] + sz[1] )
+
 class ArbWave(gtk.Window):
   def __init__(self, parent=None):
     #create the toplevel window
@@ -108,6 +114,9 @@ class ArbWave(gtk.Window):
 
 
     #  ###### SET UP THE UNDO/REDO STACK AND CALLBACKS ######
+    self.notify = Notification( parent=self,
+      get_position=lambda: notify_position(self),
+    )
     self.undo = list()
     self.redo = list()
     self.connect('key-press-event', self.do_keypress)
@@ -463,10 +472,16 @@ class ArbWave(gtk.Window):
       )
       self.next_untested_undo = len(self.undo)
     except Exception, e:
-      print 'Could not update output; ' \
-            'Number of changes since last successful update: ', \
-            len(self.undo) - self.next_untested_undo
-      raise e
+      print e
+      self.notify.show(
+        '<span color="red"><b>Error</b>: \n' \
+        '   Could not update output\n' \
+        '   Number of changes since last successful update: {} \n' \
+        '   {}\n' \
+        '</span>\n' \
+        .format(len(self.undo) - self.next_untested_undo,
+                str(e).replace('<', '&lt;').replace('>', '&gt;')) )
+      #raise e
 
   def channels_row_changed(self, model, path, iter):
     self.update(model)
