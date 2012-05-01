@@ -35,28 +35,28 @@ def get_digital_channels():
     'ni/dev1/port1/line5',
     'ni/dev1/port1/line6',
     'ni/dev1/port1/line7',
-    'viewpoint/port0/line0',
-    'viewpoint/port0/line1',
-    'viewpoint/port0/line2',
-    'viewpoint/port0/line3',
-    'viewpoint/port0/line4',
-    'viewpoint/port0/line5',
-    'viewpoint/port0/line6',
-    'viewpoint/port0/line7',
+    'viewpoint/A/0',
+    'viewpoint/A/1',
+    'viewpoint/A/2',
+    'viewpoint/A/3',
+    'viewpoint/A/4',
+    'viewpoint/A/5',
+    'viewpoint/A/6',
+    'viewpoint/A/7',
   ]: retval.append( channels.Digital(i) )
   return retval
 
-def get_arbitrary_timing_channels():
+def get_timing_channels():
   retval = list()
   for i in [
-    'viewpoint/port0/line0',
-    'viewpoint/port0/line1',
-    'viewpoint/port0/line2',
-    'viewpoint/port0/line3',
-    'viewpoint/port0/line4',
-    'viewpoint/port0/line5',
-    'viewpoint/port0/line6',
-    'viewpoint/port0/line7',
+    'viewpoint/A/0',
+    'viewpoint/A/1',
+    'viewpoint/A/2',
+    'viewpoint/A/3',
+    'viewpoint/A/4',
+    'viewpoint/A/5',
+    'viewpoint/A/6',
+    'viewpoint/A/7',
   ]: retval.append( channels.Timing(i) )
   return retval
 
