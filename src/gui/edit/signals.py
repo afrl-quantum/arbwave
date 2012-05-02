@@ -11,7 +11,7 @@ def build_device_combobox_tree():
   T = device_combobox_tree
   T.clear()
 
-  add_paths_to_combobox_tree( T, backend.backplane )
+  add_paths_to_combobox_tree( T, backend.get_routable_backplane_signals() )
 
 
 

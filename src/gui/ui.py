@@ -14,7 +14,6 @@ from packing import Args as PArgs, hpack, vpack, VBox
 import storage
 from notification import Notification
 
-from .. import backend
 from ..processor import Processor
 
 

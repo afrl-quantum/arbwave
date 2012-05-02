@@ -4,7 +4,6 @@ from scipy.interpolate import UnivariateSpline
 import numpy as np
 import bisect
 
-from ... import backend
 from .. import functions
 from common import *
 import physical
@@ -332,9 +331,9 @@ def make_channel_info(channels):
 
 
 def determine_channel_type(chname, dev):
-  if   dev.startswith('Analog/')  or dev in backend.analog:
+  if   dev.startswith('Analog/'):
     return 'analog'
-  elif dev.startswith('Digital/') or dev in backend.digital:
+  elif dev.startswith('Digital/'):
     return 'digital'
   raise RuntimeError(chname+':  Cannot determine type of channel ')
 
