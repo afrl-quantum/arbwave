@@ -8,6 +8,9 @@ class Base:
   def __str__(self):
     return self.name
 
+  def get_config_template(self):
+    return dict()
+
   def prefix(self):
     return self.name.split('/')[0]
 
