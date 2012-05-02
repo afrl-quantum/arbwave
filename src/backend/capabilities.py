@@ -9,7 +9,10 @@ def get_analog_channels():
 def get_digital_channels():
   return []
 
-def get_arbitrary_timing_channels():
+def get_timing_channels():
+  return []
+
+def get_devices():
   return []
 
 def get_routeable_backplane_signals():

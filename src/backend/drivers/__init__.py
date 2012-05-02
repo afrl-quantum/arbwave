@@ -30,7 +30,7 @@ def initialize_device_drivers():
         drivers[m.prefix()] = m
         ac = m.get_analog_channels()
         dc = m.get_digital_channels()
-        tc = m.get_arbitrary_timing_channels()
+        tc = m.get_timing_channels()
         rs = m.get_routeable_backplane_signals()
 
         add_with_prefix( m.prefix(), analog,    ac )
