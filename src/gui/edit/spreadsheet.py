@@ -258,6 +258,7 @@ def test():
     model.append(['foo3', 25, True])
 
     treeView = gtk.TreeView(model)
+    treeView.set_property( 'rules-hint', True )
     sheet_cb = Callbacks(treeView, ('',0, True))
     R = {
       'col0' : gtk.CellRendererText(),
