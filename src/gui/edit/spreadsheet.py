@@ -219,8 +219,13 @@ class Callbacks:
       self.set_error()
 
 
-  def connect_column( self, c, setitem=None, startedit=None ):
+  def connect_column( self, c, setitem=None, toggleitem=None, startedit=None ):
     ids = list()
+    assert not ( setitem and toggleitem ), 'Use only one of setitem/toggleitem!'
+
+    if toggleitem:
+      ids.append( c.connect('toggled', toggleitem[0], *toggleitem[1:] ) )
+      return
 
     if startedit:
       assert callable(startedit[0]), 'Expected callable startedit[0] function'
@@ -250,6 +255,10 @@ def set_item( renderer, path, new_text, col, treeview):
   if col == 1:
     val = lambda v: eval(v)
   treeview.get_model()[path][col] = val(new_text)
+
+def toggle_item( cell, path, col, treeview ):
+  treeview.get_model()[path][col] ^= True
+
 
 def test():
     model = gtk.ListStore(str, int, bool)

@@ -23,11 +23,13 @@ class Undo:
     self.model[self.row][self.col] = self.new_item
 
 
-def set_item( cell, path, new_item, model, ITEM, add_undo=None, unique=False ):
+def set_item( cell, path, new_item, model, ITEM, add_undo=None,
+              unique=False, type=str ):
   """
     if unique is True, this searches through the immediate chlidren for
       duplicate names before allowing the edit.
   """
+  new_item = type(new_item)
   if unique:
     i = model.get_iter_first()
     for i in iter(model):
@@ -51,7 +53,7 @@ def toggle_item( cell, path, model, ITEM, add_undo=None ):
   """
   if add_undo is not None:
     add_undo( Undo(model[path][ITEM], not model[path][ITEM], model, path, ITEM) )
-  model[path][ITEM] = not model[path][ITEM]
+  model[path][ITEM] ^= True
 
 
 
