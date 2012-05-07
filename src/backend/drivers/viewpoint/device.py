@@ -3,15 +3,7 @@
 import viewpoint as vp
 
 from ...device import Device as Base
-
-class frange:
-  def __init__(self,mn,mx):
-    self.mn = mn
-    self.mx = mx
-  def __contains__(self,val):
-    if self.mn <= val and val <= self.mx:
-      return True
-    return False
+from ....float_range import float_range
 
 
 class Device(Base):
@@ -39,6 +31,6 @@ class Device(Base):
       'scan_rate' : {
         'default' : vp.config.valid_settings['out']['scan_rate'],
         'type'    : float,
-        'valid'   : frange(0.0,40e6),
+        'valid'   : float_range(0.0,40e6),
       },
     }

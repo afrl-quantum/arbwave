@@ -7,10 +7,11 @@ to more explicit channel-specific full waveforms.
 import sys, threading
 import engine
 from gui_callbacks import do_gui_operation
+import default
 
 class Processor:
   def __init__(self, plotter):
-    self.Globals = dict()
+    self.Globals = default.get_globals()
     self.engine = engine.Arbwave(plotter)
     sys.modules['arbwave'] = self.engine # fake arbwave module
     self.running = False
@@ -38,6 +39,7 @@ class Processor:
       # First:  update the global script environment
       if script[1]:
         self.engine.clear_callbacks()
+        self.Globals = default.get_globals() # reset the global environment
         exec script[0] in self.Globals
 
       # set engine inputs
