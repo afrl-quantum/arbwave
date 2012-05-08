@@ -32,8 +32,11 @@ def set_range( cell, editable, path, model ):
 def load_combobox( cell, editable, path, model ):
   L = gtk.ListStore( str, str )
   editable.set_model( L )
+  RANGE = model[path][model.RANGE]
+  if callable(RANGE):
+    RANGE = RANGE()
 
-  for i in model[path][model.RANGE]:
+  for i in RANGE:
     if type(i) in [list,tuple]:
       L.append( (str(i[0]), '{}: {}'.format(i[0],i[1])) )
     else:
@@ -150,15 +153,12 @@ class Generic:
         TYPE, combo = TYPE
 
       show = model[i][model.TYPE] is TYPE
-      if show:
-        needs_combo = ( type(model[i][model.RANGE]) in [list, tuple] )
-        if needs_combo and not combo:
-          show = False
 
-      # if range is list/tuple, this entry needs a combo box
+      # if range is list/tuple or callable, this entry needs a combo box
       # if this entry needs a combo box and this cell is not a combo box, set
       # show to False
-      if show and ( type(model[i][model.RANGE]) in [list, tuple] ) != combo:
+      RANGE = model[i][model.RANGE]
+      if show and ( type(RANGE) in [list, tuple] or callable(RANGE) ) != combo:
         show = False
 
       cell.set_property('sensitive', show)
@@ -193,6 +193,9 @@ if __name__ == '__main__':
     float: model.VAL_FLOAT,
   }
 
+  def intlist():
+    return [ (42, 'Answer to the universe'), (-42, 'Other universe?'), 10212 ]
+
   # valid range values:
   #   xrange object (valid for integer _and_ float types)
   #   any object that supports min(), max(), 'in' and 'not in'
@@ -202,6 +205,7 @@ if __name__ == '__main__':
   #       1,
   #       (2, 'Another nice value'),
   #     ]
+  #   _OR_:  combo box range object can be a callable that returns list/tuple
 
   #                   # label  type  range         bool   str int  flt
   dev1 = \
@@ -219,6 +223,7 @@ if __name__ == '__main__':
   model.append(dev1, ('param6',str,  [('zero',0),
                                       'five',
                                       ('ten','10')], False, '-', 0,  0) )
+  model.append(dev1, ('param7',int,  intlist,      False, '', 0,  0) )
   g = Generic(model)
 
   window = gtk.Window()

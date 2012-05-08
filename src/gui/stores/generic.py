@@ -22,7 +22,7 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
 
   default = (None, None, None, False, None, 0, 0.0)
 
-  def __init__(self):
+  def __init__(self, **kwargs):
     gtk.TreeStore.__init__(self,
       str,    # label
       object, # type

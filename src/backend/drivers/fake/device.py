@@ -1,11 +1,10 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-from ...channels import *
-from ... import channels as base
+
+from ...device import Device as Base
 from ....float_range import float_range
 
-class Timing(base.Timing):
-  """Test timing channel class"""
 
+class Device(Base):
   def get_config_template(self):
     return {
       'bool'       : {

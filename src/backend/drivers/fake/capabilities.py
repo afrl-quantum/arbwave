@@ -5,6 +5,17 @@ Set of capabilities that each driver may support.
 
 from ...capabilities import *
 import channels
+import device
+
+def get_devices():
+  retval = list()
+  for i in [
+    'ni/dev0/ao',
+    'ni/dev0/ao',
+    'ni/dev1',
+    'viewpoint/0',
+  ]: retval.append( device.Device(i) )
+  return retval
 
 def get_analog_channels():
   retval = list()
@@ -35,28 +46,28 @@ def get_digital_channels():
     'ni/dev1/port1/line5',
     'ni/dev1/port1/line6',
     'ni/dev1/port1/line7',
-    'viewpoint/A/0',
-    'viewpoint/A/1',
-    'viewpoint/A/2',
-    'viewpoint/A/3',
-    'viewpoint/A/4',
-    'viewpoint/A/5',
-    'viewpoint/A/6',
-    'viewpoint/A/7',
+    'viewpoint/0/A/0',
+    'viewpoint/0/A/1',
+    'viewpoint/0/A/2',
+    'viewpoint/0/A/3',
+    'viewpoint/0/A/4',
+    'viewpoint/0/A/5',
+    'viewpoint/0/A/6',
+    'viewpoint/0/A/7',
   ]: retval.append( channels.Digital(i) )
   return retval
 
 def get_timing_channels():
   retval = list()
   for i in [
-    'viewpoint/A/0',
-    'viewpoint/A/1',
-    'viewpoint/A/2',
-    'viewpoint/A/3',
-    'viewpoint/A/4',
-    'viewpoint/A/5',
-    'viewpoint/A/6',
-    'viewpoint/A/7',
+    'viewpoint/0/A/0',
+    'viewpoint/0/A/1',
+    'viewpoint/0/A/2',
+    'viewpoint/0/A/3',
+    'viewpoint/0/A/4',
+    'viewpoint/0/A/5',
+    'viewpoint/0/A/6',
+    'viewpoint/0/A/7',
   ]: retval.append( channels.Timing(i) )
   return retval
 

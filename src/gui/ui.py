@@ -141,6 +141,8 @@ class ArbWave(gtk.Window):
     )
     self.waveforms = stores.Waveforms( changed=self.update )
     self.signals = stores.Signals( changed=self.update )
+    self.devcfg  = stores.Generic( changed=self.update )
+    self.clocks  = stores.Generic( changed=self.update )
     self.channel_editor = edit.Channels(
       channels=self.channels,
       processor=self.processor,
@@ -406,11 +408,20 @@ class ArbWave(gtk.Window):
     self.redo = list()  # remove all current undo items
     self.next_untested_undo = 0
 
+
+  def pause(self):
+    self.allow_updates = False
+
+
+  def unpause(self):
+    self.allow_updates = True
+
+
   def setvars(self, vardict):
     self.clearundo()
 
     # suspend all updates
-    self.allow_updates = False
+    self.pause()
 
     if 'channels' in vardict:
       self.channels.load( vardict['channels'] )
@@ -425,7 +436,7 @@ class ArbWave(gtk.Window):
       self.script.load( vardict['global_script'] )
 
     # re-enable updates and directly call for an update
-    self.allow_updates = True
+    self.unpause()
     self.update()
 
   def clearvars(self):
