@@ -15,6 +15,7 @@ import storage
 from notification import Notification
 
 from ..processor import Processor
+from ..processor.default import get_globals
 
 
 
@@ -124,6 +125,7 @@ class ArbWave(gtk.Window):
 
 
     # LOAD THE STORAGE
+    self.config_file = ''
     self.plotter = Plotter( self )
     self.processor = Processor( self.plotter )
     self.script = stores.Script(
@@ -362,7 +364,7 @@ class ArbWave(gtk.Window):
     # Finish off with creating references to each of the actual actions
     self.actions = {
       'New'       : lambda a: self.clearvars(),
-      'Open'      : ( storage.gtk_tools.gtk_open_handler, self ),
+      'Open'      : ( storage.gtk_tools.gtk_open_handler, self, get_globals() ),
       'Save'      : ( storage.gtk_tools.gtk_save_handler, self ),
       'SaveAs'    : ( storage.gtk_tools.gtk_save_handler, self, True),
       'Quit'      : lambda a: self.destroy(),
@@ -397,6 +399,8 @@ class ArbWave(gtk.Window):
 
   def getvars(self):
     return {
+      'devices'   : self.devcfg.representation(),
+      'clocks'    : self.clocks.representation(),
       'global_script': self.script.representation(),
       'channels'  : self.channels.representation(),
       'waveforms' : self.waveforms.representation(),
@@ -435,6 +439,12 @@ class ArbWave(gtk.Window):
     if 'global_script' in vardict:
       self.script.load( vardict['global_script'] )
 
+    if 'clocks' in vardict:
+      self.clocks.load( vardict['clocks'] )
+
+    if 'devices' in vardict:
+      self.devcfg.load( vardict['devices'] )
+
     # re-enable updates and directly call for an update
     self.unpause()
     self.update()
@@ -445,6 +455,9 @@ class ArbWave(gtk.Window):
     self.waveforms.clear()
     self.signals.clear()
     self.script.set_text(default_script)
+    self.clocks.clear()
+    self.devcfg.clear()
+    self.config_file = ''
 
 
   def update(self, item=None, toggle_run=False, show_stopped=None):

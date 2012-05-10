@@ -54,7 +54,7 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
 
   def load(self, D):
     self.clear()
-    for i in D.items:
+    for i in D.items():
       row = list(Generic.default)
       row[0] = i[0]
       parent = self.append( None, row)

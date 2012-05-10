@@ -5,6 +5,7 @@ Arbitrary waveform generator for digital and analog signals.
 
 import os, argparse, gtk, gobject, time, sys
 import version, gui
+from processor.default import get_globals
 
 def sleeper():
   time.sleep(0.001)
@@ -28,7 +29,7 @@ def main():
     assert os.path.isfile( args.filename ), 'expected configuration filename'
     prog.config_file = args.filename
     F = open( args.filename )
-    prog.setvars( gui.storage.var_tools.readvars(F) )
+    prog.setvars( gui.storage.var_tools.readvars(F, get_globals()) )
     F.close()
 
   gtk.main()

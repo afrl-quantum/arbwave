@@ -1,6 +1,23 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import pprint
+import repr as reprlib
+
+# tweak the repr used by pprint
+class MyRepr(reprlib.Repr):
+  """
+  A custom version of repr that does not print <type 'int'> for native types
+  like int, float, bool, str.
+  """
+  def __init__(self, *args, **kwargs):
+    reprlib.Repr.__init__(self, *args, **kwargs)
+    self.maxother=100
+  def repr_type(self,obj,level):
+    return obj.__name__
+
+# override the pprint version of repr
+pprint.repr = MyRepr().repr
+
 
 def writevars( F, vardict ):
   if not F:

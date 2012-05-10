@@ -39,19 +39,19 @@ def get_file(doopen=True):
     chooser.destroy()
   return filename
 
-def gtk_open_handler(action, stor):
+def gtk_open_handler(action, stor, globals=globals(), **locals):
   try:
     stor.config_file = get_file()
     F = open( stor.config_file )
   except TypeError:
     return # this happens when get_file returns None
-  V = readvars( F )
+  V = readvars( F, globals, **locals )
   F.close()
   stor.setvars( V )
 
 def gtk_save_handler(action, stor, force_new=False):
   try:
-    if (not force_new) and 'config_file' in dir(stor):
+    if (not force_new) and 'config_file' in dir(stor) and stor.config_file:
       F = open( stor.config_file, 'w' )
     else:
       stor.config_file = get_file(False)

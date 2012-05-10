@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-class float_range:
+class float_range(object):
   def __init__(self, mn, mx, include_beginning=True, include_end=False):
     self.mn = mn
     self.mx = mx
