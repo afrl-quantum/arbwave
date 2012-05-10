@@ -4,7 +4,7 @@ Arbitrary waveform generator for digital and analog signals.
 """
 
 import os, argparse, gtk, gobject, time, sys
-import version, gui
+import version
 from processor.default import get_globals
 
 def sleeper():
@@ -24,6 +24,7 @@ def main():
   if sys.platform == 'win32':
     gtk.timeout_add(400, sleeper)
 
+  import gui
   prog = gui.ArbWave()
   if args.filename:
     assert os.path.isfile( args.filename ), 'expected configuration filename'
