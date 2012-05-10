@@ -467,7 +467,8 @@ class ArbWave(gtk.Window):
     The processor will transform the descriptions into per-channel waveforms,
     plot them and send them to the backend drivers.
 
-    item : should generally be one of [channels, waveforms, signals, script]
+    item : should generally be one of
+           [devcfg, clocks, signals, channels, waveforms, script]
 
     show_stopped : if not None, then waveforms will be generated.  This should be a
     callable that will indicate back to the user that running has ceased.
@@ -478,7 +479,8 @@ class ArbWave(gtk.Window):
 
     try:
       if item not in [
-        None, self.channels, self.waveforms, self.signals, self.script,
+        None, self.devcfg, self.clocks, self.signals,
+        self.channels, self.waveforms, self.script,
       ]:
         raise TypeError('Unknown item sent to update()')
 
@@ -486,10 +488,12 @@ class ArbWave(gtk.Window):
         'expected callable show_stopped'
 
       self.processor.update(
-        ( self.channels.representation(),   item in [ None, self.channels] ),
-        ( self.waveforms.representation(),  item in [ None, self.waveforms] ),
-        ( self.signals.representation(),    item in [ None, self.signals] ),
-        ( self.script.representation(),     item in [ None, self.script] ),
+        ( self.devcfg.representation(),    item in [ None, self.devcfg] ),
+        ( self.clocks.representation(),    item in [ None, self.clocks] ),
+        ( self.signals.representation(),   item in [ None, self.signals] ),
+        ( self.channels.representation(),  item in [ None, self.channels] ),
+        ( self.waveforms.representation(), item in [ None, self.waveforms] ),
+        ( self.script.representation(),    item in [ None, self.script] ),
         toggle_run=toggle_run,
         show_stopped=show_stopped,
       )

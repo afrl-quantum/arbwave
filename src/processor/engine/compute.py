@@ -110,7 +110,7 @@ def set_units_and_scaling(chname, ci, chan, globals):
 
 
 
-def waveforms( channels, waveforms, signals, globals=None ):
+def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
   """
   Take the configuration as provided by the user and generate a set of waveforms
   that can then be sent to the plotter and/or a hardware driver for output.

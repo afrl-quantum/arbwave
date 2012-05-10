@@ -25,7 +25,7 @@ class Processor:
     return self.Globals
 
 
-  def update(self, channels, waveforms, signals, script, toggle_run, show_stopped):
+  def update(self, devcfg, clocks, signals, channels, waveforms, script, toggle_run, show_stopped):
     """
     Updates that are driven from user-interface changes sent to the engine.
     """
@@ -43,14 +43,19 @@ class Processor:
         exec script[0] in self.Globals
 
       # set engine inputs
+      self.engine.devcfg    = devcfg
+      self.engine.clocks    = clocks
+      self.engine.signals   = signals
       self.engine.channels  = channels
       self.engine.waveforms = waveforms
-      self.engine.signals   = signals
+
+      if devcfg[1] or clocks[1] or signals[1]:
+        print 'should be updating drivers...'
 
       if self.running or toggle_run:
         self.start( show_stopped )
       else:
-        if channels[1] or script[1] or signals[1]:
+        if channels[1] or script[1]:
           exec 'import arbwave\narbwave.update_static()' in self.Globals
 
         # TODO:  have more fine-grained change information:
@@ -61,7 +66,7 @@ class Processor:
         #   4.  channel static value changed
         #   With this information, we would more correctly only update plots or
         #   static output when the corresponding information has changed.
-        if channels[1] or script[1] or signals[1] or waveforms[1]:
+        if channels[1] or script[1] or waveforms[1]:
           exec 'import arbwave\narbwave.update_plotter()' in self.Globals
     finally:
       self.lock.release()

@@ -16,9 +16,11 @@ class Arbwave:
   
   def __init__(self, plotter):
     self.plotter = plotter
+    self.devcfg = None
+    self.clocks = None
+    self.signals = None
     self.channels = None
     self.waveforms = None
-    self.signals = None
     self.start = None
     self.stop = None
     self.loop_control = None
@@ -57,9 +59,11 @@ class Arbwave:
       print 'requesting continuous regeneration...'
 
     analog, digital, transitions = \
-      compute.waveforms( self.channels[0],
-                         self.waveforms[0],
+      compute.waveforms( self.devcfg[0],
+                         self.clocks[0],
                          self.signals[0],
+                         self.channels[0],
+                         self.waveforms[0],
                          globals=globals )
 
     send.to_plotter( self.plotter, analog, digital, transitions )
@@ -85,9 +89,11 @@ class Arbwave:
     exec global_load
 
     analog, digital, transitions = \
-      compute.waveforms( self.channels[0],
-                         self.waveforms[0],
+      compute.waveforms( self.devcfg[0],
+                         self.clocks[0],
                          self.signals[0],
+                         self.channels[0],
+                         self.waveforms[0],
                          globals=globals )
 
     send.to_plotter( self.plotter, analog, digital, transitions )
