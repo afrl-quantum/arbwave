@@ -2,12 +2,18 @@
 
 from device import Device
 import capabilities
+from .... import options
 
 def prefix():
   return 'vp'
 
+
 def name():
   return 'Viewpoint Driver'
+
+
+def is_simulated():
+  return options.simulated
 
 
 # mapping from board index to device
@@ -19,7 +25,7 @@ def load_boards():
   print 'probing for first 10 viewpoint boards...'
   for i in xrange(10):
     try:
-      d = Device(i)
+      d = Device( prefix(), i, simulated=options.simulated )
     except:
       break
     devices[i] = d
@@ -27,6 +33,9 @@ def load_boards():
 
 
 load_boards()
+
+def get_devices():
+  return devices.values()
 
 def get_analog_channels():
   return list()

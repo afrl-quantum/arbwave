@@ -6,13 +6,15 @@ Set of capabilities that each driver may support.
 from ...capabilities import *
 from ... import channels
 
-def get_channels(devices, C):
+def get_channels(devices, C, *args, **kwargs):
   retval = list()
-  for dev in devices:
-    nin = devices[dev].config['number-input-ports']
+  for dev in devices.values():
+    nin = dev.config['number-input-ports']
     for port in [ 'A', 'B', 'C', 'D' ][:(4-nin)]:
       for line in xrange(16):
-        retval.append( C('{}/{}/{}'.format(dev, port,line)) )
+        retval.append(
+          C('{}/{}/{}'.format(dev, port,line), *args, **kwargs)
+        )
   return retval
 
 def get_digital_channels(devices):
@@ -35,21 +37,29 @@ available_routes = {
   'A/14' : {
     'destinations' : ['TRIG/5', 'External/'],
     'invertible'   : False,
-  }, # TRIG/0 could be either PXI or RTSI
+  }, # TRIG/5 could be either PXI or RTSI
 
   # set_attr('port-routing', 0x4) if A/15 is input
   # set_attr('port-routing', 0x20) if A/15 is output
   'A/15' : {
     'destinations' : ['TRIG/6', 'External/'],
     'invertible'   : False,
-  }, # TRIG/0 could be either PXI or RTSI
+  }, # TRIG/6 could be either PXI or RTSI
+
+  'PIN20' : { # usable as a clock, therefore present as routable
+    'destinations' : ['External/'],
+    'invertible'   : False,
+  },
 }
 
 def get_routeable_backplane_signals(devices):
-  retval = list()
-  for dev in devices:
+  retval = get_channels(devices, channels.Backplane,
+                        destinations=['External/'], invertible=False )
+
+  # now overwrite the default backplane channels with those with specifics
+  for dev in devices.values():
     for c, r in available_routes.items():
-      retval.append( channels.Backplane( dev+'/'+c,
+      retval.append( channels.Backplane( '{}/{}'.format(dev,c),
                        destinations = r['destinations'],
                        invertible   = r['invertible'] ))
   return retval

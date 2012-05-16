@@ -7,14 +7,18 @@ from ....float_range import float_range
 
 
 class Device(Base):
-  def __init__(self, board_number):
-    Base.__init__(self, name=board_number)
+  def __init__(self, prefix, board_number, simulated=False):
+    Base.__init__(self, name='{}/Dev{}'.format(prefix,board_number))
+    self.simulated = simulated
 
-    self.board = vp.Board(
-      # default to *all* inputs so that all are high-impedance
-      vp.Config('in', range(0,64) ),
-      board=board_number,
-    )
+    if not simulated:
+      self.board = vp.Board(
+        # default to *all* inputs so that all are high-impedance
+        vp.Config('in', range(0,64) ),
+        board=board_number,
+      )
+    elif board_number > 0:
+      raise IndexError('Only one board in simulated mode.')
 
     self.config = {
       'number-input-ports' : 0,
@@ -28,9 +32,123 @@ class Device(Base):
         'type'    : int,
         'valid'   : xrange(5),
       },
-      'scan_rate' : {
+      'output-scan_rate' : {
         'default' : vp.config.valid_settings['out']['scan_rate'],
         'type'    : float,
         'valid'   : float_range(0.0,40e6),
+      },
+      'output-clock' : {
+        'default' : vp.config.valid_settings['out']['clock'],
+        'type'    : int,
+        'valid'   : [(vp.CLCK_INTERNAL,'internal'),
+                     (vp.CLCK_EXTERNAL,'external--pin 20'),
+                     (vp.CLCK_TRIG_0,'TRIG/0 (backplane)'),
+                     (vp.CLCK_OCXO, 'internal OCXO option'),
+                    ],
+      },
+      'output-divider' : {
+        'default' : vp.config.valid_settings['out']['divider'],
+        'type'    : int,
+        'valid'   : xrange(2**32 -1),
+      },
+      'output-trig_type' : {
+        'default' : vp.config.valid_settings['out']['trig_type'],
+        'type'    : int,
+        'valid'   : [ (vp.STRTTYPE_LEVEL, 'level'),
+                      (vp.STRTTYPE_EDGETOEDGE, 'Edge to edge'),
+                      (vp.STRTTYPE_EDGE, 'Edge'),
+                    ],
+      },
+      'output-trig_edge' : {
+        'default' : vp.config.valid_settings['out']['trig_edge'],
+        'type'    : int,
+        'valid'   : [ (vp.TRIG_RISING, 'rising'),
+                      (vp.TRIG_FALLING, 'falling'),
+                    ],
+      },
+      'output-trig_source' : {
+        'default' : vp.config.valid_settings['out']['trig_source'],
+        'type'    : int,
+        'valid'   : [ (vp.STRT_NONE, 'none'),
+                      (vp.STRT_EXTERNAL, 'external--pin 24'),
+                      (vp.STRT_TRIG_2, 'TRIG/2 (backplane)'),
+                      (vp.STRT_PXI_STAR, 'PXI Star trigger'),
+                    ],
+      },
+      'output-stop_edge' : {
+        'default' : vp.config.valid_settings['out']['stop_edge'],
+        'type'    : int,
+        'valid'   : [ (vp.TRIG_RISING, 'rising'),
+                      (vp.TRIG_FALLING, 'falling'),
+                    ],
+      },
+      'output-stop' : {
+        'default' : vp.config.valid_settings['out']['stop'],
+        'type'    : int,
+        'valid'   : [ (vp.STOP_NONE, 'none'),
+                      (vp.STOP_EXTERNAL, 'external--pin 25'),
+                      (vp.STOP_TRIG_3, 'TRIG/3 (backplane)'),
+                      (vp.STOP_OUTPUT_FIFO, 'FIFO exhausted'),
+                    ],
+      },
+
+      'input-scan_rate' : {
+        'default' : vp.config.valid_settings['in']['scan_rate'],
+        'type'    : float,
+        'valid'   : float_range(0.0,40e6),
+      },
+      'input-clock' : {
+        'default' : vp.config.valid_settings['in']['clock'],
+        'type'    : int,
+        'valid'   : [(vp.CLCK_INTERNAL,'internal'),
+                     (vp.CLCK_EXTERNAL,'external--pin 20'),
+                     (vp.CLCK_TRIG_0,'TRIG/0 (backplane)'),
+                     (vp.CLCK_OCXO, 'internal OCXO option'),
+                    ],
+      },
+      'input-divider' : {
+        'default' : vp.config.valid_settings['in']['divider'],
+        'type'    : int,
+        'valid'   : xrange(2**32 -1),
+      },
+      'input-trig_type' : {
+        'default' : vp.config.valid_settings['in']['trig_type'],
+        'type'    : int,
+        'valid'   : [ (vp.STRTTYPE_LEVEL, 'level'),
+                      (vp.STRTTYPE_EDGETOEDGE, 'Edge to edge'),
+                      (vp.STRTTYPE_EDGE, 'Edge'),
+                    ],
+      },
+      'input-trig_edge' : {
+        'default' : vp.config.valid_settings['in']['trig_edge'],
+        'type'    : int,
+        'valid'   : [ (vp.TRIG_RISING, 'rising'),
+                      (vp.TRIG_FALLING, 'falling'),
+                    ],
+      },
+      'input-trig_source' : {
+        'default' : vp.config.valid_settings['in']['trig_source'],
+        'type'    : int,
+        'valid'   : [ (vp.STRT_NONE, 'none'),
+                      (vp.STRT_EXTERNAL, 'external--pin 24'),
+                      (vp.STRT_TRIG_2, 'TRIG/2 (backplane)'),
+                      (vp.STRT_PXI_STAR, 'PXI Star trigger'),
+                    ],
+      },
+      'input-stop_edge' : {
+        'default' : vp.config.valid_settings['in']['stop_edge'],
+        'type'    : int,
+        'valid'   : [ (vp.TRIG_RISING, 'rising'),
+                      (vp.TRIG_FALLING, 'falling'),
+                    ],
+      },
+      'input-stop' : {
+        'default' : vp.config.valid_settings['in']['stop'],
+        'type'    : int,
+        'valid'   : [ (vp.STOP_NONE, 'none'),
+                      (vp.STOP_EXTERNAL, 'external--pin 25'),
+                      (vp.STOP_TRIG_3, 'TRIG/3 (backplane)'),
+                      (vp.STOP_OUTPUT_FIFO, 'FIFO exhausted'),
+                    ],
       },
     }
