@@ -1,0 +1,36 @@
+Each device, output channel (analog, digital, timing), etc must be uniquely
+identified by a path that also indicates is logical connections.  For example,
+the National Instruments driver path begins with 'ni' and subsequent devices
+served by this driver should be identified by 'sub-directories' within the 'ni'
+path.  For example, analog channels in the 'ni' path are denoted like:
+  ni/Dev1/ao0
+  ni/Dev1/ao1
+  ni/Dev2/ao0
+  ni/Dev2/ao1
+In this example, ni/Dev1/ao is a device that also includes at least channels 0
+and 1.  In this example, it is also clear that each device driver must define
+its own unique root path identifier, i.e. 'ni' for National Instruments, 'vp'
+for Viewpoint, 'uei' for United Electronic Industries, and so forth.
+Currently assigned prefixes:
+  ni : National Instruments
+  vp : Viewpoint
+
+
+Common paths should use the same name regardless of which device they are on.
+For example, the backplane trigger lines have been given these names (whether
+they are being provided by a PXI chassis or a RTSI bus connection):
+  TRIG/0
+  TRIG/1
+  TRIG/2
+  TRIG/3
+  TRIG/4
+  TRIG/5
+  TRIG/6
+
+External, i.e. manual cable connections should be prefixed with 'External'.  For
+example, if a cable goes from vp/Dev0/A/0 to ni/Dev1/PFI0, there will be two
+routing configurations given in the program denoted by:
+  vp/Dev0/A/0   ->  External/cable0
+  ni/Dev1/PFI0  ->  External/cable0
+where the connecting cable has been given the arbitrary, but necessarily
+consistent, name of 'cable0'.
