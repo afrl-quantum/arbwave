@@ -1,4 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
+import re
 import gtk
 
 def GTVC(*args,**kwargs):
@@ -78,6 +79,16 @@ def add_path_to_combobox_tree(T, p, k, M):
       else:
         M[si] = T.append( M['/'.join(p[0:i])], ('/'.join(p[k:(i+1)]), p[i]) )
 
+
+def pcmp(p0,p1):
+  m0 = re.search('([0-9]*$)', p0)
+  m1 = re.search('([0-9]*$)', p1)
+  cr = cmp(p0[:m0.start()], p1[:m1.start()])
+  if cr == 0:
+    return cmp(int(p0[m0.start():]), int(p1[m1.start():]))
+  return cr
+
+
 def add_paths_to_combobox_tree( T, P, category=None, M=None, skip_CAT=None ):
   """
     Add a set of paths to the gtk.TreeStore in T.
@@ -110,7 +121,7 @@ def add_paths_to_combobox_tree( T, P, category=None, M=None, skip_CAT=None ):
     skip_CAT = len(CAT)
 
   P = list(P)
-  P.sort()
+  P.sort(cmp=pcmp)
   for c in P:
     add_path_to_combobox_tree( T, CAT + c.split('/'), skip_CAT, M )
 

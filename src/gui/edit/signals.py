@@ -4,22 +4,59 @@ from helpers import *
 
 from ... import backend
 
-device_combobox_tree = gtk.TreeStore(str,str)
+signal_combobox_tree = gtk.TreeStore(str,str)
+dest_combobox_tree = dict()
+dest_combobox_tree_all = gtk.TreeStore(str,str)
+dest_to_sig_tree = dict()
 
 def build_device_combobox_tree():
-  global device_combobox_tree
-  T = device_combobox_tree
+  global signal_combobox_tree, dest_combobox_tree, dest_to_sig_tree
+  dest_to_sigs = dict()
+  T = signal_combobox_tree
   T.clear()
 
-  add_paths_to_combobox_tree( T, backend.get_routeable_backplane_signals() )
+  signals = backend.get_routeable_backplane_signals()
+  add_paths_to_combobox_tree( T, signals )
+
+  # now, for each signals, we will generate a list of destinations
+  for sig in signals:
+    T = gtk.TreeStore(str,str)
+    add_paths_to_combobox_tree( T, signals[sig].dest )
+    dest_combobox_tree[sig] = T
+
+    for dest in signals[sig].dest:
+      if dest not in dest_to_sigs:
+        dest_to_sigs[dest] = list()
+      dest_to_sigs[dest].append( sig )
+
+  for dest in dest_to_sigs:
+    T = gtk.TreeStore(str,str)
+    add_paths_to_combobox_tree( T, dest_to_sigs[dest] )
+    dest_to_sig_tree[dest] = T
+
+  add_paths_to_combobox_tree(dest_combobox_tree_all, dest_to_sigs.keys())
 
 
 
-def load_signals_combobox( cell, editable, path ):
-  global device_combobox_tree
-  if len(device_combobox_tree) < 1:
+def load_signals_combobox( cell, editable, path, model ):
+  global signal_combobox_tree
+  if len(signal_combobox_tree) < 1:
     build_device_combobox_tree()
-  editable.set_property("model", device_combobox_tree)
+  if model[path][model.DEST] in dest_to_sig_tree:
+    editable.set_property('model', dest_to_sig_tree[model[path][model.DEST]])
+  else:
+    editable.set_property('model', signal_combobox_tree)
+  prep_combobox_for_tree(editable)
+
+
+def load_dest_combobox( cell, editable, path, model ):
+  global signal_combobox_tree, dest_combobox_tree
+  if len(signal_combobox_tree) < 1:
+    build_device_combobox_tree()
+  if model[path][model.SOURCE] in dest_combobox_tree:
+    editable.set_property('model', dest_combobox_tree[model[path][model.SOURCE]])
+  else:
+    editable.set_property('model', dest_combobox_tree_all)
   prep_combobox_for_tree(editable)
 
 
@@ -40,9 +77,9 @@ def create(signals):
   R['source'].set_property( 'text-column', 0 )
   R['dest'  ].set_property( 'text-column', 0 )
   R['source'].connect( 'edited', set_item, signals, signals.SOURCE )
-  R['source'].connect( 'editing-started', load_signals_combobox )
+  R['source'].connect( 'editing-started', load_signals_combobox, signals )
   R['dest'  ].connect( 'edited', set_item, signals, signals.DEST   )
-  R['dest'  ].connect( 'editing-started', load_signals_combobox )
+  R['dest'  ].connect( 'editing-started', load_dest_combobox, signals )
   R['invert'].connect( 'toggled', toggle_item, signals, signals.INVERT )
 
   signal_editor.update({
