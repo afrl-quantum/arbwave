@@ -25,6 +25,12 @@ class Processor:
     return self.Globals
 
 
+  def exec_script(self, script):
+    self.engine.clear_callbacks()
+    self.Globals = default.get_globals() # reset the global environment
+    exec script in self.Globals
+
+
   def update(self, devcfg, clocks, signals, channels, waveforms, script, toggle_run, show_stopped):
     """
     Updates that are driven from user-interface changes sent to the engine.
@@ -38,9 +44,7 @@ class Processor:
 
       # First:  update the global script environment
       if script[1]:
-        self.engine.clear_callbacks()
-        self.Globals = default.get_globals() # reset the global environment
-        exec script[0] in self.Globals
+        self.exec_script( script[0] )
 
       # set engine inputs
       self.engine.devcfg    = devcfg

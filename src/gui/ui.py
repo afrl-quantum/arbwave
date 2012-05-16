@@ -129,7 +129,7 @@ class ArbWave(gtk.Window):
     self.plotter = Plotter( self )
     self.processor = Processor( self.plotter )
     self.script = stores.Script(
-      '',
+      default_script,
       title='Global Variables/Functions...',
       parent=self,
       add_undo=self.add_undo,
@@ -156,7 +156,7 @@ class ArbWave(gtk.Window):
     self.allow_updates = True
 
     # ensure that the default_script is executed for default the global env
-    self.script.set_text( default_script )
+    self.processor.exec_script( default_script )
 
 
     #  ###### SET UP THE PANEL #######
@@ -450,6 +450,9 @@ class ArbWave(gtk.Window):
     self.update()
 
   def clearvars(self):
+    # suspend all updates
+    self.pause()
+
     self.clearundo()
     self.channels.clear()
     self.waveforms.clear()
@@ -458,6 +461,10 @@ class ArbWave(gtk.Window):
     self.clocks.clear()
     self.devcfg.clear()
     self.config_file = ''
+
+    # re-enable updates and directly call for an update
+    self.unpause()
+    self.update()
 
 
   def update(self, item=None, toggle_run=False, show_stopped=None):
