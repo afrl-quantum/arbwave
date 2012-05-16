@@ -6,6 +6,7 @@ Arbitrary waveform generator for digital and analog signals.
 import os, argparse, gtk, gobject, time, sys
 import version
 from processor.default import get_globals
+import options
 
 def sleeper():
   time.sleep(0.001)
@@ -15,8 +16,12 @@ def main():
   parser = argparse.ArgumentParser(prog=version.prefix())
   parser.add_argument( '--version', action='version',
     version='%(prog)s '+version.version() )
-  parser.add_argument('filename', nargs='?', help='configuration file')
+  parser.add_argument( 'filename', nargs='?', help='configuration file' )
+  parser.add_argument( '--simulated', action='store_true',
+    help='Use simulated hardware' )
   args = parser.parse_args()
+
+  options.simulated = args.simulated
 
   # this is necessary to ensure that threads can be launched!!!!
   gobject.threads_init()

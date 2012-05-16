@@ -5,44 +5,44 @@ Subdirectories of this part of the arbwave package should ONLY contain drivers.
 """
 
 import os
+from ... import options
 
 drivers   = dict() # mapping "prefix" to driver module
 
 
-def add_with_prefix(P,L,C):
-  for c in C:
-    L[ P + '/' + str(c) ] = c
-
-
-
 def get_devices():
   D = dict()
-  for d in drivers:
-    add_with_prefix( d, D, drivers[d].get_devices() )
+  for d in drivers.values():
+    for c in d.get_devices():
+      D[ str(c) ] = c
   return D
 
 def get_analog_channels():
   D = dict()
-  for d in drivers:
-    add_with_prefix( d, D, drivers[d].get_analog_channels() )
+  for d in drivers.values():
+    for c in d.get_analog_channels():
+      D[ str(c) ] = c
   return D
 
 def get_digital_channels():
   D = dict()
-  for d in drivers:
-    add_with_prefix( d, D, drivers[d].get_digital_channels() )
+  for d in drivers.values():
+    for c in d.get_digital_channels():
+      D[ str(c) ] = c
   return D
 
 def get_timing_channels():
   D = dict()
-  for d in drivers:
-    add_with_prefix( d, D, drivers[d].get_timing_channels() )
+  for d in drivers.values():
+    for c in d.get_timing_channels():
+      D[ str(c) ] = c
   return D
 
 def get_routeable_backplane_signals():
   D = dict()
-  for d in drivers:
-    add_with_prefix( d, D, drivers[d].get_routeable_backplane_signals() )
+  for d in drivers.values():
+    for c in d.get_routeable_backplane_signals():
+      D[ str(c) ] = c
   return D
 
 
@@ -56,6 +56,11 @@ def initialize_device_drivers():
         m = __import__(D,globals=globals(),locals=locals())
         if m.prefix() in drivers:
           raise NameError("Prefix of driver already used: '"+m.prefix()+"'")
+
+        if m.is_simulated() != options.simulated:
+          raise NotImplementedError(
+            'Cannot load driver in simulated mode: ' + m.prefix()
+          )
 
         drivers[m.prefix()] = m
         # first test to see if these functions succeed...
