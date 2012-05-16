@@ -62,7 +62,7 @@ def mkdt( signal, t_final ):
   for i in xrange(1,len(items)):
     dt[ items[i-1][0] ].append( items[i][1][0] )
   #append a pseudo-item for the last grouping time length
-  dt[ items[-1][0] ].append( (t_final, 1, None) )
+  dt[ items[-1][0] ].append( (t_final, None) )
 
   for i in dt:
     dt[i] = np.diff( np.array(dt[i])[:,0] )

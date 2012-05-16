@@ -17,7 +17,7 @@ ls=get_linestyle
 
 def mkbbars( L, dt ):
   # only pick out the true value transitions
-  return [ (L[i][0], dt[i])   for i in xrange(len(L))  if L[i][2] ]
+  return [ (L[i][0], dt[i])   for i in xrange(len(L))  if L[i][1] ]
 
 
 def plot( ax, signals, t_final=None ):
@@ -59,7 +59,7 @@ def plot( ax, signals, t_final=None ):
 #
 # format:
 #  'channel-label' : {
-#    group-number : [(start-time, number-samples, value), ...],
+#    group-number : [(start-time, value), ...],
 #    ...
 #  }
 #
@@ -70,42 +70,42 @@ def plot( ax, signals, t_final=None ):
 # National Instruments digital output card 6533(?), start-time will be ignored.
 example_signals = {
   'CH0' : {
-    0 : [(0,1000,True), (100,100,False), (110,100,True), (120,100,False)],
-    2 : [(130,35,True), (200,100,False)],
-    3 : [(220,1,True)],
+    0 : [(0,True), (100,False), (110,True), (120,False)],
+    2 : [(130,True), (200,False)],
+    3 : [(220,True)],
   },
   'CH1' : {
-    0 : [(0,500,True), (50,300,False), (80,200,True), (100,1000,False)],
-    2 : [(200,50,True), (210,25,False)],
-    3 : [(215,50,True), (220,1,False)],
+    0 : [(0,True), (50,False), (80,True), (100,False)],
+    2 : [(200,True), (210,False)],
+    3 : [(215,True), (220,False)],
   },
   'CH2' : {
-    0 : [(0,500,True), (50,300,False), (80,200,True), (100,1000,False)],
-    2 : [(200,50,True), (210,1,False)],
+    0 : [(0,True), (50,False), (80,True), (100,False)],
+    2 : [(200,True), (210,False)],
   },
   'CH3' : {
-    0 : [(10,300,True), (40,500,False), (90,100,True), (100,1000,False)],
-    2 : [(200,50,True), (210,1,False)],
+    0 : [(10,True), (40,False), (90,True), (100,False)],
+    2 : [(200,True), (210,False)],
   },
   'CH4' : {
-    0 : [(20,400,True), (60,300,False), (90,100,True), (110,900,False)],
-    2 : [(200,50,True), (210,1,False)],
+    0 : [(20,True), (60,False), (90,True), (110,False)],
+    2 : [(200,True), (210,False)],
   },
   'CH5' : {
-    0 : [(0,500,True), (50,300,False), (80,200,True), (100,1000,False)],
-    2 : [(200,50,True), (210,1,False)],
+    0 : [(0,True), (50,False), (80,True), (100,False)],
+    2 : [(200,True), (210,False)],
   },
   'CH6' : {
-    0 : [(0,1000,True), (100,100,False), (110,100,True), (120,100,False)],
-    2 : [(130,350,True), (200,1,False)],
+    0 : [(0,True), (100,False), (110,True), (120,False)],
+    2 : [(130,True), (200,False)],
   },
   'CH7' : {
-    0 : [(0,1000,True), (100,100,False), (110,100,True), (120,100,False)],
-    2 : [(130,350,True), (200,1,False)],
+    0 : [(0,True), (100,False), (110,True), (120,False)],
+    2 : [(130,True), (200,False)],
   },
   'CH8' : {
-    0 : [(0,1000,True), (100,100,False), (110,100,True), (120,100,False)],
-    2 : [(130,350,True), (200,1,False)],
+    0 : [(0,True), (100,False), (110,True), (120,False)],
+    2 : [(130,True), (200,False)],
   },
 }
 

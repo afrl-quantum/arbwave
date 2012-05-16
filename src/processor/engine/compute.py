@@ -293,7 +293,7 @@ def to_plottable( elem ):
   for e in elem:
     if e.group not in retval:
       retval[e.group] = list()
-    retval[e.group].append( (e.t, 1, e.value) )
+    retval[e.group].append( (e.t, e.value) )
 
   return retval
 
