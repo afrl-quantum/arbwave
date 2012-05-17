@@ -10,3 +10,6 @@ class Device:
 
   def get_config_template(self):
     return dict()
+
+  def prefix(self):
+    return self.name.partition('/')[0]

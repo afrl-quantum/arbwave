@@ -12,7 +12,7 @@ class Base:
     return dict()
 
   def prefix(self):
-    return self.name.split('/')[0]
+    return self.name.partition('/')[0]
 
   def device(self):
     pass

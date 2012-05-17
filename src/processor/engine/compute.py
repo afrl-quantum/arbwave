@@ -357,6 +357,12 @@ def check_final_units( value, chname, ci ):
 
 
 
+def prefix( devname ):
+  # we have to make sure we chop off the 'Analog' and 'Digital' part
+  dev = devname.partition('/')[-1]
+  return dev.partition('/')[0], dev
+
+
 
 def static( devcfg, channels, globals=None ):
   """
@@ -389,10 +395,15 @@ def static( devcfg, channels, globals=None ):
     value = apply_scaling(value, chname, ci)
     check_final_units( value, chname, ci )
 
+    prfx, dev = prefix(dev)
     if   ci['type'] is 'analog':
-      analog[  chname ] = value
+      if prfx not in analog:
+        analog[ prfx ] = dict()
+      analog[ prfx ][ dev ] = value
     elif ci['type'] is 'digital':
-      digital[ chname ] = value
+      if prfx not in digital:
+        digital[ prfx ] = dict()
+      digital[ prfx ][ dev ] = value
     elif not ( ci['type'] ):
       pass
     else:

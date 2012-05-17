@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from ..gui_callbacks import do_gui_operation
+from ... import backend
 
 def plot_stuff( plotter, analog, digital, transitions ):
   t_final = 0.0
@@ -17,3 +18,17 @@ def plot_stuff( plotter, analog, digital, transitions ):
 
 def to_plotter( plotter, analog, digital, transitions ):
   do_gui_operation( plot_stuff, plotter, analog, digital, transitions )
+
+class ToDriver:
+  def static(self, analog, digital):
+    """Send a bunch of static values to each of the drivers"""
+    for D in backend.drivers:
+      backend.drivers[D].set_static(analog.get(D,{}), digital.get(D,{}))
+
+
+  def waveform(self, analog, digital, transitions):
+    for D in backend.drivers:
+      print 'drivers: ', D
+
+
+to_driver = ToDriver()

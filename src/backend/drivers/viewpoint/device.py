@@ -19,10 +19,19 @@ class Device(Base):
       )
     elif board_number > 0:
       raise IndexError('Only one board in simulated mode.')
+    else:
+      self.board = board_number
 
     self.config = {
       'number-input-ports' : 0,
     }
+
+
+  def set_output(self, data):
+    if not self.simulated:
+      self.board.set_output( data )
+    else:
+      print '{}.{}.set_output({})'.format(self.prefix(), self.board, data)
 
 
   def get_config_template(self):

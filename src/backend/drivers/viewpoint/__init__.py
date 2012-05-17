@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import re
 from device import Device
 import capabilities
 from .... import options
@@ -21,7 +22,6 @@ devices = dict()
 
 def load_boards():
   global devices
-  boards = list()
   print 'probing for first 10 viewpoint boards...'
   for i in xrange(10):
     try:
@@ -48,3 +48,15 @@ def get_timing_channels():
 
 def get_routeable_backplane_signals():
   return capabilities.get_routeable_backplane_signals(devices)
+
+def set_static(analog, digital):
+  assert len(analog) == 0, 'Viewpoint does not perform analog output'
+  D = dict()
+  for di in digital.items():
+    m = re.match('[^/]*/Dev([0-9]*)/(.*)', di[0])
+    if m.group(1) not in D:
+      D[ m.group(1) ] = dict()
+    D[ m.group(1) ][ m.group(2) ] = di[1]
+
+  for dev in D.items():
+    devices[int(dev[0])].set_output( dev[1] )

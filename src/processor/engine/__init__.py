@@ -67,7 +67,7 @@ class Arbwave:
                          globals=globals )
 
     send.to_plotter( self.plotter, analog, digital, transitions )
-    #send.to_driver.waveform( analog, digital, transitions )
+    send.to_driver.waveform( analog, digital, transitions )
 
 
   def halt(self):
@@ -86,7 +86,7 @@ class Arbwave:
                       self.channels[0],
                       globals=globals )
 
-    #send.to_driver.static( analog, digital )
+    send.to_driver.static( analog, digital )
 
 
   def update_plotter(self, globals=None):
