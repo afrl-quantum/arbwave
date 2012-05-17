@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import sys
 import viewpoint as vp
 
 from ...device import Device as Base
@@ -58,7 +59,7 @@ class Device(Base):
       'output-divider' : {
         'default' : vp.config.valid_settings['out']['divider'],
         'type'    : int,
-        'valid'   : xrange(2**32 -1),
+        'valid'   : xrange(sys.maxint),
       },
       'output-trig_type' : {
         'default' : vp.config.valid_settings['out']['trig_type'],
@@ -118,7 +119,7 @@ class Device(Base):
       'input-divider' : {
         'default' : vp.config.valid_settings['in']['divider'],
         'type'    : int,
-        'valid'   : xrange(2**32 -1),
+        'valid'   : xrange(sys.maxint),
       },
       'input-trig_type' : {
         'default' : vp.config.valid_settings['in']['trig_type'],
