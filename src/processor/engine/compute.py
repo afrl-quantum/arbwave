@@ -309,7 +309,8 @@ def apply_scaling(value, chname, ci):
     assert ci['units'], chname+':  dimensions required for scaling'
     value /= ci['units']
     assert type(value) is not physical.base.Quantity, \
-      chname+':  wrong units: {}, expected [{}]'.format(e['value'], ci['units'])
+      chname+':  wrong units: {}, expected [{}]' \
+      .format(value/value.coeff, ci['units'])
     value = ci['scaling'](value)*unit.V
 
   return value
