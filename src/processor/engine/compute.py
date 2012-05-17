@@ -354,3 +354,48 @@ def check_final_units( value, chname, ci ):
     #value = bool(value) # set value as boolean
   else:
     raise RuntimeError("type of channel '"+chname+"' reset?!")
+
+
+
+
+def static( devcfg, channels, globals=None ):
+  """
+  Take the configuration as provided by the user and generate a set of static
+  output values that can then be sent to hardware drivers for output.
+  """
+  exec global_load
+
+  # the return values are initially empty
+  analog = dict()
+  digital = dict()
+
+  channel_info = make_channel_info(channels)
+
+  for chname in channels:
+    ci = channel_info[chname]
+    chan = channels[chname]
+
+    if not ( chname and chan['enable'] ):
+      continue
+
+    dev = chan['device']
+    if not dev:
+      continue
+
+    # we do most of the same basic things as for waveforms without transitions
+    ci['type'] = determine_channel_type(chname, dev)
+    set_units_and_scaling(chname, ci, chan, globals)
+    value = eval( chan['value'], globals )
+    value = apply_scaling(value, chname, ci)
+    check_final_units( value, chname, ci )
+
+    if   ci['type'] is 'analog':
+      analog[  chname ] = value
+    elif ci['type'] is 'digital':
+      digital[ chname ] = value
+    elif not ( ci['type'] ):
+      pass
+    else:
+      raise RuntimeError("type of channel '"+chname+"' reset?!")
+
+  return analog, digital
