@@ -11,27 +11,27 @@ class Timing(base.Timing):
       'bool'       : {
         'default' : True,
         'type'    : bool,
-        'valid'   : None,
+        'range'   : None,
       },
       'int'       : {
         'default' : 0,
         'type'    : int,
-        'valid'   : xrange(5),
+        'range'   : xrange(5),
       },
       'float'     : {
         'default' : 42.24,
         'type'    : float,
-        'valid'   : float_range(0.0,40e6),
+        'range'   : float_range(0.0,40e6),
       },
       'str'       : {
         'default' : 'a value',
         'type'    : str,
-        'valid'   : None,
+        'range'   : None,
       },
       'intlist'   : {
         'default' : 0,
         'type'    : int,
-        'valid'   : [(0,'internal'),
+        'range'   : [(0,'internal'),
                      (1,'external--pin 20'),
                      (2,'TRIG/0 (backplane)'),
                      (3, 'internal OCXO option'),
@@ -40,12 +40,12 @@ class Timing(base.Timing):
       'fltlist'   : {
         'default' : 54.23,
         'type'    : float,
-        'valid'   : [54.23, (23,'some nice number'), 323.32],
+        'range'   : [54.23, (23,'some nice number'), 323.32],
       },
       'strlist'   : {
         'default' : 'value 0',
         'type'    : str,
-        'valid'   : [ 'rising',
+        'range'   : [ 'rising',
                       ('falling', 'to somewhere'),
                       ('lost', 'anywhere'),
                     ],

@@ -195,7 +195,7 @@ class ConfigDialog(gtk.Dialog):
         TYPE = ci[1]['type']
         row[ devcfg.TYPE ] = TYPE
         row[ devcfg.to_index[TYPE] ] = ci[1]['default']
-        row[ devcfg.RANGE ] = ci[1]['valid']
+        row[ devcfg.RANGE ] = ci[1]['range']
         devcfg.append(devline, row)
 
       self.store.unpause()
@@ -222,7 +222,7 @@ class ConfigDialog(gtk.Dialog):
         TYPE = ci[1]['type']
         row[ clocks.TYPE ] = TYPE
         row[ clocks.to_index[TYPE] ] = ci[1]['default']
-        row[ clocks.RANGE ] = ci[1]['valid']
+        row[ clocks.RANGE ] = ci[1]['range']
         clocks.append(clkline, row)
 
       self.store.unpause()
