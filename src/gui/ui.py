@@ -17,6 +17,7 @@ from notification import Notification
 
 from ..processor import Processor
 from ..processor.default import get_globals
+from .. import backend
 
 
 
@@ -103,6 +104,16 @@ def notify_position(w):
   sz  = w.get_size()
   return ( int(pos[0] + sz[0]*.5), pos[1] + sz[1] )
 
+
+def finished(*args, **kwargs):
+  """
+  Finish everything:  close drivers, close windows...
+  """
+  backend.unload_all()
+  gtk.main_quit()
+
+
+
 class ArbWave(gtk.Window):
   def __init__(self, parent=None):
     #create the toplevel window
@@ -111,7 +122,7 @@ class ArbWave(gtk.Window):
     try:
       self.set_screen(parent.get_screen())
     except AttributeError:
-      self.connect('destroy', lambda *w: gtk.main_quit())
+      self.connect('destroy', finished)
 
 
     #  ###### SET UP THE UNDO/REDO STACK AND CALLBACKS ######

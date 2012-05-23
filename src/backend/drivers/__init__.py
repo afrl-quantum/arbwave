@@ -46,6 +46,15 @@ def get_routeable_backplane_signals():
   return D
 
 
+def unload_all():
+  while drivers:
+    d = drivers.popitem()
+    try:
+      d[1].close()
+    except:
+      print 'driver not cleanly closed: ', d[0]
+
+
 def initialize_device_drivers():
   global drivers
   THISDIR = os.path.dirname( __file__ )
