@@ -178,9 +178,6 @@ class ConfigDialog(gtk.Dialog):
         return
 
       self.store.pause()
-      row = list(devcfg.default)
-      row[ devcfg.LABEL ] = dev
-      devline = devcfg.append(None, row)
 
       template = devices[dev].get_config_template()
       if 'clock' in template:
@@ -189,14 +186,7 @@ class ConfigDialog(gtk.Dialog):
                                self.store.clocks,
                                self.store.signals)
 
-      for ci in template.items():
-        row = list(devcfg.default)
-        row[ devcfg.LABEL ] = ci[0]
-        TYPE = ci[1]['type']
-        row[ devcfg.TYPE ] = TYPE
-        row[ devcfg.to_index[TYPE] ] = ci[1]['default']
-        row[ devcfg.RANGE ] = ci[1]['range']
-        devcfg.append(devline, row)
+      devcfg.load( { dev : template }, clear=False )
 
       self.store.unpause()
       self.store.update()
@@ -213,18 +203,8 @@ class ConfigDialog(gtk.Dialog):
         return
 
       self.store.pause()
-      row = list(clocks.default)
-      row[ clocks.LABEL ] = clk
-      clkline = clocks.append(None, row)
-      for ci in channels[clk].get_config_template().items():
-        row = list(clocks.default)
-        row[ clocks.LABEL ] = ci[0]
-        TYPE = ci[1]['type']
-        row[ clocks.TYPE ] = TYPE
-        row[ clocks.to_index[TYPE] ] = ci[1]['default']
-        row[ clocks.RANGE ] = ci[1]['range']
-        clocks.append(clkline, row)
-
+      template = channels[clk].get_config_template()
+      clocks.load( { clk : template }, clear=False )
       self.store.unpause()
       self.store.update()
 
