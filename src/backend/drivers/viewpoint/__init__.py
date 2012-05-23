@@ -4,6 +4,7 @@ import re
 from device import Device
 import capabilities
 from .... import options
+from ....path import collect_prefix
 
 def prefix():
   return 'vp'
@@ -28,7 +29,7 @@ def load_boards():
       d = Device( prefix(), i, simulated=options.simulated )
     except:
       break
-    devices[i] = d
+    devices[str(d)] = d
   print 'found {i} viewpoint boards'.format(i=i)
 
 
@@ -49,14 +50,62 @@ def get_timing_channels():
 def get_routeable_backplane_signals():
   return capabilities.get_routeable_backplane_signals(devices)
 
+
+def set_device_config( config, channels ):
+  for d in devices:
+    if d in config:
+      # we need to separate channels first by device
+      # configs are already naturally separated by device
+      # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
+      # channel paths
+      devices[d].set_config( config[d],
+                             collect_prefix(channels, 0, 2, 2).get(d,[]) )
+
+
+def set_clocks( clocks ):
+  clocks = collect_prefix(clocks, 0, 2)
+  for d in devices:
+    if d in clocks:
+      devices[d].set_clocks( clocks[d] )
+
+
+def set_signals( signals ):
+  signals = collect_prefix(signals, 0, 2)
+  for d in devices:
+    if d in signals:
+      devices[d].set_signals( signals[d] )
+
+
 def set_static(analog, digital):
   assert len(analog) == 0, 'Viewpoint does not perform analog output'
   D = dict()
   for di in digital.items():
-    m = re.match('[^/]*/Dev([0-9]*)/(.*)', di[0])
+    m = re.match('([^/]*/Dev[0-9]*)/(.*)', di[0])
     if m.group(1) not in D:
       D[ m.group(1) ] = dict()
     D[ m.group(1) ][ m.group(2) ] = di[1]
 
   for dev in D.items():
-    devices[int(dev[0])].set_output( dev[1] )
+    devices[ dev[0] ].set_output( dev[1] )
+
+
+def set_waveforms(analog, digital, transitions, t_max, continuous):
+  """
+  Viewpoint ignores all transition information since it only needs absolute
+  timing information.
+  """
+  assert len(analog) == 0, 'Viewpoint does not perform analog output'
+  D = dict()
+  for di in digital.items():
+    m = re.match('([^/]*/Dev[0-9]*)/(.*)', di[0])
+    if m.group(1) not in D:
+      D[ m.group(1) ] = dict()
+    D[ m.group(1) ][ m.group(2) ] = di[1]
+
+  for dev in D.items():
+    devices[ dev[0] ].set_waveforms( dev[1], t_max, continuous )
+
+
+def stop_output():
+  for dev in devices.values():
+    dev.stop_output()

@@ -236,7 +236,7 @@ arbwave.set_loop_control( loop_control )
 """
 
 signals = \
-[{'dest': 'PXI0', 'invert': False, 'source': '10MHz'},
- {'dest': 'PXI4', 'invert': False, 'source': 'Ext01'},
- {'dest': 'PXI5', 'invert': False, 'source': 'Ext02'}]
-
+{'ni/Dev1/10MHz' : {'dest':'TRIG/0', 'invert':False},
+ 'ni/Dev1/PFI0'  : {'dest':'TRIG/0', 'invert':False},
+ 'ni/Dev1/PFI0'  : {'dest':'External/01', 'invert':False},
+}

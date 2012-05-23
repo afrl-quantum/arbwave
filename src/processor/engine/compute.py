@@ -125,6 +125,8 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
   transitions = list()
   channel_info = make_channel_info(channels)
 
+  t_max = 0.0
+
   # go through each group and each element in each group
   ZT = 0*unit.ms
   t = ZT
@@ -162,6 +164,9 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
     t_locals = dict()
     for e in group['elements']:
       chname = e['channel']
+      if not chname:
+        continue # channel name not set yet
+
       ci = channel_info[chname]
       chan = channels[chname]
       if not ( chname and e['enable'] and chan['enable'] ):
@@ -263,6 +268,7 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
         t_e += ddt_e
 
     transitions.append( max_time )
+    t_max = max( t_max, max_time )
 
     if not group['asynchronous']:
       t = max(t, t_start+dt)
@@ -276,16 +282,23 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
   digital = dict()
 
   for ci in channel_info.items():
+    if not ( ci[1]['type'] and ci[1]['elements'] ):
+      continue
+
+    prfx, dev = prefix(channels[ ci[0] ]['device'])
+
     if   ci[1]['type'] is 'analog':
-      analog[ ci[0] ] = to_plottable( ci[1]['elements'] )
+      if prfx not in analog:
+        analog[ prfx ] = dict()
+      analog[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
     elif ci[1]['type'] is 'digital':
-      digital[ ci[0] ] = to_plottable( ci[1]['elements'] )
-    elif not ( ci[1]['type'] and ci[1]['elements'] ):
-      pass
+      if prfx not in digital:
+        digital[ prfx ] = dict()
+      digital[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
     else:
       raise RuntimeError("type of channel '"+ci[0]+"' reset?!")
 
-  return analog, digital, transitions
+  return analog, digital, transitions, t_max
 
 
 def to_plottable( elem ):

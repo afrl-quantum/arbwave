@@ -20,7 +20,7 @@ def mkbbars( L, dt ):
   return [ (L[i][0], dt[i])   for i in xrange(len(L))  if L[i][1] ]
 
 
-def plot( ax, signals, t_final=None ):
+def plot( ax, signals, names=None, t_final=None ):
   if t_final is None:
     #start by finding the maximum time
     t_final = get_t_final( signals )
@@ -29,11 +29,16 @@ def plot( ax, signals, t_final=None ):
   channels = signals.items()
   channels.sort( lambda (k1,v1),(k2,v2): cmp(k2,k1) ) # reverse lexical sort
 
+  if names:
+    get_label = lambda n : names[n]
+  else:
+    get_label = lambda n : n
+
   ax.clear()
   labels = list()
   i = 0
   for c in channels:
-    labels.append( c[0] )
+    labels.append( get_label( c[0] ) )
     dt = mkdt( c[1], t_final )
 
     for g in c[1].items():

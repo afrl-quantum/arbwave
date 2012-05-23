@@ -40,11 +40,13 @@ class Plotter:
     self.update_t_axes(max_x=t_final)
     self.canvas.draw()
 
-  def plot_analog(self, signals, **kwargs ):
-    self.max_analog = analog.plot( self.axes['analog'], signals, **kwargs )
+  def plot_analog(self, signals, *args, **kwargs ):
+    self.max_analog \
+      = analog.plot( self.axes['analog'], signals, *args, **kwargs )
 
-  def plot_digital(self, signals, **kwargs ):
-    self.max_digital = digital.plot( self.axes['digital'], signals, **kwargs )
+  def plot_digital(self, signals, *args, **kwargs ):
+    self.max_digital \
+      = digital.plot( self.axes['digital'], signals, *args, **kwargs )
 
   def update_t_axes(self, max_x=0.0):
     max_x = max( self.max_analog, self.max_digital, max_x )

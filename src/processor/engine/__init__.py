@@ -54,11 +54,8 @@ class Arbwave:
 
     if self.stop_requested:
       raise StopGeneration()
-    print 'trying to update the hardware to waveform output!!!!'
-    if continuous:
-      print 'requesting continuous regeneration...'
 
-    analog, digital, transitions = \
+    analog, digital, transitions, t_max = \
       compute.waveforms( self.devcfg[0],
                          self.clocks[0],
                          self.signals[0],
@@ -66,8 +63,8 @@ class Arbwave:
                          self.waveforms[0],
                          globals=globals )
 
-    send.to_plotter( self.plotter, analog, digital, transitions )
-    send.to_driver.waveform( analog, digital, transitions )
+    send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
+    send.to_driver.waveform( analog, digital, transitions, t_max, continuous )
 
 
   def halt(self):
@@ -80,7 +77,6 @@ class Arbwave:
     """
     exec global_load
 
-    print 'trying to update the hardware to static output!!!!'
     analog, digital = \
       compute.static( self.devcfg[0],
                       self.channels[0],
@@ -95,7 +91,7 @@ class Arbwave:
     """
     exec global_load
 
-    analog, digital, transitions = \
+    analog, digital, transitions, t_max = \
       compute.waveforms( self.devcfg[0],
                          self.clocks[0],
                          self.signals[0],
@@ -103,7 +99,7 @@ class Arbwave:
                          self.waveforms[0],
                          globals=globals )
 
-    send.to_plotter( self.plotter, analog, digital, transitions )
+    send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
 
 
   def request_stop(self, request=True):

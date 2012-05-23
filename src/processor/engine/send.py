@@ -3,21 +3,37 @@
 from ..gui_callbacks import do_gui_operation
 from ... import backend
 
-def plot_stuff( plotter, analog, digital, transitions ):
-  t_final = 0.0
-  if transitions:
-    t_final = max(transitions)
+def plot_stuff( plotter, analog, digital, names, t_max ):
   if analog or digital:
     plotter.start()
   if analog:
-    plotter.plot_analog( analog, t_final=t_final )
+    plotter.plot_analog( analog, names, t_max )
   if digital:
-    plotter.plot_digital( digital, t_final=t_final )
+    plotter.plot_digital( digital, names, t_max )
   if analog or digital:
-    plotter.finish(t_final=t_final)
+    plotter.finish(t_final=t_max)
 
-def to_plotter( plotter, analog, digital, transitions ):
-  do_gui_operation( plot_stuff, plotter, analog, digital, transitions )
+def to_plotter( plotter, analog, digital, channels, t_max ):
+  # we need a map from device-name to channel name
+  names = dict()
+  for c in channels.items():
+    dev = c[1]['device']
+    if dev and c[1]['enable']:
+      if dev in names:
+        raise NameError('Device channels can only be used once')
+      # the partition is to get rid of the 'Analog/' or 'Digital/' prefix
+      names[ c[1]['device'].partition('/')[2] ] = c[0]
+
+
+  # take components of device-categorized dictionaries to
+  a = dict()
+  for D in analog.values():
+    a.update(D)
+  d = dict()
+  for D in digital.values():
+    d.update(D)
+
+  do_gui_operation( plot_stuff, plotter, a, d, names, t_max )
 
 class ToDriver:
   def static(self, analog, digital):

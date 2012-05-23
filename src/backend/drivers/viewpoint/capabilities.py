@@ -9,7 +9,8 @@ from ... import channels
 def get_channels(devices, C, *args, **kwargs):
   retval = list()
   for dev in devices.values():
-    nin = dev.config['number-input-ports']
+    #nin = dev.config['number-input-ports']
+    nin = 0
     for port in [ 'A', 'B', 'C', 'D' ][:(4-nin)]:
       for line in xrange(16):
         retval.append(
@@ -23,6 +24,15 @@ def get_digital_channels(devices):
 def get_timing_channels(devices):
   return get_channels(devices, channels.Timing)
 
+
+routing_bits = {
+  ('A/13','TRIG/0','in' ) : 0x1,
+  ('A/13','TRIG/0','out') : 0x8,
+  ('A/14','TRIG/5','in' ) : 0x2,
+  ('A/14','TRIG/5','out') : 0x10,
+  ('A/15','TRIG/6','in' ) : 0x4,
+  ('A/15','TRIG/6','out') : 0x20,
+}
 
 available_routes = {
   # set_attr('port-routing', 0x1) if A/13 is input...
@@ -57,7 +67,7 @@ def get_routeable_backplane_signals(devices):
                         destinations=['External/'], invertible=False )
 
   # now overwrite the default backplane channels with those with specifics
-  for dev in devices.values():
+  for dev in devices:
     for c, r in available_routes.items():
       retval.append( channels.Backplane( '{}/{}'.format(dev,c),
                        destinations = r['destinations'],
