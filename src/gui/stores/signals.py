@@ -19,24 +19,23 @@ class Signals(TreeModelDispatcher, gtk.ListStore):
     TreeModelDispatcher.__init__(self, gtk.ListStore, **kwargs)
 
 
-  def list(self):
-    L = list()
+  def dict(self):
+    D = dict()
     for i in iter(self):
-      L.append({
-        'source'  : i[Signals.SOURCE],
+      D[ i[Signals.SOURCE] ] = {
         'dest'    : i[Signals.DEST],
         'invert'  : i[Signals.INVERT],
-      })
-    return L
+      }
+    return D
 
-  def load(self, L):
+  def load(self, D):
     self.clear()
-    for i in L:
+    for i in D.items():
       self.append([
-        i['source'],
-        i['dest'],
-        i['invert'],
+        i[0], #source
+        i[1]['dest'],
+        i[1]['invert'],
       ])
 
   def representation(self):
-    return self.list()
+    return self.dict()
