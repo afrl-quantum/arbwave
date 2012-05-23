@@ -71,7 +71,7 @@ class Arbwave:
 
 
   def halt(self):
-    print 'sending stop to generation...'
+    send.to_driver.stop()
 
 
   def update_static(self, globals=None):

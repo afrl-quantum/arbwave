@@ -8,6 +8,7 @@ import sys, threading
 import engine
 from gui_callbacks import do_gui_operation
 import default
+from ..path import collect_prefix
 
 class Processor:
   def __init__(self, plotter):
@@ -53,8 +54,16 @@ class Processor:
       self.engine.channels  = channels
       self.engine.waveforms = waveforms
 
-      if devcfg[1] or clocks[1] or signals[1]:
-        print 'should be updating drivers...'
+      if devcfg[1]:
+        engine.send.to_driver.config(
+          collect_prefix(devcfg[0]),
+          collect_prefix({c['device']:None  for  c in channels[0].values()}, 1) )
+
+      if clocks[1]:
+        engine.send.to_driver.clocks( collect_prefix(clocks[0]) )
+
+      if signals[1]:
+        engine.send.to_driver.signals( collect_prefix(signals[0]) )
 
       if self.running or toggle_run:
         self.start( show_stopped )
@@ -134,4 +143,3 @@ class Processor:
         exec 'import arbwave\narbwave.stop()' in self.Globals
     if toggle_run:
       self.running = False
-
