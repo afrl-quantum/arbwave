@@ -6,6 +6,7 @@ Arbitrary waveform generator for digital and analog signals.
 import gtk, gobject
 
 import sys
+import traceback
 
 # local packages
 import about, configure, stores, edit
@@ -506,7 +507,7 @@ class ArbWave(gtk.Window):
       )
       self.next_untested_undo = len(self.undo)
     except Exception, e:
-      print e
+      traceback.print_exc()
       self.notify.show(
         '<span color="red"><b>Error</b>: \n' \
         '   Could not update output\n' \
