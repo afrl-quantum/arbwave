@@ -36,35 +36,85 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
     TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
-  def dict(self):
+  def _dict_recursive(self, iter):
     D = dict()
-    for i in iter(self):
-      if i.parent is not None:
-        raise RuntimeError('Parented item at root-level of Generic tree')
-
-      Ddev = D[ i[Generic.LABEL] ] = dict()
-      for j in i.iterchildren():
-        Ddev[ j[Generic.LABEL] ] = {
-          'value'  : j[ Generic.to_index[ j[Generic.TYPE] ] ],
-          'type'   : j[Generic.TYPE],
-          'range'  : j[Generic.RANGE],
+    for i in iter:
+      di = self._dict_recursive(i.iterchildren())
+      if di:
+        D[ i[Generic.LABEL] ] = di
+      elif i[ Generic.TYPE ] is None:
+        D[ i[Generic.LABEL] ] = dict()
+      else:
+        D[ i[Generic.LABEL] ] = {
+          'value'  : i[ Generic.to_index[ i[Generic.TYPE] ] ],
+          'type'   : i[Generic.TYPE],
+          'range'  : i[Generic.RANGE],
         }
 
     return D
 
-  def load(self, D):
-    self.clear()
+  def dict(self):
+    return self._dict_recursive( iter(self) )
+
+  def _load_recursive(self, D, parent=None):
     for i in D.items():
       row = list(Generic.default)
-      row[0] = i[0]
-      parent = self.append( None, row)
-      for j in i[1].items():
-        row = list(Generic.default)
-        row[ Generic.LABEL ]  = j[0]
-        row[ Generic.TYPE  ]  = j[1]['type']
-        row[ Generic.RANGE ]  = j[1]['range']
-        row[ Generic.to_index[ j[1]['type'] ] ] = j[1]['value']
+      row[ Generic.LABEL ] = i[0]
+
+      if 'value' in i[1]:
+        row[ Generic.TYPE  ]  = i[1]['type']
+        row[ Generic.RANGE ]  = i[1]['range']
+        row[ Generic.to_index[ i[1]['type'] ] ] = i[1]['value']
         self.append( parent, row )
+      else:
+        self._load_recursive( i[1], self.append( parent, row ) )
+
+  def load(self, D, clear=True):
+    if clear:
+      self.clear()
+    self._load_recursive( D )
 
   def representation(self):
     return self.dict()
+
+if __name__ == '__main__':
+  print 'testing loading with empty config-tree:'
+  data0 = { 'clock' : { }, }
+
+  g = Generic()
+  g.load( data0 )
+  print '... no complaints so far'
+
+  print 'testing representation:'
+  data_out = g.representation()
+  if data0 == data_out:
+    print 'success!'
+  else:
+    print 'input does not equal output'
+
+
+  print ''
+  print 'testing loading with more complicated config-tree:'
+  data0 = {
+    'Dev1' : {
+      'out' : {
+        'param0' : { 'type': int, 'range':xrange(10), 'value': 2 },
+        'param1' : { 'type': str, 'range':['a','b'], 'value': 'b' },
+      },
+      'in' : {
+        'param2' : { 'type': bool, 'range':None, 'value': False },
+        'param3' : { 'type': float, 'range':xrange(-10,30), 'value': 0.3 },
+      },
+    },
+  }
+
+  g = Generic()
+  g.load( data0 )
+  print '... no complaints so far'
+
+  print 'testing representation:'
+  data_out = g.representation()
+  if data0 == data_out:
+    print 'success!'
+  else:
+    print 'input does not equal output'

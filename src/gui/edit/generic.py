@@ -210,20 +210,27 @@ if __name__ == '__main__':
   #                   # label  type  range         bool   str int  flt
   dev1 = \
   model.append(None, ('Dev1',  None, None,         False, '',  0,  0.0) )
-  model.append(dev1, ('param0',int,  xrange(11),   False, '',  10, 0.0) )
-  model.append(dev1, ('param1',bool, None,         True,  '',  42, 0.0) )
-  model.append(dev1, ('param2',float,xrange(-3,10),False, '',  42, 0.5) )
-  model.append(dev1, ('param3',str,  None,         False, 'A', 0,  0) )
-  model.append(dev1, ('param4',int,  [(0,'zero'),
+  grp1 = \
+  model.append(dev1, ('group0',None, None,         False, '',  0,  0.0) )
+
+  model.append(grp1, ('param0',int,  xrange(11),   False, '',  10, 0.0) )
+  model.append(grp1, ('param1',bool, None,         True,  '',  42, 0.0) )
+  model.append(grp1, ('param2',float,xrange(-3,10),False, '',  42, 0.5) )
+  model.append(grp1, ('param3',str,  None,         False, 'A', 0,  0) )
+  model.append(grp1, ('intlst',int,  [(0,'zero'),
                                       5,
                                       (10,'ten')], False, '', 0,  0) )
-  model.append(dev1, ('param5',float,[(0,'zero'),
+
+  grp2 = \
+  model.append(dev1, ('group0',None, None,         False, '',  0,  0.0) )
+
+  model.append(grp2, ('fltlst',float,[(0,'zero'),
                                       5,
                                       (10,'ten')], False, '', 0,  0) )
-  model.append(dev1, ('param6',str,  [('zero',0),
+  model.append(grp2, ('strlst',str,  [('zero',0),
                                       'five',
                                       ('ten','10')], False, '-', 0,  0) )
-  model.append(dev1, ('param7',int,  intlist,      False, '', 0,  0) )
+  model.append(grp2, ('intflst',int,  intlist,      False, '', 0,  0) )
   g = Generic(model)
 
   window = gtk.Window()
