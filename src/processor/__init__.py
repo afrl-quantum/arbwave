@@ -54,10 +54,13 @@ class Processor:
       self.engine.channels  = channels
       self.engine.waveforms = waveforms
 
-      if devcfg[1]:
+      if devcfg[1] or channels[1]:
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),
-          collect_prefix({c['device']:None  for  c in channels[0].values()}, 1) )
+          collect_prefix(
+            {c['device']:None  for  c in channels[0].values() if c['enable'] },
+            1)
+        )
 
       if clocks[1]:
         engine.send.to_driver.clocks( collect_prefix(clocks[0]) )

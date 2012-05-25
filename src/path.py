@@ -9,6 +9,9 @@ def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0):
   """
   retval = dict()
   for d in D.items():
+    if d[0] is None:
+      continue
+
     pth = d[0].split('/')[drop_prefixes:]
     prfx = '/'.join(pth[0:prefix_len])
     if prfx not in retval:

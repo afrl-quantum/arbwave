@@ -52,14 +52,14 @@ def get_routeable_backplane_signals():
 
 
 def set_device_config( config, channels ):
+  # we need to separate channels first by device
+  # (configs are already naturally separated by device)
+  # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
+  # channel paths
+  chans = collect_prefix(channels, 0, 2, 2)
   for d in devices:
-    if d in config:
-      # we need to separate channels first by device
-      # configs are already naturally separated by device
-      # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
-      # channel paths
-      devices[d].set_config( config[d],
-                             collect_prefix(channels, 0, 2, 2).get(d,[]) )
+    if d in config or d in chans:
+      devices[d].set_config( config.get(d,{}), chans.get(d,[]) )
 
 
 def set_clocks( clocks ):
