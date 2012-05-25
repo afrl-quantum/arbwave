@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+from copy import deepcopy
 import viewpoint as vp
 
 from ...device import Device as Base
@@ -15,7 +16,7 @@ ignored_settings = {
            'channels',
           ],
   'in'  : ['direction',
-           'in', 'channels',
+           'channels',
           ]
 }
 
@@ -33,7 +34,7 @@ class Device(Base):
 
     self.board = Board(
       # default to *all* inputs so that all are high-impedance
-      vp.Config('in', range(0,64)),
+      vp.Config('in', []), # autoconfigure unused ports as inputs
       vp.Config('out', []),
       board=board_number,
     )
@@ -44,17 +45,18 @@ class Device(Base):
 
   def set_config(self, config, channels):
     C = self.board.configs
-    old_config = C.copy()
+    old_config = deepcopy(C)
     N = config
 
     # we have to strip off the device prefix...
 
     C['out']['channels'] = channels
 
-    for DIR in C:
-      for SETTING in C[DIR]:
-        if SETTING in ignored_settings[DIR]:
-          continue
+    assert set(N.keys()).issubset(['in', 'out']), \
+      'Non-in/out config for Viewpoint?'
+
+    for DIR in N:
+      for SETTING in N[DIR]:
         C[DIR][SETTING] = N[DIR][SETTING]['value']
 
     if old_config != C:
@@ -79,12 +81,17 @@ class Device(Base):
 
 
   def set_output(self, data):
+    if not self.board.is_configured():
+      # because the viewpoint cards need to be configured in order to force
+      # output on any channel, we will call configure, just to make sure that
+      # this will work.  See the comments in set_waveforms
+      self.board.configure()
     self.board.set_output( data )
 
 
   def set_waveforms(self, waveforms, t_max, continuous):
     C = self.board.configs
-    old_config = C.copy()
+    old_config = deepcopy(C)
 
     transitions = dict()
     for line in waveforms:
@@ -99,19 +106,22 @@ class Device(Base):
     C['out']['repetitions'] = {True:0, False:1}[continuous]
     C['out']['number_transitions'] = len(transitions)
 
-    if old_config != C:
-      # we need to reconfigure in some cases
-      self.board.configure()
+    # we now _must_ configure, since viewpoint must be configured any time we
+    # call self.board.out_stop(), which we _will_ call any time any waveforms
+    # need to be changed to ensure synchronization between the various cards
+    # if old_config != C:
+    #   self.board.configure()
+    self.board.configure()
 
     scans, stat = self.board.out_status()
     if scans.value < len(transitions):
       raise NotImplementedError(
-        'FIXME:  what to do when scans < len(transitions)')
+        'viewpoint scans < len(transitions); configure failed?')
     self.board.write(transitions, stat)
 
 
   def get_config_template(self):
-    T = vp.config.template.copy()
+    T = deepcopy(vp.config.template)
     drop_some_settings( T )
     fix_float_range( T['in'] )
     fix_float_range( T['out'] )
