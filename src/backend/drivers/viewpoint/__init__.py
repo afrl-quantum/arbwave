@@ -103,7 +103,16 @@ def set_waveforms(analog, digital, transitions, t_max, continuous):
     D[ m.group(1) ][ m.group(2) ] = di[1]
 
   for dev in D.items():
+    # FIXME:  send in clock transitions also
     devices[ dev[0] ].set_waveforms( dev[1], t_max, continuous )
+
+
+def start_output():
+  # FIXME:  clocks will probably need to be started last.  This means, if a
+  # particular viewpoint card has a channel being used as a clock, the card will
+  # likely have to be started later
+  for dev in devices.values():
+    dev.start_output()
 
 
 def stop_output():

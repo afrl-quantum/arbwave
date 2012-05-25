@@ -118,6 +118,10 @@ class Device(Base):
     return T
 
 
+  def start_output(self):
+    self.board.out_start()
+
+
   def stop_output(self):
     self.board.out_stop()
 

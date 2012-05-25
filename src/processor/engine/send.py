@@ -53,6 +53,14 @@ class ToDriver:
                                        transitions, t_max, continuous)
 
 
+  def start(self):
+    """Send 'go' to each device driver. """
+    # FIXME:  it is probably necessary to ensure that all _clocks_ get started
+    # _last_
+    for D in backend.drivers:
+      backend.drivers[D].start_output()
+
+
   def stop(self):
     """Send 'halt' to each device driver. """
     for D in backend.drivers:
