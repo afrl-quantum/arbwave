@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import re
+import re, logging
 from device import Device
 import capabilities
 from .... import options

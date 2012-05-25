@@ -4,7 +4,7 @@ Backend drivers.
 Subdirectories of this part of the arbwave package should ONLY contain drivers.
 """
 
-import os
+import os, logging
 from ... import options
 
 drivers   = dict() # mapping "prefix" to driver module
@@ -48,11 +48,12 @@ def get_routeable_backplane_signals():
 
 def unload_all():
   while drivers:
-    d = drivers.popitem()
+    name, d = drivers.popitem()
+    logging.debug( 'closing driver: %s', name )
     try:
-      d[1].close()
+      d.close()
     except:
-      print 'driver not cleanly closed: ', d[0]
+      print 'driver not cleanly closed: ', name
 
 
 def initialize_device_drivers():

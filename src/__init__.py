@@ -8,6 +8,7 @@ import version
 import options
 
 log_levels = {
+  'ALL'   : 0,
   'DEBUG' : logging.DEBUG,
   'INFO'  : logging.INFO,
   'WARN'  : logging.WARN,
