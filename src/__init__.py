@@ -3,9 +3,17 @@
 Arbitrary waveform generator for digital and analog signals.
 """
 
-import os, argparse, gtk, gobject, time, sys
+import os, argparse, gtk, gobject, time, sys, logging
 import version
 import options
+
+log_levels = {
+  'DEBUG' : logging.DEBUG,
+  'INFO'  : logging.INFO,
+  'WARN'  : logging.WARN,
+  'ERROR' : logging.ERROR,
+  'FATAL' : logging.FATAL,
+}
 
 def sleeper():
   time.sleep(0.001)
@@ -18,9 +26,11 @@ def main():
   parser.add_argument( 'filename', nargs='?', help='configuration file' )
   parser.add_argument( '--simulated', action='store_true',
     help='Use simulated hardware' )
+  parser.add_argument( '--log-level', choices=log_levels, default='INFO' )
   args = parser.parse_args()
 
   options.simulated = args.simulated
+  logging.root.setLevel( log_levels[ args.log_level ] )
 
   # this is necessary to ensure that threads can be launched!!!!
   gobject.threads_init()
