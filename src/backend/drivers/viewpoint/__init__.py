@@ -118,3 +118,11 @@ def start_output():
 def stop_output():
   for dev in devices.values():
     dev.stop_output()
+
+
+def close():
+  """Close all devices and uninitialize anything"""
+  while devices:
+    devname, dev = devices.popitem()
+    logging.debug( 'closing viewpoint device: %s', devname )
+    del dev
