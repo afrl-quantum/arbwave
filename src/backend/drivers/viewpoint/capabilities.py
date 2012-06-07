@@ -69,7 +69,7 @@ def get_routeable_backplane_signals(devices):
   # now overwrite the default backplane channels with those with specifics
   for dev in devices:
     for c, r in available_routes.items():
-      retval.append( channels.Backplane( '{}/{}'.format(dev,c),
+      retval.append( channels.Backplane( '{d}/{c}'.format(d=dev,c=c),
                        destinations = r['destinations'],
                        invertible   = r['invertible'] ))
   return retval
