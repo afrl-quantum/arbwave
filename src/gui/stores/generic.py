@@ -22,7 +22,7 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
 
   default = (None, None, None, False, None, 0, 0.0)
 
-  def __init__(self, **kwargs):
+  def __init__(self, store_range=False, **kwargs):
     gtk.TreeStore.__init__(self,
       str,    # label
       object, # type
@@ -32,6 +32,7 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
       int,    # int-value
       float,  # float-value
     )
+    self.store_range = store_range
 
     TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
@@ -45,11 +46,12 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
       elif i[ Generic.TYPE ] is None:
         D[ i[Generic.LABEL] ] = dict()
       else:
-        D[ i[Generic.LABEL] ] = {
+        D[ i[Generic.LABEL] ] = Di = {
           'value'  : i[ Generic.to_index[ i[Generic.TYPE] ] ],
           'type'   : i[Generic.TYPE],
-          'range'  : i[Generic.RANGE],
         }
+        if self.store_range:
+          Di['range'] = i[Generic.RANGE]
 
     return D
 
@@ -63,7 +65,8 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
 
       if 'value' in i[1]:
         row[ Generic.TYPE  ]  = i[1]['type']
-        row[ Generic.RANGE ]  = i[1]['range']
+        if self.store_range:
+          row[ Generic.RANGE ]  = i[1]['range']
         row[ Generic.to_index[ i[1]['type'] ] ] = i[1]['value']
         self.append( parent, row )
       else:
@@ -108,7 +111,7 @@ if __name__ == '__main__':
     },
   }
 
-  g = Generic()
+  g = Generic(store_range=True)
   g.load( data0 )
   print '... no complaints so far'
 

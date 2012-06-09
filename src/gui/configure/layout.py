@@ -39,8 +39,10 @@ class ConfigDialog(gtk.Dialog):
     # LOAD THE STORAGE
     self.store = store
     self.signal_editor = edit.signals.create(store.signals)
-    self.devcfg_editor = edit.Generic(store.devcfg)
-    self.clock_editor = edit.Generic(store.clocks)
+    self.devcfg_editor = edit.Generic(store.devcfg,
+                                      range_factory=RangeFactory(False))
+    self.clock_editor = edit.Generic( store.clocks,
+                                      range_factory=RangeFactory(True))
 
 
     # ###### SET UP THE PANEL ######
@@ -178,16 +180,8 @@ class ConfigDialog(gtk.Dialog):
         return
 
       self.store.pause()
-
       template = devices[dev].get_config_template()
-      if 'clock' in template:
-        template['clock']['range'] = \
-          clock_list_generator(template['clock']['range'],
-                               self.store.clocks,
-                               self.store.signals)
-
       devcfg.load( { dev : template }, clear=False )
-
       self.store.unpause()
       self.store.update()
 
@@ -236,6 +230,80 @@ class ConfigDialog(gtk.Dialog):
       A[0](action, *A[1:])
     else:
       A(action)
+
+
+class Range:
+  def __init__(self, dev, cfg_path):
+    self.dev = dev
+    self.cfg_path = cfg_path
+
+    cfg = self.cfg()
+    self.doreload = 'doreload' in cfg and cfg['doreload']
+    r = cfg['range']
+    if not self.doreload:
+      self.r = r
+
+    # if range is list/tuple or callable, this entry needs a combo box
+    self.combo = type(r) in [list, tuple] or ('combo' in cfg and cfg['combo'])
+
+  def cfg(self):
+    """
+    Return the full config item.
+    """
+    return get_leaf_node( self.dev.get_config_template(), self.cfg_path )
+
+  def __call__(self):
+    """
+    Return the range.
+    """
+    if self.doreload:
+      r = self.cfg()['range']
+    else:
+      r = self.r
+    if callable(r):
+      return r()
+    else:
+      return r
+
+  def is_combo(self):
+    return self.combo
+
+  def __iter__(self):
+    return iter(self())
+
+  def get_min_max(self):
+    r = self()
+    if type(r) is xrange:
+      return r[0], r[-1]
+    else:
+      return min(r), max(r)
+
+
+def get_leaf_node( D, path ):
+  if len(path) > 1:
+    return get_leaf_node( D[path[0]], path[1:] )
+  else:
+    return D[path[0]]
+
+
+class RangeFactory:
+  def __init__(self, for_clocks):
+    if for_clocks:
+      self.devs = backend.get_timing_channels()
+    else:
+      self.devs = backend.get_devices()
+
+  def __call__(self, path):
+    if path[-1] is 'clock':
+      print 'I am supposed to make a clock list generator'
+    return Range( self.devs[path[0]], path[1:] )
+
+    #if 'clock' in template:
+    #  template['clock']['range'] = \
+    #    clock_list_generator(template['clock']['range'],
+    #                         self.store.clocks,
+    #                         self.store.signals)
+
 
 
 def show(win, store):

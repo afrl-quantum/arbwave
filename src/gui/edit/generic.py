@@ -15,8 +15,10 @@ def coerce_range( editable, TYPE ):
 def set_range( cell, editable, path, model ):
   row = model[path]
   adj = editable.get_adjustment()
-  mn = min(row[model.RANGE])
-  mx = max(row[model.RANGE])
+  RANGE = row[model.RANGE]
+  assert not RANGE.is_combo(), 'Generic.set_range called with tuple/list'
+
+  mn, mx = RANGE.get_min_max()
   TYPE = row[model.TYPE]
 
   editable.connect('activate', coerce_range, TYPE )
@@ -33,8 +35,7 @@ def load_combobox( cell, editable, path, model ):
   L = gtk.ListStore( str, str )
   editable.set_model( L )
   RANGE = model[path][model.RANGE]
-  if callable(RANGE):
-    RANGE = RANGE()
+  assert RANGE.is_combo(), 'Generic.load_combobox called without tuple/list'
 
   for i in RANGE:
     if type(i) in [list,tuple]:
@@ -49,10 +50,21 @@ def load_combobox( cell, editable, path, model ):
   editable.add_attribute( renderer, 'text', 1 )
 
 
+def get_config_path(path, model, CPath=None):
+  if CPath is None:
+    CPath = list()
+  if len(path) > 1:
+    get_config_path(path[:-1], model, CPath)
+  CPath.append(model[path][model.LABEL])
+  return CPath
+
 
 class Generic:
-  def __init__(self, model, add_undo=None):
+  def __init__(self, model, add_undo=None, range_factory=None):
     self.add_undo = add_undo
+    self.range_factory = range_factory
+    assert self.range_factory is None or callable(range_factory), \
+      'Generic.range_factory must be either None or callable'
 
     V = self.view = gtk.TreeView(model)
     V.set_property( 'rules-hint', True )
@@ -154,12 +166,14 @@ class Generic:
 
       show = model[i][model.TYPE] is TYPE
 
-      # if range is list/tuple or callable, this entry needs a combo box
-      # if this entry needs a combo box and this cell is not a combo box, set
-      # show to False
-      RANGE = model[i][model.RANGE]
-      if show and ( type(RANGE) in [list, tuple] or callable(RANGE) ) != combo:
-        show = False
+      if show:
+        if model[i][model.RANGE] is None and self.range_factory is not None:
+          # Create Range class
+          model[i][model.RANGE] = \
+            self.range_factory( get_config_path(model.get_path(i), model) )
+
+        if combo != model[i][model.RANGE].is_combo():
+          show = False
 
       cell.set_property('sensitive', show)
       cell.set_property('visible', show)
@@ -177,7 +191,37 @@ class Generic:
     V.append_column(C['V'])
     V.show()
 
+
 if __name__ == '__main__':
+  class Range:
+    def __init__(self, r):
+      self.r = r
+      # if range is list/tuple or callable, this entry needs a combo box
+      self.combo = type(r) in [list, tuple] or callable(r)
+
+    def is_combo(self):
+      return self.combo
+
+    def __iter__(self):
+      if callable(self.r):
+        return iter(self.r())
+      return iter(self.r)
+
+    def get_min_max(self):
+      if type(self.r) is xrange:
+        return self.r[0], self.r[-1]
+      else:
+        return min(self.r), max(self.r)
+
+
+  class range_factory:
+    def __init__( self, D=dict() ):
+      self.D = D
+      
+    def __call__( self, path ):
+      return Range( self.D.get('/'.join(path),None) )
+
+
   model = gtk.TreeStore( str, object, object, bool, str, int, float )
   model.LABEL     = 0
   model.TYPE      = 1
@@ -207,31 +251,33 @@ if __name__ == '__main__':
   #     ]
   #   _OR_:  combo box range object can be a callable that returns list/tuple
 
+  rf = range_factory()
+
   #                   # label  type  range         bool   str int  flt
   dev1 = \
-  model.append(None, ('Dev1',  None, None,         False, '',  0,  0.0) )
+  model.append(None, ('Dev1',  None, None, False, '',  0,  0.0) )
   grp1 = \
-  model.append(dev1, ('group0',None, None,         False, '',  0,  0.0) )
+  model.append(dev1, ('group0',None, None, False, '',  0,  0.0) )
 
-  model.append(grp1, ('param0',int,  xrange(11),   False, '',  10, 0.0) )
-  model.append(grp1, ('param1',bool, None,         True,  '',  42, 0.0) )
-  model.append(grp1, ('param2',float,xrange(-3,10),False, '',  42, 0.5) )
+  model.append(grp1, ('param0',int,  None, False, '',  10, 0.0) )
+  rf.D['Dev1/group0/param0'] = xrange(11)
+  model.append(grp1, ('param1',bool, None, True,  '',  42, 0.0) )
+  model.append(grp1, ('param2',float,None, False, '',  42, 0.5) )
+  rf.D['Dev1/group0/param2'] = xrange(-3,10)
   model.append(grp1, ('param3',str,  None,         False, 'A', 0,  0) )
-  model.append(grp1, ('intlst',int,  [(0,'zero'),
-                                      5,
-                                      (10,'ten')], False, '', 0,  0) )
+  model.append(grp1, ('intlst',int,  None, False, '', 0,  0) )
+  rf.D['Dev1/group0/intlst'] = [(0,'zero'), 5, (10,'ten')]
 
   grp2 = \
-  model.append(dev1, ('group0',None, None,         False, '',  0,  0.0) )
+  model.append(dev1, ('group1',None, None, False, '',  0,  0.0) )
 
-  model.append(grp2, ('fltlst',float,[(0,'zero'),
-                                      5,
-                                      (10,'ten')], False, '', 0,  0) )
-  model.append(grp2, ('strlst',str,  [('zero',0),
-                                      'five',
-                                      ('ten','10')], False, '-', 0,  0) )
-  model.append(grp2, ('intflst',int,  intlist,      False, '', 0,  0) )
-  g = Generic(model)
+  model.append(grp2, ('fltlst',float,None, False, '', 0,  0) )
+  rf.D['Dev1/group1/fltlst'] = [(0.5,'point 5'), 5.5, (10.5,'ten point five')]
+  model.append(grp2, ('strlst',str,  None, False, '-', 0,  0) )
+  rf.D['Dev1/group1/strlst'] = [('zero',0), 'five', ('ten','10')]
+  model.append(grp2, ('intflst',int, None, False, '', 0,  0) )
+  rf.D['Dev1/group1/intflst'] =  intlist
+  g = Generic(model, range_factory=rf)
 
   window = gtk.Window()
   window.connect('destroy', lambda e: gtk.main_quit())
