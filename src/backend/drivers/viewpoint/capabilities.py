@@ -4,7 +4,7 @@ Set of capabilities that each driver may support.
 """
 
 from ...capabilities import *
-from ... import channels
+import channels
 
 def get_channels(devices, C, *args, **kwargs):
   retval = list()
@@ -14,7 +14,7 @@ def get_channels(devices, C, *args, **kwargs):
     for port in [ 'A', 'B', 'C', 'D' ][:(4-nin)]:
       for line in xrange(16):
         retval.append(
-          C('{}/{}/{}'.format(dev, port,line), *args, **kwargs)
+          C('{}/{}/{}'.format(dev, port,line), dev=dev, *args, **kwargs)
         )
   return retval
 
