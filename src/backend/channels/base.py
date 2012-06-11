@@ -2,8 +2,9 @@
 
 class Base:
   """Base channel class"""
-  def __init__(self, name):
+  def __init__(self, name, dev=None):
     self.name = name
+    self.dev = dev
 
   def __str__(self):
     return self.name
@@ -15,4 +16,4 @@ class Base:
     return self.name.partition('/')[0]
 
   def device(self):
-    pass
+    return self.dev

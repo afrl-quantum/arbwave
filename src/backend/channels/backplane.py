@@ -4,8 +4,8 @@ from base import Base
 
 class Backplane(Base):
   """Base Backplane channel class"""
-  def __init__(self,name, destinations=list(), invertible=False):
-    Base.__init__(self,name)
+  def __init__(self,name, destinations=list(), invertible=False, **kwargs):
+    Base.__init__(self,name,**kwargs)
     self.dest = destinations
     self.inv  = invertible
 

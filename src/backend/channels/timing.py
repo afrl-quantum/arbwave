@@ -1,9 +1,14 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+from physical import unit
 from base import Base
 
 class Timing(Base):
   """Base Timing channel class"""
-  def __init__(self,name):
-    Base.__init__(self,name)
 
+  def get_period(self):
+    """
+    Returns the minimum timing period (period between two rising edges of this
+    clock pulse) in units of seconds.
+    """
+    return 0*unit.s
