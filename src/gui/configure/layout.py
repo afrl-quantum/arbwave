@@ -330,14 +330,11 @@ def show(win, store):
 
 
 def do_popup_selection( parent, choices ):
-  devs = gtk.ListStore(str)
-  for i in choices:
-    devs.append( (i,) )
-  menu_items = gtk.TreeView( devs )
-  menu_items.insert_column_with_attributes(0, 'Available',
-    gtk.CellRendererText(), text=0)
+  devs = gtk.TreeStore(str,str)
+  edit.helpers.add_paths_to_combobox_tree( devs, choices )
+  menu_items = gtk.ComboBox( devs )
+  edit.helpers.prep_combobox_for_tree( menu_items )
   menu_items.show()
-  menu_items.set_hover_selection(True)
 
   menu = gtk.Dialog('Select Channel', parent,
     gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL)
@@ -346,21 +343,20 @@ def do_popup_selection( parent, choices ):
   menu.vbox.pack_start( menu_items )
   menu_items.selected_device = None
 
-  def respond(w,event):
-    selection = menu_items.get_selection().get_selected()[1]
+  def respond(w):
+    selection = w.get_model()[w.get_active_iter()][0]
+    print 'selection: ', selection
     if selection is not None:
-      menu_items.selected_device = selection
+      w.selected_device = selection
       menu.response(gtk.RESPONSE_OK)
       return True
     return False
 
-  menu_items.connect('button-release-event', respond)
+  menu_items.connect('changed', respond)
 
+  gobject.timeout_add( 100, menu_items.popup )
   res = menu.run()
   menu.hide()
   if res != gtk.RESPONSE_OK:
     return None
-  return devs[menu_items.selected_device][0]
-
-
-
+  return menu_items.selected_device
