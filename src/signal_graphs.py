@@ -17,6 +17,7 @@ def build_graph( *nodes, **signals ):
 
   return g
 
+
 def accessible_clocks( terms, clocks, signals ):
   T = set([ str(ti)  for ti in terms])
   C = clocks.representation().keys()
@@ -25,3 +26,16 @@ def accessible_clocks( terms, clocks, signals ):
   g = build_graph( *C, **S )
   short_paths = { clk:shortest_path(g,clk) for clk in C }
   return [ clk for clk in C if T.intersection(short_paths[clk][0].keys()) ]
+
+
+def nearest_terminal( clk, terms, shortest_paths ):
+  """
+  We need to find the terminal that uses the shortest signal path from the clock
+  """
+  nodes, dist = shortest_paths[clk]
+  t_dist = { k : dist[k]  for k in terms.intersection( nodes.keys() ) }
+  t_dist = t_dist.items()
+  t_dist.sort( key=lambda i:i[1] )
+  # elements in t_dist are like (<terminal-name>, <distance>)
+  # the first element is the best
+  return t_dist[0][0]

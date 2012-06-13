@@ -67,10 +67,12 @@ class ToDriver:
       backend.drivers[D].stop_output()
 
 
-  def config(self, config, channels):
+  def config(self, config, channels, signal_graph):
     """Send device level configuration information to drivers"""
     for D in backend.drivers:
-      backend.drivers[D].set_device_config(config.get(D,{}), channels.get(D,{}))
+      backend.drivers[D].set_device_config( config.get(D,{}),
+                                            channels.get(D,{}),
+                                            signal_graph )
 
 
   def clocks(self, config):

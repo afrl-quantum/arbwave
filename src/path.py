@@ -45,10 +45,6 @@ def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0,
       retval[prfx] = dict()
     retval[prfx][ '/'.join(pth) ] = data
 
-  if tryalso:
-    print 'tryalso: ', tryalso
-    print 'retval: ', retval
-
   return retval
 
 

@@ -44,11 +44,13 @@ class Device(Base):
     self.signals = None
 
 
-  def set_config(self, config, channels):
+  def set_config(self, config, channels, signal_graph):
     C = self.board.configs
     old_config = deepcopy(C)
     N = config.copy()
     N.pop('clock') # we ignore this setting for now
+    # FIXME:  'in'/'out':'clock' should probably need to be auto configured
+    # based on N['clock'] and the signal_graph
 
     # we have to strip off the device prefix...
 
