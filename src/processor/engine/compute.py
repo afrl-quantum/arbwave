@@ -137,6 +137,7 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
   ZT = 0*unit.ms
   t = ZT
   groupNum = 0
+  explicit_timing = False
   for group in waveforms:
     if not ( group['enable'] and group['elements'] ):
       continue
@@ -187,21 +188,24 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
 
       if not ci['clock']:
         # drop the "analog" "digital" prefix
-        clk = devcfg[
-          str(do_ao_channels[ dev[(len(ci['type'])+1):] ].device())
-        ]['clock']['value']
+        chan_dev = do_ao_channels[ dev[(len(ci['type'])+1):] ]
+        clk = devcfg[ str(chan_dev.device()) ]['clock']['value']
         assert clk in clocks, 'Chosen device clock not configured'
         ci['clock'] = timing_channels[ clk ]
 
         if clk not in transitions:
           transitions[ clk ] = list()
 
+        # determine if the channel needs explicit timing (in case its clock
+        # source is not aperiodic)
+        explicit_timing |= chan_dev.explicit_timing()
+
+
       # get a ref to the list of transitions for the associated clock generator
       trans = transitions[ str( ci['clock'] ) ]
 
       # determine clock precision
       clock_period = ci['clock'].get_min_period()
-
 
       set_units_and_scaling(chname, ci, chan, globals)
 
@@ -299,7 +303,7 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
 
   # ensure that we have a unique set of transitions
   for i in transitions:
-    if timing_channels[ i ].is_aperiodic():
+    if timing_channels[ i ].is_aperiodic() or not explicit_timing:
       transitions[i] = set( transitions[i] )
     else:
       dt = timing_channels[i].get_min_period()/unit.s

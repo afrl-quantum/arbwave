@@ -2,9 +2,10 @@
 
 class Base:
   """Base channel class"""
-  def __init__(self, name, dev=None):
+  def __init__(self, name, dev=None, explicit_timing=True):
     self.name = name
     self.dev = dev
+    self._explicit_timing = explicit_timing
 
   def __str__(self):
     return self.name
@@ -17,3 +18,6 @@ class Base:
 
   def device(self):
     return self.dev
+
+  def explicit_timing(self):
+    return self._explicit_timing

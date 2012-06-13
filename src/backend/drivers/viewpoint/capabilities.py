@@ -19,7 +19,7 @@ def get_channels(devices, C, *args, **kwargs):
   return retval
 
 def get_digital_channels(devices):
-  return get_channels(devices, channels.Digital)
+  return get_channels(devices, channels.Digital, explicit_timing=False)
 
 def get_timing_channels(devices):
   tlist = get_channels(devices, channels.Timing)
