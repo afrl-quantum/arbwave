@@ -70,10 +70,9 @@ def set_clocks( clocks ):
 
 
 def set_signals( signals ):
-  signals = collect_prefix(signals, 0, 2)
+  signals = collect_prefix(signals, 0, 2, tryalso='dest', prefix_list=devices)
   for d in devices:
-    if d in signals:
-      devices[d].set_signals( signals[d] )
+    devices[d].set_signals( signals.get(d,{}) )
 
 
 def set_static(analog, digital):

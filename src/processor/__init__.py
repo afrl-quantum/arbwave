@@ -66,7 +66,7 @@ class Processor:
         engine.send.to_driver.clocks( collect_prefix(clocks[0]) )
 
       if signals[1]:
-        engine.send.to_driver.signals( collect_prefix(signals[0]) )
+        engine.send.to_driver.signals(collect_prefix(signals[0],tryalso='dest'))
 
       if self.running or toggle_run:
         self.start( show_stopped )

@@ -74,9 +74,19 @@ class Device(Base):
   def set_signals(self, signals):
     if self.signals != signals:
       self.signals = signals
+      print 'signals: ', signals
       routing = 0x0
       for s in signals.items():
-        route = ('/'.join(s[0].split('/')[2:]), s[1]['dest'], 'out')
+        if s[0].startswith( str(self) ):
+          src = '/'.join(s[0].split('/')[2:])
+          dst = s[1]['dest']
+          DIR = 'out'
+        else: # just assume 'dest' must be a device channel
+          src = s[0]
+          dst = '/'.join(s[1]['dest'].split('/')[2:])
+          DIR = 'in'
+
+        route = (src, dst, DIR)
         if route in routing_bits:
           routing |= routing_bits[route]
       self.board.set_property('port-routes', routing)
