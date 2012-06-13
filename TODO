@@ -49,6 +49,8 @@
   and use the local set of the arbitrary clock pulses to determine how many
   samples to create for each value.
 
+MOSTLY DONE
+
 5.  Implement a 'control-z' undo stack (and with it a redo stack).
   The first notion for doing this is to implement a robust and non-instrusive
   way of recovering from mistakes in the input.  The mode of operation is:
@@ -86,3 +88,7 @@ DONE--mostly,  error depiction should follow implementation of processor
       numeric-text-entry controls.  This allows the user to press the up or down
       while looking at a screen or something in order to optimize the value of
       some particular number in the python expression that is being edited.
+
+7.  Implement spreadsheet look/feel for the channel and waveform editors.
+  Essentially, this will be copying the functionality that was built for the
+  scaling/interpolation editor.
