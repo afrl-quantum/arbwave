@@ -85,8 +85,8 @@ class ConfigDialog(gtk.Dialog):
     clk_sig_pane.pack2( sigbox )
 
     body = gtk.HPaned()
-    body.pack1( devbox )
-    body.pack2( clk_sig_pane )
+    body.pack1( clk_sig_pane )
+    body.pack2( devbox )
 
     self.vbox.pack_start( body )
 
@@ -352,7 +352,12 @@ def do_popup_selection( parent, choices ):
       return True
     return False
 
+  def cancel(w):
+    menu.response(gtk.RESPONSE_CANCEL)
+    return True
+
   menu_items.connect('changed', respond)
+  menu_items.connect('popdown', cancel)
 
   gobject.timeout_add( 100, menu_items.popup )
   res = menu.run()
