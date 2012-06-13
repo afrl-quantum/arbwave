@@ -6,7 +6,8 @@ import viewpoint as vp
 from ...device import Device as Base
 from ....float_range import float_range
 import sim
-from capabilities import routing_bits
+from capabilities import routing_bits, get_channels
+import channels
 
 
 ignored_settings = {
@@ -46,7 +47,8 @@ class Device(Base):
   def set_config(self, config, channels):
     C = self.board.configs
     old_config = deepcopy(C)
-    N = config
+    N = config.copy()
+    N.pop('clock') # we ignore this setting for now
 
     # we have to strip off the device prefix...
 
@@ -125,6 +127,11 @@ class Device(Base):
     drop_some_settings( T )
     fix_float_range( T['in'] )
     fix_float_range( T['out'] )
+    T['clock'] = {
+      'value' : '',
+      'type'  : str,
+      'range' : get_channels({str(self):self}, channels.Timing),
+    }
     return T
 
 

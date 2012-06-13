@@ -4,6 +4,7 @@ from scipy.interpolate import UnivariateSpline
 import numpy as np
 import bisect
 
+from ... import backend
 from .. import functions
 from common import *
 import physical
@@ -122,7 +123,12 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
   exec global_load
   UE = UniqueElement
 
-  transitions = list()
+  # all the currently known possible channels
+  timing_channels = backend.get_timing_channels()
+  do_ao_channels = backend.get_analog_channels()
+  do_ao_channels.update( backend.get_digital_channels() )
+
+  transitions = dict()
   channel_info = make_channel_info(channels)
 
   t_max = 0.0
@@ -176,11 +182,25 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
       if not dev:
         continue
 
-      # determine clock precision
-      clock_period = 1e-5*unit.s # temporary fake clock
-
       if not ci['type']:
         ci['type'] = determine_channel_type(chname, dev)
+
+      if not ci['clock']:
+        # drop the "analog" "digital" prefix
+        clk = devcfg[
+          str(do_ao_channels[ dev[(len(ci['type'])+1):] ].device())
+        ]['clock']['value']
+        assert clk in clocks, 'Chosen device clock not configured'
+        ci['clock'] = timing_channels[ clk ]
+
+        if clk not in transitions:
+          transitions[ clk ] = list()
+
+      # get a ref to the list of transitions for the associated clock generator
+      trans = transitions[ str( ci['clock'] ) ]
+
+      # determine clock precision
+      clock_period = ci['clock'].get_min_period()
 
 
       set_units_and_scaling(chname, ci, chan, globals)
@@ -263,11 +283,14 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
           bisect.insort_right( ce, UE(t_e_si, ddt_e_si, value, groupNum) )
         except OverlapError, e:
           raise OverlapError( '{c}: {e}'.format(c=chname,e=e) )
-        transitions.append( t_e_si )
+        trans.append( t_e_si )
 
         t_e += ddt_e
 
-    transitions.append( max_time )
+    # can't remember why we are adding this max_time to the transitions list
+    for trans in transitions.values():
+      trans.append( max_time )
+
     t_max = max( t_max, max_time )
 
     if not group['asynchronous']:
@@ -275,7 +298,12 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
     groupNum += 1
 
   # ensure that we have a unique set of transitions
-  transitions = set(transitions)
+  for i in transitions:
+    if timing_channels[ i ].is_aperiodic():
+      transitions[i] = set( transitions[i] )
+    else:
+      dt = timing_channels[i].get_min_period()/unit.s
+      transitions[i] = np.arange( 0.0, max(transitions[i])+dt, dt )
 
   # the return values are initially empty
   analog = dict()
@@ -339,6 +367,7 @@ def make_channel_info(channels):
       'scaling' : None,
       'unit_conversion_ratio' : None,
       'last' : None,
+      'clock' : None,
     }
   return D
 
