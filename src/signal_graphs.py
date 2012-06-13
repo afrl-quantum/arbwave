@@ -28,6 +28,11 @@ def accessible_clocks( terms, clocks, signals ):
   return [ clk for clk in C if T.intersection(short_paths[clk][0].keys()) ]
 
 
+def shortest_paths( *clocks, **signals ):
+  g = build_graph( *clocks, **signals )
+  return { clk : shortest_path(g,clk)  for clk in clocks }
+
+
 def nearest_terminal( clk, terms, shortest_paths ):
   """
   We need to find the terminal that uses the shortest signal path from the clock

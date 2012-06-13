@@ -9,7 +9,7 @@ import engine
 from gui_callbacks import do_gui_operation
 import default
 from ..path import collect_prefix
-from ..signal_graphs import build_graph
+from ..signal_graphs import shortest_paths
 
 class Processor:
   def __init__(self, plotter):
@@ -55,22 +55,22 @@ class Processor:
       self.engine.channels  = channels
       self.engine.waveforms = waveforms
 
+      if clocks[1]:
+        engine.send.to_driver.clocks( collect_prefix(clocks[0]) )
+
       if devcfg[1] or channels[1]:
         # we need to calculate the shortest connected paths of all signals
         # these paths are used to determine which terminal a device should
         # connect to in order to use a particular clock.
-        signal_graph = build_graph( *clocks[0], **signals[0] )
+        sp = shortest_paths( *clocks[0], **signals[0] )
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),
           collect_prefix(
             {c['device']:None  for  c in channels[0].values() if c['enable'] },
             1,
           ),
-          signal_graph,
+          sp,
         )
-
-      if clocks[1]:
-        engine.send.to_driver.clocks( collect_prefix(clocks[0]) )
 
       if signals[1]:
         engine.send.to_driver.signals(collect_prefix(signals[0],tryalso='dest'))

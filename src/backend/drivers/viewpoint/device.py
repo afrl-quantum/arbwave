@@ -5,6 +5,7 @@ import viewpoint as vp
 
 from ...device import Device as Base
 from ....float_range import float_range
+from ....signal_graphs import nearest_terminal
 import sim
 from capabilities import routing_bits, get_channels
 import channels
@@ -15,9 +16,13 @@ ignored_settings = {
            'number_transitions',
            'direction',
            'channels',
+           'clock',
+           'scan_rate',
           ],
   'in'  : ['direction',
            'channels',
+           'clock',
+           'scan_rate',
           ]
 }
 
@@ -43,18 +48,33 @@ class Device(Base):
     self.clocks = None
     self.signals = None
 
+    self.possible_clock_sources = { # look at viewpoint library
+      '{d}/Internal_XO'.format(d=self)    : vp.CLCK_INTERNAL,
+      '{d}/PIN/20'.format(d=self)         : vp.CLCK_EXTERNAL,
+      'TRIG/0'                            : vp.CLCK_TRIG_0,
+      '{d}/Internal_OCXO'.format(d=self)  : vp.CLCK_OCXO,
+    }
 
-  def set_config(self, config, channels, signal_graph):
+
+  def set_config(self, config, channels, shortest_paths):
     C = self.board.configs
     old_config = deepcopy(C)
     N = config.copy()
-    N.pop('clock') # we ignore this setting for now
-    # FIXME:  'in'/'out':'clock' should probably need to be auto configured
-    # based on N['clock'] and the signal_graph
+    clk = N.pop('clock')['value']
 
     # we have to strip off the device prefix...
 
     C['out']['channels'] = channels
+    C['in']['clock'    ] = C['out']['clock'] = \
+      self.possible_clock_sources[
+        nearest_terminal( clk,
+                          set(self.possible_clock_sources.keys()),
+                          shortest_paths )
+      ]
+    # we'll not set the scan_rate:
+    # If we are using an internal clock, this should have already been set
+    # If we are using an external clock, this will be ignored
+    #C['in']['scan_rate'] = C['out']['scan_rate'] =
 
     assert set(N.keys()).issubset(['in', 'out']), \
       'Non-in/out config for Viewpoint?'
@@ -72,11 +92,16 @@ class Device(Base):
       self.clocks_changed = True
       self.clocks = clocks
 
+      C = self.board.configs
+      for clk in clocks.items():
+        if 'Internal' in clk[0]:
+          C['in']['scan_rate'] = \
+          C['out']['scan_rate'] = clk[1]['scan_rate']['value']
+
 
   def set_signals(self, signals):
     if self.signals != signals:
       self.signals = signals
-      print 'signals: ', signals
       routing = 0x0
       for s in signals.items():
         if s[0].startswith( str(self) ):
@@ -142,7 +167,7 @@ class Device(Base):
     T['clock'] = {
       'value' : '',
       'type'  : str,
-      'range' : get_channels({str(self):self}, channels.Timing),
+      'range' : self.possible_clock_sources.keys(),
     }
     return T
 

@@ -22,7 +22,14 @@ def get_digital_channels(devices):
   return get_channels(devices, channels.Digital)
 
 def get_timing_channels(devices):
-  return get_channels(devices, channels.Timing)
+  tlist = get_channels(devices, channels.Timing)
+  # now add the internal clock(s)
+  for dev in devices.values():
+    tlist += [
+      channels.InternalTiming('{}/Internal_XO'.format(dev), dev=dev),
+      channels.InternalTiming('{}/Internal_OCXO'.format(dev), dev=dev),
+    ]
+  return tlist
 
 
 routing_bits = {
@@ -69,7 +76,7 @@ available_routes = {
   }, # TRIG/6 could be either PXI or RTSI
 
   'External/' : { # usable as a clock, therefore present as routable
-    'destinations' : ['PIN20'],
+    'destinations' : ['PIN/20'],
     'invertible'   : False,
   },
 }
@@ -81,11 +88,11 @@ def get_routeable_backplane_signals(devices):
   # now overwrite the default backplane channels with those with specifics
   for dev in devices:
     for c, r in available_routes.items():
-      if c.startswith('A'):
+      if c.partition('/')[0] in ['A', 'PIN']:
         c = '{d}/{c}'.format(d=dev,c=c)
       rn = list()
       for dest in r['destinations']:
-        if dest.startswith('A'):
+        if dest.partition('/')[0] in ['A', 'PIN']:
           rn.append( '{d}/{c}'.format(d=dev,c=dest) )
         else:
           rn.append( dest )
