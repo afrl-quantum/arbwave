@@ -52,7 +52,8 @@ class Board(vp.Board):
     return list( (vp.vtypes.word*8)() )
 
   def get_property(self, attr_id):
+    print 'vp.{b}.get_property({a})'.format(b=self.board,a=attr_id)
     return None
 
   def set_property(self, attr_id, value):
-    pass
+    print 'vp.{b}.set_property({a},{v})'.format(b=self.board,a=attr_id,v=value)
