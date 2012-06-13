@@ -6,6 +6,7 @@ import gobject
 from ..packing import Args as PArgs, VBox, hpack, vpack
 from .. import edit
 from ... import backend
+from ...signal_graphs import accessible_clocks
 
 ui_info = \
 '''<ui>
@@ -40,9 +41,9 @@ class ConfigDialog(gtk.Dialog):
     self.store = store
     self.signal_editor = edit.signals.create(store.signals)
     self.devcfg_editor = edit.Generic(store.devcfg,
-                                      range_factory=RangeFactory(False))
+                                      range_factory=RangeFactory(store,False))
     self.clock_editor = edit.Generic( store.clocks,
-                                      range_factory=RangeFactory(True))
+                                      range_factory=RangeFactory(store,True))
 
 
     # ###### SET UP THE PANEL ######
@@ -279,6 +280,23 @@ class Range:
       return min(r), max(r)
 
 
+class ClockRange:
+  def __init__(self, terminals, clocks, signals):
+    self.terminals  = terminals
+    self.clocks     = clocks
+    self.signals    = signals
+
+    assert type(self.terminals()) in [list, tuple], \
+      'device clocks must be lists/tuples'
+
+  def is_combo(self):
+    return True
+
+  def __iter__(self):
+    terms = self.terminals()
+    return iter( accessible_clocks(terms, self.clocks, self.signals) )
+
+
 def get_leaf_node( D, path ):
   if len(path) > 1:
     return get_leaf_node( D[path[0]], path[1:] )
@@ -287,22 +305,21 @@ def get_leaf_node( D, path ):
 
 
 class RangeFactory:
-  def __init__(self, for_clocks):
+  def __init__(self, store, for_clocks):
+    self.store = store
     if for_clocks:
       self.devs = backend.get_timing_channels()
     else:
       self.devs = backend.get_devices()
 
-  def __call__(self, path):
-    if path[-1] is 'clock':
+  def __call__(self, path, i, model):
+    r = Range( self.devs[path[0]], path[1:] )
+    if path[1] == 'clock':
+      assert model[i][model.TYPE] == str, 'expected string clock type'
       print 'I am supposed to make a clock list generator'
-    return Range( self.devs[path[0]], path[1:] )
-
-    #if 'clock' in template:
-    #  template['clock']['range'] = \
-    #    clock_list_generator(template['clock']['range'],
-    #                         self.store.clocks,
-    #                         self.store.signals)
+      return ClockRange(r, self.store.clocks, self.store.signals)
+    else:
+      return r
 
 
 
@@ -347,13 +364,3 @@ def do_popup_selection( parent, choices ):
 
 
 
-class clock_list_generator:
-  def __init__(self, direct, clocks, routes ):
-    self.direct = direct
-    self.clocks = clocks
-    self.routes = routes
-
-  def __call__(self):
-    # TODO:  return a subset of clocks for which each of the direct signals are
-    # connected via the routes to the subset of clocks
-    return self.direct

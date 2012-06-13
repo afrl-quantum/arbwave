@@ -170,7 +170,8 @@ class Generic:
         if model[i][model.RANGE] is None and self.range_factory is not None:
           # Create Range class
           model[i][model.RANGE] = \
-            self.range_factory( get_config_path(model.get_path(i), model) )
+            self.range_factory( get_config_path(model.get_path(i), model),
+                                i, model )
 
         if combo != model[i][model.RANGE].is_combo():
           show = False
@@ -218,7 +219,7 @@ if __name__ == '__main__':
     def __init__( self, D=dict() ):
       self.D = D
       
-    def __call__( self, path ):
+    def __call__( self, path, i, model ):
       return Range( self.D.get('/'.join(path),None) )
 
 
