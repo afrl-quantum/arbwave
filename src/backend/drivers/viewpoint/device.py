@@ -6,7 +6,6 @@ import viewpoint as vp
 from ...device import Device as Base
 from ....float_range import float_range
 from ....signal_graphs import nearest_terminal
-import sim
 from capabilities import routing_bits, get_channels
 import channels
 
@@ -28,17 +27,10 @@ ignored_settings = {
 
 
 class Device(Base):
-  def __init__(self, prefix, board_number, simulated=False):
+  def __init__(self, prefix, board_number):
     Base.__init__(self, name='{}/Dev{}'.format(prefix,board_number))
 
-    Board = vp.Board
-    if simulated:
-      if board_number > 0:
-        raise IndexError('Only one board in simulated mode.')
-
-      Board = sim.Board
-
-    self.board = Board(
+    self.board = vp.Board(
       # default to *all* inputs so that all are high-impedance
       vp.Config('in', []), # autoconfigure unused ports as inputs
       vp.Config('out', []),

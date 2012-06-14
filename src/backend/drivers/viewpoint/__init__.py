@@ -14,8 +14,19 @@ def name():
   return 'Viewpoint Driver'
 
 
+boards_to_probe = xrange(10)
+
 def is_simulated():
   return options.simulated
+
+
+# hook the simulated library if needed
+if is_simulated():
+  import sim
+  import viewpoint as vp
+  vp.board.dio64 = vp.clib.dio64 = sim.DIO64()
+  boards_to_probe = xrange(1)
+
 
 
 # mapping from board index to device
@@ -23,14 +34,15 @@ devices = dict()
 
 def load_boards():
   global devices
-  print 'probing for first 10 viewpoint boards...'
-  for i in xrange(10):
+  print 'probing for first {l} viewpoint boards...' \
+    .format( l=len(boards_to_probe) )
+  for i in boards_to_probe:
     try:
-      d = Device( prefix(), i, simulated=options.simulated )
+      d = Device( prefix(), i )
     except:
       break
     devices[str(d)] = d
-  print 'found {i} viewpoint boards'.format(i=i)
+  print 'found {i} viewpoint boards'.format(i=len(devices))
 
 
 load_boards()

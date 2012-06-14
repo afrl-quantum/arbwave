@@ -1,59 +1,94 @@
-# vim: ts=2:sw=2:tw=80:nowrap
-
+import random, sys, logging
+from logging import log, debug, info, warn, error, critical, DEBUG
 import viewpoint as vp
+from ctypes import cast, POINTER
 
-class Board(vp.Board):
-  def __del__(self):
-    self.close()
+class DIO64:
+  def __init__(self):
+    self.attributes = dict()
+    self.out_len_mask = 0
 
-  def _open(self):
+  def DIO64_Open( self, board, ignored ):
     pass
 
-  def _load(self, nin, nout):
+  def DIO64_Load( self, board, rbfFile, num_inputs, num_outputs ):
     pass
 
-  def close(self):
+  def DIO64_Close( self, board ):
     pass
 
-  def _start_input(self):
-    return self.configs['in']['scan_rate']
-
-  def _setup_output(self):
-    return self.configs['out']['scan_rate']
-
-  def in_status(self):
-    scans = vp.vtypes.dword()
-    stat  = vp.vtypes.Status()
-    return scans, stat
-
-  def read(self, scans, status):
-    return list( (vp.vtypes.word*scans)() ), status
-
-  def in_stop(self):
+  def DIO64_In_Start( self, board, ticks, mask, len_mask, ignored_flags, clock,
+                      trig_type_edge, trig_source,
+                      stop_type_edge, stop_source,
+                      daq_clock_modulo, scan_rate ):
     pass
 
-  def out_stop(self):
+  def DIO64_In_Status( self, board, scans_avail_out, status_out ):
+    scans_avail_out._obj.value = 0
+
+  def DIO64_In_Read( self, board, buffer_out, scansToRead, status_in_out ):
     pass
 
-  def out_start(self):
+  def DIO64_In_Stop( self, board ):
     pass
 
-  def out_status(self):
-    return vp.vtypes.dword(-1), vp.vtypes.Status()
+  def DIO64_Out_ForceOutput( self, board, buf, mask ):
+    buf_len = 0
+    while (mask >> buf_len): buf_len += 1
+    log(DEBUG-1, 'DIO64_Out_ForceOutput(%d): %s', board, buf[0:buf_len])
 
-  def write(self, transitions, status):
-    print 'vp.{b}.write({t},...)'.format(b=self.board, t=transitions)
-    return status
+  def DIO64_Out_GetInput( self, board, buf ):
+    pass
 
-  def set_output(self, data):
-    print 'vp.{b}.set_output({d})'.format(b=self.board, d=data)
+  def DIO64_Out_Config( self, board, ticks, mask, len_mask, ignored_flags, clock,
+                        trig_type_edge, trig_source,
+                        stop_type_edge, stop_source,
+                        daq_clock_modulo, repetitions,
+                        number_transitions, scan_rate ):
+    self.out_len_mask = len_mask
 
-  def get_last_inputs(self):
-    return list( (vp.vtypes.word*8)() )
+  def DIO64_Out_Start( self, board ):
+    pass
 
-  def get_property(self, attr_id):
-    print 'vp.{b}.get_property({a})'.format(b=self.board,a=attr_id)
-    return None
+  def DIO64_Out_Status( self, board, scans_avail_out, status_out ):
+    # we'll pretend to be _really_ generous
+    scans_avail_out._obj.value = sys.maxint
 
-  def set_property(self, attr_id, value):
-    print 'vp.{b}.set_property({a},{v})'.format(b=self.board,a=attr_id,v=value)
+  def DIO64_Out_Write( self, board, buf, buf_len, status_in_out ):
+    if logging.root.getEffectiveLevel() <= (DEBUG-1):
+      Transition = vp.types.create_transition_class(self.out_len_mask)
+      Tlist = cast( buf, POINTER(Transition) )
+      log(DEBUG-1, 'DIO64_Out_Write(%d):', board)
+      for i in xrange(buf_len):
+        log(DEBUG-1, '                   : %s: %s',
+            Tlist[i].time.value,
+            Tlist[i].words[:])
+
+  def DIO64_Out_Stop( self, board ):
+    pass
+
+  def DIO64_SetAttr( self, board, attrId, value ):
+    log(DEBUG-1, 'DIO64_SetAttr(%d, %d, %d)', board, attrId, value)
+    self.attributes[attrId] = value
+
+  def DIO64_GetAttr( self, board, attrId, value_out ):
+    aid = attrId._obj.value
+    log(DEBUG-1, 'DIO64_GetAttr(%d, %d)', board, aid)
+
+    if aid in self.attributes:
+      return self.attributes[aid]
+
+    valid_vals = vp.attributes.values[aid][0]
+    if valid_vals is None:
+      v_type = vp.attributes.values[aid][1]
+      if v_type is int:
+        retval = random.randint(0, sys.maxint)
+      elif v_type is float:
+        retval = random.random()
+      else:
+        retval = v_type( random.randint(0, sys.maxint) )
+    else:
+      retval = random.sample( valid_vals, 1 )
+
+    value_out._obj.value = retval
+    self.attributes[aid] = retval
