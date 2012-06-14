@@ -92,3 +92,7 @@ DONE--mostly,  error depiction should follow implementation of processor
 7.  Implement spreadsheet look/feel for the channel and waveform editors.
   Essentially, this will be copying the functionality that was built for the
   scaling/interpolation editor.
+
+8.  Have devices start in the opposite order of clock dependency making the
+clock-sinks start earlier than the clock-sources.  This could be done by further
+using the graph library.
