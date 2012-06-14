@@ -291,10 +291,6 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
 
         t_e += ddt_e
 
-    # can't remember why we are adding this max_time to the transitions list
-    for trans in transitions.values():
-      trans.append( max_time )
-
     t_max = max( t_max, max_time )
 
     if not group['asynchronous']:

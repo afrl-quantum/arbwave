@@ -128,17 +128,39 @@ class Device(Base):
     self.board.set_output( data )
 
 
-  def set_waveforms(self, waveforms, t_max, continuous):
+  def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
+    if set(waveforms.keys()).intersection( clock_transitions.keys() ):
+      raise RuntimeError('Viewpoint channels cannot be used as clocks and ' \
+                         'digital output simultaneously')
+
     C = self.board.configs
     old_config = deepcopy(C)
 
+    scan_clock_period = 1. / C['out']['scan_rate']
+
     transitions = dict()
+    # first add the waveform transitions
     for line in waveforms:
       for g in waveforms[line].values():
         for t in g:
           if t[0] not in transitions:
             transitions[ t[0] ] = dict()
           transitions[ t[0] ][line] = t[1]
+
+    # second, add transtions for channels being used as aperiod clocks
+    for line in clock_transitions:
+      if 'Internal' in line:
+        continue
+      for t_rising in clock_transitions[line]:
+        t_falling = t_rising + scan_clock_period
+        if t_rising not in transitions:
+          transitions[ t_rising ] = dict()
+        if t_falling not in transitions:
+          transitions[ t_falling ] = dict()
+        # we assume that each device using this clock waits for rising edge
+        transitions[ t_rising ][line] = True
+        # finish the clock pulse by lowering it to logic zero
+        transitions[ t_falling ][line] = False
     # Add the last "transition" which is really just a final duration
     transitions[ t_max ] = None
 

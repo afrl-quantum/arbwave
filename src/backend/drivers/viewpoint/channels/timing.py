@@ -18,7 +18,11 @@ class Timing(Base):
     Returns the minimum timing period (period between two rising edges of this
     clock pulse) in units of seconds.
     """
-    return unit.s / self.device().board.configs['out']['scan_rate']
+    # The factor of two is because scan_rate is the max transition rate of the
+    # DIO64 output channels.  A device using this channel as an aperiodic clock
+    # will need to see a rising edge and falling edge, the pair of which
+    # constitutes one clock pulse.
+    return 2 * unit.s / self.device().board.configs['out']['scan_rate']
 
 
 class InternalTiming(Base):
