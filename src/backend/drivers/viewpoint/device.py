@@ -7,7 +7,6 @@ from ...device import Device as Base
 from ....float_range import float_range
 from ....signal_graphs import nearest_terminal
 from capabilities import routing_bits, get_channels
-import channels
 
 
 ignored_settings = {
