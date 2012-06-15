@@ -11,6 +11,18 @@ import default
 from ..path import collect_prefix
 from ..signal_graphs import shortest_paths
 
+def get_range( scaling, globals ):
+  """
+  Get the minimum and maximum values of a given channels scaling.  Some devices
+  can use this to provide more firm limits on channel outputs.  NIDAQmx does
+  this, for example.
+  """
+  if not scaling:
+    return None
+  vals = [ eval(si[0], globals)  for si in scaling ]
+  return {'min':min(vals), 'max':max(vals)}
+
+
 class Processor:
   def __init__(self, plotter):
     self.Globals = default.get_globals()
@@ -66,7 +78,10 @@ class Processor:
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),
           collect_prefix(
-            {c['device']:None  for  c in channels[0].values() if c['enable'] },
+            { c['device'] : get_range(c['scaling'], self.Globals)
+              for  c in channels[0].values()
+                if c['enable']
+            },
             1,
           ),
           sp,
