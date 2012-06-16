@@ -70,7 +70,7 @@ class Processor:
       if clocks[1]:
         engine.send.to_driver.clocks( collect_prefix(clocks[0]) )
 
-      if devcfg[1] or channels[1]:
+      if devcfg[1] or channels[1] or signals[1]:
         # we need to calculate the shortest connected paths of all signals
         # these paths are used to determine which terminal a device should
         # connect to in order to use a particular clock.
