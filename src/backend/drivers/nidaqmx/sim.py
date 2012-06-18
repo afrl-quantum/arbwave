@@ -1,3 +1,13 @@
+# vim: ts=2:sw=2:tw=80:nowrap
+"""
+Simulated low-level nidaqmx library.
+"""
+
+import re
+import nidaqmx
+
+regen_modes = None
+ch_types = None
 
 def load_nidaqmx_h(module):
   nidaqmx_version = module.get_nidaqmx_version()
@@ -9,12 +19,45 @@ def load_nidaqmx_h(module):
     exec 'module.libnidaqmx.%s = %r' % (name, value)
 
 
+  global regen_modes, ch_types
+  l = module.libnidaqmx
+  regen_modes = {
+    True  : l.DAQmx_Val_AllowRegen,
+    False : l.DAQmx_Val_DoNotAllowRegen,
+
+    l.DAQmx_Val_AllowRegen      : True,
+    l.DAQmx_Val_DoNotAllowRegen : False,
+  }
+  ch_types = {
+    'ai':l.DAQmx_Val_AI, 'ao':l.DAQmx_Val_AO,
+    'di':l.DAQmx_Val_DI, 'do':l.DAQmx_Val_DO,
+    'ci':l.DAQmx_Val_CI, 'co':l.DAQmx_Val_CO,
+  }
+
+
+class Channel:
+  def __init__(self, name, typ):
+    self.name = name
+    self.typ = typ
+
+  def __str__(self):
+    return self.name
+
 
 class Task:
-  def __init__(self, name, channels=[]):
+  def __init__(self, name):
     self.name = name
-    self.channels = channels
+    self.channels = list()
     self.regen = False
+    self.chindx = dict()
+
+  def add_channel(self, ch):
+    # we first make sure that only channel types of the same exist
+    for c in self.channels:
+      assert c.typ == ch.typ, \
+        'NIDAQmx:  only similar channel types allowed in same task'
+    self.chindx[str(ch)] = len( self.channels )
+    self.channels.append( ch )
 
 
 
@@ -22,6 +65,7 @@ class NiDAQmx:
   def __init__(self):
     self.last_task = -1
     self.tasks = dict()
+
 
   #   SYSTEM INFORMATION
   def DAQmxGetSysNIDAQMajorVersion(self, retval_ref):
@@ -124,7 +168,8 @@ class NiDAQmx:
 
 
   def DAQmxClearTask(self,task):
-    self.tasks.pop(task.value)
+    if task.value in self.tasks:
+      self.tasks.pop(task.value)
     return 0
 
 
@@ -143,13 +188,35 @@ class NiDAQmx:
     return 0
 
 
-  def DAQmxGetTaskNumChans(self, retval_ref):
+  def DAQmxCreateAOVoltageChan(self,task, phys_chan, chname,
+                               min_val, max_val, units, custom_scale_name):
+    assert phys_chan, 'NIDAQmx:  missing physical channel name'
+    if not chname:
+      chname = phys_chan
+    T = self.tasks[ task.value ]
+    assert chname not in T.channels, \
+      'NIDAQmx:  channel already exists in task'
+    T.add_channel( Channel(chname, 'ao') )
+    return 0
+
+
+  def DAQmxGetChanType(self, task, chname, retval_ref):
+    T = self.tasks[ task.value ]
+    if chname:
+      retval_ref._obj.value = ch_types[ T.channels[ T.chindx[chname] ].typ ]
+    else:
+      retval_ref._obj.value = ch_types[ T.channels[ 0 ].typ ]
+    return 0
+
+
+  def DAQmxGetTaskNumChans(self, task, retval_ref):
     retval_ref._obj.value = len(self.tasks[task.value].channels)
     return 0
 
 
   def DAQmxGetTaskChannels(self,task,buf_ref,bufsize):
-    buf_ref._obj.value = ','.join(self.tasks[task.value].channels)[:bufsize]
+    chnames = [ str(c)  for c in self.tasks[task.value].channels ]
+    buf_ref._obj.value = ','.join(chnames)[:bufsize]
     return 0
 
 
@@ -160,6 +227,18 @@ class NiDAQmx:
 
 
   def DAQmxTaskControl(self,task,state_val):
+    return 0
+
+
+  def DAQmxSetSampTimingType(self, task, timing_type):
+    return 0
+
+
+  def DAQmxSetSampQuantSampMode(self, task, mode):
+    return 0
+
+
+  def DAQmxSetSampQuantSampPerChan(self, task, n):
     return 0
 
 
@@ -194,19 +273,17 @@ class NiDAQmx:
     return 0
 
 
-  regen_modes = {
-    True  : 10097, #DAQmx_Val_AllowRegen
-    False : 10158, # DAQmx_Val_DoNotAllowRegen
-
-    10097 : True,  #DAQmx_Val_AllowRegen
-    10158 : False, # DAQmx_Val_DoNotAllowRegen
-  }
-
   def DAQmxGetWriteRegenMode(self, task, retval_ref):
-    retval_ref._obj.value = self.regen_modes[self.tasks[task.value].regen]
+    retval_ref._obj.value = regen_modes[self.tasks[task.value].regen]
     return 0
 
 
   def DAQmxSetWriteRegenMode(self, task, val):
-    self.tasks[task.value].regen = self.regen_modes[val]
+    self.tasks[task.value].regen = regen_modes[val]
+    return 0
+
+
+  def DAQmxWriteAnalogF64(self, task, n_per_chan, auto_start, timeout, layout,
+                          data, n_written_ref, ignored):
+    n_written_ref._obj.value = n_per_chan.value
     return 0

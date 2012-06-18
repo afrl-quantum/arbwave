@@ -3,6 +3,9 @@
   The set of routes that are possible depending on the particular hardware.
 """
 
+# map (src, destination) -> (native-src, native-destination)
+signal_route_map = dict()
+
 available = {
   'PCI-6723' : {
     'PFI{0..9}' : {

@@ -2,6 +2,7 @@
 
 import copy
 from logging import error
+from .. import routes
 from ....device import Device as Base
 from .....signal_graphs import nearest_terminal
 
@@ -13,11 +14,29 @@ class Task(Base):
   def __init__(self, device):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
     self.task = None
-    self.config = self.get_config_template()
     self.channels = None
     self.clocks = None
     self.clock_terminal = None
     self.signals = None
+
+    # first find the possible trigger and clock sources
+    self.trig_sources = list()
+    self.clock_sources = list()
+    self.sources_to_native = dict()
+    clk = str(self) + '/SampleClock'
+    trg = str(self) + '/StartTrigger'
+    for i in routes.signal_route_map.items():
+      add = False
+      if clk == i[1][1]:
+        self.clock_sources.append( i[0][0] )
+        add = True
+      elif trg == i[1][1]:
+        self.trig_sources.append( i[0][0] )
+        add = True
+      if add:
+        self.sources_to_native[ i[0][0] ] = i[1][0]
+
+    self.config = self.get_config_template()
 
 
   def __del__(self):
@@ -46,9 +65,10 @@ class Task(Base):
       self.clock_terminal = None
     elif shortest_paths:
       self.clock_terminal = \
-        nearest_terminal( self.config['clock']['value'],
-                          set(self.config['clock']['range']),
-                          shortest_paths )
+        self.sources_to_native[
+          nearest_terminal( self.config['clock']['value'],
+                            set(self.clock_sources),
+                            shortest_paths ) ]
       force = True
 
     if force:
@@ -189,18 +209,18 @@ class Task(Base):
       'use-only-onboard-memory' : {
         'value' : True,
         'type'  : bool,
-        'range' : [True, False],
+        'range' : None,
       },
       'trigger' : {
         'enable' : {
           'value' : True,
           'type' : bool,
-          'range' : [True, False],
+          'range' : None,
         },
         'source' : {
           'value' : '',
           'type' : str,
-          'range' : ['Not', 'Sure'],
+          'range' : self.trig_sources,
         },
         'edge' : {
           'value' : 'rising',
@@ -214,7 +234,7 @@ class Task(Base):
       'clock' : {
         'value' : '',
         'type' : str,
-        'range' : ['Not', 'Sure'],
+        'range' : self.clock_sources,
       },
       'clock-settings' : {
         'mode' : {

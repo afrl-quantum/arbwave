@@ -37,7 +37,6 @@ lines     = list()
 counters  = list()
 signals   = list()
 routed_signals = dict()
-signal_route_map = dict()
 
 
 
@@ -66,39 +65,11 @@ def format_terminals(d, dest):
 
 
 def load_all():
-  global tasks, analogs, lines, counters, signals, signal_route_map
+  global tasks, analogs, lines, counters, signals
   system = nidaqmx.System()
   print 'found {i} NI DAQmx boards'.format(i=len(system.devices))
   prfx = prefix()
   for d in system.devices:
-    if d.get_analog_output_sample_clock_supported():
-      available = [ channels.Analog('{}/{}'.format(prfx,ao))
-                    for ao in d.get_analog_output_channels()
-                  ]
-      if available:
-        t = task.Analog(d)
-        tasks[ str(t) ] = t
-        analogs += available
-
-
-    available = [ channels.Digital('{}/{}'.format(prfx,do))
-                  for do in d.get_digital_output_lines()
-                    if nidaqmx.physical.get_do_sample_clock_supported(do)
-                ]
-    if available:
-      t = task.Digital(d)
-      tasks[ str(t) ] = t
-      lines += available
-
-
-    available = [ channels.Timing('{}/{}'.format(prfx,co))
-                  for co in d.get_counter_output_channels() ]
-    if available:
-      counters += available
-      t = task.Timing(d)
-      tasks[ str(t) ] = t
-
-
     product = d.get_product_type()
     for sources in routes.available[product]:
       dest = list()
@@ -110,12 +81,41 @@ def load_all():
       src, ni_src = format_terminals(d, sources)
       for i in xrange( len(src) ):
         for j in xrange( len(dest) ):
-          signal_route_map[ (src[i], dest[j]) ] = (ni_src[i], ni_dest[j])
+          routes.signal_route_map[ (src[i], dest[j]) ] = (ni_src[i], ni_dest[j])
 
         signals.append(
           channels.Backplane( src[i],
                               destinations=dest,
                               invertible = True ) )
+
+
+    if d.get_analog_output_sample_clock_supported():
+      t = task.Analog('{}/{}'.format(prfx,d))
+      available = [ channels.Analog('{}/{}'.format(prfx,ao), t)
+                    for ao in d.get_analog_output_channels()
+                  ]
+      if available:
+        tasks[ str(t) ] = t
+        analogs += available
+
+
+    t = task.Digital('{}/{}'.format(prfx,d))
+    available = [ channels.Digital('{}/{}'.format(prfx,do), t)
+                  for do in d.get_digital_output_lines()
+                    if nidaqmx.physical.get_do_sample_clock_supported(do)
+                ]
+    if available:
+      tasks[ str(t) ] = t
+      lines += available
+
+
+    t = task.Timing('{}/{}'.format(prfx,d))
+    available = [ channels.Timing('{}/{}'.format(prfx,co), t)
+                  for co in d.get_counter_output_channels() ]
+    if available:
+      counters += available
+      tasks[ str(t) ] = t
+
 
 load_all()
 
@@ -143,7 +143,7 @@ def set_device_config( config, channels, shortest_paths ):
   # (configs are already naturally separated by device)
   chans = { k:dict()  for k in tasks }
   for c in channels:
-    m = re.match( prefix() + '/((dev[0-9]*/[ap]o).*)', c.lower())
+    m = re.match( '((' + prefix() + '/Dev[0-9]*/[ap]o).*)', c)
     # we change '/po' to '/do' to correspond with the task name given above for
     # digital channels.
     chans[ m.group(2).replace('/po','/do') ][ m.group(1) ] = channels[c]
@@ -175,14 +175,14 @@ def set_signals( signals ):
 
     # disconnect routes no longer in use
     for sig in ( old - new ):
-      s, d = signal_route_map[ (sig[0], sig[1]['dest']) ]
+      s, d = routes.signal_route_map[ (sig[0], sig[1]['dest']) ]
       if s is None or d is None:
         continue # None means an external connection
       system.disconnect_terminals( s, d )
 
     # connect new routes routes no longer in use
     for sig in ( new - old ):
-      s, d = signal_route_map[ (sig[0], sig[1]['dest']) ]
+      s, d = routes.signal_route_map[ (sig[0], sig[1]['dest']) ]
       if s is None or d is None:
         continue # None means an external connection
       system.connect_terminals(s, d, sig[1]['invert'])
@@ -191,8 +191,8 @@ def set_signals( signals ):
 
 
 def set_static(analog, digital):
-  D = collect_prefix(digital, 1, 1)
-  A = collect_prefix(analog, 1, 1)
+  D = collect_prefix(digital, 0, 2)
+  A = collect_prefix(analog, 0, 2)
 
   for dev in D.items():
     tasks[ dev[0]+'/do' ].set_output( dev[1] )
@@ -206,8 +206,8 @@ def set_waveforms(analog, digital, transitions, t_max, continuous):
   Viewpoint ignores all transition information since it only needs absolute
   timing information.
   """
-  D = collect_prefix( digital, 1, 1 )
-  A = collect_prefix( analog, 1, 1 )
+  D = collect_prefix( digital, 0, 2 )
+  A = collect_prefix( analog, 0, 2 )
 
   for dev in D.items():
     tasks[ dev[0]+'/do' ].set_waveforms( dev[1], transitions, t_max, continuous )
@@ -233,7 +233,7 @@ def close():
   # now unroute all signals
   global routed_signals
   for sig in routed_signals.items():
-    s, d = signal_route_map[ (sig[0], sig[1]['dest']) ]
+    s, d = routes.signal_route_map[ (sig[0], sig[1]['dest']) ]
     if s is None or d is None:
       continue # None means an external connection
     system.disconnect_terminals( s, d )
