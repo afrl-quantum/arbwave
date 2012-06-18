@@ -9,3 +9,5 @@ class Backplane(Base):
     self.dest = destinations
     self.inv  = invertible
 
+  def __repr__(self):
+    return "'{n}' : ".format(n=self.name) + repr(self.dest)
