@@ -84,7 +84,7 @@ def pcmp(p0,p1):
   m0 = re.search('([0-9]*$)', p0)
   m1 = re.search('([0-9]*$)', p1)
   cr = cmp(p0[:m0.start()], p1[:m1.start()])
-  if cr == 0:
+  if cr == 0 and m0.start() < len(p0) and m1.start() < len(p1):
     return cmp(int(p0[m0.start():]), int(p1[m1.start():]))
   return cr
 
