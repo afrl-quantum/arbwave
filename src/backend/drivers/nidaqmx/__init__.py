@@ -179,6 +179,7 @@ def set_signals( signals ):
       if s is None or d is None:
         continue # None means an external connection
       system.disconnect_terminals( s, d )
+      system.tristate_terminal(d) # an attempt to protect the dest terminal
 
     # connect new routes routes no longer in use
     for sig in ( new - old ):
@@ -245,3 +246,4 @@ def close():
     if s is None or d is None:
       continue # None means an external connection
     system.disconnect_terminals( s, d )
+    system.tristate_terminal(d) # an attempt to protect the dest terminal
