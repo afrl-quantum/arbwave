@@ -93,10 +93,9 @@ def set_units_and_scaling(chname, ci, chan, globals):
       ci['unit_conversion_ratio'] = unit.V / ci['units']
 
     elif ci['type'] is 'analog':
-      ci['unit_conversion_ratio'] = unit.V
+      ci['unit_conversion_ratio'] = 1.0
   if (not ci['scaling']) and chan['scaling']:
-    assert ci['units'], \
-      chname+': dimensions required for scaling'
+    assert ci['units'], chname+': dimensions required for scaling'
     assert chan['interp_order'], \
       chname+': expected interpolation order for scaling'
     assert chan['interp_smoothing']>=0, \
@@ -268,7 +267,7 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
         ci['last'] = value
 
 
-        value = apply_scaling(value, chname, ci) 
+        value = apply_scaling(value, chname, ci)
 
         check_final_units( value, chname, ci )
 
