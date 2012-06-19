@@ -8,6 +8,9 @@ signal_route_map = dict()
 
 available = {
   'PCI-6723' : {
+    ('External/', None) : {
+      'PFI{0..9}',
+    },
     'PFI{0..9}' : {
       'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}',
       'ctr{0..1}{Gate,Source}',
