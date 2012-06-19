@@ -49,7 +49,7 @@ class Task(Base):
     """
     # populate the task with output channels and accumulate the data
     for c in self.channels:
-      self.task.create_channel(c)
+      self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
 
   def set_config(self, config=None, channels=None, shortest_paths=None,
@@ -106,7 +106,8 @@ class Task(Base):
                                  samples_per_channel=1 )
     self.task.configure_trigger_disable_start()
     # get the data
-    chlist = self.task.get_names_of_channels()
+    px = self.prefix()
+    chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist) == set( data.keys() ), \
       'NIDAQmx.set_output: mismatched channels'
     self.task.write( [ data[c]  for c in chlist ] )
@@ -152,7 +153,8 @@ class Task(Base):
     # probably need to do some rounding to the nearest clock pulse to ensure
     # that we only have pulses matched to the correct transition
 
-    chlist = self.task.get_names_of_channels()
+    px = self.prefix()
+    chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist).issuperset( waveforms.keys() ), \
       'NIDAQmx.set_output: mismatched channels'
 

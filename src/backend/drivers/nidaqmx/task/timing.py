@@ -15,8 +15,9 @@ class Timing(Base):
 
   def add_channels(self):
     for c in self.clocks.items():
+      name = c[0].partition('/')[-1] # cut off the prefix
       self.task.create_channel_frequency(
-        c[0], name=c[0],
+        name, name=name,
         idle_state  = c[1]['idle-state'],
         delay       = c[1]['delay'],
         freq        = c[1]['rate'],

@@ -19,7 +19,9 @@ class Analog(Base):
       else:
         # use the default range values
         mn, mx = dflt_mn, dflt_mx
-      self.task.create_voltage_channel(c[0], min_val=mn, max_val=mx)
+      self.task.create_voltage_channel(
+        c[0].partition('/')[-1], # cut off the prefix
+        min_val=mn, max_val=mx )
 
 
   def get_config_template(self):
