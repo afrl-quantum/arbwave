@@ -70,10 +70,15 @@ class Processor:
       if clocks[1]:
         engine.send.to_driver.clocks( collect_prefix(clocks[0]) )
 
-      if devcfg[1] or channels[1] or signals[1]:
+      if devcfg[1] or channels[1] or signals[1] or clocks[1]:
         # we need to calculate the shortest connected paths of all signals
         # these paths are used to determine which terminal a device should
         # connect to in order to use a particular clock.
+        # Sending config to drivers also depends on clock changes because
+        # drivers may need to know (approximate) rates for clocks.  We don't
+        # send in clocks[0] since the clocks have already been configured.
+        # We'll rely on engine.send.to_driver.config to send in a link to the
+        # timing channels.
         sp = shortest_paths( *clocks[0], **signals[0] )
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),

@@ -63,7 +63,7 @@ def get_routeable_backplane_signals():
   return capabilities.get_routeable_backplane_signals(devices)
 
 
-def set_device_config( config, channels, shortest_paths ):
+def set_device_config( config, channels, shortest_paths, timing_channels ):
   # we need to separate channels first by device
   # (configs are already naturally separated by device)
   # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
@@ -71,7 +71,8 @@ def set_device_config( config, channels, shortest_paths ):
   chans = collect_prefix(channels, 0, 2, 2)
   for d in devices:
     if d in config or d in chans:
-      devices[d].set_config( config.get(d,{}), chans.get(d,[]), shortest_paths )
+      devices[d].set_config( config.get(d,{}), chans.get(d,[]),
+                             shortest_paths, timing_channels )
 
 
 def set_clocks( clocks ):

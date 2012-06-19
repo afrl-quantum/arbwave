@@ -53,7 +53,7 @@ class Task(Base):
 
 
   def set_config(self, config=None, channels=None, shortest_paths=None,
-                 force=False):
+                 timing_channels=None, force=False):
     if channels and self.channels != channels:
       self.channels = channels
       force = True
@@ -63,13 +63,18 @@ class Task(Base):
 
     if not self.config['clock']['value']:
       self.clock_terminal = None
-    elif shortest_paths:
-      self.clock_terminal = \
-        self.sources_to_native[
-          nearest_terminal( self.config['clock']['value'],
-                            set(self.clock_sources),
-                            shortest_paths ) ]
-      force = True
+    else:
+      if shortest_paths:
+        self.clock_terminal = \
+          self.sources_to_native[
+            nearest_terminal( self.config['clock']['value'],
+                              set(self.clock_sources),
+                              shortest_paths ) ]
+        force = True
+      if timing_channels:
+        self.max_clock_rate = \
+          1. / timing_channels[ self.config['clock']['value'] ].get_min_period()
+        force = True
 
     if force:
       # rebuild the task
@@ -120,18 +125,18 @@ class Task(Base):
       raise UserWarning('cannot start waveform without a output clock defined')
 
     transitions = list(clock_transitions[ self.config['clock']['value'] ])
-    transistions.sort()
+    transitions.sort()
 
     # 1.  Sample clock
     if continuous:
-      mode = self.config['clock-settings']['mode']
+      mode = self.config['clock-settings']['mode']['value']
     else:
       mode = 'finite'
     self.task.configure_timing_sample_clock(
       source              = self.clock_terminal,
-      rate                = GET_THE_MAX_CLK_RATE, # Hz
-      active_edge         = self.config['clock-settings']['edge'],
-      sample_modes        = mode,
+      rate                = self.max_clock_rate, # Hz
+      active_edge         = self.config['clock-settings']['edge']['value'],
+      sample_mode         = mode,
       samples_per_channel = len(transitions) )
     # 2.  Triggering
     if self.config['trigger']['enable']['value']:
@@ -189,7 +194,8 @@ class Task(Base):
 
 
   def start_output(self):
-    self.task.start()
+    if self.task:
+      self.task.start()
 
 
   def stop_output(self):

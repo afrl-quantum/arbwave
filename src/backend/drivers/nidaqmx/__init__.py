@@ -138,7 +138,7 @@ def get_routeable_backplane_signals():
   return signals
 
 
-def set_device_config( config, channels, shortest_paths ):
+def set_device_config( config, channels, shortest_paths, timing_channels ):
   # we need to separate channels first by device
   # (configs are already naturally separated by device)
   chans = { k:dict()  for k in tasks }
@@ -150,7 +150,7 @@ def set_device_config( config, channels, shortest_paths ):
 
   for d in tasks:
     if d in config or d in chans:
-      tasks[d].set_config( config.get(d,{}), chans.get(d,{}), shortest_paths )
+      tasks[d].set_config( config.get(d,{}), chans.get(d,{}), shortest_paths, timing_channels )
 
 
 def set_clocks( clocks ):
@@ -214,6 +214,14 @@ def set_waveforms(analog, digital, transitions, t_max, continuous):
 
   for dev in A.items():
     tasks[ dev[0]+'/ao' ].set_waveforms( dev[1], transitions, t_max, continuous )
+
+
+def start_output():
+  # FIXME:  clocks will probably need to be started last.  This means, if a
+  # particular viewpoint card has a channel being used as a clock, the card will
+  # likely have to be started later
+  for dev in tasks.values():
+    dev.start_output()
 
 
 def stop_output():
