@@ -61,24 +61,41 @@ def make_univariate_spline(scaling,order=1,smooth=0, globals=globals(), clamp_en
   L = L.items()
   L.sort(key=lambda v: v[0]) # sort by x
   L = np.array(L)
+  mn, mx   = L[0,0], L[-1,0]
 
+  # to make things more natural for the user, we'll first generate a higher
+  # resolution interpolation of voltage vs output.  We'll then swap the axes on
+  # this higher-resolution data and generate a first order interpolation with no
+  # smoothing of output vs voltage.
 
-  # make sure the split the axes
-  s = UnivariateSpline(L[:,1], L[:,0], k=order, s=smooth)
+  # 1.  generate the higher order resolution of voltage vs output
+  s = UnivariateSpline(L[:,0], L[:,1], k=order, s=smooth)
+  hl = 100.*len(L)
+
+  voltage = np.arange(0.0, hl) * (mx-mn)/(hl - 1.0) + mn
+  output = s(voltage)
+
+  # 2.  create a new linear interpolator of output vs voltage
+  #  Note that we use the UnivariateSpline because we need to handle edge
+  #  conditiions nicer.  The UnivariateSpline allows some extrapolation which
+  #  in turn treats the edges more nicely--hopefully, the fun_clamp function
+  #  inhibits badness that might otherwise result from extrapolation.
+  #  The scipy.interpolate.interp1d class makes edge conditions more difficult.
+  s = UnivariateSpline(output, voltage, k=1, s=0.0)
 
   if not clamp_ends:
     return s
 
-  mn, mx   = L[0,1], L[-1,1]
-  fmn, fmx = L[0,0], L[-1,0]
   del L
 
   def fun_clamp(x, *args,**kwargs):
-    if x < mn:
-      return fmn
-    elif x > mx:
-      return fmx
-    return s(x, *args, **kwargs)
+    v = s(x, *args, **kwargs)
+
+    if v < mn:
+      return mn
+    elif v > mx:
+      return mx
+    return v
 
   return fun_clamp
 
