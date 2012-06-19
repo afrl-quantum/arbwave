@@ -123,8 +123,9 @@ class Editor(gtk.Dialog):
       C['y'].set_title( 'Output ({})'.format(entry.get_text()))
       self.axes.set_ylabel('Output ({})'.format(self.units.get_text()))
       self.canvas.draw()
-      if self.chan:
-        self.chan[self.channels.UNITS] = self.units.get_text()
+      T = self.units.get_text()
+      if self.chan and self.chan[self.channels.UNITS] != T:
+        self.chan[self.channels.UNITS] = T
 
     self.units.connect('activate', update_units_label)
     self.units.set_text('V')
@@ -187,7 +188,7 @@ class Editor(gtk.Dialog):
       return
 
     if label == None:
-      label = self.channels[0][ self.channels.LABEL ]
+      return
     if label != self.channel_select.get_active_text():
       for i in xrange(len(self.channels)):
         if label == self.channels[i][self.channels.LABEL]:
@@ -212,22 +213,30 @@ class Editor(gtk.Dialog):
     if not ( self.channels and len(self.channels) ):
       return
 
-    self.chan = None
+    self.set_pause(True)
+
+    self.chan = new_chan = None
     self.view.set_model( None )
 
     # set new model
     for chan in self.channels:
       if chan[self.channels.LABEL] == label:
-        self.chan = chan
+        new_chan = chan
         break
-    if self.chan[self.channels.SCALING] is None:
-      self.chan[self.channels.SCALING] = gtk.ListStore(str,str)
-    if not self.chan[self.channels.UNITS]:
-      self.chan[self.channels.UNITS] = 'V'
+    if new_chan[self.channels.SCALING] is None:
+      new_chan[self.channels.SCALING] = gtk.ListStore(str,str)
+    if not new_chan[self.channels.UNITS]:
+      new_chan[self.channels.UNITS] = 'V'
+    if new_chan[self.channels.INTERP_ORDER] < 1:
+      new_chan[self.channels.INTERP_ORDER] = 1
+    # INTERP_SMOOTHING defaults to zero already
 
-    self.units.set_text( self.chan[self.channels.UNITS] )
-    store = self.chan[self.channels.SCALING]
+    self.units.set_text( new_chan[self.channels.UNITS] )
+    self.order.set_value( new_chan[self.channels.INTERP_ORDER] )
+    self.smoothing.set_value( new_chan[self.channels.INTERP_SMOOTHING] )
+    store = new_chan[self.channels.SCALING]
     self.view.set_model( store )
+
 
     #connect handlers to new model
     self.handlers['store'] = [
@@ -242,6 +251,8 @@ class Editor(gtk.Dialog):
     self.handlers['y'] = self.sheet_cb.connect_column( self.renderers['y'],
       setitem=(set_item, store, Editor.Y, self.add_undo) )
 
+    self.chan = new_chan
+    self.set_pause(False)
     # clear the plot entirely first to avoid keeping a plot with no data-table
     self.axes.clear()
     self.canvas.draw()

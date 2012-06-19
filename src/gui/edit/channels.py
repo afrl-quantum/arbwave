@@ -187,6 +187,7 @@ class Channels:
         add_undo=self.add_undo,
       )
       self.scaling_editor.connect('destroy', unset_editor)
+    if model[path][model.DEVICE].startswith('Analog/'):
       self.scaling_editor.set_channel(model[path][model.LABEL])
     self.scaling_editor.present()
 
