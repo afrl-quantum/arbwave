@@ -55,14 +55,7 @@ class DIO64:
     scans_avail_out._obj.value = sys.maxint
 
   def DIO64_Out_Write( self, board, buf, buf_len, status_in_out ):
-    if logging.root.getEffectiveLevel() <= (DEBUG-1):
-      Transition = vp.types.create_transition_class(self.out_len_mask)
-      Tlist = cast( buf, POINTER(Transition) )
-      log(DEBUG-1, 'DIO64_Out_Write(%d):', board)
-      for i in xrange(buf_len):
-        log(DEBUG-1, '                   : %s: %s',
-            Tlist[i].time.value,
-            Tlist[i].words[:])
+    pass
 
   def DIO64_Out_Stop( self, board ):
     pass
