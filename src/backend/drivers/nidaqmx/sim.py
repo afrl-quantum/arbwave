@@ -256,6 +256,11 @@ class NiDAQmx:
 
   def DAQmxCfgSampClkTiming(self, task, source, rate, active_edge_val,
                             sample_mode_val, samples_per_channel ):
+    log(DEBUG-1, 'DAQmxCfgSampClkTiming(%s, %s, %f, %s, %s, %d)',
+      task, source, rate.value,
+      task.edge_rmap[active_edge_val],
+      task.sample_mode_rmap[sample_mode_val],
+      samples_per_channel.value)
     return 0
 
 

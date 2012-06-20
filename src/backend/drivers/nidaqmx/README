@@ -1,0 +1,2 @@
+For some annoying reason, terminals start with a leading slash, but devices and
+channels do not.

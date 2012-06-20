@@ -34,7 +34,8 @@ class Task(Base):
         self.trig_sources.append( i[0][0] )
         add = True
       if add:
-        self.sources_to_native[ i[0][0] ] = i[1][0]
+        # be sure the strip off the prefix
+        self.sources_to_native[ i[0][0] ] = i[1][0][len(self.prefix()):]
 
     self.config = self.get_config_template()
 
