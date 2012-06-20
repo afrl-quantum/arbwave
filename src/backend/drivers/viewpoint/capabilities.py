@@ -33,8 +33,8 @@ def get_timing_channels(devices):
 
 
 routing_bits = {
-  ('TRIG/0','A/13','in' ) : 0x1,
-  ('A/13','TRIG/0','out') : 0x8,
+  ('TRIG/1','A/13','in' ) : 0x1,
+  ('A/13','TRIG/1','out') : 0x8,
   ('TRIG/5','A/14','in' ) : 0x2,
   ('A/14','TRIG/5','out') : 0x10,
   ('TRIG/6','A/15','in' ) : 0x4,
