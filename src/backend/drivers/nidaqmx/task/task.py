@@ -23,8 +23,11 @@ class Task(Base):
     self.trig_sources = list()
     self.clock_sources = list()
     self.sources_to_native = dict()
-    clk = str(self) + '/SampleClock'
-    trg = str(self) + '/StartTrigger'
+
+    # make sure the strip off the leading 'ni' but leave the '/'
+    clk = str(self)[len(self.prefix()):] + '/SampleClock'
+    trg = str(self)[len(self.prefix()):] + '/StartTrigger'
+
     for i in routes.signal_route_map.items():
       add = False
       if clk == i[1][1]:
@@ -34,8 +37,7 @@ class Task(Base):
         self.trig_sources.append( i[0][0] )
         add = True
       if add:
-        # be sure the strip off the prefix
-        self.sources_to_native[ i[0][0] ] = i[1][0][len(self.prefix()):]
+        self.sources_to_native[ i[0][0] ] = i[1][0]
 
     self.config = self.get_config_template()
 

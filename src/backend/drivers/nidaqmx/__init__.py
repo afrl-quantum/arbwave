@@ -63,6 +63,13 @@ def format_terminals(d, dest):
   return D, ND
 
 
+def strip_prefix( s ):
+  if s:
+    # strip off the 'ni' part but leave the leading '/' since terminals appear
+    # to require the leading '/'
+    return s[len(prefix()):]
+  return s
+
 
 def load_all():
   global tasks, analogs, lines, counters, signals
@@ -81,7 +88,8 @@ def load_all():
       src, ni_src = format_terminals(d, sources)
       for i in xrange( len(src) ):
         for j in xrange( len(dest) ):
-          routes.signal_route_map[ (src[i], dest[j]) ] = (ni_src[i], ni_dest[j])
+          routes.signal_route_map[ (src[i], dest[j]) ] = \
+            ( strip_prefix(ni_src[i]), strip_prefix(ni_dest[j]) )
 
         signals.append(
           channels.Backplane( src[i],
@@ -160,11 +168,6 @@ def set_clocks( clocks ):
       tasks[d].set_clocks( clocks[d] )
 
 
-def strip_prefix( s ):
-  if s:
-    return s.partition('/')[-1]
-  return s
-
 def set_signals( signals ):
   """
   NIDAQmx signal router.
@@ -184,7 +187,6 @@ def set_signals( signals ):
         continue
 
       s, d = routes.signal_route_map[ route ]
-      s, d = strip_prefix(s), strip_prefix(d)
       system.disconnect_terminals( s, d )
       system.tristate_terminal(d) # an attempt to protect the dest terminal
 
@@ -194,7 +196,6 @@ def set_signals( signals ):
         continue
 
       s, d = routes.signal_route_map[ route ]
-      s, d = strip_prefix(s), strip_prefix(d)
       if s is None or d is None:
         continue # None means an external connection
       system.connect_terminals(s, d, signals[route]['invert'])
@@ -262,7 +263,6 @@ def close():
       continue
 
     s, d = routes.signal_route_map[ route ]
-    s, d = strip_prefix(s), strip_prefix(d)
     system.disconnect_terminals( s, d )
     system.tristate_terminal(d) # an attempt to protect the dest terminal
 
