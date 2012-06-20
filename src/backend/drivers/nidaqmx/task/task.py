@@ -223,7 +223,7 @@ class Task(Base):
       },
       'trigger' : {
         'enable' : {
-          'value' : True,
+          'value' : False,
           'type' : bool,
           'range' : None,
         },
