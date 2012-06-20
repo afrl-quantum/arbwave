@@ -245,9 +245,12 @@ def close():
   """
   Set all channels to a save value, close all devices, and uninitialize stuff
   """
+  devices = set()
   while tasks:
     devname, dev = tasks.popitem()
     logging.debug( 'closing NIDAQmx device: %s', devname )
+    if dev.task:
+      devices.update( dev.task.get_devices() )
     dev.clear()
     del dev
 
@@ -262,3 +265,8 @@ def close():
     s, d = strip_prefix(s), strip_prefix(d)
     system.disconnect_terminals( s, d )
     system.tristate_terminal(d) # an attempt to protect the dest terminal
+
+  # finish off by reseting the devices that were used
+  for d in system.devices:
+    if str(d) in devices:
+      d.reset()
