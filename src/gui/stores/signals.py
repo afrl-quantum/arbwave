@@ -22,8 +22,7 @@ class Signals(TreeModelDispatcher, gtk.ListStore):
   def dict(self):
     D = dict()
     for i in iter(self):
-      D[ i[Signals.SOURCE] ] = {
-        'dest'    : i[Signals.DEST],
+      D[ ( i[Signals.SOURCE], i[Signals.DEST] ) ] = {
         'invert'  : i[Signals.INVERT],
       }
     return D
@@ -32,8 +31,8 @@ class Signals(TreeModelDispatcher, gtk.ListStore):
     self.clear()
     for i in D.items():
       self.append([
-        i[0], #source
-        i[1]['dest'],
+        i[0][0], #source
+        i[0][1], #destination
         i[1]['invert'],
       ])
 

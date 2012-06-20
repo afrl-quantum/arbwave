@@ -94,14 +94,14 @@ class Device(Base):
     if self.signals != signals:
       self.signals = signals
       routing = 0x0
-      for s in signals.items():
-        if s[0].startswith( str(self) ):
-          src = '/'.join(s[0].split('/')[2:])
-          dst = s[1]['dest']
+      for src, dst in signals.keys():
+        if src.startswith( str(self) ):
+          src = '/'.join(src.split('/')[2:])
+          #dst = dst
           DIR = 'out'
         else: # just assume 'dest' must be a device channel
-          src = s[0]
-          dst = '/'.join(s[1]['dest'].split('/')[2:])
+          #src = src
+          dst = '/'.join(dst.split('/')[2:])
           DIR = 'in'
 
         route = (src, dst, DIR)

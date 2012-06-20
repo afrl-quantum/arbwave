@@ -160,6 +160,11 @@ def set_clocks( clocks ):
       tasks[d].set_clocks( clocks[d] )
 
 
+def strip_prefix( s ):
+  if s:
+    return s.partition('/')[-1]
+  return s
+
 def set_signals( signals ):
   """
   NIDAQmx signal router.
@@ -170,23 +175,29 @@ def set_signals( signals ):
   global routed_signals
   if routed_signals != signals:
     system = nidaqmx.System()
-    old = set( routed_signals.items() )
-    new = set( signals.items() )
+    old = set( routed_signals.keys() )
+    new = set( signals.keys() )
 
     # disconnect routes no longer in use
-    for sig in ( old - new ):
-      s, d = routes.signal_route_map[ (sig[0], sig[1]['dest']) ]
-      if s is None or d is None:
-        continue # None means an external connection
+    for route in ( old - new ):
+      if 'External/' in route[0] or 'External/' in route[1]:
+        continue
+
+      s, d = routes.signal_route_map[ route ]
+      s, d = strip_prefix(s), strip_prefix(d)
       system.disconnect_terminals( s, d )
       system.tristate_terminal(d) # an attempt to protect the dest terminal
 
     # connect new routes routes no longer in use
-    for sig in ( new - old ):
-      s, d = routes.signal_route_map[ (sig[0], sig[1]['dest']) ]
+    for route in ( new - old ):
+      if 'External/' in route[0] or 'External/' in route[1]:
+        continue
+
+      s, d = routes.signal_route_map[ route ]
+      s, d = strip_prefix(s), strip_prefix(d)
       if s is None or d is None:
         continue # None means an external connection
-      system.connect_terminals(s, d, sig[1]['invert'])
+      system.connect_terminals(s, d, signals[route]['invert'])
 
     routed_signals = signals
 
@@ -237,13 +248,17 @@ def close():
   while tasks:
     devname, dev = tasks.popitem()
     logging.debug( 'closing NIDAQmx device: %s', devname )
+    dev.clear()
     del dev
 
   # now unroute all signals
   global routed_signals
-  for sig in routed_signals.items():
-    s, d = routes.signal_route_map[ (sig[0], sig[1]['dest']) ]
-    if s is None or d is None:
-      continue # None means an external connection
+  system = nidaqmx.System()
+  for route in routed_signals.keys():
+    if 'External/' in route[0] or 'External/' in route[1]:
+      continue
+
+    s, d = routes.signal_route_map[ route ]
+    s, d = strip_prefix(s), strip_prefix(d)
     system.disconnect_terminals( s, d )
     system.tristate_terminal(d) # an attempt to protect the dest terminal

@@ -39,11 +39,10 @@ def get_timing_channels():
   return D
 
 def get_routeable_backplane_signals():
-  D = dict()
+  L = list()
   for d in drivers.values():
-    for c in d.get_routeable_backplane_signals():
-      D[ str(c) ] = c
-  return D
+    L.extend( d.get_routeable_backplane_signals() )
+  return L
 
 
 def unload_all():

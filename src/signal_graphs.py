@@ -3,17 +3,16 @@
 from pygraph.classes.digraph import digraph
 from pygraph.algorithms.minmax import *
 
-def build_graph( *nodes, **signals ):
+def build_graph( signals, *nodes ):
   g = digraph()
   g.add_nodes(nodes)
 
-  for sig in signals.items():
-    N0, N1 = sig[0], sig[1]['dest']
-    if N0 not in g:
-      g.add_node(N0)
-    if N1 not in g:
-      g.add_node(N1)
-    g.add_edge( (N0, N1) )
+  for src, dst in signals.keys():
+    if src not in g:
+      g.add_node(src)
+    if dst not in g:
+      g.add_node(dst)
+    g.add_edge( (src, dst) )
 
   return g
 
@@ -23,13 +22,13 @@ def accessible_clocks( terms, clocks, signals ):
   C = clocks.representation().keys()
   S = signals.representation()
 
-  g = build_graph( *C, **S )
+  g = build_graph( S, *C )
   short_paths = { clk:shortest_path(g,clk) for clk in C }
   return [ clk for clk in C if T.intersection(short_paths[clk][0].keys()) ]
 
 
-def shortest_paths( *clocks, **signals ):
-  g = build_graph( *clocks, **signals )
+def shortest_paths( signals, *clocks ):
+  g = build_graph( signals, *clocks )
   return { clk : shortest_path(g,clk)  for clk in clocks }
 
 

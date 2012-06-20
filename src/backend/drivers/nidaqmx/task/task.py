@@ -43,6 +43,12 @@ class Task(Base):
     self.clear()
 
 
+  def clear(self):
+    if self.task:
+      del self.task
+      self.task = None
+
+
   def add_channels(self):
     """
     Sub-task types must override this for specific channel creation.
@@ -203,13 +209,6 @@ class Task(Base):
   def stop_output(self):
     if self.task:
       self.task.stop()
-
-
-  def clear(self):
-    if self.task:
-      self.task.clear()
-      del self.task
-      self.task = None
 
 
   def get_config_template(self):

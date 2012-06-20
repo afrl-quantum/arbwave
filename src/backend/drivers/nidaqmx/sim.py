@@ -3,11 +3,13 @@
 Simulated low-level nidaqmx library.
 """
 
-import re
+import re, ctypes
 import nidaqmx
+from logging import log, debug, info, warn, error, critical, DEBUG
 
 regen_modes = None
 ch_types = None
+polarity_map = None
 
 def load_nidaqmx_h(module):
   nidaqmx_version = module.get_nidaqmx_version()
@@ -19,7 +21,7 @@ def load_nidaqmx_h(module):
     exec 'module.libnidaqmx.%s = %r' % (name, value)
 
 
-  global regen_modes, ch_types
+  global regen_modes, ch_types, polarity_map
   l = module.libnidaqmx
   regen_modes = {
     True  : l.DAQmx_Val_AllowRegen,
@@ -33,6 +35,10 @@ def load_nidaqmx_h(module):
     'di':l.DAQmx_Val_DI, 'do':l.DAQmx_Val_DO,
     'ci':l.DAQmx_Val_CI, 'co':l.DAQmx_Val_CO,
   }
+  polarity_map = {
+    l.DAQmx_Val_InvertPolarity      : True,
+    l.DAQmx_Val_DoNotInvertPolarity : False,
+  }
 
 
 class Channel:
@@ -42,6 +48,9 @@ class Channel:
 
   def __str__(self):
     return self.name
+
+  def __repr__(self):
+    return str(self)
 
 
 class Task:
@@ -63,7 +72,7 @@ class Task:
 
 class NiDAQmx:
   def __init__(self):
-    self.last_task = -1
+    self.last_task = 0
     self.tasks = dict()
 
 
@@ -103,14 +112,17 @@ class NiDAQmx:
 
   # SIGNALS & ROUTES
   def DAQmxConnectTerms(self, src, dest, invert):
+    log(DEBUG-1, 'DAQmxConnectTerms(%s,%s,%s)', src, dest, polarity_map[invert])
     return 0
 
 
   def DAQmxDisconnectTerms(self, src, dest):
+    log(DEBUG-1, 'DAQmxDisonnectTerms(%s,%s)', src, dest)
     return 0
 
 
   def DAQmxTristateOutputTerm(self, term):
+    log(DEBUG-1, 'DAQmxTristateOutputTerm(%s)', term)
     return 0
 
 
@@ -179,12 +191,12 @@ class NiDAQmx:
 
 
   def DAQmxStartTask(self,task):
-    print 'starting task: ', task
+    log(DEBUG-1, 'DAQmxStartTask(%s)', task)
     return 0
 
 
   def DAQmxStopTask(self,task):
-    print 'stopping task: ', task
+    log(DEBUG-1, 'DAQmxStopTask(%s)', task)
     return 0
 
 
@@ -275,15 +287,22 @@ class NiDAQmx:
 
   def DAQmxGetWriteRegenMode(self, task, retval_ref):
     retval_ref._obj.value = regen_modes[self.tasks[task.value].regen]
+    log(DEBUG-1, 'DAQmxGetWriteRegenMode(%s) = %s',
+      task, self.tasks[task.value].regen)
     return 0
 
 
   def DAQmxSetWriteRegenMode(self, task, val):
+    log(DEBUG-1, 'DAQmxSetWriteRegenMode(%s,%s)', task, regen_modes[val])
     self.tasks[task.value].regen = regen_modes[val]
     return 0
 
 
   def DAQmxWriteAnalogF64(self, task, n_per_chan, auto_start, timeout, layout,
                           data, n_written_ref, ignored):
+    cdata = ctypes.cast( data, ctypes.POINTER(ctypes.c_double))
+    log(DEBUG-1, 'DAQmxWriteAnalogF64(%s,%d,%s,%f,%d,%s,n_written_ref, None)',
+      task, n_per_chan.value, bool(auto_start.value), timeout.value, layout,
+      cdata[0:(n_per_chan.value * len(self.tasks[task.value].channels))] )
     n_written_ref._obj.value = n_per_chan.value
     return 0

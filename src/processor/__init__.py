@@ -79,7 +79,7 @@ class Processor:
         # send in clocks[0] since the clocks have already been configured.
         # We'll rely on engine.send.to_driver.config to send in a link to the
         # timing channels.
-        sp = shortest_paths( *clocks[0], **signals[0] )
+        sp = shortest_paths( signals[0], *clocks[0] )
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),
           collect_prefix(
@@ -93,7 +93,7 @@ class Processor:
         )
 
       if signals[1]:
-        engine.send.to_driver.signals(collect_prefix(signals[0],tryalso='dest'))
+        engine.send.to_driver.signals(collect_prefix(signals[0]))
 
       if self.running or toggle_run:
         self.start( show_stopped )

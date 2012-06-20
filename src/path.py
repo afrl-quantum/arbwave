@@ -3,8 +3,6 @@
 Some tools to help manipulate the devices paths.
 """
 
-from copy import deepcopy
-
 if __name__ != '__main__':
   import backend
 else:
@@ -16,7 +14,7 @@ else:
 
 
 def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0,
-                   tryalso=None, prefix_list=None):
+                   prefix_list=None):
   """
   This function serves to categorize paths by their prefix(es).
   """
@@ -27,23 +25,32 @@ def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0,
     if d[0] is None:
       continue
 
-    pth = d[0].split('/')[drop_prefixes:]
-    prfx = '/'.join(pth[0:prefix_len])
-
-    if tryalso and tryalso in d[1] and prfx not in prefix_list:
-      # this prefix is _supposed_ to be for an existing driver
-      # we resort to trying a field within the d[1]
-      pth2 = d[1][tryalso].split('/')[drop_prefixes:]
-      prfx = '/'.join(pth2[0:prefix_len])
-      data = deepcopy( d[1] )
-      data[tryalso] = '/'.join(pth2[drop_path_len:])
-    else:
+    if type(d[0]) is str:
+      pth = d[0].split('/')[drop_prefixes:]
+      prfx = '/'.join(pth[0:prefix_len])
       pth = pth[drop_path_len:]
-      data = d[1]
+      key = '/'.join(pth)
+
+    else:
+      assert type(d[0]) in [list, tuple], 'collect_prefix:  key invalid: '+d[0]
+      pth0 = d[0][0].split('/')[drop_prefixes:]
+      pth1 = d[0][1]
+      prfx = '/'.join(pth0[0:prefix_len])
+      pth0 = '/'.join(pth0[drop_path_len:])
+
+      if prfx not in prefix_list:
+        # this prefix is _supposed_ to be for an existing driver
+        # we resort to trying d[0][1]
+        pth0 = d[0][0]
+        pth1 = d[0][1].split('/')[drop_prefixes:]
+        prfx = '/'.join(pth1[0:prefix_len])
+        pth1 = '/'.join(pth1[drop_path_len:])
+
+      key = (pth0, pth1)
 
     if prfx not in retval:
       retval[prfx] = dict()
-    retval[prfx][ '/'.join(pth) ] = data
+    retval[prfx][ key ] = d[1]
 
   return retval
 
@@ -68,10 +75,10 @@ if __name__ == '__main__':
 
 
   signals = {
-    'ni/Dev1/ctr0Output' : {'dest':'TRIG/0'},
-    'vp/Dev0/A/13' : {'dest':'TRIG/3'},
-    'TRIG/4'       : {'dest': 'ni/Dev2/ctr0Gate'},
+    ('ni/Dev1/ctr0Output','TRIG/0') : {'inv': True},
+    ('vp/Dev0/A/13',      'TRIG/3') : {'inv':False},
+    ('TRIG/4',  'ni/Dev2/ctr0Gate') : {'inv': True},
   }
 
-  print '\n',collect_prefix( signals, 0, 1, 1, tryalso='dest' )
-  print '\n',collect_prefix( signals, tryalso='dest' )
+  print '\n',collect_prefix( signals, 0, 1, 1 )
+  print '\n',collect_prefix( signals )

@@ -15,19 +15,19 @@ def build_device_combobox_tree():
   T = signal_combobox_tree
   T.clear()
 
-  signals = backend.get_routeable_backplane_signals()
-  add_paths_to_combobox_tree( T, signals )
+  routes = backend.get_routeable_backplane_signals()
+  add_paths_to_combobox_tree( T, [ r.src for r in routes ] )
 
-  # now, for each signals, we will generate a list of destinations
-  for sig in signals:
-    T = gtk.TreeStore(str,str)
-    add_paths_to_combobox_tree( T, signals[sig].dest )
-    dest_combobox_tree[sig] = T
+  # now, for each routes, we will generate a list of destinations
+  for r in routes:
+    if r.src not in dest_combobox_tree:
+      dest_combobox_tree[ r.src ] = gtk.TreeStore(str,str)
+    add_paths_to_combobox_tree( dest_combobox_tree[ r.src ], r.dest )
 
-    for dest in signals[sig].dest:
+    for dest in r.dest:
       if dest not in dest_to_sigs:
         dest_to_sigs[dest] = list()
-      dest_to_sigs[dest].append( sig )
+      dest_to_sigs[dest].append( r.src )
 
   for dest in dest_to_sigs:
     T = gtk.TreeStore(str,str)

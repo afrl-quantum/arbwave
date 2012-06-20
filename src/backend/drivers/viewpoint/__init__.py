@@ -83,7 +83,7 @@ def set_clocks( clocks ):
 
 
 def set_signals( signals ):
-  signals = collect_prefix(signals, 0, 2, tryalso='dest', prefix_list=devices)
+  signals = collect_prefix(signals, 0, 2, prefix_list=devices)
   for d in devices:
     devices[d].set_signals( signals.get(d,{}) )
 
