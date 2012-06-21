@@ -194,7 +194,11 @@ class Device(Base):
 
 
   def stop(self):
-    self.board.out_stop()
+    try: #allow for a non-initialized board to 'stop'
+      b = self.board
+    except AttributeError:
+      return
+    b.out_stop()
 
 
 def drop_some_settings( T ):
