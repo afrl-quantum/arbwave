@@ -38,6 +38,7 @@ class Device(Base):
     self.clocks_changed = False
     self.clocks = None
     self.signals = None
+    self.routes = 0x0
 
     self.possible_clock_sources = { # look at viewpoint library
       '{d}/Internal_XO'.format(d=self)    : vp.CLCK_INTERNAL,
@@ -111,7 +112,8 @@ class Device(Base):
         route = (src, dst, DIR)
         if route in routing_bits:
           routing |= routing_bits[route]
-      self.board.set_property('port-routes', routing)
+      self.routes = routing
+      self.board.set_property('port-routes', self.routes)
 
 
   def set_output(self, data):
@@ -168,6 +170,10 @@ class Device(Base):
     # if old_config != C:
     #   self.board.configure()
     self.board.configure()
+
+    # we must also reset port routes since configuring seems to clear the
+    # internal hardware configuration
+    self.board.set_property('port-routes', self.routes)
 
     scans, stat = self.board.out_status()
     if scans.value < len(transitions):
