@@ -267,6 +267,12 @@ class NiDAQmx:
     return 0
 
 
+  def DAQmxGetSampClkMaxRate(self, task, retval_ref):
+    # we'll return the value for the PCI-6723
+    retval_ref._obj.value = 800e3
+    return 0
+
+
   def DAQmxCfgDigEdgeStartTrig(self, task, source, edge_val):
     return 0
 

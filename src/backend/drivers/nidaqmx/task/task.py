@@ -80,10 +80,6 @@ class Task(Base):
                               set(self.clock_sources),
                               shortest_paths ) ]
         force = True
-      if timing_channels:
-        self.max_clock_rate = \
-          1. / timing_channels[ self.config['clock']['value'] ].get_min_period()
-        force = True
 
     if force:
       # rebuild the task
@@ -142,9 +138,13 @@ class Task(Base):
       mode = self.config['clock-settings']['mode']['value']
     else:
       mode = 'finite'
+
+    max_clock_rate = self.task.get_sample_clock_max_rate()
+    min_dt = 1. / max_clock_rate
+
     self.task.configure_timing_sample_clock(
       source              = self.clock_terminal,
-      rate                = self.max_clock_rate, # Hz
+      rate                = max_clock_rate, # Hz
       active_edge         = self.config['clock-settings']['edge']['value'],
       sample_mode         = mode,
       samples_per_channel = len(transitions) )
@@ -190,7 +190,12 @@ class Task(Base):
         return v
     scans[ transitions[0] ] = [ zero_if_none(v) for v in scans[transitions[0]] ]
     last = scans[ transitions[0] ]
+    t_last = -10*min_dt
     for t in transitions:
+      if (t - t_last) < min_dt:
+        raise RuntimeError('Samples too small for NIDAQmx')
+      t_last = t
+
       t_array = scans[t]
       for i in xrange( n_channels ):
         if t_array[i] is None:
