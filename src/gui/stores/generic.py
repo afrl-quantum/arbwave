@@ -37,7 +37,9 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
     TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
-  def _dict_recursive(self, iter):
+  def _dict_recursive(self, iter, store_range=None):
+    if store_range is None:
+      store_range = self.store_range
     D = dict()
     for i in iter:
       di = self._dict_recursive(i.iterchildren())
@@ -50,13 +52,13 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
           'value'  : i[ Generic.to_index[ i[Generic.TYPE] ] ],
           'type'   : i[Generic.TYPE],
         }
-        if self.store_range:
+        if store_range:
           Di['range'] = i[Generic.RANGE]
 
     return D
 
-  def dict(self):
-    return self._dict_recursive( iter(self) )
+  def dict(self, store_range=None):
+    return self._dict_recursive( iter(self), store_range )
 
   def _load_recursive(self, D, parent=None):
     for i in D.items():
@@ -77,8 +79,8 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
       self.clear()
     self._load_recursive( D )
 
-  def representation(self):
-    return self.dict()
+  def representation(self, store_range=None):
+    return self.dict(store_range)
 
 if __name__ == '__main__':
   print 'testing loading with empty config-tree:'

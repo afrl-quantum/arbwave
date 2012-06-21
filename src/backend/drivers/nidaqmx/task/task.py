@@ -204,12 +204,12 @@ class Task(Base):
     self.task.write( scans, auto_start=False, layout='group_by_scan_number' )
 
 
-  def start_output(self):
+  def start(self):
     if self.task:
       self.task.start()
 
 
-  def stop_output(self):
+  def stop(self):
     if self.task:
       self.task.stop()
 

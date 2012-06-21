@@ -229,19 +229,6 @@ def set_waveforms(analog, digital, transitions, t_max, continuous):
     tasks[ dev[0]+'/ao' ].set_waveforms( dev[1], transitions, t_max, continuous )
 
 
-def start_output():
-  # FIXME:  clocks will probably need to be started last.  This means, if a
-  # particular viewpoint card has a channel being used as a clock, the card will
-  # likely have to be started later
-  for dev in tasks.values():
-    dev.start_output()
-
-
-def stop_output():
-  for dev in tasks.values():
-    dev.stop_output()
-
-
 def close():
   """
   Set all channels to a save value, close all devices, and uninitialize stuff

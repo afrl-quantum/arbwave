@@ -47,6 +47,10 @@ class Device(Base):
     }
 
 
+  def __del__(self):
+    self.stop()
+
+
   def set_config(self, config, channels, shortest_paths, timing_channels):
     C = self.board.configs
     old_config = deepcopy(C)
@@ -185,11 +189,11 @@ class Device(Base):
     return T
 
 
-  def start_output(self):
+  def start(self):
     self.board.out_start()
 
 
-  def stop_output(self):
+  def stop(self):
     self.board.out_stop()
 
 

@@ -164,6 +164,9 @@ class NiDAQmx:
     retval_ref._obj.value = 0x1
     return 0
 
+  def DAQmxResetDevice(self, dev):
+    return 0
+
 
 
   #   TASK INFORMATION
@@ -233,8 +236,8 @@ class NiDAQmx:
 
 
   def DAQmxGetTaskDevices(self,task,buf_ref,bufsize):
-    devs = { c.partition('/')[0]:None  for c in self.tasks[task.value].channels }
-    buf_ref._obj.value = ','.join(devs.keys())[:bufsize]
+    devs = { c.name.partition('/')[0] for c in self.tasks[task.value].channels }
+    buf_ref._obj.value = ','.join(devs)[:bufsize]
     return 0
 
 
