@@ -13,3 +13,15 @@ class Device:
 
   def prefix(self):
     return self.name.partition('/')[0]
+
+  def start(self):
+    """
+    Starts a device.  This should be overridden by inheriting classes.
+    """
+    pass
+
+  def stop(self):
+    """
+    Stops a device.  This should be overridden by inheriting classes.
+    """
+    pass

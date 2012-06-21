@@ -27,9 +27,13 @@ def accessible_clocks( terms, clocks, signals ):
   return [ clk for clk in C if T.intersection(short_paths[clk][0].keys()) ]
 
 
+def shortest_paths_wgraph( graph, *clocks ):
+  return { clk : shortest_path(graph,clk)  for clk in clocks }
+
+
 def shortest_paths( signals, *clocks ):
   g = build_graph( signals, *clocks )
-  return { clk : shortest_path(g,clk)  for clk in clocks }
+  return shortest_paths_wgraph( g, *clocks ), g
 
 
 def nearest_terminal( clk, terms, shortest_paths ):

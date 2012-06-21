@@ -4,7 +4,7 @@ Backend drivers.
 Subdirectories of this part of the arbwave package should ONLY contain drivers.
 """
 
-import os, logging
+import os, logging, traceback
 from ... import options
 
 drivers   = dict() # mapping "prefix" to driver module
@@ -52,6 +52,7 @@ def unload_all():
     try:
       d.close()
     except:
+      traceback.print_exc()
       print 'driver not cleanly closed: ', name
 
 

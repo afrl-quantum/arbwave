@@ -65,7 +65,7 @@ class Arbwave:
 
     send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
     send.to_driver.waveform( analog, digital, transitions, t_max, continuous )
-    send.to_driver.start()
+    send.to_driver.start(self.devcfg[0], self.clocks[0], self.signals[0])
 
 
   def halt(self):

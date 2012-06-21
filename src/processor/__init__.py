@@ -79,7 +79,11 @@ class Processor:
         # send in clocks[0] since the clocks have already been configured.
         # We'll rely on engine.send.to_driver.config to send in a link to the
         # timing channels.
-        sp = shortest_paths( signals[0], *clocks[0] )
+        sp, graph = shortest_paths( signals[0], *clocks[0] )
+
+        if max([ len(i) for i in graph.node_incidence.values() ]) > 1:
+          raise RuntimeError('Double driving a terminal/cable is not allowed!')
+
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),
           collect_prefix(
