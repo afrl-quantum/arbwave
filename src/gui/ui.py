@@ -18,6 +18,7 @@ from notification import Notification
 from ..processor import Processor
 from ..processor.default import get_globals
 from .. import backend
+from .. import version
 
 
 
@@ -406,6 +407,7 @@ class ArbWave(gtk.Window):
       'channels'  : self.channels.representation(),
       'waveforms' : self.waveforms.representation(),
       'signals'   : self.signals.representation(),
+      'version'   : version.version(),
     }
 
   def clearundo(self):
