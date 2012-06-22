@@ -46,7 +46,7 @@ def main():
   prog = gui.ArbWave()
   if args.filename:
     assert os.path.isfile( args.filename ), 'expected configuration filename'
-    prog.config_file = args.filename
+    prog.set_config_file( args.filename )
     F = open( args.filename )
     prog.setvars( gui.storage.var_tools.readvars(F, get_globals()) )
     F.close()

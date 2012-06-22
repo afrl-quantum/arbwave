@@ -115,10 +115,12 @@ def finished(*args, **kwargs):
 
 
 class ArbWave(gtk.Window):
+  TITLE = 'Arbitrary Waveform Generator'
+
   def __init__(self, parent=None):
     #create the toplevel window
     gtk.Window.__init__(self)
-    self.set_title('Arbitrary Waveform Generator')
+    self.set_title( self.TITLE )
     try:
       self.set_screen(parent.get_screen())
     except AttributeError:
@@ -477,6 +479,15 @@ class ArbWave(gtk.Window):
     # re-enable updates and directly call for an update
     self.unpause()
     self.update()
+
+
+  def set_config_file(self,f):
+    self.config_file = f
+    self.set_title( self.TITLE + ':  ' + f )
+
+
+  def get_config_file(self):
+    return self.config_file
 
 
   def update(self, item=None, toggle_run=False, show_stopped=None):

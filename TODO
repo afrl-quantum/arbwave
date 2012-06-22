@@ -101,6 +101,7 @@ DONE
 9.  Keep the file-name if "open" was selected and then canceled.  Currently,
 this clears the internal file name and asks the user for the file to save to if
 save is requested.
+DONE
 
 10.  Be able to add notes for each channel.  This could probably be best added
 via a popup menu like scaling.  Display the notes via the tooltip.
