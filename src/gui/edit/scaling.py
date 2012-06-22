@@ -300,7 +300,7 @@ class Editor(gtk.Dialog):
           k=self.order.get_value_as_int(),
           s=self.smoothing.get_value(),
         )
-        xs = np.linspace(D[0,0],D[-1,0], 5*len(D))
+        xs = np.linspace(D[0,0],D[-1,0], 100*len(D))
         self.plot( D[:,0], D[:,1], 'o', xs, s(xs) )
       else:
         self.plot( D[:,0], D[:,1], 'o' )

@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, interp1d
 import numpy as np
 import bisect
 
@@ -48,8 +48,29 @@ class UniqueElement:
       .format(t=self.t,dt=self.dt,v=self.value,g=self.group)
 
 
+class ClampedInterp1d:
+  def __init__(self, x, y):
+    data = list( np.array([x, y]).T )
+    data.sort( key = lambda v : v[0] )
+    data = np.array(data)
+    self.interp = interp1d( data[:,0], data[:,1] )
 
-def make_univariate_spline(scaling,order=1,smooth=0, globals=globals(), clamp_ends=True):
+  def pointwise(self,x):
+    if x < self.interp.x[0]:
+      return self.interp.y[0]
+    elif x > self.interp.x[-1]:
+      return self.interp.y[-1]
+    else:
+      return self.interp(x)
+
+  def __call__(self, xs):
+    if np.iterable(xs):
+      return np.array( map(self.pointwise, np.array(xs)) )
+    else:
+      return self.pointwise(xs)
+
+
+def make_univariate_spline(scaling,order=1,smooth=0, globals=globals()):
   # we have to first evaluate everything, build an array, and sort
   L = dict()
   for x,y in scaling:
@@ -76,29 +97,7 @@ def make_univariate_spline(scaling,order=1,smooth=0, globals=globals(), clamp_en
   output = s(voltage)
 
   # 2.  create a new linear interpolator of output vs voltage
-  #  Note that we use the UnivariateSpline because we need to handle edge
-  #  conditiions nicer.  The UnivariateSpline allows some extrapolation which
-  #  in turn treats the edges more nicely--hopefully, the fun_clamp function
-  #  inhibits badness that might otherwise result from extrapolation.
-  #  The scipy.interpolate.interp1d class makes edge conditions more difficult.
-  s = UnivariateSpline(output, voltage, k=1, s=len(output)/1000.0)
-
-  if not clamp_ends:
-    return s
-
-  del L
-
-  def fun_clamp(x, *args,**kwargs):
-    v = s(x, *args, **kwargs)
-    assert str(v) != 'nan', 'Interpolator returned nan! Help!'
-
-    if v < mn:
-      return mn
-    elif v > mx:
-      return mx
-    return v
-
-  return fun_clamp
+  return ClampedInterp1d( output, voltage )
 
 
 def set_units_and_scaling(chname, ci, chan, globals):
