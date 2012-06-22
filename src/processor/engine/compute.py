@@ -81,7 +81,7 @@ def make_univariate_spline(scaling,order=1,smooth=0, globals=globals(), clamp_en
   #  in turn treats the edges more nicely--hopefully, the fun_clamp function
   #  inhibits badness that might otherwise result from extrapolation.
   #  The scipy.interpolate.interp1d class makes edge conditions more difficult.
-  s = UnivariateSpline(output, voltage, k=1, s=0.0)
+  s = UnivariateSpline(output, voltage, k=1, s=len(output)/1000.0)
 
   if not clamp_ends:
     return s
@@ -90,6 +90,7 @@ def make_univariate_spline(scaling,order=1,smooth=0, globals=globals(), clamp_en
 
   def fun_clamp(x, *args,**kwargs):
     v = s(x, *args, **kwargs)
+    assert str(v) != 'nan', 'Interpolator returned nan! Help!'
 
     if v < mn:
       return mn
