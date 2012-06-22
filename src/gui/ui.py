@@ -59,9 +59,6 @@ ui_info = \
   <toolbar  name='ChannelToolBar'>
     <toolitem action='CH:Add'/>
     <toolitem action='CH:Delete'/>
-    <separator/>
-    <toolitem action='CH:Up'/>
-    <toolitem action='CH:Down'/>
   </toolbar>
   <toolbar  name='WaveformToolBar'>
     <toolitem action='WF:Add:group'/>
@@ -313,14 +310,6 @@ class ArbWave(gtk.Window):
         None, None,                                # label, accelerator
         'Delete current channel',                  # tooltip
         self.activate_action ),
-      ( 'CH:Up', gtk.STOCK_GO_UP,                  # name, stock id
-        None, None,                                # label, accelerator
-        'Move current channel up',                 # tooltip
-        self.activate_action ),
-      ( 'CH:Down', gtk.STOCK_GO_DOWN,              # name, stock id
-        None, None,                                # label, accelerator
-        'Move current channel up',                 # tooltip
-        self.activate_action ),
 
       # WAVEFORM EDITOR
       ( 'WF:Add:group', gtk.STOCK_NEW,             # name, stock id
@@ -388,8 +377,6 @@ class ArbWave(gtk.Window):
       'About'     : lambda a: about.show(),
       'CH:Add'    : lambda a: self.channel_editor.insert_row(),
       'CH:Delete' : lambda a: self.channel_editor.delete_row(),
-      'CH:Up'     : lambda a: sys.stderr.write('Move channel up\n'),
-      'CH:Down'   : lambda a: sys.stderr.write('Move channel down\n'),
       'WF:Add:group': lambda a: self.waveform_editor.insert_waveform_group(),
       'WF:Add'    : lambda a: self.waveform_editor.insert_waveform(),
       'WF:Delete' : lambda a: self.waveform_editor.delete_row(),

@@ -109,11 +109,16 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
 
 
 
+def begin_drag(w, ctx, parent):
+  parent.pause()
 
+def end_drag(w, ctx, parent, channels):
+  parent.unpause()
+  parent.update(channels)
 
 
 class Channels:
-  def __init__(self, channels, processor, parent=None, add_undo=None):
+  def __init__(self, channels, processor, parent, add_undo=None):
     self.parent = parent
     self.add_undo = add_undo
     self.channels = channels
@@ -121,6 +126,9 @@ class Channels:
     self.scaling_editor = None
 
     V = self.view = gtk.TreeView( channels )
+    V.set_reorderable(True)
+    V.connect('drag-begin', begin_drag, parent)
+    V.connect('drag-end', end_drag, parent, channels)
 
     R = {
       'label'   : gtk.CellRendererText(),
