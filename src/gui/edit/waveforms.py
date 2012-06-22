@@ -102,14 +102,26 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
 
 
 
+# FIXME:  fix the dragging of waveforms to enforce the hierarchical structure:
+# 1.  root-level nodes are groups and must remain at root-level
+# 2.  first-level nodes are waveform elements and must remain at first-level
+def begin_drag(w, ctx, parent):
+  parent.pause()
+
+def end_drag(w, ctx, parent, waveforms):
+  parent.unpause()
+  parent.update(waveforms)
 
 
 class Waveforms:
-  def __init__(self, waveforms, channels, add_undo=None):
+  def __init__(self, waveforms, channels, parent, add_undo=None):
     self.add_undo = add_undo
     self.waveforms = waveforms
 
     V = self.view = gtk.TreeView( waveforms )
+    V.set_reorderable(True)
+    V.connect('drag-begin', begin_drag, parent)
+    V.connect('drag-end', end_drag, parent, waveforms)
 
     R = {
       'channel' : gtk.CellRendererCombo(),

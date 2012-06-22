@@ -162,7 +162,7 @@ class ArbWave(gtk.Window):
       parent=self,
       add_undo=self.add_undo )
     self.waveform_editor = \
-      edit.Waveforms(self.waveforms, self.channels, self.add_undo)
+      edit.Waveforms(self.waveforms, self.channels, self, self.add_undo)
     # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = True
 
