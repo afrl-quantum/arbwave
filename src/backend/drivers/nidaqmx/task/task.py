@@ -14,10 +14,9 @@ class Task(Base):
   def __init__(self, device):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
     self.task = None
-    self.channels = None
+    self.channels = dict()
     self.clocks = None
     self.clock_terminal = None
-    self.signals = None
 
     # first find the possible trigger and clock sources
     self.trig_sources = list()
