@@ -105,7 +105,7 @@ class NiDAQmx:
 
   # PHYSICAL CHANNEL INFORMATION
   def DAQmxGetPhysicalChanDOSampClkSupported(self, chan, retval_ref):
-    retval_ref._obj.value = 0x1
+    retval_ref._obj.value = 0x0 # false for PCI-6723
     return 0
 
 
@@ -146,7 +146,8 @@ class NiDAQmx:
 
 
   def DAQmxGetDevAOPhysicalChans(self, dev, buf_ref, bufsize):
-    buf_ref._obj.value = 'Dev1/ao0,Dev1/ao1,Dev1/ao2,Dev1/ao3'[:bufsize]
+    chans = ','.join( [ 'Dev1/ao'+str(i) for i in xrange(32) ] )
+    buf_ref._obj.value = chans[:bufsize]
     return 0
 
 
