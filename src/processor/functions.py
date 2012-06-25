@@ -7,38 +7,124 @@ As an example, the Ramp class is used in a way to allow the user to specify
 of 0.5 over the duration of the waveform element.
 """
 
+class step_iter:
+  def __init__(self, ti, tf, dt, clock_period, fun):
+    self.t = ti
+    self.tf = tf
+    self.dt = dt
+    self.clock_period = clock_period
+    self.fun = fun
+  def __iter__(self):
+    return self
+  def next(self):
+    if self.t >= self.tf:
+      raise StopIteration()
+    t = self.t
+
+    self.t += self.dt
+    if self.t >= self.tf:
+      # last one
+      return t, self.clock_period, self.fun(t)
+    else:
+      return t, self.dt, self.fun(t)
+
 class Ramp:
   """
   Ramp from initial value to final value with a given exponent.
   """
-  def __init__(self, Vi, dt):
+  def __init__(self, to, exponent=1.0, steps=10, _from=None,dt=None):
     """
-    Vi  : initial value from which to ramp
-    dt  : normalized time step, where t=1 is the end of the current waveform
-          element.
-          Note that the first data point (i.e. t=0) is implicitly given by the
-          value Vi.
+    Usage:  ramp(to, exponent=1.0, steps=10, _from=None, dt=None)
+
+    to      : final value to which to ramp
+    _from   : initial value from which to ramp
+    exponent: exponent with which to ramp
+    dt      : the timestep to increment (Default: duration/steps)
+    steps   : number of steps to take
+
+    Only one of dt or steps can be used.
    """
-    self.Vi = Vi
+    self.to = to
+    self.exponent = exponent
+    self.steps = steps
+    self._from = _from
+    self.skip_first = _from is None
     self.dt = dt
-    self.t = 0.0
-  def __call__(self, to, exponent, _from=None ):
-    if not _from:
-      _from = self.Vi
-    return _from - (self.t+self.dt)**exponent * (_from - to), 1.0
+    self.t = None
+    self.duration = None
+    self.tf_safe = None
+
+  def __call__(self, t):
+    """
+    Return the value of the ramp at normalized relative time t.
+
+    t : normalized relative time, from 0.0 to 1.0
+    """
+    t_norm = (t - self.t) / self.duration
+    return self._from - t_norm**self.exponent * (self._from - self.to)
+
+  def set_vars(self, _from, t, duration, clock_period):
+    if self._from is None:
+      self._from = _from
+    self.t = t
+    # it is important to make sure that the final value is given at
+    # dt-clock_period.  This allows for the following clock pulse to be used by
+    # the next waveform element.
+    self.duration = duration - clock_period
+    if not self.dt:
+      self.dt = self.duration / float(self.steps)
+
+    # tf safe is the comparison that is used to tell whether time-stepping
+    # should cease.  We add one half a clock_period to avoid precision
+    # error-prone comparisons.
+    self.tf_safe = self.t+self.duration + 0.5*clock_period
+    self.clock_period = clock_period
+
+  def __iter__(self):
+    # Note that the first data point (i.e. t=0) is implicitly given by _from
+    # (where the channel is before this ramp).
+    if self.skip_first:
+      ti = self.t + self.dt
+    else:
+      ti = self.t
+    return step_iter(ti, self.tf_safe, self.dt, self.clock_period, self)
+
+class Pulse:
+  """
+  Generate a pulse over the duration of a waveform element.
+  """
+  def __init__(self, high=True,low=False):
+    """
+    Usage:  pulse(to, high=True, low=False)
+
+    high  : The value to generate for the pulse.
+    low   : The value to return to after the pulse
+   """
+    self.high = high
+    self.low = low
+    self._from = None
+    self.t = None
+    self.duration = None
+    self.clock_period = None
+
+  def set_vars(self, _from, t, duration, clock_period):
+    self._from = _from
+    self.t = t
+    self.duration = duration - clock_period
+    self.clock_period = clock_period
+
+  def __iter__(self):
+    L = list()
+    if self._from is None or self._from != self.high:
+      # we only really need to add the transition to go high if the channel was
+      # not already high
+      L.append( (self.t, self.duration, self.high) )
+
+    # add the transition to the low value
+    L.append( (self.t + self.duration, self.clock_period, self.low) )
+    return iter(L)
 
 registered = {
-  'ramp' : Ramp,
+  'ramp'  : Ramp,
+  'pulse' : Pulse,
 }
-
-def get(Vi,dt):
-  """
-  Get all functions for initial value Vi and time step dt.
-
-  This function is used to return a dictionary of functions to be added to
-  locals while evaluating values.
-  """
-  retval = dict()
-  for f in registered:
-    retval[f] = registered[f](Vi,dt)
-  return retval

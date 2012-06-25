@@ -31,44 +31,51 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
     TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
-  def list(self):
+  def list_recursive(self, iter):
     L = list()
-    for i in iter(self):
-      if i.parent is not None:
-        raise RuntimeError('Parented item at root-level of waveform tree')
+    for i in iter:
       D = dict()
-      D['group-label' ] = i[Waveforms.CHANNEL]
-      D['time'        ] = i[Waveforms.TIME]
-      D['duration'    ] = i[Waveforms.DURATION]
-      D['script'      ] = i[Waveforms.SCRIPT]
-      D['enable'      ] = i[Waveforms.ENABLE]
-      D['asynchronous'] = i[Waveforms.ASYNC]
-      l = D['elements'] = list()
-      for j in i.iterchildren():
-        l.append({
-          'channel' : j[Waveforms.CHANNEL],
-          'time'    : j[Waveforms.TIME],
-          'duration': j[Waveforms.DURATION],
-          'value'   : j[Waveforms.VALUE],
-          'enable'  : j[Waveforms.ENABLE],
-        })
+      D['time'    ] = i[Waveforms.TIME]
+      D['duration'] = i[Waveforms.DURATION]
+      D['enable'  ] = i[Waveforms.ENABLE]
 
-      L.append( D )  # finish group by appending to list of groups
+      if self.iter_has_child( i.iter ):
+        # is group
+        D['group-label' ] = i[Waveforms.CHANNEL]
+        D['script'      ] = i[Waveforms.SCRIPT]
+        D['asynchronous'] = i[Waveforms.ASYNC]
+        D['elements'    ] = self.list_recursive( i.iterchildren() )
+      else:
+        # is element
+        D['channel'     ] = i[Waveforms.CHANNEL]
+        D['value'       ] = i[Waveforms.VALUE]
+
+      L.append( D )
 
     return L
 
+
+  def list(self):
+    return self.list_recursive( iter(self) )
+
+
+  def load_recursive(self, L, parent=None):
+    for i in L:
+      if 'channel' in i: # is element
+        self.append( parent,
+          (i['channel'], i['time'], i['duration'], i['value'],
+           i['enable'], None, None) )
+      else: # is group
+        me = self.append( parent,
+          (i['group-label'], i['time'], i['duration'], '',
+           i['enable'], i['script'], i['asynchronous']) )
+        self.load_recursive(i['elements'], me)
+
+
   def load(self,L):
     self.clear()
-    # places the global people data into the list
-    # we form a simple tree.
-    for i in L:
-      parent = self.append( None,
-        (i['group-label'], i['time'], i['duration'], '',
-         i['enable'], i['script'], i['asynchronous']) )
-      for e in i['elements']:
-        self.append( parent,
-          (e['channel'], e['time'], e['duration'], e['value'],
-           e['enable'], None, None) )
+    self.load_recursive(L)
+
 
   def representation(self):
     return self.list()

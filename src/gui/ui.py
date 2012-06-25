@@ -9,7 +9,7 @@ import sys
 import traceback
 
 # local packages
-import about, configure, stores, edit
+import about, tips, configure, stores, edit
 from plotter import Plotter
 from packing import Args as PArgs, hpack, vpack, VBox
 import storage
@@ -45,6 +45,7 @@ ui_info = \
     </menu>
     <menu action='HelpMenu'>
       <menuitem action='About'/>
+      <menuitem action='VGens'/>
     </menu>
   </menubar>
   <toolbar  name='ToolBar'>
@@ -65,9 +66,6 @@ ui_info = \
     <toolitem action='WF:Add:group'/>
     <toolitem action='WF:Add'/>
     <toolitem action='WF:Delete'/>
-    <separator/>
-    <toolitem action='WF:Up'/>
-    <toolitem action='WF:Down'/>
   </toolbar>
 </ui>'''
 
@@ -301,6 +299,10 @@ class ArbWave(gtk.Window):
         '_About', '<control>A',                    # label, accelerator
         'About',                                   # tooltip
         self.activate_action ),
+      ( 'VGens', None,                             # name, stock id
+        'Value _Generators', '<control>G',         # label, accelerator
+        'Known value generator functions',         # tooltip
+        self.activate_action ),
 
       # CHANNEL EDITOR
       ( 'CH:Add', gtk.STOCK_ADD,                   # name, stock id
@@ -326,14 +328,6 @@ class ArbWave(gtk.Window):
       ( 'WF:Delete', gtk.STOCK_DELETE,             # name, stock id
         None, None,                                # label, accelerator
         'Delete current waveform element',         # tooltip
-        self.activate_action ),
-      ( 'WF:Up', gtk.STOCK_GO_UP,                  # name, stock id
-        None, None,                                # label, accelerator
-        'Move current waveform element up',        # tooltip
-        self.activate_action ),
-      ( 'WF:Down', gtk.STOCK_GO_DOWN,              # name, stock id
-        None, None,                                # label, accelerator
-        'Move current waveform element up',        # tooltip
         self.activate_action ),
     )
 
@@ -376,13 +370,12 @@ class ArbWave(gtk.Window):
       'Script'    : lambda a: self.script.edit(),
       'Run'       : run_waveforms,
       'About'     : lambda a: about.show(),
+      'VGens'     : lambda a: tips.show_generators(self),
       'CH:Add'    : lambda a: self.channel_editor.insert_row(),
       'CH:Delete' : lambda a: self.channel_editor.delete_row(),
       'WF:Add:group': lambda a: self.waveform_editor.insert_waveform_group(),
       'WF:Add'    : lambda a: self.waveform_editor.insert_waveform(),
       'WF:Delete' : lambda a: self.waveform_editor.delete_row(),
-      'WF:Up'     : lambda a: sys.stderr.write('Move waveform element up\n'),
-      'WF:Down'   : lambda a: sys.stderr.write('Move waveform element down\n'),
     }
 
     return action_group

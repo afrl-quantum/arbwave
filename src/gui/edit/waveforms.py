@@ -50,20 +50,24 @@ def mkUIManager():
     print 'building popup menu failed: ' + msg
   return merge
 
-def load_channels_combobox( cell, editable, path, channels ):
+def is_group( model, path ):
+  return model.iter_has_child( model.get_iter(path) )
+
+def load_channels_combobox( cell, editable, path, model, channels ):
   chls = gtk.ListStore(str)
   editable.set_property("model", chls)
+  chls.append(('',)) # add a blank line to allow selection of 'empty' channel
 
   # ensure that group-level items edit text and do not use drop down
-  if not( len(path) == 1 and type(editable.child) is gtk.Entry ):
+  if not( is_group(model, path) and type(editable.child) is gtk.Entry ):
     editable.child.set_property('editable', False)
     for i in iter(channels):
       chls.append([ i[channels.LABEL] ])
 
-def allow_value_edit( cell, editable, path ):
+def allow_value_edit( cell, editable, path, model ):
   """Ensure that group-level items cannot edit value"""
   assert type(editable) is gtk.Entry, 'value type is not gtk.Entry(?)!'
-  if len(path) == 1:
+  if is_group( model, path ):
     editable.set_property('editable', False)
 
 
@@ -75,7 +79,7 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
     sep = ''
     script, async = waveforms.get(iter, waveforms.SCRIPT, waveforms.ASYNC)
 
-    if len(path) == 1: # group-only information
+    if is_group( waveforms, path ): # group-only information
       if async is not None:
         desc = {
           True : 'will <u><b>not</b></u>',
@@ -102,13 +106,17 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
 
 
 
-# FIXME:  fix the dragging of waveforms to enforce the hierarchical structure:
-# 1.  root-level nodes are groups and must remain at root-level
-# 2.  first-level nodes are waveform elements and must remain at first-level
 def begin_drag(w, ctx, parent):
+  # pause updates because of waveform updates
   parent.pause()
 
+def drag_motion(w, ctx, x, y, time, parent):
+  mask = w.window.get_pointer()[2]
+  if mask & gtk.gdk.CONTROL_MASK:
+    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+
 def end_drag(w, ctx, parent, waveforms):
+  # unpause updates and force an update based on waveform changes
   parent.unpause()
   parent.update(waveforms)
 
@@ -122,6 +130,7 @@ class Waveforms:
     V.set_reorderable(True)
     V.connect('drag-begin', begin_drag, parent)
     V.connect('drag-end', end_drag, parent, waveforms)
+    V.connect('drag-motion', drag_motion, parent)
 
     R = {
       'channel' : gtk.CellRendererCombo(),
@@ -136,7 +145,8 @@ class Waveforms:
     R['channel'].set_property('has-entry', True)
     R['channel'].connect( 'edited', set_item,
                           waveforms, waveforms.CHANNEL, self.add_undo )
-    R['channel'].connect( 'editing-started', load_channels_combobox, channels )
+    R['channel'].connect( 'editing-started', load_channels_combobox,
+                          waveforms, channels )
 
     R['time'].set_property( 'editable', True )
     R['time'].connect( 'edited', set_item,
@@ -149,7 +159,7 @@ class Waveforms:
     R['value'].set_property( 'editable', True )
     R['value'].connect( 'edited', set_item,
                         waveforms, waveforms.VALUE, self.add_undo )
-    R['value'].connect( 'editing-started', allow_value_edit )
+    R['value'].connect( 'editing-started', allow_value_edit, waveforms )
 
     R['enable'].set_property( 'activatable', True )
     R['enable'].connect( 'toggled', toggle_item,

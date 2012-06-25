@@ -20,3 +20,8 @@ Sample/Update rates:
     example).  In other words, a single waveform element may have a variable
     clock depending on whether other waveform channels similarly clocked need to
     have transitions in the mean time.
+
+
+things that will/will not cause errors:
+  1.  channels without devices selected will be ignored
+  2.  waveforms elements with no channel selection (i.e. empty) will be ignored

@@ -27,25 +27,24 @@ class UniqueElement:
   This element representation only allows waveform elements that do _not_
   overlap.
   """
-  def __init__(self, t, dt, value, group):
-    self.t = t
-    self.dt = dt
+  def __init__(self, ti, tf, value, group):
+    self.ti = ti
+    self.tf = tf
     self.value = value
     self.group = group
   def __cmp__(self, other):
-    if self.t < other.t and cmpeps((self.t+self.dt), other.t) <=0:
+    if self.ti < other.ti and cmpeps(self.tf, other.ti) <=0:
       return -1
-    elif other.t < self.t and cmpeps((other.t+other.dt), self.t) <=0:
+    elif other.ti < self.ti and cmpeps(other.tf, self.ti) <=0:
       return 1
-    #elif cmpeps(self.t, other.t)==0 and cmpeps(self.dt, other.dt)==0:
+    #elif cmpeps(self.ti, other.ti)==0 and cmpeps(self.dt, other.dt)==0:
     #  return 0
     else:
-      raise OverlapError('overlapping waveform elements compared [' \
+      raise OverlapError('overlapping waveform elements [' \
                          + str(self) + ',' + str(other) + ']!')
 
   def __repr__(self):
-    return '({t},{dt},{v},g={g})' \
-      .format(t=self.t,dt=self.dt,v=self.value,g=self.group)
+    return '(ti={ti},tf={tf},{v})'.format(ti=self.ti,tf=self.tf,v=self.value)
 
 
 class ClampedInterp1d:
@@ -126,6 +125,211 @@ def set_units_and_scaling(chname, ci, chan, globals):
 
 
 
+class WaveformEvalulator:
+  def __init__(self,devcfg, clocks, channels):
+    # currently configured...
+    self.devcfg = devcfg
+    self.clocks = clocks
+    self.channels = channels
+
+    # all the currently known possible channels
+    self.timing_channels = backend.get_timing_channels()
+    self.do_ao_channels = backend.get_analog_channels()
+    self.do_ao_channels.update( backend.get_digital_channels() )
+
+    self.transitions = dict()
+    self.explicit_timing = dict()
+    self.channel_info = make_channel_info(channels)
+    self.t_max = 0.0*unit.s
+    self.next_groupNum = 0
+
+
+
+  def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict()):
+    self.next_groupNum += 1
+    groupNum = self.next_groupNum
+
+    # natural time for all elements immediately in this group
+    t_locals = dict()
+    # t is used for calculating natural time 't' for sub-groups
+    t_start = t # the start of *this* group
+
+    for gi in group:
+      if not gi['enable']:  continue
+
+      # this will allow the sub-group to have t and dt (from its parent) while
+      # evaluating its script.  If the sub-group script modifies t or dt, it
+      # will only affect that sub-group.
+      locals['dt'] = dt
+
+      if 'group-label' in gi:
+        # this _must_ be a group, so prepare to recurse
+        # 1.  evaluate local script environment
+        L = locals.copy()
+        L['t'] = t    # natural start time for the sub-group
+        if gi['script']:
+          exec gi['script'] in globals, L
+
+        # 2.  establish local start time and durations...
+        gi_t = eval( gi['time'], globals, L )
+        unit.s.unitsMatch(gi_t, gi['group-label']+'(t):  expected dimensions of time')
+
+        # sub-group dt defaults to this groups dt
+        if not gi['duration']:
+          gi_dt = dt
+        else:
+          gi_dt = eval( gi['duration'], globals, L )
+          unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
+
+        # 3.  recurse
+        self.group( gi['elements'], gi_t, gi_dt, globals, L )
+
+        # 4.  increment natural time for siblings
+        if not gi['asynchronous']:
+          t = max(t, gi_t+gi_dt)
+
+      else:
+        # this _must_ be a waveform element...
+        chname = gi['channel']
+        if not chname:
+          continue # channel for element not selected yet
+
+        try:
+          chan = self.channels[chname]
+        except:
+          raise RuntimeError('Waveform element with non-existent channel: '+chname)
+        if not chan['enable']:
+          continue # channel not enabled
+
+        if not chan['device']:
+          continue # device for channel not yet specified
+        # #### END SILENT SKIPPING #### #
+
+        t_locals.setdefault(chname, t_start)
+        locals['t'] = t_locals[ chname ]
+        t_locals[ chname ] = self.element( gi, groupNum, globals, locals )
+
+    if t_locals:
+      self.t_max = max( self.t_max, *t_locals.values() )
+
+  def element(self, e, group, globals, locals):
+    # establish local start time / duration for the element
+    t = eval( e['time'], globals, locals )
+    unit.s.unitsMatch(t, e['channel']+'(t): expected dimensions of time')
+
+    if not e['duration']:
+      dt = locals['dt']
+    else:
+      dt = eval( e['duration'], globals, locals )
+      unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
+    assert dt > 0*unit.s, e['channel'] + ': waveform element duration MUSt be > 0!'
+
+
+    chname = e['channel']
+    ci = self.channel_info[chname]
+    if not ci['type']:
+      chan = self.channels[chname]
+      ci['type'] = determine_channel_type(chname, chan['device'])
+
+      # set ci['clock'] too
+      # drop the "Analog/" "Digital/" prefix
+      chan_dev = self.do_ao_channels[ chan['device'][(len(ci['type'])+1):] ]
+      clk = self.devcfg[ str(chan_dev.device()) ]['clock']['value']
+      assert clk in self.clocks, 'Chosen device clock not configured'
+      ci['clock'] = self.timing_channels[ clk ]
+
+      if clk not in self.transitions:
+        self.transitions[ clk ] = list()
+        self.explicit_timing[ clk ] = False
+
+      # determine if the channel needs explicit timing (in case its clock
+      # source is not aperiodic)
+      self.explicit_timing[clk] |= chan_dev.explicit_timing()
+
+      # sets ci['unit_conversion_ratio'], ci['scaling'], etc
+      # units and scaling only get to refer to globals
+      set_units_and_scaling(chname, ci, chan, globals)
+
+    # get a ref to the list of transitions for the associated clock generator
+    trans = self.transitions[ str( ci['clock'] ) ]
+
+    # determine clock precision
+    clock_period = ci['clock'].get_min_period()
+
+    # we're finally to the point to begin evaluating the value of the element
+    locals['t'] = t
+    locals['dt'] = dt
+    value = eval( e['value'], globals, locals )
+    if not hasattr( value, 'set_vars' ):
+      # we assume that this value is just a simple value
+      insert_value( t, dt, value, clock_period, chname, ci, trans, group )
+      ci['last'] = value
+    else:
+      value.set_vars( ci['last'], t, dt, clock_period )
+      for t_j, dt_j, v_j in value:
+        insert_value( t_j, dt_j, v_j, clock_period, chname, ci, trans, group )
+        ci['last'] = v_j
+
+    # we need to return the end time of this waveform element
+    return t + dt
+
+  def finish(self):
+    # ensure that we have a unique set of transitions
+    for i in self.transitions:
+      if self.timing_channels[i].is_aperiodic() or not self.explicit_timing[i]:
+        self.transitions[i] = set( self.transitions[i] )
+      else:
+        dt = self.timing_channels[i].get_min_period()/unit.s
+        self.transitions[i] = np.arange( 0.0, max(self.transitions[i])+dt, dt )
+
+    # the return values are initially empty
+    analog = dict()
+    digital = dict()
+
+    for ci in self.channel_info.items():
+      if not ( ci[1]['type'] and ci[1]['elements'] ):
+        continue # not a group or valid element
+
+      prfx, dev = prefix(self.channels[ ci[0] ]['device'])
+
+      if   ci[1]['type'] is 'analog':
+        if prfx not in analog:
+          analog[ prfx ] = dict()
+        analog[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
+      elif ci[1]['type'] is 'digital':
+        if prfx not in digital:
+          digital[ prfx ] = dict()
+        digital[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
+      else:
+        raise RuntimeError("type of channel '"+ci[0]+"' reset?!")
+
+    return analog, digital, self.transitions, self.t_max.coeff
+
+
+def insert_value( t, dt, v, clock_period, chname, ci, trans, group ):
+  # t and dt must be aligned to the nearest clock pulse
+  ti = round( t / clock_period )
+  tf = round( (t+dt) / clock_period )
+
+  # one more check to be sure that dt was big enough
+  # we do this comparison with integer values of clocks
+  assert ti < tf, chname + ':  transition width too small'
+
+  # convert back to real time
+  ti = clock_period * ti
+  tf = clock_period * tf
+
+  # apply scaling and convert to proper units
+  v = apply_scaling(v, chname, ci)
+  check_final_units(v, chname, ci)
+
+  try:
+    bisect.insort_right(
+      ci['elements'], UniqueElement(ti.coeff, tf.coeff, v, group) )
+  except OverlapError, e:
+    raise OverlapError( '{c}: {e}'.format(c=chname,e=e) )
+  trans.append( ti.coeff )
+
 
 def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
   """
@@ -137,212 +341,9 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
     2.  Generate a voltage sample for each transition that must occur.
   """
   exec global_load
-  UE = UniqueElement
-
-  # all the currently known possible channels
-  timing_channels = backend.get_timing_channels()
-  do_ao_channels = backend.get_analog_channels()
-  do_ao_channels.update( backend.get_digital_channels() )
-
-  transitions = dict()
-  channel_info = make_channel_info(channels)
-
-  t_max = 0.0
-
-  # go through each group and each element in each group
-  ZT = 0*unit.ms
-  t = ZT
-  groupNum = 0
-  explicit_timing = False
-  for group in waveforms:
-    if not ( group['enable'] and group['elements'] ):
-      continue
-
-    # 1.  evaluate local script environment
-    # 2.  establish local start time/durations of group
-    # 3.  loop through each element in the group
-    #   a.  establish local start time of element (depends on local group start
-    #       time as well as consecutive elements of the same channel)
-    #   b.  save explicit transition time to 'transitions' array
-    #   c.  save explicit (t,dt,value) tuple to channel dictionary
-    #       This is expected to be non-overlapping using the bisect.insort_right
-    #       function with the UniqueElement class.
-
-    # 1.  evaluate local script environment
-    L = dict()
-    if group['script']:
-      exec group['script'] in globals, L
-
-    # 2.  establish local start time and durations...
-    L['t'] = t
-    t_start = eval( group['time'], globals, L )
-    ZT.unitsMatch(t_start, 'expected dimensions of time')
-    try:    dt,  ddt = eval( group['duration'], globals, L )
-    except: dt = ddt = eval( group['duration'], globals, L )
-    assert (dt > ZT and ddt > ZT), 'durations MUST be > 0!'
-    assert ddt <= dt, 'ddt MUST be <= dt!'
-
-    max_time = 0.0
-
-    t_locals = dict()
-    for e in group['elements']:
-      chname = e['channel']
-      if not chname:
-        continue # channel name not set yet
-
-      ci = channel_info[chname]
-      chan = channels[chname]
-      if not ( chname and e['enable'] and chan['enable'] ):
-        continue
-
-      dev = chan['device']
-      if not dev:
-        continue
-
-      if not ci['type']:
-        ci['type'] = determine_channel_type(chname, dev)
-
-      if not ci['clock']:
-        # drop the "analog" "digital" prefix
-        chan_dev = do_ao_channels[ dev[(len(ci['type'])+1):] ]
-        clk = devcfg[ str(chan_dev.device()) ]['clock']['value']
-        assert clk in clocks, 'Chosen device clock not configured'
-        ci['clock'] = timing_channels[ clk ]
-
-        if clk not in transitions:
-          transitions[ clk ] = list()
-
-        # determine if the channel needs explicit timing (in case its clock
-        # source is not aperiodic)
-        explicit_timing |= chan_dev.explicit_timing()
-
-
-      # get a ref to the list of transitions for the associated clock generator
-      trans = transitions[ str( ci['clock'] ) ]
-
-      # determine clock precision
-      clock_period = ci['clock'].get_min_period()
-
-      set_units_and_scaling(chname, ci, chan, globals)
-
-      L['dt'] = dt
-      L['ddt'] = ddt
-
-      # 2a. establish local start time / durations for element
-      t_locals.setdefault(chname, t_start)
-      L['t'] = t_locals[ chname ]
-      t_start_e = eval( e['time'], globals, L )
-      ZT.unitsMatch(t_start_e, 'expected dimensions of time')
-      if not e['duration']:
-                dt_e,  ddt_e = dt, ddt
-      else:
-        try:    dt_e,  ddt_e = eval( e['duration'], globals, L )
-        except: dt_e = ddt_e = eval( e['duration'], globals, L )
-      assert (dt_e > ZT and ddt_e > ZT), 'durations MUSt be > 0!'
-      assert ddt_e <= dt_e, 'ddt MUST be <= dt!'
-
-      # ensure that transitions occur on clock pulses...
-      t_locals[chname]  = max(t_locals[chname], t_start_e+dt_e)
-
-      # get the closest integer number of steps
-      ddt_e     = dt_e / round(dt_e/ddt_e)
-
-      assert (dt_e > ZT and ddt_e > ZT), 'durations MUSt be > 0!'
-      assert ddt_e <= dt_e, 'ddt MUST be <= dt!'
-
-      L['dt'] = dt_e
-      L['ddt'] = ddt_e
-
-      ce = ci['elements']
-      # support built-in functions such as ramp(to=,exponent=)
-      # these use normalized time
-      Vi = ci['last']
-
-      funs = functions.get(Vi, ddt_e/dt_e)
-      L.update( funs )
-
-      t_end_e = clock_period * (round((t_start_e + dt_e)/clock_period) - 1)
-      t_e = t_start_e
-      while cmpeps(t_e, t_end_e, unit.s) < 0:
-        # fix times to be exactly on a clock pulse...
-        t_e_fixed = clock_period * round(t_e/clock_period)
-
-        L['t'] = t_e
-
-        # change time for built-in functions
-        t_rel = (t_e - t_start_e) / dt_e
-        for f in funs.values(): f.t = t_rel
-
-        value = eval( e['value'], globals, L )
-        placement = 0.0
-        if type(value) in [list, tuple]:
-          value, placement = value
-          assert placement >= 0.0 and placement <= 1.0, \
-            "timestep placement must be >=0 and <=1"
-
-        # store last value _before_ scaling
-        ci['last'] = value
-
-
-        value = apply_scaling(value, chname, ci)
-
-        check_final_units( value, chname, ci )
-
-        # fix again after applying  placement...
-        if placement > 0.0:
-          t_e_fixed = clock_period * round((t_e + placement*ddt_e)/clock_period -1)
-        ddt_e_fixed = t_e + ddt_e - t_e_fixed
-
-
-        t_e_si = float(t_e_fixed)
-        ddt_e_si = float( max(clock_period, ddt_e_fixed) )
-
-        # insert (t, dt, value) tuple in SI units
-        max_time = max( max_time, t_e_si + ddt_e_si )
-        try:
-          bisect.insort_right( ce, UE(t_e_si, ddt_e_si, value, groupNum) )
-        except OverlapError, e:
-          raise OverlapError( '{c}: {e}'.format(c=chname,e=e) )
-        trans.append( t_e_si )
-
-        t_e += ddt_e
-
-    t_max = max( t_max, max_time )
-
-    if not group['asynchronous']:
-      t = max(t, t_start+dt)
-    groupNum += 1
-
-  # ensure that we have a unique set of transitions
-  for i in transitions:
-    if timing_channels[ i ].is_aperiodic() or not explicit_timing:
-      transitions[i] = set( transitions[i] )
-    else:
-      dt = timing_channels[i].get_min_period()/unit.s
-      transitions[i] = np.arange( 0.0, max(transitions[i])+dt, dt )
-
-  # the return values are initially empty
-  analog = dict()
-  digital = dict()
-
-  for ci in channel_info.items():
-    if not ( ci[1]['type'] and ci[1]['elements'] ):
-      continue
-
-    prfx, dev = prefix(channels[ ci[0] ]['device'])
-
-    if   ci[1]['type'] is 'analog':
-      if prfx not in analog:
-        analog[ prfx ] = dict()
-      analog[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
-    elif ci[1]['type'] is 'digital':
-      if prfx not in digital:
-        digital[ prfx ] = dict()
-      digital[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
-    else:
-      raise RuntimeError("type of channel '"+ci[0]+"' reset?!")
-
-  return analog, digital, transitions, t_max
+  wve = WaveformEvalulator(devcfg, clocks, channels)
+  wve.group( waveforms, globals=globals )
+  return wve.finish()
 
 
 def to_plottable( elem ):
@@ -350,7 +351,7 @@ def to_plottable( elem ):
   for e in elem:
     if e.group not in retval:
       retval[e.group] = list()
-    retval[e.group].append( (e.t, e.value) )
+    retval[e.group].append( (e.ti, e.value) )
 
   return retval
 
