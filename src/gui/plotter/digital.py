@@ -27,7 +27,7 @@ def plot( ax, signals, names=None, t_final=None ):
     t_final *= 1.001
 
   channels = signals.items()
-  channels.sort( lambda (k1,v1),(k2,v2): cmp(k2,k1) ) # reverse lexical sort
+  channels.sort( key = lambda v:v[0] ) # reverse lexical sort
 
   if names:
     get_label = lambda n : names[n]
@@ -41,7 +41,9 @@ def plot( ax, signals, names=None, t_final=None ):
     labels.append( get_label( c[0] ) )
     dt = mkdt( c[1], t_final )
 
-    for g in c[1].items():
+    groups = c[1].items()
+    groups.sort( key = lambda v : v[0] )
+    for g in groups:
       ax.broken_barh(
         mkbbars( g[1], dt[ g[0] ] ), (i,1),
         facecolors=fc(i), linestyles=ls(g[0]), linewidth=2 )

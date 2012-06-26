@@ -36,7 +36,7 @@ def plot( ax, signals, names=None, t_final=None ):
     t_final *= 1.001
 
   channels = signals.items()
-  channels.sort( lambda (k1,v1),(k2,v2): cmp(k2,k1) ) # reverse lexical sort
+  channels.sort( key = lambda v: v[0] ) # reverse lexical sort
 
   if names:
     get_label = lambda n : names[n]
@@ -54,7 +54,9 @@ def plot( ax, signals, names=None, t_final=None ):
     x = list()
     y = list()
     Vi = None
-    for g in c[1].items():
+    groups = c[1].items()
+    groups.sort( key = lambda v : v[0] )
+    for g in groups:
       xg, yg = mkxy( g[1], dt[ g[0] ], Vi )
       Vi = yg[-1]
       x += xg
