@@ -63,7 +63,6 @@ ui_info = \
     <toolitem action='CH:Delete'/>
   </toolbar>
   <toolbar  name='WaveformToolBar'>
-    <toolitem action='WF:Add:group'/>
     <toolitem action='WF:Add'/>
     <toolitem action='WF:Delete'/>
   </toolbar>
@@ -315,11 +314,6 @@ class ArbWave(gtk.Window):
         self.activate_action ),
 
       # WAVEFORM EDITOR
-      ( 'WF:Add:group', gtk.STOCK_NEW,             # name, stock id
-        None, None,                                # label, accelerator
-        'Add waveform group after '
-        'current waveform group',                  # tooltip
-        self.activate_action ),
       ( 'WF:Add', gtk.STOCK_ADD,                   # name, stock id
         None, None,                                # label, accelerator
         'Add waveform element after '
@@ -373,7 +367,6 @@ class ArbWave(gtk.Window):
       'VGens'     : lambda a: tips.show_generators(self),
       'CH:Add'    : lambda a: self.channel_editor.insert_row(),
       'CH:Delete' : lambda a: self.channel_editor.delete_row(),
-      'WF:Add:group': lambda a: self.waveform_editor.insert_waveform_group(),
       'WF:Add'    : lambda a: self.waveform_editor.insert_waveform(),
       'WF:Delete' : lambda a: self.waveform_editor.delete_row(),
     }

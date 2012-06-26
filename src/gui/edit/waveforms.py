@@ -197,37 +197,19 @@ class Waveforms:
 
 
 
-  def insert_waveform_group(self):
-    i = self.view.get_selection().get_selected()[1]
-    if not i: # append new grouping to end
-      n = self.waveforms.append( None, self.waveforms.default_group )
-    elif self.waveforms[i].parent:
-      n = self.waveforms.insert_before(
-        None, self.waveforms[i].parent.iter,
-        self.waveforms.default_group )
-    else:
-      n = self.waveforms.insert_before( None, i, self.waveforms.default_group )
-    self.add_undo( TreeUndo(n, self.waveforms, self.view) )
-
-
   def insert_waveform(self):
-    p = None
     i = self.view.get_selection().get_selected()[1]
     if not i: # append new element to last group
-      if len( self.waveforms ) == 0:
-        # create last if necessary
-        p = self.waveforms.append( None, self.waveforms.default_group )
-      n = self.waveforms.append( self.waveforms[-1].iter, \
-                                 self.waveforms.default_element )
-    elif not self.waveforms[i].parent: #append to selected group
-      n = self.waveforms.append( i, self.waveforms.default_element )
+      n = self.waveforms.append( None, self.waveforms.default_element )
     else: # insert into group before selected item
-      n = self.waveforms.insert_before(
-        self.waveforms[i].parent.iter, i,
-        self.waveforms.default_element )
+      iter = self.waveforms[i].iter
+      p = self.waveforms[i].parent
+      if p: pi = p.iter
+      else: pi = None
+      n = self.waveforms.insert_before(pi, iter, self.waveforms.default_element)
     self.view.expand_to_path( self.waveforms[n].path )
 
-    self.add_undo( TreeUndo(n, self.waveforms, self.view, new_parent=p) )
+    self.add_undo( TreeUndo(n, self.waveforms, self.view, new_parent=pi) )
 
 
 
