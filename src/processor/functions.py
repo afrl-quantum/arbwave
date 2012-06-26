@@ -100,7 +100,7 @@ class Pulse:
   """
   def __init__(self, high=True,low=False):
     """
-    Usage:  pulse(to, high=True, low=False)
+    Usage:  pulse(high=True, low=False)
 
     high  : The value to generate for the pulse.
     low   : The value to return to after the pulse
