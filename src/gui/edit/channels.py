@@ -9,8 +9,6 @@ ui_info = \
 """<ui>
   <popup name='CH:Edit'>
     <menuitem action='CH:Scaling'/>
-    <separator/>
-    <menuitem action='CH:Device'/>
   </popup>
 </ui>"""
 
@@ -25,9 +23,6 @@ def create_action_group():
     ( 'CH:Scaling', None,               # name, stock id
       'Scaling...', None,     # label, accelerator
       'Edit Scaling'),          # tooltip
-    ( 'CH:Device', None,                # name, stock id
-      'Device Settings', None,          # label, accelerator
-      'Device Settings'),               # tooltip
   )
 
   # GtkToggleActionEntry
@@ -108,6 +103,9 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
     return False
 
 
+def is_analog( channels, path ):
+  return channels[path][channels.DEVICE].startswith('Analog/')
+
 
 def begin_drag(w, ctx, parent):
   parent.pause()
@@ -176,10 +174,10 @@ class Channels:
     ui_manager = mkUIManager()
     V.connect('button-press-event',
       popup_button_press_handler,
+      is_analog,
       ui_manager,
       ui_manager.get_widget('/CH:Edit'),
-      [('/CH:Edit/CH:Scaling', self.edit_scaling),
-       ('/CH:Edit/CH:Device',  edit_device, self.add_undo)],
+      [('/CH:Edit/CH:Scaling', self.edit_scaling)],
     )
 
 
@@ -195,7 +193,7 @@ class Channels:
         add_undo=self.add_undo,
       )
       self.scaling_editor.connect('destroy', unset_editor)
-    if model[path][model.DEVICE].startswith('Analog/'):
+    if is_analog( model, path ):
       self.scaling_editor.set_channel(model[path][model.LABEL])
     self.scaling_editor.present()
 

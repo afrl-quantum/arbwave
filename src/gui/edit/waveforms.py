@@ -188,6 +188,7 @@ class Waveforms:
     ui_manager = mkUIManager()
     V.connect('button-press-event',
       popup_button_press_handler,
+      is_group,
       ui_manager,
       ui_manager.get_widget('/WFG:Edit'),
       [('/WFG:Edit/WFG:Async', toggle_item,  waveforms.ASYNC,  self.add_undo),

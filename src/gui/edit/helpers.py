@@ -140,7 +140,7 @@ def prep_combobox_for_tree(cbox):
 
 popup_handlers = dict()
 
-def popup_button_press_handler(treeview, event, ui_manager, popup, actions):
+def popup_button_press_handler(treeview, event, doedit, ui_manager, popup, actions):
   global popup_handlers
   if event.button == 3:
     x = int(event.x)
@@ -149,10 +149,10 @@ def popup_button_press_handler(treeview, event, ui_manager, popup, actions):
     pthinfo = treeview.get_path_at_pos(x, y)
     if pthinfo is not None:
       path, col, cellx, celly = pthinfo
-      if len(path) == 1:
+      model = treeview.get_model()
+      if doedit( model, path ):
         treeview.grab_focus()
         treeview.set_cursor( path, col, 0)
-        model = treeview.get_model()
 
         for a in actions:
           act = ui_manager.get_action(a[0])
