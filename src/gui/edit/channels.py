@@ -115,6 +115,24 @@ def end_drag(w, ctx, parent, channels):
   parent.update(channels)
 
 
+def highlight(selection, plotter):
+  model, i = selection.get_selected()
+  if i:
+    plotter.highlight( model[i][model.DEVICE] )
+  else:
+    plotter.highlight( None )
+
+
+def clear_selection(w, event):
+  if event.keyval == 65307:
+    sel = w.get_selection()
+    if sel.get_selected()[1]:
+      sel.unselect_all()
+    else:
+      w.parent.grab_focus()
+
+
+
 class Channels:
   def __init__(self, channels, processor, parent, add_undo=None):
     self.parent = parent
@@ -127,6 +145,8 @@ class Channels:
     V.set_reorderable(True)
     V.connect('drag-begin', begin_drag, parent)
     V.connect('drag-end', end_drag, parent, channels)
+    V.get_selection().connect('changed', highlight, self.parent.plotter)
+    V.connect('key-press-event', clear_selection)
 
     R = {
       'label'   : gtk.CellRendererText(),

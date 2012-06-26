@@ -40,6 +40,9 @@ def get_marker( group_number ):
   return markers[ group_number % len(markers) ]
 
 
+highlight_linewidth = 5.0
+highlight_color = ''
+
 def get_face_color( channel_number ):
   colors = [
     'red', 'brown', 'green', 'blue', 'black', 'orange', 'purple',

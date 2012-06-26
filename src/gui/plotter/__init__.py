@@ -2,6 +2,21 @@
 import gui
 from plotter_toolbar import NavigationToolbar
 import digital, analog
+import common
+
+class Highlighter:
+  def __init__(self, line):
+    self.line = line
+    self.color = line.get_color()
+    self.linewidth = line.get_linewidth()
+  def highlight(self):
+    if common.highlight_color:
+      self.line.set_color( common.highlight_color )
+    if common.highlight_linewidth:
+      self.line.set_linewidth( common.highlight_linewidth )
+  def unhighlight(self):
+    self.line.set_color( self.color )
+    self.line.set_linewidth( self.linewidth )
 
 
 class Plotter:
@@ -16,6 +31,8 @@ class Plotter:
     self.max_analog = 0.0
     self.max_digital = 0.0
     self.vline = { 't':None, 'digital':None, 'analog':None }
+    self.lines = dict()
+    self.highlighted = None
 
     # self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
     # self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
@@ -41,12 +58,26 @@ class Plotter:
     self.canvas.draw()
 
   def plot_analog(self, signals, *args, **kwargs ):
-    self.max_analog \
+    self.max_analog, lines \
       = analog.plot( self.axes['analog'], signals, *args, **kwargs )
+    # purge all old analog lines
+    self.lines = { l[0]:l[1]  for l in self.lines.items()  if l[0].startswith('Analog/') }
+    for l in lines.items():
+      # we add the analog prefix back on for ease later
+      self.lines['Analog/' + l[0]] = Highlighter( l[1] )
 
   def plot_digital(self, signals, *args, **kwargs ):
     self.max_digital \
       = digital.plot( self.axes['digital'], signals, *args, **kwargs )
+
+  def highlight(self, physical_channel):
+    if self.highlighted:
+      self.highlighted.unhighlight()
+      self.highlighted = None
+    if physical_channel in self.lines:
+      self.lines[physical_channel].highlight()
+      self.highlighted = self.lines[physical_channel]
+    self.canvas.draw()
 
   def update_t_axes(self, max_x=0.0):
     max_x = max( self.max_analog, self.max_digital, max_x )

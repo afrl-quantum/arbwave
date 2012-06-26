@@ -121,6 +121,16 @@ def end_drag(w, ctx, parent, waveforms):
   parent.update(waveforms)
 
 
+def clear_selection(w, event):
+  if event.keyval == 65307:
+    sel = w.get_selection()
+    if sel.get_selected()[1]:
+      sel.unselect_all()
+    else:
+      w.parent.grab_focus()
+
+
+
 class Waveforms:
   def __init__(self, waveforms, channels, parent, add_undo=None):
     self.add_undo = add_undo
@@ -132,6 +142,7 @@ class Waveforms:
     V.connect('drag-begin', begin_drag, parent)
     V.connect('drag-end', end_drag, parent, waveforms)
     V.connect('drag-motion', drag_motion, parent)
+    V.connect('key-press-event', clear_selection)
 
     R = {
       'channel' : gtk.CellRendererCombo(),

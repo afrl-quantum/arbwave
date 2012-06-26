@@ -46,6 +46,7 @@ def plot( ax, signals, names=None, t_final=None ):
   ax.clear()
   labels = list()
   i = 0
+  lines = dict()
   for c in channels:
     labels.append( get_label( c[0] ) )
     dt = mkdt( c[1], t_final )
@@ -66,7 +67,7 @@ def plot( ax, signals, names=None, t_final=None ):
     x.append( t_final )
     y.append( y[-1] )
 
-    ax.plot( x, y, color=fc(i), linewidth=2 )
+    lines[c[0]] = ax.plot( x, y, color=fc(i), linewidth=2 )[0]
     i += 1
 
   #ax.set_xlabel('Time (s)')
@@ -76,7 +77,7 @@ def plot( ax, signals, names=None, t_final=None ):
   pylab.setp(ax.get_xticklabels(), fontsize=8)
   pylab.setp(ax.get_yticklabels(), fontsize=8)
   ax.grid(True)
-  return t_final
+  return t_final, lines
 
 
 # This should be conformant to the output that the arbwave.Processor produces.
