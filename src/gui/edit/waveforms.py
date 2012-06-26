@@ -125,6 +125,7 @@ class Waveforms:
   def __init__(self, waveforms, channels, parent, add_undo=None):
     self.add_undo = add_undo
     self.waveforms = waveforms
+    self.parent = parent
 
     V = self.view = gtk.TreeView( waveforms )
     V.set_reorderable(True)
@@ -198,6 +199,7 @@ class Waveforms:
 
 
   def insert_waveform(self):
+    self.parent.pause()
     i = self.view.get_selection().get_selected()[1]
     if not i: # append new element to last group
       n = self.waveforms.append( None, self.waveforms.default_element )
@@ -209,7 +211,9 @@ class Waveforms:
       n = self.waveforms.insert_before(pi, iter, self.waveforms.default_element)
     self.view.expand_to_path( self.waveforms[n].path )
 
-    self.add_undo( TreeUndo(n, self.waveforms, self.view, new_parent=pi) )
+    self.add_undo( TreeUndo(n, self.waveforms, self.view) )
+    self.parent.unpause()
+    self.parent.update(self.waveforms)
 
 
 
@@ -230,7 +234,7 @@ class NullUndo:
     pass
 
 class TreeUndo:
-  def __init__(self, iter, model, view, deletion=False, new_parent=None):
+  def __init__(self, iter, model, view, deletion=False):
     self.model = model
     self.view = view
     self.path = model.get_path( iter )
@@ -238,9 +242,6 @@ class TreeUndo:
     self.parent_path = self.path[:-1]
     self.new_row = list(model[iter])
     self.deletion = deletion
-    self.parent_undo = NullUndo()
-    if new_parent:
-      self.parent_undo = TreeUndo( new_parent, model, view, deletion )
 
   def delete(self):
     self.model.remove( self.model.get_iter(self.path) )
@@ -256,15 +257,11 @@ class TreeUndo:
   def redo(self):
     if self.deletion:
       self.delete()
-      self.parent_undo.redo()
     else:
-      self.parent_undo.redo()
       self.insert()
 
   def undo(self):
     if self.deletion:
-      self.parent_undo.undo()
       self.insert()
     else:
       self.delete()
-      self.parent_undo.undo()

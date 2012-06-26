@@ -111,6 +111,7 @@ def finished(*args, **kwargs):
 
 class ArbWave(gtk.Window):
   TITLE = 'Arbitrary Waveform Generator'
+  ALL_ITEMS = -1
 
   def __init__(self, parent=None):
     #create the toplevel window
@@ -436,7 +437,7 @@ class ArbWave(gtk.Window):
 
     # re-enable updates and directly call for an update
     self.unpause()
-    self.update()
+    self.update(self.ALL_ITEMS)
 
   def clearvars(self):
     # suspend all updates
@@ -453,7 +454,7 @@ class ArbWave(gtk.Window):
 
     # re-enable updates and directly call for an update
     self.unpause()
-    self.update()
+    self.update(self.ALL_ITEMS)
 
 
   def set_config_file(self,f):
@@ -484,7 +485,7 @@ class ArbWave(gtk.Window):
 
     try:
       if item not in [
-        None, self.devcfg, self.clocks, self.signals,
+        self.ALL_ITEMS, None, self.devcfg, self.clocks, self.signals,
         self.channels, self.waveforms, self.script,
       ]:
         raise TypeError('Unknown item sent to update()')
@@ -493,12 +494,12 @@ class ArbWave(gtk.Window):
         'expected callable show_stopped'
 
       self.processor.update(
-        ( self.devcfg.representation(),    item in [ None, self.devcfg] ),
-        ( self.clocks.representation(),    item in [ None, self.clocks] ),
-        ( self.signals.representation(),   item in [ None, self.signals] ),
-        ( self.channels.representation(),  item in [ None, self.channels] ),
-        ( self.waveforms.representation(), item in [ None, self.waveforms] ),
-        ( self.script.representation(),    item in [ None, self.script] ),
+        ( self.devcfg.representation(),    item in [ self.ALL_ITEMS, self.devcfg] ),
+        ( self.clocks.representation(),    item in [ self.ALL_ITEMS, self.clocks] ),
+        ( self.signals.representation(),   item in [ self.ALL_ITEMS, self.signals] ),
+        ( self.channels.representation(),  item in [ self.ALL_ITEMS, self.channels] ),
+        ( self.waveforms.representation(), item in [ self.ALL_ITEMS, self.waveforms] ),
+        ( self.script.representation(),    item in [ self.ALL_ITEMS, self.script] ),
         toggle_run=toggle_run,
         show_stopped=show_stopped,
       )

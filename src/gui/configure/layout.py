@@ -184,7 +184,7 @@ class ConfigDialog(gtk.Dialog):
       template = devices[dev].get_config_template()
       devcfg.load( { dev : template }, clear=False )
       self.store.unpause()
-      self.store.update()
+      self.store.update(devcfg)
 
 
     def add_clock( action, clocks ):
@@ -201,7 +201,7 @@ class ConfigDialog(gtk.Dialog):
       template = channels[clk].get_config_template()
       clocks.load( { clk : template }, clear=False )
       self.store.unpause()
-      self.store.update()
+      self.store.update(clocks)
 
 
   
