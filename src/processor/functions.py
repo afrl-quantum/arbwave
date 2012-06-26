@@ -35,7 +35,8 @@ class Ramp:
   """
   Ramp from initial value to final value with a given exponent.
   """
-  def __init__(self, to, exponent=1.0, steps=10, _from=None,dt=None):
+  default_steps = 20
+  def __init__(self, to, exponent=1.0, steps=None, _from=None,dt=None):
     """
     Usage:  ramp(to, exponent=1.0, steps=10, _from=None, dt=None)
 
@@ -49,7 +50,10 @@ class Ramp:
    """
     self.to = to
     self.exponent = exponent
-    self.steps = steps
+    if steps:
+      self.steps = steps
+    else:
+      self.steps = Ramp.default_steps
     self._from = _from
     self.skip_first = _from is None
     self.dt = dt
