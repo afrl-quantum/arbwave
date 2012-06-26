@@ -14,6 +14,10 @@ class Highlighter:
       self.line.set_color( common.highlight_color )
     if common.highlight_linewidth:
       self.line.set_linewidth( common.highlight_linewidth )
+    if common.highlight_alpha:
+      c = list( self.line.get_color() )
+      c[3] = common.highlight_alpha
+      self.line.set_color( c )
   def unhighlight(self):
     self.line.set_color( self.color )
     self.line.set_linewidth( self.linewidth )
