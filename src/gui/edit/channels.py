@@ -182,7 +182,7 @@ class Channels:
 
     C['enable'].add_attribute( R['enable'], 'active', channels.ENABLE )
 
-    #V.set_property( 'hover_selection', True )
+    V.set_property( 'hover_selection', True )
     V.set_property( 'has_tooltip', True )
     V.connect('query-tooltip', query_tooltip)
     V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
