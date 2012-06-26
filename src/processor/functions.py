@@ -7,6 +7,9 @@ As an example, the Ramp class is used in a way to allow the user to specify
 of 0.5 over the duration of the waveform element.
 """
 
+import numpy as np
+machine_arch = np.MachAr()
+
 class step_iter:
   def __init__(self, ti, tf, dt, clock_period, fun):
     self.t = ti
@@ -66,6 +69,8 @@ class Ramp:
   def set_vars(self, _from, t, duration, clock_period):
     if self._from is None:
       self._from = _from
+    elif abs(self._from - _from).coeff <= 10*machine_arch.eps:
+      self.skip_first = True
     self.t = t
     # it is important to make sure that the final value is given at
     # dt-clock_period.  This allows for the following clock pulse to be used by
