@@ -52,9 +52,11 @@ class Processor:
     try:
       self.lock.acquire()
 
+      stopped = False
       if self.running:
         self.stop(toggle_run) # might be a race condition
         toggle_run = False
+        stopped = True
 
       # First:  update the global script environment
       if script[1]:
@@ -102,7 +104,7 @@ class Processor:
       if self.running or toggle_run:
         self.start( show_stopped )
       else:
-        if channels[1] or script[1]:
+        if stopped or channels[1] or script[1]:
           exec 'import arbwave\narbwave.update_static()' in self.Globals
 
         # TODO:  have more fine-grained change information:
