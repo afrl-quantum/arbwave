@@ -155,10 +155,12 @@ def set_device_config( config, channels, shortest_paths, timing_channels ):
     # we change '/po' to '/do' to correspond with the task name given above for
     # digital channels.
     chans[ m.group(2).replace('/po','/do') ][ m.group(1) ] = channels[c]
+  chans = { k:v  for k,v in chans.items()  if v }
 
   for d in tasks:
     if d in config or d in chans:
-      tasks[d].set_config( config.get(d,{}), chans.get(d,{}), shortest_paths, timing_channels )
+      tasks[d].set_config( config.get(d,{}), chans.get(d,{}),
+                           shortest_paths, timing_channels )
 
 
 def set_clocks( clocks ):
