@@ -10,6 +10,8 @@ from .....signal_graphs import nearest_terminal
 class Task(Base):
   task_type = None
   task_class = None
+  STATIC    = 0
+  WAVEFORM  = 1
 
   def __init__(self, device):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
@@ -17,6 +19,7 @@ class Task(Base):
     self.channels = dict()
     self.clocks = None
     self.clock_terminal = None
+    self.use_case = None
 
     # first find the possible trigger and clock sources
     self.trig_sources = list()
@@ -81,15 +84,21 @@ class Task(Base):
         force = True
 
     if force:
-      # rebuild the task
-      self.clear()
-      self.task = self.task_class()
-      self.add_channels()
+      self._rebuild_task()
 
-      # set persistent task properties
-      # Not sure if we really need to worry about on-board memory
-      # self.task.set_use_only_onboard_memory(
-      #   self.config['use-only-onboard-memory']['value'] )
+  def _rebuild_task(self):
+    # rebuild the task
+    self.clear()
+    if not self.channels:
+      return
+    self.task = self.task_class()
+    self.use_case = None
+    self.add_channels()
+
+    # set persistent task properties
+    # Not sure if we really need to worry about on-board memory
+    # self.task.set_use_only_onboard_memory(
+    #   self.config['use-only-onboard-memory']['value'] )
 
 
   def set_clocks(self, clocks):
@@ -103,7 +112,12 @@ class Task(Base):
     """
     Sets a static value on each output channel of this task.
     """
-    self.task.stop()
+    if self.use_case in [ None, Task.STATIC ]:
+      if self.use_case is not None:
+        self.task.stop()
+    else:
+      self._rebuild_task()
+    self.use_case = Task.STATIC
 
     self.task.set_sample_timing( timing_type='on_demand',
                                  mode='finite',
@@ -125,7 +139,13 @@ class Task(Base):
       2.  Sets triggering.
       3.  Writes data to hardware buffers without auto_start.
     """
-    self.task.stop() # make sure, since static_output must also be stopped
+    if self.use_case in [ None, Task.WAVEFORM ]:
+      if self.use_case is not None:
+        self.task.stop()
+    else:
+      self._rebuild_task()
+    self.use_case = Task.WAVEFORM
+
     if not self.clock_terminal:
       raise UserWarning('cannot start waveform without a output clock defined')
 
@@ -173,6 +193,8 @@ class Task(Base):
     scans = dict.fromkeys( transitions )
     nones = [None] * n_channels
     for i in xrange( n_channels ):
+      if chlist[i] not in waveforms:
+        continue
       for g in waveforms[ chlist[i] ].items():
         for t,v in g[1]:
           if not scans[t]:
