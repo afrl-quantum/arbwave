@@ -3,6 +3,7 @@
 Utilities for plotting analog signals
 """
 import pylab
+from matplotlib.colors import ColorConverter
 
 import numpy as np
 from common import *
@@ -43,10 +44,14 @@ def plot( ax, signals, names=None, t_final=None ):
   else:
     get_label = lambda n : n
 
+  cconv = ColorConverter()
+
   ax.clear()
   labels = list()
   i = 0
   lines = dict()
+  group_lines = dict()
+  ylim = None
   for c in channels:
     labels.append( get_label( c[0] ) )
     dt = mkdt( c[1], t_final )
@@ -58,16 +63,27 @@ def plot( ax, signals, names=None, t_final=None ):
     groups.sort( key = lambda v : v[0] )
     for g in groups:
       xg, yg = mkxy( g[1], dt[ g[0] ], Vi )
+      gcolor = list( cconv.to_rgba( fc(i) ) )
+      gcolor[3] = 0.0 # hide group lines
+      if x:
+        group_lines[(g[0],c[0])] = ax.plot([x[-1]]+xg, [y[-1]]+yg, color=gcolor, linewidth=2 )[0]
+      else:
+        group_lines[(g[0],c[0])] = ax.plot(xg, yg, color=gcolor, linewidth=2)[0]
       Vi = yg[-1]
       x += xg
       y += yg
-      s = max(1, int(.05 * len(xg)))
+      #s = max(1, int(.05 * len(xg)))
       #ax.plot( np.array(xg)[::s], np.array(yg)[::s], get_marker(g[0]), color=fc(i) )
     # By definition, each final transition is supposed to be honored as a fixed
     # value.  This final data point just ensures that this hold is plotted for
     # each channel until all channels have finished.
     x.append( t_final )
     y.append( y[-1] )
+
+    if ylim:
+      ylim = min(ylim[0], *y), max(ylim[1], *y)
+    else:
+      ylim = min(y), max(y)
 
     lines[c[0]] = ax.plot( x, y, color=fc(i), linewidth=2 )[0]
     i += 1
@@ -76,10 +92,12 @@ def plot( ax, signals, names=None, t_final=None ):
   #ax.set_yticks( np.r_[0.5:i] )
   #ax.set_yticklabels(labels)
   #ax.legend( labels, loc=(-0.25,0) )
+  dy = (ylim[1] - ylim[0]) * .1
+  ax.set_ylim( float(ylim[0]-dy), float(ylim[1]+dy) )
   pylab.setp(ax.get_xticklabels(), fontsize=8)
   pylab.setp(ax.get_yticklabels(), fontsize=8)
   ax.grid(True)
-  return t_final, lines
+  return t_final, lines, group_lines
 
 
 # This should be conformant to the output that the arbwave.Processor produces.

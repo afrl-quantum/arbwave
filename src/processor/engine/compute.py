@@ -145,7 +145,8 @@ class WaveformEvalulator:
 
 
 
-  def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict()):
+  def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict(),
+            path=[]):
     self.next_groupNum += 1
     groupNum = self.next_groupNum
 
@@ -154,7 +155,9 @@ class WaveformEvalulator:
     # t is used for calculating natural time 't' for sub-groups
     t_start = t # the start of *this* group
 
+    path = path + [-1]
     for gi in group:
+      path[-1] += 1
       if not gi['enable']:  continue
 
       # this will allow the sub-group to have t and dt (from its parent) while
@@ -182,7 +185,7 @@ class WaveformEvalulator:
           unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
 
         # 3.  recurse
-        self.group( gi['elements'], gi_t, gi_dt, globals, L )
+        self.group( gi['elements'], gi_t, gi_dt, globals, L, path )
 
         # 4.  increment natural time for siblings
         if not gi['asynchronous']:
@@ -207,7 +210,7 @@ class WaveformEvalulator:
 
         t_locals.setdefault(chname, t_start)
         locals['t'] = t_locals[ chname ]
-        t_locals[ chname ] = self.element( gi, groupNum, globals, locals )
+        t_locals[ chname ] = self.element( gi, tuple(path), globals, locals )
 
     if t_locals:
       self.t_max = max( self.t_max, *t_locals.values() )

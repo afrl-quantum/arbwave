@@ -121,6 +121,31 @@ def end_drag(w, ctx, parent, waveforms):
   parent.update(waveforms)
 
 
+def gather_paths(channels, wvfms, i):
+  L = list()
+  dev = None
+  for c in iter(channels):
+    if wvfms[i][wvfms.CHANNEL] == c[channels.LABEL]:
+      dev = c[channels.DEVICE]
+  if dev:
+    L.append( (wvfms.get_path(i), dev.partition('/')[-1]) )
+  if wvfms.iter_has_child(i):
+    child = wvfms.iter_children(i)
+    while child:
+      L += gather_paths(channels, wvfms, child)
+      child = wvfms.iter_next( child )
+  return L
+
+
+def highlight(selection, plotter, channels):
+  model, i = selection.get_selected()
+  if i:
+    paths = gather_paths( channels, model, i )
+    plotter.highlight_parts( paths )
+  else:
+    plotter.highlight_parts( list() )
+
+
 def clear_selection(w, event):
   if event.keyval == 65307:
     sel = w.get_selection()
@@ -142,6 +167,7 @@ class Waveforms:
     V.connect('drag-begin', begin_drag, parent)
     V.connect('drag-end', end_drag, parent, waveforms)
     V.connect('drag-motion', drag_motion, parent)
+    V.get_selection().connect('changed',highlight,self.parent.plotter,channels)
     V.connect('key-press-event', clear_selection)
 
     R = {
@@ -187,7 +213,7 @@ class Waveforms:
 
     C['enable'].add_attribute( R['enable'], 'active', waveforms.ENABLE )
 
-    #V.set_property( 'hover_selection', True )
+    V.set_property( 'hover_selection', True )
     V.set_property( 'has_tooltip', True )
     V.connect('query-tooltip', query_tooltip)
     V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)

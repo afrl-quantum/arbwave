@@ -3,6 +3,7 @@
 Utilities for plotting digital signals
 """
 import pylab
+from matplotlib.colors import ColorConverter
 
 import numpy as np
 from common import *
@@ -20,6 +21,19 @@ def mkbbars( L, dt ):
   return [ (L[i][0], dt[i])   for i in xrange(len(L))  if L[i][1] ]
 
 
+class BBWrapper:
+  def __init__(self, bb):
+    self.bb = bb
+  def get_color(self, *args, **kwargs):
+    return self.bb.get_facecolor(*args, **kwargs)[0]
+  def set_color(self, *args, **kwargs):
+    self.bb.set_facecolor(*args, **kwargs)
+  def get_linewidth(self, *args, **kwargs):
+    return self.bb.get_linewidth(*args, **kwargs)
+  def set_linewidth(self, *args, **kwargs):
+    self.bb.set_linewidth(*args, **kwargs)
+
+
 def plot( ax, signals, names=None, t_final=None ):
   if t_final is None:
     #start by finding the maximum time
@@ -34,9 +48,12 @@ def plot( ax, signals, names=None, t_final=None ):
   else:
     get_label = lambda n : n
 
+  cconv = ColorConverter()
+
   ax.clear()
   labels = list()
   i = 0
+  group_lines = dict()
   for c in channels:
     labels.append( get_label( c[0] ) )
     dt = mkdt( c[1], t_final )
@@ -44,9 +61,11 @@ def plot( ax, signals, names=None, t_final=None ):
     groups = c[1].items()
     groups.sort( key = lambda v : v[0] )
     for g in groups:
-      ax.broken_barh(
-        mkbbars( g[1], dt[ g[0] ] ), (i,1),
-        facecolors=fc(i), linestyles=ls(g[0]), linewidth=2 )
+      group_lines[(g[0],c[0])] = \
+        BBWrapper(
+          ax.broken_barh(
+            mkbbars( g[1], dt[ g[0] ] ), (i,1),
+            facecolors=cconv.to_rgba(fc(i)), linewidth=2 ) )
     i += 1
 
   ax.set_xlabel('Time (s)')
@@ -55,7 +74,7 @@ def plot( ax, signals, names=None, t_final=None ):
   pylab.setp(ax.get_xticklabels(), fontsize=8)
   pylab.setp(ax.get_yticklabels(), fontsize=8)
   ax.grid(True)
-  return t_final
+  return t_final, group_lines
 
 
 # This should be conformant to the output that the arbwave.Processor produces.

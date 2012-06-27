@@ -37,6 +37,8 @@ class Plotter:
     self.vline = { 't':None, 'digital':None, 'analog':None }
     self.lines = dict()
     self.highlighted = None
+    self.group_lines = dict()
+    self.highlighted_parts = list()
 
     # self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
     # self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
@@ -56,23 +58,28 @@ class Plotter:
   def start(self):
     self.max_analog = 0.0
     self.max_digital = 0.0
+    self.group_lines = dict()
 
   def finish(self, t_final=0.0):
     self.update_t_axes(max_x=t_final)
     self.canvas.draw()
 
   def plot_analog(self, signals, *args, **kwargs ):
-    self.max_analog, lines \
+    self.max_analog, lines, group_lines \
       = analog.plot( self.axes['analog'], signals, *args, **kwargs )
     # purge all old analog lines
     self.lines = { l[0]:l[1]  for l in self.lines.items()  if l[0].startswith('Analog/') }
     for l in lines.items():
       # we add the analog prefix back on for ease later
       self.lines['Analog/' + l[0]] = Highlighter( l[1] )
+    self.group_lines.update(
+      {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
 
   def plot_digital(self, signals, *args, **kwargs ):
-    self.max_digital \
+    self.max_digital, group_lines \
       = digital.plot( self.axes['digital'], signals, *args, **kwargs )
+    self.group_lines.update(
+      {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
 
   def highlight(self, physical_channel):
     if self.highlighted:
@@ -81,6 +88,17 @@ class Plotter:
     if physical_channel in self.lines:
       self.lines[physical_channel].highlight()
       self.highlighted = self.lines[physical_channel]
+    self.canvas.draw()
+
+  def highlight_parts(self, pkeys):
+    if self.highlighted_parts:
+      for hp in self.highlighted_parts: hp.unhighlight()
+      self.highlighted_parts = list()
+    for p in pkeys:
+      if p in self.group_lines:
+        gl = self.group_lines[p]
+        gl.highlight()
+        self.highlighted_parts.append( gl )
     self.canvas.draw()
 
   def update_t_axes(self, max_x=0.0):
