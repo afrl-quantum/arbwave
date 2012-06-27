@@ -166,6 +166,7 @@ class NiDAQmx:
     return 0
 
   def DAQmxResetDevice(self, dev):
+    log(DEBUG-1, 'DAQmxResetDevice(%s)', dev)
     return 0
 
 
@@ -175,6 +176,7 @@ class NiDAQmx:
     self.last_task += 1
     task_ref._obj.value = self.last_task
     self.tasks[ self.last_task ] = Task(name)
+    log(DEBUG-1, 'DAQmxCreateTask(%s) = %d', name, self.last_task)
     return 0
 
 
@@ -184,12 +186,14 @@ class NiDAQmx:
 
 
   def DAQmxClearTask(self,task):
+    log(DEBUG-1, 'DAQmxClearTask(%s)', task)
     if task.value in self.tasks:
       self.tasks.pop(task.value)
     return 0
 
 
   def DAQmxIsTaskDone(self,task,bool_ref):
+    log(DEBUG-1, 'DAQmxIsTaskDone(%s) = True', task)
     bool_ref._obj.value = True
     return 0
 
@@ -243,18 +247,22 @@ class NiDAQmx:
 
 
   def DAQmxTaskControl(self,task,state_val):
+    log(DEBUG-1, 'DAQmxTaskControl(%s,%s)', task, state_val.value)
     return 0
 
 
   def DAQmxSetSampTimingType(self, task, timing_type):
+    log(DEBUG-1, 'DAQmxSetSampTimingType(%s,%d)', task, timing_type.value)
     return 0
 
 
   def DAQmxSetSampQuantSampMode(self, task, mode):
+    log(DEBUG-1, 'DAQmxSetSampQuantMode(%s,%d)', task, mode.value)
     return 0
 
 
   def DAQmxSetSampQuantSampPerChan(self, task, n):
+    log(DEBUG-1, 'DAQmxSetSampQuantSampPerChan(%s,%d)', task, n.value)
     return 0
 
 
@@ -275,10 +283,12 @@ class NiDAQmx:
 
 
   def DAQmxCfgDigEdgeStartTrig(self, task, source, edge_val):
+    log(DEBUG-1, 'DAQmxCfgDigEdgeStartTrig(%s,%s,%d)', task, source, edge_val)
     return 0
 
 
   def DAQmxDisableStartTrig(self, task):
+    log(DEBUG-1, 'DAQmxDisableStartTrig(%s)', task)
     return 0
 
 
@@ -297,6 +307,7 @@ class NiDAQmx:
 
 
   def DAQmxWaitUntilTaskDone(self, task, timeout):
+    log(DEBUG-1, 'DAQmxWaitUntilTaskDone(%s,%f)', task, timeout)
     return 0
 
 
