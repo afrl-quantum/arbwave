@@ -13,12 +13,16 @@ def scaling_cb( scaling, p, i, channels ):
       return
   assert False, 'SCALING CB:  THIS CODE SHOULD NEVER BE REACHED!'
 
+def scaling_cb_del( scaling, p, channels ):
+  scaling_cb( scaling, p, None, channels )
+
 def check_add_scaling_cb(channels, path, iter):
   chan = channels[iter]
   scaling = chan[channels.SCALING]
   if scaling and scaling not in channels._scaling_callbacks:
-    cb = scaling.connect('row-changed', scaling_cb, channels)
-    channels._scaling_callbacks[scaling] = cb
+    cb_cha = scaling.connect('row-changed', scaling_cb, channels)
+    cb_del = scaling.connect('row-deleted', scaling_cb_del, channels)
+    channels._scaling_callbacks[scaling] = ( cb_cha, cb_del )
 
 def rm_scaling_cb(channels, path):
   # try to keep the list of callbacks cleaned out
