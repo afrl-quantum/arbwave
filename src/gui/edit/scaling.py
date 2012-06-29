@@ -215,26 +215,25 @@ class Editor(gtk.Dialog):
 
     self.set_pause(True)
 
-    self.chan = new_chan = None
+    self.chan = None
     self.view.set_model( None )
 
     # set new model
     for chan in self.channels:
       if chan[self.channels.LABEL] == label:
-        new_chan = chan
         break
-    if new_chan[self.channels.SCALING] is None:
-      new_chan[self.channels.SCALING] = gtk.ListStore(str,str)
-    if not new_chan[self.channels.UNITS]:
-      new_chan[self.channels.UNITS] = 'V'
-    if new_chan[self.channels.INTERP_ORDER] < 1:
-      new_chan[self.channels.INTERP_ORDER] = 1
+    if chan[self.channels.SCALING] is None:
+      chan[self.channels.SCALING] = gtk.ListStore(str,str)
+    if not chan[self.channels.UNITS]:
+      chan[self.channels.UNITS] = 'V'
+    if chan[self.channels.INTERP_ORDER] < 1:
+      chan[self.channels.INTERP_ORDER] = 1
     # INTERP_SMOOTHING defaults to zero already
 
-    self.units.set_text( new_chan[self.channels.UNITS] )
-    self.order.set_value( new_chan[self.channels.INTERP_ORDER] )
-    self.smoothing.set_value( new_chan[self.channels.INTERP_SMOOTHING] )
-    store = new_chan[self.channels.SCALING]
+    self.units.set_text( chan[self.channels.UNITS] )
+    self.order.set_value( chan[self.channels.INTERP_ORDER] )
+    self.smoothing.set_value( chan[self.channels.INTERP_SMOOTHING] )
+    store = chan[self.channels.SCALING]
     self.view.set_model( store )
 
 
@@ -251,7 +250,7 @@ class Editor(gtk.Dialog):
     self.handlers['y'] = self.sheet_cb.connect_column( self.renderers['y'],
       setitem=(set_item, store, Editor.Y, self.add_undo) )
 
-    self.chan = new_chan
+    self.chan = chan
     self.set_pause(False)
     # clear the plot entirely first to avoid keeping a plot with no data-table
     self.axes.clear()
