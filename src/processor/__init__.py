@@ -19,7 +19,8 @@ def get_range( scaling, globals ):
   """
   if not scaling:
     return None
-  vals = [ eval(si[0], globals)  for si in scaling ]
+  # note:  we ignore lines with either empty x _OR_ y values
+  vals = [ eval(si[0], globals)  for si in scaling if si[0] and si[1] ]
   return {'min':min(vals), 'max':max(vals)}
 
 
