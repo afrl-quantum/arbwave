@@ -34,27 +34,27 @@ class TreeModelDispatcher:
   def connect(self, signal, callback, *args, **kwargs):
     if signal == 'changed':
       for i in [
-        ('row-changed',    self.row_changed   ),
-        ('row-deleted',    self.row_deleted   ),
-        ('row-inserted',   self.row_inserted  ),
-        ('rows-reordered', self.rows_reordered),
+        ('row-changed',    self.row_changed_cb   ),
+        ('row-deleted',    self.row_deleted_cb   ),
+        ('row-inserted',   self.row_inserted_cb  ),
+        ('rows-reordered', self.rows_reordered_cb),
       ]:
         self.Model.connect(self, i[0],i[1], callback, *args, **kwargs )
     else:
       self.Model.connect(self, signal, callback, *args, **kwargs)
 
-  def row_changed(self, model, path, iter,
+  def row_changed_cb(self, model, path, iter,
                   callback, *args, **kwargs):
     callback(self, *args, **kwargs)
 
-  def row_deleted(self, model, path,
+  def row_deleted_cb(self, model, path,
                   callback, *args, **kwargs):
     callback(self, *args, **kwargs)
 
-  def row_inserted(self, model, path, iter,
+  def row_inserted_cb(self, model, path, iter,
                   callback, *args, **kwargs):
     callback(self, *args, **kwargs)
 
-  def rows_reordered(self, model, path, iter, new_order,
+  def rows_reordered_cb(self, model, path, iter, new_order,
                   callback, *args, **kwargs):
     callback(self, *args, **kwargs)
