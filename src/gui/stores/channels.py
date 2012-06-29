@@ -4,6 +4,30 @@ import gtk
 
 from dispatcher import TreeModelDispatcher
 
+def scaling_cb( scaling, p, i, channels ):
+  # since rows/paths/iters can change, we have to search through and find this
+  # scaling before we re-emit the row-changed signal
+  for chan in channels:
+    if scaling == chan[channels.SCALING]:
+      channels.row_changed( chan.path, chan.iter )
+      return
+  assert False, 'SCALING CB:  THIS CODE SHOULD NEVER BE REACHED!'
+
+def check_add_scaling_cb(channels, path, iter):
+  chan = channels[iter]
+  scaling = chan[channels.SCALING]
+  if scaling and scaling not in channels._scaling_callbacks:
+    cb = scaling.connect('row-changed', scaling_cb, channels)
+    channels._scaling_callbacks[scaling] = cb
+
+def rm_scaling_cb(channels, path):
+  # try to keep the list of callbacks cleaned out
+  cb_list = { chan[channels.SCALING]  for chan in channels }
+  if None in cb_list:
+    cb_list.remove( None ) # in case some channels had not scaling
+  for s in set( channels._scaling_callbacks.keys() ) - cb_list:
+    channels._scaling_callbacks.pop( s )
+
 class Channels(TreeModelDispatcher, gtk.ListStore):
   LABEL   =0
   DEVICE  =1
@@ -25,8 +49,12 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
       int,  # interpolation order
       float,# interpolation smoothing parameter
     )
+    self._scaling_callbacks = dict()
 
     TreeModelDispatcher.__init__(self, gtk.ListStore, **kwargs)
+
+    self.connect('row-changed', check_add_scaling_cb)
+    self.connect('row-deleted', rm_scaling_cb)
 
 
   def dict(self):
