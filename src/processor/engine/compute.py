@@ -253,6 +253,8 @@ class WaveformEvalulator:
       # units and scaling only get to refer to globals
       set_units_and_scaling(chname, ci, chan, globals)
 
+      ci['min_period'] = chan_dev.get_min_period()
+
     # get a ref to the list of transitions for the associated clock generator
     trans = self.transitions[ str( ci['clock'] ) ]
 
@@ -268,7 +270,7 @@ class WaveformEvalulator:
       insert_value( t, dt, value, clock_period, chname, ci, trans, group )
       ci['last'] = value
     else:
-      value.set_vars( ci['last'], t, dt, clock_period )
+      value.set_vars( ci['last'], t, dt, clock_period, ci['min_period'] )
       for t_j, dt_j, v_j in value:
         insert_value( t_j, dt_j, v_j, clock_period, chname, ci, trans, group )
         ci['last'] = v_j
@@ -388,6 +390,7 @@ def make_channel_info(channels):
       'unit_conversion_ratio' : None,
       'last' : None,
       'clock' : None,
+      'min_period' : None,
     }
   return D
 

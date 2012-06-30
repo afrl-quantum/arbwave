@@ -11,11 +11,11 @@ import numpy as np
 machine_arch = np.MachAr()
 
 class step_iter:
-  def __init__(self, ti, tf, dt, clock_period, fun):
+  def __init__(self, ti, tf, dt, min_period, fun):
     self.t = ti
     self.tf = tf
     self.dt = dt
-    self.clock_period = clock_period
+    self.min_period = min_period
     self.fun = fun
   def __iter__(self):
     return self
@@ -27,7 +27,7 @@ class step_iter:
     self.t += self.dt
     if self.t >= self.tf:
       # last one
-      return t, self.clock_period, self.fun(t)
+      return t, self.min_period, self.fun(t)
     else:
       return t, self.dt, self.fun(t)
 
@@ -70,16 +70,22 @@ class Ramp:
     t_norm = (t - self.t) / self.duration
     return self._from - t_norm**self.exponent * (self._from - self.to)
 
-  def set_vars(self, _from, t, duration, clock_period):
+  def set_vars(self, _from, t, duration, clock_period, min_transition_period):
     if self._from is None:
       self._from = _from
     elif abs(self._from - _from).coeff <= 10*machine_arch.eps:
       self.skip_first = True
     self.t = t
+    # the "+ .4*clock_period" is to ensure that the min_period is rounded to
+    # nearest clock_period such that the ramp ends at least max(clock_period,
+    # min_transition_period) away from the next clock that is supposed to be
+    # available for other waveforms.
+    self.min_period = max(clock_period, min_transition_period) + .4*clock_period
+
     # it is important to make sure that the final value is given at
-    # dt-clock_period.  This allows for the following clock pulse to be used by
+    # dt-self.min_period.  This allows for the following clock pulse to be used by
     # the next waveform element.
-    self.duration = duration - clock_period
+    self.duration = duration - self.min_period
     if not self.dt:
       self.dt = self.duration / float(self.steps)
 
@@ -87,7 +93,6 @@ class Ramp:
     # should cease.  We add one half a clock_period to avoid precision
     # error-prone comparisons.
     self.tf_safe = self.t+self.duration + 0.5*clock_period
-    self.clock_period = clock_period
 
   def __iter__(self):
     # Note that the first data point (i.e. t=0) is implicitly given by _from
@@ -96,7 +101,7 @@ class Ramp:
       ti = self.t + self.dt
     else:
       ti = self.t
-    return step_iter(ti, self.tf_safe, self.dt, self.clock_period, self)
+    return step_iter(ti, self.tf_safe, self.dt, self.min_period, self)
 
 class Pulse:
   """
@@ -114,13 +119,17 @@ class Pulse:
     self._from = None
     self.t = None
     self.duration = None
-    self.clock_period = None
+    self.min_period = None
 
-  def set_vars(self, _from, t, duration, clock_period):
+  def set_vars(self, _from, t, duration, clock_period, min_transition_period):
     self._from = _from
     self.t = t
-    self.duration = duration - clock_period
-    self.clock_period = clock_period
+    # the "+ .4*clock_period" is to ensure that the min_period is rounded to
+    # nearest clock_period such that the ramp ends at least max(clock_period,
+    # min_transition_period) away from the next clock that is supposed to be
+    # available for other waveforms.
+    self.min_period = max(clock_period, min_transition_period) + .4*clock_period
+    self.duration = duration - self.min_period
 
   def __iter__(self):
     L = list()
@@ -130,7 +139,7 @@ class Pulse:
       L.append( (self.t, self.duration, self.high) )
 
     # add the transition to the low value
-    L.append( (self.t + self.duration, self.clock_period, self.low) )
+    L.append( (self.t + self.duration, self.min_period, self.low) )
     return iter(L)
 
 registered = {

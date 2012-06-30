@@ -1,5 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+from physical import unit
+
 class Base:
   """Base channel class"""
   def __init__(self, name, dev=None, explicit_timing=True):
@@ -21,3 +23,10 @@ class Base:
 
   def explicit_timing(self):
     return self._explicit_timing
+
+  def get_min_period(self):
+    """
+    Returns the minimum timing period (period between two rising edges of this
+    clock pulse) in units of seconds.
+    """
+    return 0*unit.s

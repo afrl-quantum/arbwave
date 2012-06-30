@@ -5,6 +5,7 @@ from logging import error
 from .. import routes
 from ....device import Device as Base
 from .....signal_graphs import nearest_terminal
+from physical import unit
 
 
 class Task(Base):
@@ -130,6 +131,12 @@ class Task(Base):
       'NIDAQmx.set_output: mismatched channels'
     self.task.write( [ data[c]  for c in chlist ] )
     self.task.start()
+
+
+  def get_min_period(self):
+    if self.task:
+      return unit.s / self.task.get_sample_clock_max_rate()
+    return 0*unit.s
 
 
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
