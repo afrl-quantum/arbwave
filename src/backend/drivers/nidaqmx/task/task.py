@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import copy
-from logging import error
+from logging import error, debug, log, DEBUG
 from .. import routes
 from ....device import Device as Base
 from .....signal_graphs import nearest_terminal
@@ -240,6 +240,7 @@ class Task(Base):
     scans = [ scans[t]  for t in transitions ]
 
     # 3b.  Send data to hardware
+    log(DEBUG-1, 'NIDAQmx task.write(%s, False, group_by_scan_number)', scans)
     self.task.write( scans, auto_start=False, layout='group_by_scan_number' )
 
 
