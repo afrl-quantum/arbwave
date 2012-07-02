@@ -76,6 +76,7 @@ def mkdt( signal, t_final ):
 
   #append the first item of the next grouping
   items = signal.items()
+  items.sort() # ensure that these are sorted by group/path
   for i in xrange(1,len(items)):
     dt[ items[i-1][0] ].append( items[i][1][0] )
   #append a pseudo-item for the last grouping time length
