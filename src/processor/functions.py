@@ -73,7 +73,8 @@ class Ramp:
   def set_vars(self, _from, t, duration, clock_period, min_transition_period):
     if self._from is None:
       self._from = _from
-    elif abs(self._from - _from).coeff <= 10*machine_arch.eps:
+    elif _from is not None \
+         and abs(self._from - _from).coeff <= 10*machine_arch.eps:
       self.skip_first = True
     self.t = t
     # the "+ .4*clock_period" is to ensure that the min_period is rounded to
