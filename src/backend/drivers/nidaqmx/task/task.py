@@ -5,6 +5,7 @@ from logging import error
 from .. import routes
 from ....device import Device as Base
 from .....signal_graphs import nearest_terminal
+from .....cmp import cmpeps
 from physical import unit
 
 
@@ -220,8 +221,9 @@ class Task(Base):
     last = scans[ transitions[0] ]
     t_last = -10*min_dt
     for t in transitions:
-      if (t - t_last) < min_dt:
-        raise RuntimeError('Samples too small for NIDAQmx')
+      if cmpeps(t - t_last, min_dt) < 0:
+        raise RuntimeError('Samples too small for NIDAQmx: {dt}>{m}' \
+          .format(dt=t-t_last, m=min_dt))
       t_last = t
 
       t_array = scans[t]
