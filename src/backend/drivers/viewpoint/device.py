@@ -170,6 +170,8 @@ class Device(Base):
     # if old_config != C:
     #   self.board.configure()
     self.board.configure()
+    self.board.set_output(
+      { c:False for c in clock_transitions if 'Internal' not in c } )
 
     # we must also reset port routes since configuring seems to clear the
     # internal hardware configuration
