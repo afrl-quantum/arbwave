@@ -12,14 +12,10 @@ fc=get_face_color
 ls=get_linestyle
 
 
-def mkxy( L, dt, Vi ):
-  assert len(L) == len(dt), 'analog plot:  dt length calculated incorrectly'
+def mkxy( L, Vi ):
   x = list()
   y = list()
   for i in xrange(len(L)):
-    # L[i] : ( <start_time>, <value> )
-    # dt[i]: <duration of ith sequence, in (s) >
-
     if Vi is None:
       x.append( L[i][0] )
       y.append( L[i][1] )
@@ -54,7 +50,6 @@ def plot( ax, signals, names=None, t_final=None ):
   ylim = None
   for c in channels:
     labels.append( get_label( c[0] ) )
-    dt = mkdt( c[1], t_final )
 
     x = list()
     y = list()
@@ -62,7 +57,7 @@ def plot( ax, signals, names=None, t_final=None ):
     groups = c[1].items()
     groups.sort( key = lambda v : v[0] )
     for g in groups:
-      xg, yg = mkxy( g[1], dt[ g[0] ], Vi )
+      xg, yg = mkxy( g[1], Vi )
       gcolor = list( cconv.to_rgba( fc(i) ) )
       gcolor[3] = 0.0 # hide group lines
       if x:
