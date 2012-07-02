@@ -135,8 +135,12 @@ class Task(Base):
 
 
   def get_min_period(self):
-    if self.task:
-      return unit.s / self.task.get_sample_clock_max_rate()
+    if self.task and self.channels:
+      # this is kind of hackish and might be wrong for other hardware (that is
+      # not the PCI-6723).  The PCI-6723 did not like having < 1*..., therefore
+      # we use max(1, .6*...).
+      return max( 1, .6*len(self.channels) ) \
+            * unit.s / self.task.get_sample_clock_max_rate()
     return 0*unit.s
 
 
@@ -167,7 +171,7 @@ class Task(Base):
       mode = 'finite'
 
     max_clock_rate = self.task.get_sample_clock_max_rate()
-    min_dt = 1. / max_clock_rate
+    min_dt = self.get_min_period().coeff
 
     self.task.configure_timing_sample_clock(
       source              = self.clock_terminal,
