@@ -10,6 +10,7 @@ from ...cmp import cmpeps
 from common import *
 import physical
 from physical import unit
+from math import ceil
 
 class OverlapError(Exception):
   pass
@@ -245,13 +246,14 @@ class WaveformEvalulator:
       # units and scaling only get to refer to globals
       set_units_and_scaling(chname, ci, chan, globals)
 
-      ci['min_period'] = chan_dev.get_min_period()
+      # project device min_period to the nearest next later clock pulse
+      clock_period = ci['clock'].get_min_period()
+      ci['min_period'] = max(
+        clock_period,
+        ceil( chan_dev.get_min_period() / clock_period ) * clock_period )
 
     # get a ref to the list of transitions for the associated clock generator
     trans = self.transitions[ str( ci['clock'] ) ]
-
-    # determine clock precision
-    clock_period = ci['clock'].get_min_period()
 
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
@@ -259,12 +261,12 @@ class WaveformEvalulator:
     value = eval( e['value'], globals, locals )
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
-      insert_value( t, dt, value, clock_period, chname, ci, trans, group )
+      insert_value( t, dt, value, ci['min_period'], chname, ci, trans, group )
       ci['last'] = value
     else:
-      value.set_vars( ci['last'], t, dt, clock_period, ci['min_period'] )
+      value.set_vars( ci['last'], t, dt, ci['min_period'] )
       for t_j, dt_j, v_j in value:
-        insert_value( t_j, dt_j, v_j, clock_period, chname, ci, trans, group )
+        insert_value( t_j, dt_j, v_j, ci['min_period'], chname, ci, trans, group )
         ci['last'] = v_j
 
     # we need to return the end time of this waveform element
@@ -303,18 +305,18 @@ class WaveformEvalulator:
     return analog, digital, self.transitions, self.t_max.coeff
 
 
-def insert_value( t, dt, v, clock_period, chname, ci, trans, group ):
+def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
   # t and dt must be aligned to the nearest clock pulse
-  ti = round( t / clock_period )
-  tf = round( (t+dt) / clock_period )
+  ti = round( t / min_period )
+  tf = round( (t+dt) / min_period )
 
   # one more check to be sure that dt was big enough
   # we do this comparison with integer values of clocks
   assert ti < tf, chname + ':  transition width too small'
 
   # convert back to real time
-  ti = clock_period * ti
-  tf = clock_period * tf
+  ti = min_period * ti
+  tf = min_period * tf
 
   # apply scaling and convert to proper units
   v = apply_scaling(v, chname, ci)

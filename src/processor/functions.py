@@ -70,18 +70,14 @@ class Ramp:
     t_norm = (t - self.t) / self.duration
     return self._from - t_norm**self.exponent * (self._from - self.to)
 
-  def set_vars(self, _from, t, duration, clock_period, min_transition_period):
+  def set_vars(self, _from, t, duration, min_period):
     if self._from is None:
       self._from = _from
     elif _from is not None \
          and abs(self._from - _from).coeff <= 10*machine_arch.eps:
       self.skip_first = True
     self.t = t
-    # the "+ .4*clock_period" is to ensure that the min_period is rounded to
-    # nearest clock_period such that the ramp ends at least max(clock_period,
-    # min_transition_period) away from the next clock that is supposed to be
-    # available for other waveforms.
-    self.min_period = max(clock_period, min_transition_period) + .4*clock_period
+    self.min_period = min_period
 
     # it is important to make sure that the final value is given at
     # dt-self.min_period.  This allows for the following clock pulse to be used by
@@ -91,9 +87,9 @@ class Ramp:
       self.dt = self.duration / float(self.steps)
 
     # tf safe is the comparison that is used to tell whether time-stepping
-    # should cease.  We add one half a clock_period to avoid precision
+    # should cease.  We add one half a min_period to avoid precision
     # error-prone comparisons.
-    self.tf_safe = self.t+self.duration + 0.5*clock_period
+    self.tf_safe = self.t+self.duration + 0.5*min_period
 
   def __iter__(self):
     # Note that the first data point (i.e. t=0) is implicitly given by _from
@@ -122,14 +118,10 @@ class Pulse:
     self.duration = None
     self.min_period = None
 
-  def set_vars(self, _from, t, duration, clock_period, min_transition_period):
+  def set_vars(self, _from, t, duration, min_period):
     self._from = _from
     self.t = t
-    # the "+ .4*clock_period" is to ensure that the min_period is rounded to
-    # nearest clock_period such that the ramp ends at least max(clock_period,
-    # min_transition_period) away from the next clock that is supposed to be
-    # available for other waveforms.
-    self.min_period = max(clock_period, min_transition_period) + .4*clock_period
+    self.min_period = min_period
     self.duration = duration - self.min_period
 
   def __iter__(self):
