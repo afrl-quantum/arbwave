@@ -40,27 +40,30 @@ class Plotter:
     self.group_lines = dict()
     self.highlighted_parts = list()
 
-    # self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
-    # self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
-    # self.ymin_control = BoundControlBox(self.panel, -1, "Y min", 0)
-    # self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 100)
+    self.xlim = None
+    self.xview = None
+    self.yview = {'analog':None,'digital':None}
 
-    #import numpy as np
-    #self.axes['analog'].plot( np.arange(0.,3.,.01), np.sin(2*np.pi* np.arange(0.,3.,.01) ) )
-    #self.axes['t'].set_xlim(0.,3.)
-    #self.axes['analog'].set_xlim(1.,2.)
-
-    #self.start()
-    #self.plot_digital( digital.example_signals )
-    #self.plot_analog( analog.example_signals )
-    #self.finish()
 
   def start(self):
+    if self.xview is not None:
+      self.xview = self.axes['analog'].get_xlim()
+      self.yview['analog'] = self.axes['analog'].get_ylim()
+      self.yview['digital'] = self.axes['digital'].get_ylim()
     self.max_analog = 0.0
     self.max_digital = 0.0
     self.group_lines = dict()
 
   def finish(self, t_final=0.0):
+    self.xlim = self.axes['analog'].get_xlim()
+    if self.xview is None:
+      self.xview = self.axes['analog'].get_xlim()
+      self.yview['analog'] = self.axes['analog'].get_ylim()
+      self.yview['digital'] = self.axes['digital'].get_ylim()
+    else:
+      self.axes['analog'].set_xlim(  self.xview )
+      self.axes['analog'].set_ylim(  self.yview['analog'] )
+      self.axes['digital'].set_ylim( self.yview['digital'] )
     self.update_t_axes(max_x=t_final)
     self.canvas.draw()
 
@@ -103,8 +106,7 @@ class Plotter:
 
   def update_t_axes(self, max_x=0.0):
     max_x = max( self.max_analog, self.max_digital, max_x )
-    xlim = self.axes['analog'].get_xlim()
-    self.axes['t'].set_xlim( xlim )
+    self.axes['t'].set_xlim( self.xlim )
     for a in ['t', 'digital', 'analog']:
       if self.vline[a]:
         try: self.vline[a].remove()
