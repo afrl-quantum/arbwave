@@ -8,6 +8,7 @@ import sys, threading
 import engine
 from gui_callbacks import do_gui_operation
 import default
+import messages as msg
 from ..path import collect_prefix
 from ..signal_graphs import shortest_paths
 
@@ -25,10 +26,12 @@ def get_range( scaling, globals ):
 
 
 class Processor:
-  def __init__(self, plotter):
+  def __init__(self, main_window, plotter):
     self.Globals = default.get_globals()
     self.engine = engine.Arbwave(plotter)
     sys.modules['arbwave'] = self.engine # fake arbwave module
+    sys.modules['msg'] = msg
+    msg.set_main_window( main_window )
     self.running = False
     self.engine_thread = None
 
@@ -41,6 +44,8 @@ class Processor:
 
 
   def exec_script(self, script):
+    try: exec '__del__()' in self.Globals
+    except: pass
     self.engine.clear_callbacks()
     self.Globals = default.get_globals() # reset the global environment
     exec script in self.Globals

@@ -137,7 +137,7 @@ class ArbWave(gtk.Window):
     # LOAD THE STORAGE
     self.config_file = ''
     self.plotter = Plotter( self )
-    self.processor = Processor( self.plotter )
+    self.processor = Processor( self, self.plotter )
     self.script = stores.Script(
       default_script,
       title='Global Variables/Functions...',
