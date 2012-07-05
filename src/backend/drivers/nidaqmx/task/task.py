@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import copy
-from logging import error, debug, log, DEBUG
+from logging import error, warn, debug, log, DEBUG
 from .. import routes
 from ....device import Device as Base
 from .....signal_graphs import nearest_terminal
@@ -217,7 +217,7 @@ class Task(Base):
     # an error and set the empty channel value at t=0 to zero.
     def zero_if_none(v):
       if v is None:
-        error('NIDAQmx: missing starting value for channel--using 0')
+        warn('NIDAQmx: missing starting value for channel--using 0')
         return 0
       else:
         return v
