@@ -7,12 +7,18 @@ from common import *
 class StopGeneration(Exception): pass
 
 
-
 class Arbwave:
   """
   Class for creating a fake arbwave module to be accessed and used inside
   scripts.
   """
+
+  # make class variables of these so that users can have them
+  BEFORE  = 0x1
+  AFTER   = 0x2
+  ANYTIME = BEFORE | AFTER
+
+  StopGeneration = StopGeneration
   
   def __init__(self, plotter):
     self.plotter = plotter
@@ -46,13 +52,15 @@ class Arbwave:
     self.loop_control = None
 
 
-  def update(self, continuous=False, globals=None):
+  def update(self, stop=ANYTIME, continuous=False, globals=None):
     """
     Process inputs to generate waveform output and send to plotter.
     """
     exec global_load
+    if stop is None:
+      stop = 0x0
 
-    if self.stop_requested:
+    if (stop & self.BEFORE) and self.stop_requested:
       raise StopGeneration()
 
     analog, digital, transitions, t_max = \
@@ -66,6 +74,13 @@ class Arbwave:
     send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
     send.to_driver.waveform( analog, digital, transitions, t_max, continuous )
     send.to_driver.start(self.devcfg[0], self.clocks[0], self.signals[0])
+
+    if (stop & self.AFTER) and self.stop_requested:
+      raise StopGeneration()
+
+  def stop_check(self):
+    if self.stop_requested:
+      raise StopGeneration()
 
 
   def halt(self):
