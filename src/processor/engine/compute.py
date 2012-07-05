@@ -209,18 +209,6 @@ class WaveformEvalulator:
       self.t_max = max( self.t_max, *t_locals.values() )
 
   def element(self, e, group, globals, locals):
-    # establish local start time / duration for the element
-    t = eval( e['time'], globals, locals )
-    unit.s.unitsMatch(t, e['channel']+'(t): expected dimensions of time')
-
-    if not e['duration']:
-      dt = locals['dt']
-    else:
-      dt = eval( e['duration'], globals, locals )
-      unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
-    assert dt > 0*unit.s, e['channel'] + ': waveform element duration MUSt be > 0!'
-
-
     chname = e['channel']
     ci = self.channel_info[chname]
     if not ci['type']:
@@ -255,6 +243,20 @@ class WaveformEvalulator:
     # get a ref to the list of transitions for the associated clock generator
     trans = self.transitions[ str( ci['clock'] ) ]
 
+    # provide access to this channels minimum clock period
+    locals['dt_clk'] = ci['min_period']
+
+    # establish local start time / duration for the element
+    t = eval( e['time'], globals, locals )
+    unit.s.unitsMatch(t, e['channel']+'(t): expected dimensions of time')
+
+    if not e['duration']:
+      dt = locals['dt']
+    else:
+      dt = eval( e['duration'], globals, locals )
+      unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
+    assert dt > 0*unit.s, e['channel'] + ': waveform element duration MUSt be > 0!'
+
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
     locals['dt'] = dt
@@ -269,6 +271,7 @@ class WaveformEvalulator:
         insert_value( t_j, dt_j, v_j, ci['min_period'], chname, ci, trans, group )
         ci['last'] = v_j
 
+    locals.pop('dt_clk')
     # we need to return the end time of this waveform element
     return t + dt
 
