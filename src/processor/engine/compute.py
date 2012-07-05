@@ -315,7 +315,9 @@ def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
 
   # one more check to be sure that dt was big enough
   # we do this comparison with integer values of clocks
-  assert ti < tf, chname + ':  transition width too small'
+  assert ti < tf, \
+    chname + ':  transition width too small at t={t},dt={dt}, or ti={ti}, tf={tf}' \
+      .format(t=t, dt=dt, ti=ti, tf=tf)
 
   # convert back to real time
   ti = min_period * ti
