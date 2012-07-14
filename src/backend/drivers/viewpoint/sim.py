@@ -53,6 +53,7 @@ class DIO64:
   def DIO64_Out_Status( self, board, scans_avail_out, status_out ):
     # we'll pretend to be _really_ generous
     scans_avail_out._obj.value = sys.maxint
+    status_out._obj.time.value = sys.maxint
 
   def DIO64_Out_Write( self, board, buf, buf_len, status_in_out ):
     pass

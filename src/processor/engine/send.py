@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import threading
 from pygraph.algorithms.sorting import topological_sorting
 from ..gui_callbacks import do_gui_operation
 from ... import backend
@@ -114,6 +115,21 @@ class ToDriver:
 
     for d in self.sorted_device_list:
       d.start()
+
+
+  def wait(self):
+    """
+    Wait for each device driver to finish its single waveform.
+
+    Device inter-dependencies are used to stop devices in order of
+    least-dependent to most-dependent (opposite of how they are started).
+    """
+    def waiter(d):
+      d.wait()
+    tids = [ threading.Thread(target=lambda d:d.wait(), args=(d,))
+      for d in self.sorted_device_list ]
+    for t in tids: t.start()
+    for t in tids: t.join()
 
 
   def stop(self):

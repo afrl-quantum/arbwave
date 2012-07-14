@@ -12,8 +12,9 @@ from physical import unit
 class Task(Base):
   task_type = None
   task_class = None
-  STATIC    = 0
-  WAVEFORM  = 1
+  STATIC              = 0
+  WAVEFORM_SINGLE     = 1
+  WAVEFORM_CONTINUOUS = 2
 
   def __init__(self, device):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
@@ -151,12 +152,15 @@ class Task(Base):
       2.  Sets triggering.
       3.  Writes data to hardware buffers without auto_start.
     """
-    if self.use_case in [ None, Task.WAVEFORM ]:
+    if self.use_case in [None, Task.WAVEFORM_SINGLE, Task.WAVEFORM_CONTINUOUS]:
       if self.use_case is not None:
         self.task.stop()
     else:
       self._rebuild_task()
-    self.use_case = Task.WAVEFORM
+    if continuous:
+      self.use_case = Task.WAVEFORM_CONTINUOUS
+    else:
+      self.use_case = Task.WAVEFORM_SINGLE
 
     if not self.clock_terminal:
       raise UserWarning('cannot start waveform without a output clock defined')
@@ -247,6 +251,13 @@ class Task(Base):
   def start(self):
     if self.task:
       self.task.start()
+
+
+  def wait(self):
+    if self.task:
+      if self.use_case == Task.WAVEFORM_CONTINUOUS:
+        raise RuntimeError('Cannot wait for continuous waveform tasks')
+      self.task.wait_until_done()
 
 
   def stop(self):

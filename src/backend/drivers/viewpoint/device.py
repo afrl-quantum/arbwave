@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from copy import deepcopy
+import time
 import viewpoint as vp
 
 from ...device import Device as Base
@@ -39,6 +40,7 @@ class Device(Base):
     self.clocks = None
     self.signals = None
     self.routes = 0x0
+    self.t_max = 0.0
 
     self.possible_clock_sources = { # look at viewpoint library
       '{d}/Internal_XO'.format(d=self)    : vp.CLCK_INTERNAL,
@@ -160,6 +162,7 @@ class Device(Base):
         transitions[ t_falling ][line] = False
     # Add the last "transition" which is really just a final duration
     transitions[ t_max ] = None
+    self.t_max = t_max
 
     C['out']['repetitions'] = {True:0, False:1}[continuous]
     C['out']['number_transitions'] = len(transitions)
@@ -201,12 +204,24 @@ class Device(Base):
     self.board.out_start()
 
 
+  def wait(self):
+    if self.board.configs['out']['repetitions'] == 0:
+      raise RuntimeError('Cannot wait for continuous waveform to finish')
+    while True:
+      scans, stat = self.board.out_status()
+      if (stat.time.value/self.board.configs['out']['scan_rate']) >= self.t_max:
+        return
+      time.sleep(.01) # only need small sleep; allow CPU to switch context
+
+
+
   def stop(self):
     try: #allow for a non-initialized board to 'stop'
       b = self.board
     except AttributeError:
       return
     b.out_stop()
+    self.t_max = 0.0
 
 
 def drop_some_settings( T ):

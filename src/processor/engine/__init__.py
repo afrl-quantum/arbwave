@@ -52,7 +52,7 @@ class Arbwave:
     self.loop_control = None
 
 
-  def update(self, stop=ANYTIME, continuous=False, globals=None):
+  def update(self, stop=ANYTIME, continuous=False, wait=True, globals=None):
     """
     Process inputs to generate waveform output and send to plotter.
     """
@@ -74,6 +74,8 @@ class Arbwave:
     send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
     send.to_driver.waveform( analog, digital, transitions, t_max, continuous )
     send.to_driver.start(self.devcfg[0], self.clocks[0], self.signals[0])
+    if wait and not continuous:
+      send.to_driver.wait()
 
     if (stop & self.AFTER) and self.stop_requested:
       raise StopGeneration()
