@@ -34,6 +34,7 @@ class Processor:
     msg.set_main_window( main_window )
     self.running = False
     self.engine_thread = None
+    self.show_stopped = None
 
     self.lock = threading.Lock()
     self.end_condition = threading.Condition( self.lock )
@@ -51,7 +52,8 @@ class Processor:
     exec script in self.Globals
 
 
-  def update(self, devcfg, clocks, signals, channels, waveforms, script, toggle_run, show_stopped):
+  def update(self, devcfg, clocks, signals, channels, waveforms, script,
+             toggle_run, show_stopped):
     """
     Updates that are driven from user-interface changes sent to the engine.
     """
@@ -128,13 +130,19 @@ class Processor:
 
 
   def run_loop(self, show_stopped):
+    if not show_stopped:
+      show_stopped = self.show_stopped # restarting...
     assert callable(show_stopped), 'expected callable show_stopped'
     if self.engine.start:
       exec 'import arbwave\narbwave.start()' in self.Globals
 
+    do_restart = False
     try:
       exec 'import arbwave\narbwave.loop_control()' in self.Globals
-    except engine.StopGeneration: pass
+    except engine.StopGeneration, e:
+      do_restart = e.request & engine.RESTART
+    except Exception, e:
+      print 'halting waveform output because of unexpected error: ', e
 
     self.engine.halt() # ensure that generation is stopped!
 
@@ -143,17 +151,18 @@ class Processor:
 
     try:
       self.lock.acquire()
-      self.running = False
       self.engine_thread = None
-      do_gui_operation( show_stopped )
+      if not do_restart:
+        self.running = False
+        do_gui_operation( show_stopped )
+      else:
+        self.show_stopped = show_stopped
       self.end_condition.notify()
     finally:
       self.lock.release()
 
 
   def start(self, show_stopped): # start a continuous (re)cycling
-    self.engine.request_stop(False)
-
     if self.engine.loop_control:
       assert self.engine_thread is None, 'Already existing engine thread?!!'
 
@@ -176,7 +185,7 @@ class Processor:
     if self.engine_thread:
       # we get a copy because self.engine_thread will be nulled by thread
       t = self.engine_thread
-      self.engine.request_stop()
+      self.engine.request_stop(restart=(not toggle_run))
       self.end_condition.wait()
       t.join()
     elif toggle_run:
