@@ -4,23 +4,44 @@ Installation Instructions
 This project depends on several other python-related projects and these must
 first be installed.
 
+Dependencies by S Olson:
+  physical
+    dimensional analysis
+    units and constants library (c++, python, octave, gnuplot)
+  viewpoint
+    python wrapper library (wraps Viewpoint dio64_32.dll c library)
+
 Third-party dependencies:
   Python packages:
     python (2.X)
     pygtk
       - including of course the Gtk runtime.
+      provides pygtk, gtk, gobject imports
+    matplotlib
+      also provides mpl_toolkits import
     numpy
       - generally included as part of scipy and required for matplotlib
-    matplotlib
+    scipy
+      provides scipy.interpolate imports
+    python-graph (python-pygraph on ubuntu)
+      provides pygraph import
+    pylibnidaqmx
+      must have modifications by S Olson
+      python wrapper library (wraps NI DAQmx nicaiu.dll c library)
+
+  C Libraries (for hardware support in non-simulated mode):
+    NI DAQmx (nicaiu.dll)
+    Viewpoint DIO64 (dio64_32.dll)
+
 
 Supported Hardware:
   Drivers will automatically detect which underlying vendor-provided drivers are
   available.
 
   Supported:
-    --none as of yet--
-
-  Future support:
     Viewpoint
     National Instruments NI-DAQmx
 
+  Future support:
+    UEI?
+    FPGA/microcontroller?
