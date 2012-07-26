@@ -4,8 +4,13 @@ from callfunc import CallFunc
 import send, compute
 from common import *
 
-class StopGeneration(Exception): pass
+class StopGeneration(Exception):
+  def __init__(self, request, *args, **kwargs):
+    Exception.__init__(self, *args, **kwargs)
+    self.request = request
 
+STOP    = 0x1
+RESTART = 0x2
 
 class Arbwave:
   """
@@ -30,7 +35,7 @@ class Arbwave:
     self.start = None
     self.stop = None
     self.loop_control = None
-    self.stop_requested = False
+    self.stop_request = False
 
 
   def connect(self, signal, callback, *args, **kwargs):
@@ -52,6 +57,11 @@ class Arbwave:
     self.loop_control = None
 
 
+  def dostop(self):
+    try: raise StopGeneration( self.stop_request )
+    finally: self.stop_request = False
+
+
   def update(self, stop=ANYTIME, continuous=False, wait=True, globals=None):
     """
     Process inputs to generate waveform output and send to plotter.
@@ -60,8 +70,8 @@ class Arbwave:
     if stop is None:
       stop = 0x0
 
-    if (stop & self.BEFORE) and self.stop_requested:
-      raise StopGeneration()
+    if (stop & self.BEFORE) and self.stop_request:
+      self.dostop()
 
     analog, digital, transitions, t_max = \
       compute.waveforms( self.devcfg[0],
@@ -77,12 +87,12 @@ class Arbwave:
     if wait and not continuous:
       send.to_driver.wait()
 
-    if (stop & self.AFTER) and self.stop_requested:
-      raise StopGeneration()
+    if (stop & self.AFTER) and self.stop_request:
+      self.dostop()
 
   def stop_check(self):
-    if self.stop_requested:
-      raise StopGeneration()
+    if self.stop_request:
+      self.dostop()
 
 
   def halt(self):
@@ -120,5 +130,7 @@ class Arbwave:
     send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
 
 
-  def request_stop(self, request=True):
-    self.stop_requested = request
+  def request_stop(self, request=STOP, restart=False):
+    self.stop_request = request
+    if restart:
+      self.stop_request |= RESTART

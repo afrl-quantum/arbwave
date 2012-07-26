@@ -1,12 +1,13 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import copy
-from logging import error, warn, debug, log, DEBUG
+from logging import error, warn, debug, log, DEBUG, INFO
 from .. import routes
 from ....device import Device as Base
 from .....signal_graphs import nearest_terminal
 from .....cmp import cmpeps
 from physical import unit
+import nidaqmx
 
 
 class Task(Base):
@@ -23,6 +24,7 @@ class Task(Base):
     self.clocks = None
     self.clock_terminal = None
     self.use_case = None
+    self.t_max = 0.0
 
     # first find the possible trigger and clock sources
     self.trig_sources = list()
@@ -55,6 +57,7 @@ class Task(Base):
     if self.task:
       del self.task
       self.task = None
+      self.t_max = 0.0
 
 
   def add_channels(self):
@@ -246,6 +249,7 @@ class Task(Base):
     # 3b.  Send data to hardware
     log(DEBUG-1, 'NIDAQmx task.write(%s, False, group_by_scan_number)', scans)
     self.task.write( scans, auto_start=False, layout='group_by_scan_number' )
+    self.t_max = t_max
 
 
   def start(self):
@@ -255,9 +259,15 @@ class Task(Base):
 
   def wait(self):
     if self.task:
+      log(DEBUG-1,'NIDAQmx: waiting for task (%s) to finish...', self.task)
+      log(DEBUG-1,'NIDAQmx:  already done? %s', self.task.is_done())
       if self.use_case == Task.WAVEFORM_CONTINUOUS:
         raise RuntimeError('Cannot wait for continuous waveform tasks')
-      self.task.wait_until_done()
+      try: self.task.wait_until_done( timeout = self.t_max )
+      except nidaqmx.libnidaqmx.NIDAQmxRuntimeError, e:
+        debug('NIDAQmx:  task.wait() timed out! finished=%s',
+              self.task.is_done())
+      log(DEBUG-1,'NIDAQmx: task (%s) finished', self.task)
 
 
   def stop(self):

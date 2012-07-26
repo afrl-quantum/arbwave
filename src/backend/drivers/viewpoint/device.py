@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from copy import deepcopy
+from logging import error, warn, debug, log, DEBUG, INFO
 import time
 import viewpoint as vp
 
@@ -207,9 +208,11 @@ class Device(Base):
   def wait(self):
     if self.board.configs['out']['repetitions'] == 0:
       raise RuntimeError('Cannot wait for continuous waveform to finish')
+    debug('dio64: waiting for waveform time to elapse...')
     while True:
       scans, stat = self.board.out_status()
       if (stat.time.value/self.board.configs['out']['scan_rate']) >= self.t_max:
+        debug('dio64: waveform time elapsed.')
         return
       time.sleep(.01) # only need small sleep; allow CPU to switch context
 
