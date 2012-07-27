@@ -4,7 +4,7 @@ This package is responsible for the logic that converts waveforms descriptions
 to more explicit channel-specific full waveforms.
 """
 
-import sys, threading
+import sys, threading, traceback
 import engine
 from gui_callbacks import do_gui_operation
 import default
@@ -143,6 +143,7 @@ class Processor:
       do_restart = e.request & engine.RESTART
     except Exception, e:
       print 'halting waveform output because of unexpected error: ', e
+      traceback.print_exc()
 
     self.engine.halt() # ensure that generation is stopped!
 
