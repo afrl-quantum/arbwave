@@ -132,6 +132,7 @@ class WaveformEvalulator:
 
     self.transitions = dict()
     self.explicit_timing = dict()
+    self.finite_mode_end_clocks_required = set()
     self.channel_info = make_channel_info(channels)
     self.t_max = 0.0*unit.s
     self.next_groupNum = 0
@@ -240,6 +241,10 @@ class WaveformEvalulator:
         clock_period,
         ceil( chan_dev.get_min_period() / clock_period ) * clock_period )
 
+      # check whether channel requires end-clock pulse for non-continuous mode
+      if chan_dev.finite_mode_requires_end_clock():
+        self.finite_mode_end_clocks_required.add( str( ci['clock'] ) )
+
     # get a ref to the list of transitions for the associated clock generator
     trans = self.transitions[ str( ci['clock'] ) ]
 
@@ -305,7 +310,8 @@ class WaveformEvalulator:
       else:
         raise RuntimeError("type of channel '"+ci[0]+"' reset?!")
 
-    return analog, digital, self.transitions, self.t_max.coeff
+    return analog, digital, self.transitions, self.t_max.coeff, \
+           self.finite_mode_end_clocks_required
 
 
 def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
