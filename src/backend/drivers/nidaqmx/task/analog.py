@@ -13,7 +13,9 @@ class Analog(Base):
     # populate the task with output channels and accumulate the data
     dflt_mn = self.config['default-voltage-range']['minimum']['value']
     dflt_mx = self.config['default-voltage-range']['maximum']['value']
-    for c in self.channels.items():
+    chans = self.channels.items()
+    chans.sort( key = lambda v : v[1]['order'] )
+    for c in chans:
       if c[1]:
         mn, mx = c[1]['min'], c[1]['max']
       else:
