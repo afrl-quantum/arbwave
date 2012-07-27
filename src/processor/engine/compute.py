@@ -93,16 +93,12 @@ def make_univariate_spline(scaling,order=1,smooth=0, globals=globals()):
 
 
 def set_units_and_scaling(chname, ci, chan, globals):
-  if not ci['unit_conversion_ratio']:
+  if not ci['units']:
     if chan['units']:
       ci['units'] = eval(chan['units'], globals)
-      if type(ci['units']) is physical.base.Quantity:
-        ci['units'].coeff = 1.0
-
-      ci['unit_conversion_ratio'] = unit.V / ci['units']
-
     elif ci['type'] is 'analog':
-      ci['unit_conversion_ratio'] = 1.0
+      ci['units'] = unit.V
+
   if (not ci['scaling']) and chan['scaling']:
     assert ci['units'], chname+': dimensions required for scaling'
     assert chan['interp_order'], \
@@ -231,7 +227,7 @@ class WaveformEvalulator:
       # source is not aperiodic)
       self.explicit_timing[clk] |= chan_dev.explicit_timing()
 
-      # sets ci['unit_conversion_ratio'], ci['scaling'], etc
+      # sets ci['units'], ci['scaling'], etc
       # units and scaling only get to refer to globals
       set_units_and_scaling(chname, ci, chan, globals)
 
@@ -370,16 +366,16 @@ def to_plottable( elem ):
 def apply_scaling(value, chname, ci):
   # apply scaling and range checks...
   if not ci['scaling']:
-    if ci['unit_conversion_ratio']:
-      value *= ci['unit_conversion_ratio']
-    # else required to be in volts or is a boolean
+    if ci['units']:
+      value *= unit.V / ci['units']
+    # else digital required to be boolean
   else:
     assert ci['units'], chname+':  dimensions required for scaling'
-    value /= ci['units']
-    assert type(value) is not physical.base.Quantity, \
+    val = value / ci['units']
+    assert type(val) is not physical.base.Quantity, \
       chname+':  wrong units: {}, expected [{}]' \
-      .format(value/value.coeff, ci['units'])
-    value = ci['scaling'](value)*unit.V
+      .format(value, ci['units'])
+    value = ci['scaling'](val)*unit.V
 
   return value
 
@@ -392,7 +388,7 @@ def make_channel_info(channels):
       'type':None,
       'elements': list(),
       'scaling' : None,
-      'unit_conversion_ratio' : None,
+      'units'   : None,
       'last' : None,
       'clock' : None,
       'min_period' : None,
