@@ -128,7 +128,19 @@ class Device(Base):
     self.board.set_output( data )
 
 
-  def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
+  def set_waveforms(self, waveforms, clock_transitions, t_max, end_clocks,
+                    continuous):
+    """
+    Set the waveform on the DIO64 device.
+      waveforms : see gui/plotter/digital.py for format
+      clock_transitions :  dictionary of clocks to transitions
+      t_max : maximum time of waveforms
+      end_clocks : set of clocks for this device that will need to provide an
+        extra clock pulse at t = t_max IN CONTINUOUS MODE ONLY.  This is based
+        on the channels that use these clocks.  There are some devices, notably
+        National Instruments output hardware, that require an extra clock pulse
+        in finite mode so that they can notice that they are finished. 
+    """
     if set(waveforms.keys()).intersection( clock_transitions.keys() ):
       raise RuntimeError('Viewpoint channels cannot be used as clocks and ' \
                          'digital output simultaneously')
@@ -151,22 +163,37 @@ class Device(Base):
     for line in clock_transitions:
       if 'Internal' in line:
         continue
-      for t_rising in clock_transitions[line]:
-        t_falling = t_rising + scan_clock_period
-        if t_rising not in transitions:
-          transitions[ t_rising ] = dict()
-        if t_falling not in transitions:
-          transitions[ t_falling ] = dict()
+      for t_rise in clock_transitions[line]:
+        t_fall = t_rise + scan_clock_period
+        if t_rise not in transitions:
+          transitions[ t_rise ] = dict()
+        if t_fall not in transitions:
+          transitions[ t_fall ] = dict()
         # we assume that each device using this clock waits for rising edge
-        transitions[ t_rising ][line] = True
+        transitions[ t_rise ][line] = True
         # finish the clock pulse by lowering it to logic zero
-        transitions[ t_falling ][line] = False
-    # Add the last "transition" which is really just a final duration
-    transitions[ t_max ] = None
-    self.t_max = t_max
+        transitions[ t_fall ][line] = False
+
+    if continuous:
+      # Add the last "transition" which is really just a final duration
+      transitions[ t_max ] = None
+    else:
+      t_rise = t_max
+      t_fall = t_rise + scan_clock_period
+      t_max  = t_fall + scan_clock_period
+      transitions[ t_rise ] = \
+        { line:True  for line in end_clocks if 'Internal' not in line }
+      transitions[ t_fall ] = \
+        { line:False for line in end_clocks if 'Internal' not in line }
+      # fake transition to ensure viepoint respects our last fall transition
+      transitions[ t_max ] = None
+
+    self.t_max = t_max # save for self.wait()
 
     C['out']['repetitions'] = {True:0, False:1}[continuous]
     C['out']['number_transitions'] = len(transitions)
+
+    debug( 'dio64: out-config: %s', C['out'] )
 
     # we now _must_ configure, since viewpoint must be configured any time we
     # call self.board.out_stop(), which we _will_ call any time any waveforms

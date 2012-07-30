@@ -247,6 +247,8 @@ class Task(Base):
     scans = [ scans[t]  for t in transitions ]
 
     # 3b.  Send data to hardware
+    debug( 'NIDAQmx len(transitions/in) = %s, len(scans/out) = %s',
+           len(transitions), len(scans) )
     log(DEBUG-1, 'NIDAQmx task.write(%s, False, group_by_scan_number)', scans)
     self.task.write( scans, auto_start=False, layout='group_by_scan_number' )
     self.t_max = t_max
@@ -263,7 +265,7 @@ class Task(Base):
       log(DEBUG-1,'NIDAQmx:  already done? %s', self.task.is_done())
       if self.use_case == Task.WAVEFORM_CONTINUOUS:
         raise RuntimeError('Cannot wait for continuous waveform tasks')
-      try: self.task.wait_until_done( timeout = self.t_max )
+      try: self.task.wait_until_done( timeout = self.t_max*2 )
       except nidaqmx.libnidaqmx.NIDAQmxRuntimeError, e:
         debug('NIDAQmx:  task.wait() timed out! finished=%s',
               self.task.is_done())

@@ -4,7 +4,7 @@ This package is responsible for the logic that converts waveforms descriptions
 to more explicit channel-specific full waveforms.
 """
 
-import sys, threading
+import sys, threading, traceback
 import engine
 from gui_callbacks import do_gui_operation
 import default
@@ -12,7 +12,7 @@ import messages as msg
 from ..path import collect_prefix
 from ..signal_graphs import shortest_paths
 
-def get_range( scaling, globals ):
+def get_range( scaling, globals, **kwargs ):
   """
   Get the minimum and maximum values of a given channels scaling.  Some devices
   can use this to provide more firm limits on channel outputs.  NIDAQmx does
@@ -22,7 +22,7 @@ def get_range( scaling, globals ):
     return None
   # note:  we ignore lines with either empty x _OR_ y values
   vals = [ eval(si[0], globals)  for si in scaling if si[0] and si[1] ]
-  return {'min':min(vals), 'max':max(vals)}
+  return dict(min=min(vals), max=max(vals), **kwargs)
 
 
 class Processor:
@@ -97,7 +97,7 @@ class Processor:
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),
           collect_prefix(
-            { c['device'] : get_range(c['scaling'], self.Globals)
+            {c['device'] : get_range(c['scaling'],self.Globals,order=c['order'])
               for  c in channels[0].values()
                 if c['enable']
             },
@@ -143,6 +143,7 @@ class Processor:
       do_restart = e.request & engine.RESTART
     except Exception, e:
       print 'halting waveform output because of unexpected error: ', e
+      traceback.print_exc()
 
     self.engine.halt() # ensure that generation is stopped!
 

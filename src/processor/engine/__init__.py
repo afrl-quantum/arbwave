@@ -73,7 +73,7 @@ class Arbwave:
     if (stop & self.BEFORE) and self.stop_request:
       self.dostop()
 
-    analog, digital, transitions, t_max = \
+    analog, digital, transitions, t_max, end_clocks = \
       compute.waveforms( self.devcfg[0],
                          self.clocks[0],
                          self.signals[0],
@@ -82,7 +82,7 @@ class Arbwave:
                          globals=globals )
 
     send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
-    send.to_driver.waveform( analog, digital, transitions, t_max, continuous )
+    send.to_driver.waveform( analog, digital, transitions, t_max, end_clocks, continuous )
     send.to_driver.start(self.devcfg[0], self.clocks[0], self.signals[0])
     if wait and not continuous:
       send.to_driver.wait()
@@ -119,7 +119,7 @@ class Arbwave:
     """
     exec global_load
 
-    analog, digital, transitions, t_max = \
+    analog, digital, transitions, t_max, end_clocks = \
       compute.waveforms( self.devcfg[0],
                          self.clocks[0],
                          self.signals[0],

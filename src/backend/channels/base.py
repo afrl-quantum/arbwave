@@ -4,10 +4,11 @@ from physical import unit
 
 class Base:
   """Base channel class"""
-  def __init__(self, name, dev=None, explicit_timing=True):
+  def __init__(self, name, dev=None, explicit_timing=True, finite_end_clock=True):
     self.name = name
     self.dev = dev
     self._explicit_timing = explicit_timing
+    self._finite_end_clock = finite_end_clock
 
   def __str__(self):
     return self.name
@@ -30,3 +31,6 @@ class Base:
     clock pulse) in units of seconds.
     """
     return 0*unit.s
+
+  def finite_mode_requires_end_clock(self):
+    return self._finite_end_clock

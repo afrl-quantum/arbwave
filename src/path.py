@@ -82,3 +82,7 @@ if __name__ == '__main__':
 
   print '\n',collect_prefix( signals, 0, 1, 1 )
   print '\n',collect_prefix( signals )
+
+
+  clocks = set(['vp/Dev0/A/15', 'vp/Dev0/A/14', 'vp/Dev1/A/0'])
+  print '\n',collect_prefix( dict.fromkeys(clocks), 0, 2, 2 )

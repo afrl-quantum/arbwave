@@ -95,7 +95,7 @@ def set_static(analog, digital):
     devices[ dev[0] ].set_output( dev[1] )
 
 
-def set_waveforms(analog, digital, transitions, t_max, continuous):
+def set_waveforms(analog, digital, transitions, t_max, end_clocks, continuous):
   """
   Viewpoint ignores all transition information since it only needs absolute
   timing information.
@@ -103,9 +103,11 @@ def set_waveforms(analog, digital, transitions, t_max, continuous):
   assert len(analog) == 0, 'Viewpoint does not perform analog output'
   D = collect_prefix(digital, 0, 2, 2)
   C = collect_prefix(transitions, 0, 2, 2)
+  E = collect_prefix(dict.fromkeys( end_clocks ), 0, 2, 2)
   for d in devices:
     if d in D or d in C:
-      devices[d].set_waveforms( D.get(d,{}), C.get(d,{}), t_max, continuous )
+      devices[d].set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
+                                continuous )
 
 
 def close():

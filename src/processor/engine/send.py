@@ -49,14 +49,15 @@ class ToDriver:
       backend.drivers[D].set_static(analog.get(D,{}), digital.get(D,{}))
 
 
-  def waveform(self, analog, digital, transitions, t_max, continuous):
+  def waveform(self, analog, digital, transitions, t_max, end_clocks, continuous):
     print 'trying to update the hardware to waveform output!!!!'
     if continuous:
       print 'requesting continuous regeneration...'
 
     for D in backend.drivers:
       backend.drivers[D].set_waveforms(analog.get(D,{}), digital.get(D,{}),
-                                       transitions, t_max, continuous)
+                                       transitions, t_max, end_clocks,
+                                       continuous)
 
 
   def start(self, devcfg, clocks, signals):

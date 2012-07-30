@@ -216,7 +216,7 @@ def set_static(analog, digital):
     tasks[ dev[0]+'/ao' ].set_output( dev[1] )
 
 
-def set_waveforms(analog, digital, transitions, t_max, continuous):
+def set_waveforms(analog, digital, transitions, t_max, end_clocks, continuous):
   """
   Viewpoint ignores all transition information since it only needs absolute
   timing information.
