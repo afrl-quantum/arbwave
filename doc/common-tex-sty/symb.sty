@@ -1,0 +1,31 @@
+
+%%
+%% This file is `symb.sty',
+%%
+%% This file may be distributed and/or modified under the
+%% conditions of the Limited General Product License
+%% 
+
+\typeout{  }
+\typeout{ Copyright 2006 Spencer E. Olson}
+\typeout{  }
+
+\ProvidesPackage{symb}
+ [2006/10/02 v1.0]
+
+%shortcut for "List of Symbols"
+% This command should NOT be used in captions, equation, or align
+% environments.  The page number will never show up with these correctly, so
+% use \symbi
+\newcommand{\symb}[1]{\gloss[symb]{#1}}
+
+% shortcut for "List of Symbols"; The page of the symbol is NOT used in the
+% LIST OF SYMBOLS
+% This command should be used in captions, equation, and align environments.
+\newcommand{\symbi}[1]{\gloss[symb,norefpage]{#1}}
+
+% Using the above two commands is possible in the
+% [...] part of \caption[...] {}
+% whereas using the similar \gloss[...]{} command is not.  Some LaTeX
+% wierdness.
+

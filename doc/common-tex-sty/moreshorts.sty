@@ -1,0 +1,67 @@
+% Some shortcuts to augment the rac.sty file to make it more targeted for
+% formatting manual type of documents.
+%  --Spencer
+
+\def\unnumberedpage{%
+ \newpage
+ \thispagestyle{empty}
+ \hbox{ }
+}
+
+
+\def\startappendices{\par
+ \def\thechapter{\Alph{chapter}}
+ \def\thesection{\thechapter.\arabic{section}}
+
+% \ifx \selectfont\undefined
+ \def\theequation{{\rm \thechapter}.\arabic{equation}}
+ \def\thefigure{{\rm \thechapter}.\@arabic\c@figure}
+ \def\thetable{{\rm \thechapter}.\@arabic\c@table}
+ \def\themap{{\rm \thechapter}.\@arabic\c@map}
+ \def\theanything{{\rm \thechapter}.\@arabic\c@anything}
+% \else
+% \def\theequation{{\mathrm \thechapter}.\arabic{equation}}
+% \def\thefigure{{\mathrm \thechapter}.\@arabic\c@figure}
+% \def\thetable{{\mathrm \thechapter}.\@arabic\c@table}
+% \def\themap{{\mathrm \thechapter}.\@arabic\c@map}
+% \def\theanything{{\mathrm \thechapter}.\@arabic\c@anything}
+% \fi
+
+ \let\theappendix=\thechapter
+%changed word chapter to word appendix in 1st half of line so that
+% loa would have stuff instead of toc
+ \let\appendix=\startanappendix
+ \setcounter{chapter}{0}
+ \setcounter{section}{0}
+ \def\@chapapp{APPENDIX}
+ \def\tocname{loa}
+ \pagestyle{plain}
+ \clearpage
+ \thispagestyle{chappage}
+ \addcontentsline{toc}{chapter}{APPENDICES}
+ \hbox{ }
+ \vfill
+ \centerline{\large\bf APPENDICES}
+ \vfill
+}
+
+
+\def\copyrightpage#1{%
+ \hbox{ }
+ \vfill
+ \begin{center}
+  {\large $\copyright$} \hspace{0.25in}
+%  \parbox{3in}{
+%     \makebox[3in][l]{\underline{#1} \hspace{0.125in} \number\year}
+%     All Rights Reserved}
+%
+%  \parbox{3in}{
+%      \underline{#1}
+%      \par
+%      All Rights Reserved
+%  }
+   {\Large $\mathrm{\frac{#1}{All\ Rights\ Reserved}}$}
+  \hspace{0.125in} \number\year
+ \end{center}
+ \vfill
+}

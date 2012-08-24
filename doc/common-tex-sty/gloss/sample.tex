@@ -1,0 +1,113 @@
+% (c) 1998 Jose Luis Diaz, 1999-2002 Jose Luis Diaz and Javier Bezos.
+% All Rights Reserved.
+%
+% This file is part of the gloss distribution release 1.5.2
+% -----------------------------------------------------------
+%
+% This file can be redistributed and/or modified under the terms
+% of the LaTeX Project Public License Distributed from CTAN
+% archives in directory macros/latex/base/lppl.txt; either
+% version 1 of the License, or any later version.
+%
+
+\documentclass[a4paper,spanish]{article}
+% \usepackage[latin1]{inputenc}
+
+\usepackage[refpages]{gloss}
+
+% Try that, if you want:
+% 
+% \usepackage[colorlinks,dvips]{hyperref}
+% \renewcommand{\glosslinkborder}{0 0 0}
+% \renewcommand{\glosslinkcolor}{blue}
+
+\makegloss
+\newgloss[nolink]{symb}{.sym}{List of Symbols}{glsplain}
+%\newgloss[nolink]{symb}{.sym}{List of Symbols}{glslookup}
+%       glslookup style is useful for just using this package as a bibtex
+%       database lookup tool for words/symbols to insert consistenly into a
+%       document.  
+
+% I typically define the macro \symb to make it easier/shorter to use while
+% another glossary is defined.  
+\newcommand{\symb}[2][symb]{\gloss[#1]{#2}}
+
+
+
+\setglossgroup{C}{Signos}
+\setglossgroup{S}{S\'{\i}mbolos}
+
+\title{Ejemplo de uso del paquete \textsf{Gloss}}
+\author{Jose Luis D\'{\i}az}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  Este documento pretende tan s\'olo servir de muestra de c\'omo se usa el
+  paquete \textsf{gloss} para la creaci\'on de glosarios. Los t\'erminos
+  incluidos en este glosario se han elegido porque plantean problemas
+  de ordenaci\'on alfab\'etica.
+\end{abstract}
+
+\section{Ejemplo}
+
+El c\'odigo \gloss[short]{ASCII} no previ\'o la \gloss[nocite]{ene} 
+necesidad de vocales acentuadas ni de otros caracteres no 
+anglosajones.  Por suerte, este c\'odigo s\'olo usa 7 
+bits\gloss[nocite]{bit}, por lo que usando el \gloss{bit} que deja 
+libre se dispone de 128 caracteres m\'as, donde acomodar los 
+s\'{\i}mbolos no previstos.
+
+No obstante, esto plantea problemas a los programas de 
+alfabetizaci\'on, que no pueden basarse ya en el sencillo m\'etodo de 
+comparar los c\'odigos de los caracteres para determinar cu\'al va 
+antes alfab\'eticamente.  En efecto, la ``\gloss{egne}'' tendr\'{\i}a 
+un c\'odigo superior a 128, lo cual la situar\'{\i}a alfab\'eticamente 
+por encima de la ``\gloss{zeta}'', cuando en realidad deber\'{\i}a ir 
+despu\'es de la ``\gloss{ene}''.
+
+Bib\TeX\ admite caracteres de 8 bits como parte de los nombres de los 
+autores, pero realiza una ordenaci\'on incorrecta de los mismos, ya 
+que se basa simplemente en la comparaci\'on num\'erica de los 
+c\'odigos de los caracteres.
+
+\gloss[Word]{bibtex8} es una implementaci\'on que permite especificar 
+al usuario qu\'e orden alfab\'etico ocupa cada caracter dentro de un 
+juego de caracteres de 8 bits\gloss[nocite]{bit}.
+\gloss[nocite]{gnu,a,pi,alfa,exclam,interr,nuname}
+
+
+Here is another paragraph that shows of the symbol generation.  For instance,
+we might want to create an equation that defines the mean free path $\symb{mfp}$ in an
+ideal gas system:
+%
+\[
+    \symb{mfp} = \frac{1} { \sqrt{2} \:\symb{scatT} \:\symb{n}}
+\]
+%
+where \symb{scatT} is the total elastic scattering cross-section and
+\symb{n} is the local number density.   
+After defining \symb{mfp}, we might want to say that in general, gas systems
+are characterized by the ratio of the mean free path 
+\symb{mfp} to the characteristic length \symb{L_char} of the system.
+The local characteristic length
+$\symb{L_char}$ of a system is the length scale over which a macroscopic
+property $S$ of the gas, e.g. temperature or density, undergoes significant
+change and can be expressed as 
+%
+\[
+    \symb{L_char} = S \left(\frac{\partial S}{\partial x}\right)^{-1}\, .
+\]
+%
+
+Note that symbols defined using the @SYMBOL Bib\TeX\ item in the Bib\TeX\
+database can be used seamlessly in and out of math mode.
+
+\sloppy
+
+\printgloss{glsbase,sample}
+
+% this prints nothing out explicitly if the glslookup bibtex style is used.
+\printgloss[symb]{sample}
+
+\end{document}

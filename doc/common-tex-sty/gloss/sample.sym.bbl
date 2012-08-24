@@ -1,0 +1,19 @@
+\begin{thegloss}
+
+\glossgroup{S}
+
+\begin{glossitem}{L_char}{\ensuremath{L}}{\ensuremath{L}}{}
+Characteristic length of a gas sysetm\end{glossitem}
+
+\begin{glossitem}{mfp}{\ensuremath{\lambda_{\rm MFP}}}{\ensuremath{\lambda_{\rm
+  MFP}}}{}
+Mean free path\end{glossitem}
+
+\begin{glossitem}{n}{\ensuremath{n}}{\ensuremath{n}}{}
+Local number density\end{glossitem}
+
+\begin{glossitem}{scatT}{\ensuremath{\sigma_{\rm T}}}{\ensuremath{\sigma_{\rm
+  T}}}{}
+Total elastic scattering cross section\end{glossitem}
+
+\end{thegloss}

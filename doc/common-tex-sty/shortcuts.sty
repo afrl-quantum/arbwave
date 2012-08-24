@@ -1,0 +1,242 @@
+
+% Line spacing commands %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newlength{\defbaselineskip}
+\setlength{\defbaselineskip}{\baselineskip}
+\newcommand{\setlinespacing}[1]%
+           {\setlength{\baselineskip}{#1 \defbaselineskip}}
+\newcommand{\singlespacing}{\setlength{\baselineskip}{\defbaselineskip}}
+\newcommand{\oneandahalfspacing}{\setlength{\baselineskip}{1.5 \defbaselineskip}}
+\newcommand{\doublespacing}{\setlength{\baselineskip}{2.0 \defbaselineskip}}
+
+
+
+
+% Shortcuts %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newboolean{showcomment}
+\setboolean{showcomment}{false}  % true: show comments; false: hide comments
+\newcommand{\comm}[1] {
+    \ifthenelse{\boolean{showcomment}}                 % if don't show comments, exclude
+    {\begin{quote}\textcolor{blue}{#1}\end{quote}}     % otherwise, show comments in a different format
+}
+
+\newcommand{\CITE}[1]{[CIT. REMOVED: #1]}               % temporarily disable citation
+\newcommand{\sci}[2]{                                   % scientific notation
+    \ensuremath{#1\ifx#1\@empty\else\times\fi10^{#2}}
+}
+\newcommand{\rarr}{\ensuremath{\rightarrow}}            % rightarrow
+
+
+% seo:  uncomment the following line (and comment the next) if you want all of
+%       the units below to be prefixed by a thin space automatically.
+%\def\thinspace{\,} \def\eatthin{\!}
+\def\thinspace{} \def\eatthin{}
+\newcommand{\divby}{\ensuremath{\!\!\:/\!\eatthin}}     % put in division sign, and eat up space
+                                                        % from one of the following shortcuts.
+                                                        % Doesn't work well outside of mathmode.
+
+% seo:  corrected capitalization in shortcuts (like mhz -> MHz).
+% seo:  added \G, \kG, \mG, \mK, \uK
+% seo:  replaced \K (was cm^{-1}) with Kelvin
+\newcommand{\K}{\thinspace\ensuremath{\mathrm{K}}\xspace}       % Kelvin
+\newcommand{\mK}{\thinspace\ensuremath{\mathrm{mK}}\xspace}     % milli Kelvin
+\newcommand{\uK}{\thinspace\ensuremath{\mathrm{{\mu}K}}\xspace} % micro Kelvin
+\newcommand{\T}{\thinspace\ensuremath{\mathrm{T}}\xspace}       % Tesla
+\newcommand{\G}{\thinspace\ensuremath{\mathrm{G}}\xspace}       % gauss
+\newcommand{\kG}{\thinspace\ensuremath{\mathrm{kG}}}            % kilo gauss
+\newcommand{\mG}{\thinspace\ensuremath{\mathrm{mG}}}            % milli gauss
+\newcommand{\g}{\thinspace\ensuremath{\mathrm{g}}\xspace}       % grams
+\newcommand{\kg}{\thinspace\ensuremath{\mathrm{kg}}\xspace}     % kilograms
+\newcommand{\torr}{\thinspace\ensuremath{\mathrm{Torr}}\xspace} % Torr
+\newcommand{\amps}{\thinspace\ensuremath{\mathrm{A}}\xspace}    % Amps
+\newcommand{\statvolts}{\thinspace\ensuremath{\mathrm{statV}}\xspace}   % Volts
+\newcommand{\volts}{\thinspace\ensuremath{\mathrm{V}}\xspace}   % Volts
+\newcommand{\kV}{\thinspace\ensuremath{\mathrm{kV}}\xspace}     % KiloVolts
+\newcommand{\eV}{\thinspace\ensuremath{\mathrm{eV}}\xspace}     % electron Volts
+\newcommand{\mJ}{\thinspace\ensuremath{\mathrm{mJ}}\xspace}     % milliJoules
+\newcommand{\J}{\thinspace\ensuremath{\mathrm{J}}\xspace}       % Joules
+\newcommand{\uJ}{\thinspace\ensuremath{\mathrm{\mu J}}\xspace}  % microJoules
+\newcommand{\m}{\thinspace\ensuremath{\mathrm{m}}\xspace}       % meters
+\newcommand{\cm}{\thinspace\ensuremath{\mathrm{cm}}\xspace}     % centimeters
+\newcommand{\mm}{\thinspace\ensuremath{\mathrm{mm}}\xspace}     % millimeters
+\newcommand{\um}{\thinspace\ensuremath{\mathrm{\mu m}}\xspace}  % microns
+\newcommand{\mic}{\thinspace\ensuremath{\mathrm{\mu m}}\xspace} % microns
+\newcommand{\nm}{\thinspace\ensuremath{\mathrm{nm}}\xspace}     % nanometers
+\newcommand{\THz}{\thinspace\ensuremath{\mathrm{THz}}\xspace}   % TeraHertz
+\newcommand{\GHz}{\thinspace\ensuremath{\mathrm{GHz}}\xspace}   % GigaHertz
+\newcommand{\MHz}{\thinspace\ensuremath{\mathrm{MHz}}\xspace}   % MegaHertz
+\newcommand{\kHz}{\thinspace\ensuremath{\mathrm{kHz}}\xspace}   % KiloHertz
+\newcommand{\Hz}{\thinspace\ensuremath{\mathrm{Hz}}\xspace}     % Hertz
+\newcommand{\s}{\thinspace\ensuremath{\mathrm{s}}\xspace}       % seconds
+\newcommand{\ms}{\thinspace\ensuremath{\mathrm{ms}}\xspace}     % milliseconds
+\newcommand{\us}{\thinspace\ensuremath{\mathrm{\mu s}}\xspace}  % microseconds
+\newcommand{\ns}{\thinspace\ensuremath{\mathrm{ns}}\xspace}     % nanoseconds
+\newcommand{\ps}{\thinspace\ensuremath{\mathrm{ps}}\xspace}     % picoseconds
+\newcommand{\fs}{\thinspace\ensuremath{\mathrm{fs}}\xspace}     % femtoseconds
+\newcommand{\W}{\thinspace\ensuremath{\mathrm{W}}\xspace}       % watt
+\newcommand{\mW}{\thinspace\ensuremath{\mathrm{mW}}\xspace}       % milliwatt
+\newcommand{\intens}{\thinspace\ensuremath{\mathrm{W\!/cm^{2}}},\xspace} % intensity
+\newcommand{\ohm}{\thinspace\ensuremath{\Omega}\xspace}         % ohm (symbol--not text)
+
+\newcommand{\beq}{\begin{eqnarray}}
+\newcommand{\eeq}{\end{eqnarray}}
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%This command creates a box around text.
+%To use type \boxtext{  insert text here  }.
+
+\newcommand{\boxtext}[1]{
+    \vspace{5mm}\par
+    \framebox{
+        \begin{minipage}[c]{0.95 \columnwidth}
+            \tt #1
+        \end{minipage}
+    }
+    \vspace{5mm}\par
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%This command creates a box marked ``To Do'' around text.
+%To use type \todo{  insert text here  }.
+
+\newcommand{\todo}[1]{
+    \vspace{5mm}\par
+    \noindent \marginpar{\textsc{ToDo}}
+    \framebox{
+        \begin{minipage}[c]{0.95 \columnwidth}
+            \tt #1
+        \end{minipage}
+    }
+    \vspace{5mm}\par
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Just like the todo box, this creates a box where you will insert an image later.
+%The contents of the box might include the description and the label you will include.
+
+\newcommand{\img}[1]{\vspace{5 mm}\par \noindent
+\marginpar{\textsc{FIGURE}} \framebox{\begin{minipage}[c]{0.95
+\textwidth} \tt \singlespacing #1 \end{minipage}}\vspace{5 mm}\par}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+% Some new commands to make the below LaTeX code cleaner.
+
+% define new chapter command:
+% usage:  \newchapter{Title}{sub-directory}{tex-file}
+%               This will import tex-file from sub-directory/ in a way that
+%               tex-file does not have to worry about paths (to figures and
+%               such) relative to the main document, but rather relative to
+%               the path of tex-file.  
+%               This command will also create a label 'chap:sub-directory'
+%               that can be used in \ref commands.
+% usage:  \newchapter{Title}{}{tex-file}
+%               In this case, tex-file will be opened from the ./ directory
+%               and the label will be chap:tex-file.
+% tex-file is relative to sub-directory/ and should not have the .tex ending.
+\newcommand{\newchapter}[3]{
+    \chapter{#1}                % The title of the chapter
+    \edef\cdir{#2}%
+    \ifx \cdir \@empty
+        \label{chap:#3}         % The label of the chapter
+        \subimport*{./}{#3}     % {./}{#3[.tex]}:  the directory and file
+    \else
+        \label{chap:#2}         % The label of the chapter
+        \subimport*{#2/}{#3}    % {#2/}{#3[.tex]}:  the directory and file
+    \fi
+\ifthenelse{\boolean{usebibunits}}
+    {\putbib}                   % Finish with the bibliography.
+}
+
+% define new appendix command:
+% usage:  \newappendix{Title}{sub-directory}{tex-file}
+%       Usage is the same as for \newchapter.
+%       The labels generated by this command are prefixed by 'appx' instead of
+%       'chap'.
+% tex-file is relative to sub-directory/ and should not have the .tex ending.
+\newcommand{\newappendix}[3]{
+    \appendix{#1}               % The title of the chapter
+    \edef\cdir{#2}%
+    \ifx \cdir \@empty
+        \label{appx:#3}         % The label of the chapter
+        \subimport*{./}{#3}     % {./}{#3[.tex]}:  the directory and file
+    \else
+        \label{appx:#2}         % The label of the chapter
+        \subimport*{#2/}{#3}    % {#2/}{#3[.tex]}:  the directory and file
+    \fi
+\ifthenelse{\boolean{usebibunits}}
+    {\putbib}                   % Finish with the bibliography.
+}
+
+\newcommand{\avg}[1]{\ensuremath{\left<#1\right>}}
+
+
+
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%% SOME COMMANDS FOR FORMATING STUFF IN THE "COMMANDS" CHAPTER%
+% %%%%%%%% FOR THE ICEPIC MANUAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{longtable}
+\RequirePackage{calc}
+\newlength{\firstcollen}        \setlength{\firstcollen}{4.0cm}
+\newlength{\lastcollen}         \setlength{\lastcollen}{8cm}
+\newlength{\lasttwocollen}
+\setlength{\lasttwocollen}{\textwidth-\firstcollen}%
+
+
+%                #1             #2
+%\varoption{optional-value}{description}
+\newcommand{\varoption}[2]{%
+    & \textbf{#1} & \parbox{\lastcollen}{\textbf{#2}} \\%
+}
+\newcommand{\varsep}{%
+    & \multicolumn{2}{c}{\hrulefill} \\
+}
+
+%             #1      #2    #3     #4      #5    #6     #7        #8
+% \variable{section}{name}{type}{default}{units}{use}{option}{description}
+% if #7 is not empty, then an 'options' portion will also be output.
+\newcommand{\variable}[8]{%
+    \def\opts{#7}%
+    \paragraph{} \index{#1!#2}%
+    \begin{longtable}[l]{p{\firstcollen}lp{\lastcollen}}
+        %\hline%\hspace{1em}#2
+        \multicolumn{3}{l}{\parbox[rb]{\textwidth-1em}{\hrulefill\hspace{1em}\hypertarget{#1.#2}{[#1].#2}}} \\[1em] \nopagebreak
+        \textbf{FORMAT}         & \multicolumn{2}{l}{%
+                                  \parbox[lb]{\lasttwocollen}{\texttt{#2} {\rm =} \textbf{#3}}} \\*
+        \textbf{DEFAULT VALUE}  & \multicolumn{2}{l}{\parbox[lb]{\lasttwocollen}{\textbf{#4}}} \\*
+        \textbf{UNITS}          & \multicolumn{2}{l}{\parbox[lb]{\lasttwocollen}{\textbf{#5}}} \\*
+        \textbf{USE}            & \multicolumn{2}{l}{\parbox[lb]{\lasttwocollen}{\textbf{#6}}} \\*
+    \ifx \opts \@empty
+    \else
+    \textbf{OPTIONS}            & \\*
+                                \opts
+    \fi
+    \end{longtable}
+    \noindent\textbf{DESCRIPTION}\\
+    \indent{#8}
+    \vspace{1em}
+    \hypertarget{#2}{}
+}
+

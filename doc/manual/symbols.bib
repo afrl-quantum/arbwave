@@ -1,0 +1,60 @@
+% This BibTeX database can be used to make a consistent set of symbols for a
+% document (very nice for very large documents).  
+% This database is intended to be used with the modified gloss package
+% (modified by S.E. Olson).
+% Using the gloss package, it is also trivial to generate a "List of Symbols"
+% index in a latex document.
+%
+% Consistent symbol labeling/formatting can be achieved by using either the
+% \gloss command directly, or the \symb shortcut to  insert the symbol into
+% text.  For example: 
+%     The mean free path of a gas \symb{mfp} is given by
+%     \[
+%         \symb{mfp} = \frac{1}{ \sqrt{2} \symb{numberdensity} \symb{scatT} }
+%     \]
+%     where \symb{numberdensity} is the number density of the gas and
+%     \symb{scatT} is the scattering cross section of the gas particles.
+
+% the basic format is:
+%(at)GLOSSDEF{symbol-key,
+%        word = {symbol in latex-math mode},
+%  definition = {Definition of symbol, only used for List of Symbols},
+%   sort-word = {non-math-mode equivalent word used for sorting only},
+%       group = {Sort group--see gloss documentation}
+%}
+
+% examples:
+@GLOSSDEF{numberdensity,
+        word = {n},
+  definition = {Number density of a single species of gas},
+   sort-word = {n},
+       group = {S}
+}
+
+@GLOSSDEF{mfp,
+        word = {\lambda_{\rm MFP}},
+  definition = {Mean free path},
+   sort-word = {lambda},
+       group = {S}
+}
+
+@GLOSSDEF{scatT,
+        word = {\sigma_{\rm T}},
+  definition = {Total elastic scattering cross section},
+   sort-word = {sigma},
+       group = {S}
+}
+
+@GLOSSDEF{duration,
+        word = {dt},
+  definition = {Duration of waveform element or group of elements},
+   sort-word = {dt},
+       group = {S}
+}
+
+@GLOSSDEF{natural_time,
+        word = {t},
+  definition = {Natural start time of waveform element or group of elements},
+   sort-word = {t},
+       group = {S}
+}

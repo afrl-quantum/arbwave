@@ -1,0 +1,200 @@
+% Arbwave USER'S Manual
+% vim: ts=2:sw=2:tw=80:et
+
+\documentclass[reqno]{report}
+\usepackage{rac}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+%\usepackage{amsfonts}
+\usepackage{amsxtra}           % Use various AMS packages
+ % BEGIN --added-- by JMM from PHB template
+%\usepackage{srcltx}           % enable reverse lookup with dvi previewer;
+\usepackage{xspace}            % useful for \newcommand abbreviations; adds space only if necessary;
+\usepackage{dcolumn}           % allows lining up numbers at decimal points in arrays;
+\usepackage{ifthen}            % allows for conditional formatting; used in "comm"[ent] command.
+ % END   --added-- by JMM from PHB template
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{verbatim}
+\usepackage{url}
+\usepackage[numbers,sort&compress]{natbib}
+
+\newboolean{usebibunits}
+\setboolean{usebibunits}{false}
+\ifthenelse{\boolean{usebibunits}}
+{\usepackage{bibunits}}        % Package to have per chapter bibliographies
+
+\usepackage{dbl12}       % dbl space size for 12pt styles.
+\usepackage{import}      % Use the import package to allow relative path names
+\usepackage{shortcuts}   % Shortcuts of PHB template with some by seo
+\usepackage{moreshorts}  % Shortcuts by seo to tweak rac.sty format
+\usepackage[refpages]{gloss}
+                               % Package to do glossaries (used at
+                               % least for development of "List of Symbols"
+\usepackage{glosschanges}% Makes glossary entries look more like TOC,
+                               % LOA, ...
+\usepackage{symb}        % get some simple symb shortcuts
+
+\newboolean{DVIoutput}
+\input{DVIoutput}
+\ifthenelse{\boolean{DVIoutput}}{%
+\usepackage[pdfpagelabels=true,pagebackref=true]{hyperref}
+}{%
+\usepackage[pdfpagelabels=true,pagebackref=true,dvipdfm]{hyperref}
+}
+\hypersetup{
+    naturalnames=true,
+    colorlinks=true,
+    linkcolor=blue,
+    pdfpagemode=UseNone,
+    pdfstartview=FitH,
+    pdftitle=ARBWAVE USER MANUAL,
+    pdfsubject=Arbitrary Waveform Generation for Experimental Control,
+%    debug,
+}
+\usepackage{hypernat}
+
+\usepackage {makeidx}          % make index
+
+\usepackage{arbwave-version}    % Include the version of the Arbwave package
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Create the "List of Symbols" glossary.
+% entries are added using the \gloss[symb]{key} command
+\newgloss[nolink]{symb}{.sym}{List of Symbols}{glslookup}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Redefine margins and other page formatting
+
+\setlength{\oddsidemargin}{0.25in}
+\setlength{\evensidemargin}{0.25in}
+\setlength{\textwidth}{7in}
+\setlength{\textheight}{9.5in}
+\setlength{\hoffset}{-0.6in}
+%\setlength{\voffset}{-0.3in}
+\setlength{\topmargin}{-1in}
+
+% Fuzz -------------------------------------------------------------------
+\hfuzz2pt % Don't bother to report over-full boxes if over-edge is < 2pt
+\vfuzz2pt % Don't bother to report over-full boxes if over-edge is < 2pt
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\vi}[1]{\textit{\bfseries #1}.vi}   % a .vi
+\newcommand{\op}[1]{\textit{\bfseries #1}}      % an operation/operator
+\newcommand{\var}[1]{\textbf{#1}}               % a variable
+
+
+\makeindex
+
+
+\begin{document}
+
+
+\bibliographystyle{unsrtnat}              % Set the global bibliography style.
+
+% set up the per chapter bibliographies
+\ifthenelse{\boolean{usebibunits}} {
+  \bibliographyunit[\chapter]
+  \defaultbibliography{manual}       % The default BibTex file to use.
+                                       % Each instance of \putbib can override
+                                       % this.
+  \defaultbibliographystyle{unsrtnat}     % Set the default bibliography style
+                                       % for per chapter bibliographies.
+}
+
+
+
+% Use \def\ttitle so I don't have to copy the title more than once.
+\def\ttitle{
+    {\Huge \revision}\\
+    {\LARGE(\revdate)} \\
+    \vspace{2em}
+    {\LARGE\rm--USER MANUAL--}\\
+    \vspace{2em}
+    {\Large\rm This Document Last Revised \tutmandate}
+}
+
+\titlepage{\ttitle}
+{ %authors
+\begin{center}
+\begin{Large}
+{\hspace{-2em}Written by:}\\
+Dr. Brian Kasch, \\
+Dr. Spencer E. Olson
+}
+{ % address
+    Air Force Research Laboratory \\
+    Space Vehicles Directorate \\
+    Battle Space Environment Division \\
+    Cold Atom Precision, Timing, and Inertial Navigation \\
+    3550 Aberdeen Ave, SE\\
+    Kirtland AFB, NM 87117-5776\\
+\end{Large}
+\end{center}
+}
+
+\initializefrontsections
+
+
+% Copyright page
+\unnumberedpage
+\copyrightpage{Portions\ Space\ Dynamics\ Laboratory--Goverment\ Rights\ Granted}
+
+\setcounter{page}{1}
+
+
+
+% Table of contents, list of figures, etc.
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+\tableofcontents
+\listofappendices
+\listoftables
+\listoffigures
+\printgloss[symb]{symbols} % list of symbols
+
+
+\startthechapters 
+\normalsize
+% use chapter command:
+% usage:  \newchapter{Title}{sub-directory}{tex-file}
+% tex-file is relative to sub-directory/ and should not have the .tex ending.
+%\def\suppressbibtoc{1}
+\newchapter{Introduction}{intro}{intro}
+\newchapter{Installation}{install}{install}
+\newchapter{Quick Start}{quickstart}{quickstart}
+\newchapter{Device Configuration}{devcfg}{devcfg}
+\newchapter{Channel Configuration}{channels}{channels}
+\newchapter{Waveforms}{waveforms}{waveforms}
+\newchapter{Scripting}{scripting}{scripting}
+
+
+%\startappendices
+%\newappendix{Interesting Stuff}{stuff}{stuff}
+
+
+% Index and Bibliography in single spacing
+\linespread{1.0}
+\selectfont
+
+% Print the index
+\newpage
+\section*{}
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+\newpage
+
+% Print the Bibliography
+%\def\suppressbibtoc{0}
+\section*{}\nopagebreak
+\addcontentsline{toc}{chapter}{BIBLIOGRAPHY}
+\bibliography{manual}
+
+\end{document}
+

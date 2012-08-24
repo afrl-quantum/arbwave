@@ -1,0 +1,646 @@
+% +--------------------------------------------------+
+% | Typeset this file to get the documentation.      |
+% +--------------------------------------------------+
+%
+% (c) 1998 Jose Luis Diaz, 1999-2002 Jose Luis Diaz and Javier Bezos.
+% All Rights Reserved.
+%
+% This file is part of the gloss distribution release 1.5.2
+% -----------------------------------------------------------
+%
+% This file can be redistributed and/or modified under the terms
+% of the LaTeX Project Public License Distributed from CTAN
+% archives in directory macros/latex/base/lppl.txt; either
+% version 1 of the License, or any later version.
+
+\def\fileversion{1.5.2}
+\def\docdate{July 26, 2002}
+
+\documentclass{ltxguide}
+\usepackage{hyperref}
+
+\title{The \textsf{gloss} Package\footnote{The
+\textsf{gloss} package is currently at version \fileversion. \copyright{} 
+1998 Jose Luis Diaz,
+1999-2001 Jose Luis Diaz and Javier Bezos. All Rights Reserved.}}
+
+\author{Jose Luis D\'{\i}iaz\\Javier Bezos\footnote{For bug reports, comments and
+suggestions go to \href{http://www.texytipografia.com/contact.php}%
+{http://www.texytipografia.com/contact.php}.  New \texttt{.bst} styles
+are also welcome.  English is not my strong point, so contact me when
+you find mistakes in the manual.  Other packages by Javier Bezos:
+\textsf{accents, tensind, esindex, titlesec, titletoc, dotlessi}.}}
+
+\date{\docdate}
+
+\addtolength{\topmargin}{-3pc}
+\addtolength{\textwidth}{6pc}
+\addtolength{\oddsidemargin}{-2pc}
+\addtolength{\textheight}{7pc}
+
+\raggedright
+\parindent1em
+
+\newcommand{\gloss}{\textsf{gloss}}
+\newcommand{\bibTeX}{\textsc{Bib}\TeX}
+
+\begin{document}
+
+\maketitle
+
+\textsf{Gloss} is a package which allows the creation of glossaries 
+using \bibTeX. With this approach, the user writes a database of terms 
+and definitions using a file format much like the bibliographic 
+databases.  Then he inserts in the \LaTeX{} document a command 
+|\gloss{<key>}| for selecting which entries he wants to appear in the 
+glossary.  These keys are written in an auxiliar file when \LaTeX{} is 
+run on the document.  Then, running \bibTeX{} these entries are 
+extracted from the database and collected in alphabetical order in a 
+file.  The next run of \LaTeX{} read this file and inserts it in the 
+appropiate point of the document, typesetting the desired glossary or 
+glossaries.
+
+The process is much like the mechanism for including the bibliographic
+references. This approach has several advantages:
+\begin{enumerate}
+\item \bibTeX{} is available in every platform where \TeX{} is.
+\item Glossary entries can be stored in databases, and you needn't
+  rewrite the definitions.
+\item There are a lot of tools for managing \bibTeX{} databases.
+\item \bibTeX{} can sort the entries and group them; furthermore,
+  \bibTeX-8 can sort correctly the entries in non-English
+  languages. (In fact, this is the main raison which the package
+  was first developped for.)
+\item \bibTeX{} is a programable tool and you can define your own 
+  styles for acronyms, symbols, and so on, or changing its default 
+  behaviour.  \textsf{Gloss} styles are pretty simples and creating
+  new ones is not difficult.
+\end{enumerate}
+
+Of course, there also disavantages---for example, you cannot
+select sorting entries word by word or letter by letter, at least
+at present.
+
+The gloss{} bundle includes the \textsf{gloss}.sty package, a 
+\textsf{glsplain}.bst style, a \textsf{glsbase}.bib database, and a 
+\texttt{sample.tex} file with its \texttt{sample.bib} database 
+(and, of course, the \texttt{readme} file and this manual).
+
+\section{The data files}
+
+If you know \bibTeX, you will find this section easy to understand.
+A data file contains a set of records defining terms, and its
+name must have the extension \texttt{.bib}. Every entry has the
+following format:
+\begin{verbatim}
+@<entry-type>{gnu,
+  word = {gnu},
+  definition = {Extrange animal}
+}
+\end{verbatim}
+%
+where |<entry-type>| is one of the following possible \bibTeX entry types:
+\begin{description}
+\item[|@glossdef|] Glossary definition.  Use this entry type to define words,
+  terms, signs, \dots that will be used in your glossary.  This type of entry
+  will be printed in text mode. 
+
+\item[|@gd|] Synonymous to |@glossdef|.
+
+\item[|@symbdef|] Glossary symbol definition.  Use this entry type to define
+  symbols that will be used in your glossary/list of symbols.  This type of
+  entry will be printed in math mode using |\ensuremath{}|.  This allows you
+  to use |\gloss{}| commands either in math mode, such as in equations, or in
+  textmode where you might define or clarify expressions.  
+
+\item[|@symbol|] Synonymous to |@symbdef|
+
+\item[|@symb|] Synonymous to |@symbdef|
+
+\end{description}
+
+
+Here
+\begin{itemize}
+\item |gnu| is a key identifying the record;
+\item |word| is the word which will be used as headword and in the 
+  text; and
+\item |definition| is the definition printed in the glossary.
+\end{itemize}
+
+Here is the description of the available fields, and when they are used
+\begin{description}
+\item[word] Required.  It should be given always as it would be 
+  written at the middle of a sentence.  The basic style 
+  \textsf{glsplain} converts its first letter to uppercase for use after 
+  a period.  In the generated glossary, entries with the 
+  same initial are grouped, preceded by a heading with that letter.
+
+\item[definition] Required.  The definition can be as long an you 
+  want, but you should note that implicit paragraphs (those with a 
+  blank line) are ignored and a |\par| would be necessary.  The final 
+  period should be omitted because it is supplied later (and sometimes it 
+  will be replaced by a comma).
+
+\item[short] Optional. A short form. It could be a symbol, an
+  acronym, etc. depending on the nature of the glossary.
+
+\item[sort-word] Optional.  If present, this field will be used to 
+sort the entries.  It is useful in greek symbols and signs, for 
+example.
+
+\item[group] Optional.  This field should consist in an uppercase 
+  letter and is intended for entries not beginning (or not containing) 
+  letters.  Entries with the same |group| are gathered in the glossary 
+  under a single heading and sorted in the whole glossary using this 
+  letter, with entries without |group| placed as if they had a group 
+  key of |L|.  Using both |sort-word| and this field allows grouping, 
+  say, greek symbols, numbers, signs and the like under seperate 
+  headings.  More on that later.
+
+\item[heading] Optional. It forces an entry to be listed under the
+  given heading. Useful in non-English languages when
+  letters with diacriticals are used (even with \bibTeX-8):
+\begin{verbatim}
+@gd{gnu,
+  word = "{\'A}nimo",
+  definition = "...",
+  heading = "A"}
+\end{verbatim}
+This field is uncompatible with |group|.
+
+\end{description}
+
+The default |crossref| field is available, but in glossaries is mostly 
+impractical except in a few cases (for example, in a list of symbols 
+with the same greek letter with many meanings).
+
+\section{Basic commands}
+
+\begin{decl}
+|\makegloss|
+\end{decl}
+
+This command in the preamble tells \gloss{} to create a glossary.
+
+\begin{decl}
+|\gloss{<key>}|
+\end{decl}
+
+Similar to |\cite|.  It writes a ``citation'' to the auxiliary file 
+|.gls.aux|.  Sadly, this double extension is necessary because 
+\bibTeX{} requires the input file to be named with the |.aux| 
+extension.  Below is explained how MS-DOS users can work around that.
+Note that this file is not reread by the document, it just
+provides information to \bibTeX\ of terms cited.
+
+\begin{decl}
+|\printgloss{<databases>}|
+\end{decl}
+
+Similar to |\bibliography|.  It prints the glossary stored into the 
+|.gls.bbl| file generated by \bibTeX{} from |.gls.aux|.
+
+In this basic interface the \textsf{glsplain} style is used always.
+
+\section{The generated glossary}
+
+The steps to generate and use the glossary are:
+\begin{enumerate}
+\item \LaTeX{} the document (let's call it |file.tex|),
+\item \bibTeX\ the |.gls.aux| file (i.e., |bibtex file.gls|),
+\item \LaTeX{} the document again, and
+\item \LaTeX{} again if there are unresolved cross references.
+\end{enumerate}
+
+Once \LaTeX{}ed the document, and \bibTeX{}ed the |.gls.aux| file,
+you will get the glossary in the |.gls.bbl| with the following \TeX{}
+format:
+\begin{itemize}
+
+\item the whole glossary is enclosed in the |thegloss| environment,
+  which just prints the sectioning heading whith the |\glossname| title;
+
+\item a series of |\glossheading|s (or |\glossgroup|s) commands
+  and |glossitem|s environments. Note that gloss items are not
+  commands but environments. The |glossitem*| environment means that
+  the definition of the entry ends with a period.
+
+\end{itemize}
+
+\section{The whole thing}
+
+Most of the formatting is done by the package and not by \bibTeX. The 
+\textsf{glsplain} style provides two forms, sometimes three, of 
+terms: the basic form as given in |word| to be used in the text, 
+and probably as headword, the second one is |word| with the first 
+letter uppercased to be used at the beginning of a sentence; and only 
+if |short| was included, a short form.
+
+Not surprisingly, the syntax of the \gloss{} commands is very
+alike to that of bibliographies with some touches from that
+of indexes.
+
+\subsection{Package options}
+
+\begin{decl}
+|refpages|
+\end{decl}
+
+The number of the first page where the term is referred to, is
+appended to the gloss entry.
+
+\subsection{Multiple glossaries}
+
+\begin{decl}
+|\makegloss|\\
+|\newgloss[<options>]{<name>}{<suffix>}{<title>}{<style>}|
+\end{decl}
+
+For defining a new glossary use |\newgloss|. The |\makegloss|
+command is just synonymous with
+\begin{verbatim}
+\newgloss{default}{.gls}{\glossname}{glsplain}
+\end{verbatim}
+Note that the suffix does include the dot.
+
+MS-DOS users must use |\newgloss| instead of |\makegloss|, and
+a document name with at most seven letters. For instance:
+\begin{verbatim}
+\newgloss{default}{G}{\glossname}{glsplain}
+\end{verbatim}
+Note that, in this case, the suffix does not include the dot
+(this way we avoid double extensions).
+
+Via the optional argument, it is possible to set any of the |\gloss| options
+glossary wide (i.e. so you don't have to specify a particular option for every
+instance of |\gloss|).  Options given explicitly to |\gloss| can override
+these glossary-wide options unless the |<name>| of the glossary is given
+explicitly to |\gloss| after the given option is also given explicitly (e.g.
+|\gloss[<option>,<glossary-name>{word}|.  See |\gloss|. 
+
+\begin{decl}
+|\printgloss[<name>]{<databases>}|
+\end{decl}
+
+Prints the |<name>| glossary. By default, the |default| one
+is printed. 
+
+\subsection{The \texttt{\string\gloss} command}
+
+\begin{decl}
+|\gloss[<options>]{<key>}|
+\end{decl}
+
+Possible options are:
+\begin{itemize}
+\item |nocite| makes the command behave in the same fashion
+  as |\nocite|.  For example, with |\gloss[nocite]{*}| all entries of 
+  the databases are included in the glossary.\footnote{The command 
+  |\string\onlygloss| is a deprecated synonymous with
+  |\string\gloss[nocite]|.}
+
+\item |refpage| tells \gloss{} to ignore previous references to pages.
+  Sometimes you say things like ``...at the end of the chapter, we will 
+  introduce the concept of...''; when the concept is actually
+  introduced you should use this option.
+
+\item |norefpage| tells \gloss{} to ignore this reference to this page.
+  Similar to |refpage|, it may be prudent to ignore some references to words
+  and symbols where they are not really defined.  As in the example above, 
+  sometimes you say things like ``...at the end of the chapter, we will 
+  introduce the concept of...''.  Using this option at this point allows you
+  to not have to explicitly use it later.  This usage is mostly relavant to
+  words and terms.   
+  
+  For symbols, an author should \textit{always} at least give a brief
+  definition of the symbol at the first time of use.  The only problem is that
+  the first use is often in an equation environment.  \LaTeX\ is not able to
+  obtain page references for items that are in floats and equations (figures,
+  captions...).  Use this option to tell |\gloss{}| to \textit{not} attempt to
+  reference this item at this current location.  
+
+\item |nolink| Disable hyperlinking for this instance of the \gloss{<word>}
+  when using the hyperref package.  Useful for symbols, and symbols in
+  equations where hyperlinking can obscure the math. 
+
+\item |<name>| of the glossary file where the key is written,
+  as defined by |\newgloss|. The key will be written into that
+  glossary. If there is no |<name>| it defaults to |default|.
+\end{itemize}
+
+The following options control the format of the term in the text.
+
+\begin{itemize}
+
+\item |word| prints the term exactly as given in the |word| field.
+
+\item |Word| prints the term as given in the |word| field, but 
+  with the first letter uppercased.\footnote{%
+  The command |\string\Gloss| is a deprecated synonymous with
+  |\string\gloss[Word]|.}
+
+\begin{verbatim}
+ ...discovered. \gloss[Word]{spectroscopy} became one of the most...
+\end{verbatim}
+
+\item |short| prints the short form, provided the bib file defines it
+  (if not a warning is reported).
+
+\item |Long| prints a combination of |Word| and |short|: ``Word 
+  (short)''.
+
+\item |long| prints a combination of |word| and |short|: ``word 
+(short)''.  For example, the very first time an acronym is used:
+\begin{verbatim}
+...and the proposals made by the \gloss[long]{iupac} provide...
+\end{verbatim}
+  Of course, you may want the following references to be in the short
+  form; just define
+\begin{verbatim}
+\newcommand{\acronym}[2][]{\gloss[short,#1]{#2}}
+\end{verbatim}
+
+\end{itemize} The former (|nocite| and |refpage|) are built in, 
+|<name>|s are created by |\newgloss|, and the latter are created by 
+the package with |\setglosstext|; if no option defined by 
+|\setglosstext| is included, it defaults to |word|.
+
+\begin{decl}
+|\setglosstext{<option-name>}{<format>}| \quad (3 parameters)\\
+|\ifglossshort{<format>}| \qquad |\ifglossshort*{<format>}|
+\end{decl}
+
+|\setglosstext| sets how entries are printed in the main text by 
+|\gloss|, where |<option-name>| is the name to be used in the optional 
+argument of |\gloss|.  There are five predefined formats, described 
+above, which you may redefine or complement with new defined ones.  In 
+|<format>| there are three available arguments, which are defined 
+implicitly: 
+|#1| is |word|, |#2| is |word| with its initial uppercased, and |#3| 
+is the |short| field.  Thus, the package does the following:
+\begin{verbatim}
+\setglosstext{word}{#1}
+\setglosstext{Word}{#2}
+\setglosstext{short}{\ifglossshort*{#3}{}}
+\setglosstext{long}{#1\ifglossshort*{ (#3)}{}}
+\setglosstext{Long}{#2\ifglossshort*{ (#3)}{}}
+\end{verbatim}
+Use is made of |\ifglossshort| which takes the first argument if the 
+short form exists, and the second one if does not exist.  In the 
+latter case, that is done silently in the unstarred version, but with 
+an error in the starred one.
+
+\subsection{Glossary layout}
+
+\begin{decl}
+|\glossheading{<format>}|
+\end{decl}
+
+Sets how the headings are formatted; it is redefined with
+|\renewcommand|. For example:
+\begin{verbatim}
+\renewcommand\glossheading[1]{%
+  \stopglosslist
+  \subsection*{#1}}
+\end{verbatim}
+
+\begin{decl}
+|\setglossgroup{<group>}{<heading>}|
+\end{decl}
+
+Sets the heading corresponding to entries grouped by \textsf{glsplain} 
+under the same |group| key (and preceded by |\glossgroup|, which in 
+turn calls |\glossheading|).
+\begin{verbatim}
+\setglossgroup{C}{Signs}
+\end{verbatim}
+
+\begin{decl}
+|\setglosslabel{<format>}| \quad (3 parameters)
+\end{decl}
+
+Sets which of the three forms are printed as label in the gloss items and
+some other optional formatting.
+
+The package does:
+\begin{verbatim}
+\setglosslabel{\sffamily\bfseries#1\ifglossshort{ (#3)}{}}
+\end{verbatim}
+
+\begin{decl}
+|thegloss|
+\end{decl}
+
+By default, the main environment just prints the gloss title.
+You may change its definition.
+
+\begin{decl}
+|glosslist|\\
+|\stopglosslist|
+\end{decl}
+
+You usually won't see the |glosslist| environnment. It is automatically
+started by |glossitem| if necessary. You may stop it with the 
+|\stopglosslist|. That's so done to interact with the format
+of the heading for each letter group. The above example of 
+|\glossheading| uses it because sectioning commands cannot be
+used inside lists; this way, the list is stopped, the title is
+printed, and the following |glossitem| restarts the list. If
+you say:
+\begin{verbatim}
+\renewcommand{\glossheading}[1]{}
+\end{verbatim}
+the whole glossary is printed in a single list (with no unwanted
+space between letter groups).
+
+\textsf{Gloss} provides its own format for |glosslist|
+(simply because the authors like it) with a |\glosshang| length
+to adjust the left margin, but you may change its definition.
+
+\begin{decl}
+|glossitem|\\
+|glossitem*|
+\end{decl}
+
+Its |\begin| consists of an |\item| and some additional stuff.  Its 
+|\end| adds a period (except in the starred version) or the page 
+number.  You should not modify this environment, except if you want a 
+format not based in a list environment.
+
+Here is an example of how to modify the layout of the glossary:
+\begin{verbatim}
+\setglosslabel{#2}
+
+\renewcommand{\glossheading}[1]{%
+  \stopglosslist  % -- Don't forget that!
+  \vspace{1pc}%
+  {\large\centering\bfseries#1\par}}
+
+\renewenvironment{glosslist}
+  {\begin{description}}
+  {\end{description}}
+\end{verbatim}
+
+\begin{decl}
+|\glosspage|\\
+|\xglosspage|
+\end{decl}
+
+This command is used to print the page at the end of the gloss entry 
+with |refpages|.  If the entry ends with a period, |\xglosspage| is 
+used, which by default just maps to |\glosspage|.  You may redefine them 
+with |\renewcommand|:
+
+\begin{verbatim}
+\renewcommand{\glosspage}[1]{. (See page~#1)}
+\renewcommand{\xglosspage}[1]{ (See page~#1)}
+\end{verbatim}
+
+
+\section{Order of items}
+
+Now we explain how \bibTeX{} sorts and groups entries. Firstly, the
+necessary values are assigned, if necessary. The |group| field is
+used, as stated above, for entries consisting of non alphabetical
+terms, and differents steps are followed depending on whether
+this field exists or not.
+
+If |group| is not present, then
+\begin{itemize}
+\item |sort-word|, if omitted, is |word| lowercased with
+  non alphabetical signs removed.
+
+\item |heading|, if omitted, is the first letter in
+  |word|.
+\end{itemize}
+If |group| is present, then
+\begin{itemize}
+\item |sort-word|, if omitted, is |word| lowercased with
+  non alphabetical signs \textit{not} removed.
+
+\item |heading| is not used. 
+\end{itemize}
+
+Now, entries can be sorted.  First, they are ordered by |group|, and 
+then, inside each group, by |sort-word|.  In fields with |group| and 
+no |sort-word| the ASCII codes are used.  No further sortening is 
+done.  Finally, entries are grouped: first, consecutive entries with 
+the same |group| field; then, consecutive entries whose |group| is "L" 
+and with the same |heading| field.  Note that |group| sorts and 
+groups, |sort-word| just sorts, and |heading| just groups.
+
+Now, let's answer the following simple question: When should I use 
+|heading| and |sort-word|?  If the word begins with a letter with 
+diacritical mark alphabetized under the letter without diacritical 
+mark (a fairly frequent case), use heading, does not matter you are 
+using \bibTeX{} or \bibTeX 8:
+\begin{verbatim}
+@gd{ecole,
+  word = "{\'e}cole",
+  definition = "...",
+  heading = "E"
+}
+\end{verbatim}
+(\texttt{\'ecole} and \texttt{{'e}cole} are allowed, too).
+
+If the word begins with a letter which is placed under a heading of 
+its own, use |sort-word| in \bibTeX{} and nothing in \bibTeX8 
+(provided a correct sorting file is provided, which is not the case 
+for many languages):
+\begin{verbatim}
+@gd{nname,
+  word = "{\~n}ame",
+  definition = "...",
+  sort-word = "nzzame"
+}
+\end{verbatim}
+in 7-bits versions.  In 8-bits version, you may set |word| as 
+\texttt{\~name} and suppress the |sort-word| field.
+
+Anyway, if you are using a 7-bits version you may want using both fields:
+\begin{verbatim}
+@gd{innigo,
+  word = "{\'I}\~nigo",
+  definition = "...",
+  heading = "I",
+  sort-word = "Inzzigo"
+}
+\end{verbatim}
+
+Finaly, \textsf{gloss} provides inside the |thegloss| environment the 
+|\+zz+| command expanding to nothing, where |zz| is any text helping 
+in sorting entries (usualy |zz|); this way, |sort-field| is not 
+necessary in most of cases:
+\begin{verbatim}
+@gd{nname,
+  word = "{\~n\+zz+}ame",
+  definition = "..."
+}
+\end{verbatim}
+An example in Swedish is |\+zzx+\r{a}|, in Czech 
+|{\v{c}\+zz+}|, and in Breton (8-bits) |\+n+\~n|.  (Of course, 
+\bibTeX{} could translate from a readable form to one for 
+alphabetizing.  That should be done in a future.) Using either 
+|sort-word| or |\+zz+| is a question of personal taste; One of us [JB] 
+uses |sort-word| while the other [JLDA] prefers 
+\bibTeX8.  This syntax is not compliant with the \LaTeX\ interface 
+guidelines (use braces or brackets always) but it's short, which was 
+the main goal; this feature is mostly unsuportted, however.
+
+\section{Complements}
+
+\subsection{The \textsf{glsbase} database}
+
+This database defines some useful strings which can be used
+in other databases. Currently, it only includes a set of
+strings named |alphasort|, |betasort|, etc. to be used
+in the |sort-word| field to provide the right order of
+greek symbols. (They are defined as |"01"| , |"02"|, etc.)
+
+\subsection{The \textsf{glsshort} style}
+
+This style is provided for acronym lists. It sorts and creates
+headings using the |short| filed. A new |sort-short| can be used
+to fine tune the order of entries (this field will be ignored
+in the \textsf{glsplain} style). However, note that the
+printed form still follows the conventions given above, and
+you should use the |short| specifier in |\cite|, and
+|\setglosslabel|.
+
+\subsection{Compatibility with \textsf{hyperref}}
+
+If the \textsf{hyperref} package is loaded, links from the
+word to the entry will be created. You can control
+the appearance of gloss links with the following macros:
+|\glosslinkborder|, |\glosslinkcolor|,
+|\glosslinkbordercolor| (which correspond to |pdfborder|,
+|linkcolor| and |linkbordercolor|); you can change
+them with |\renewcommand|.
+
+\subsection{The sample file}
+
+Once installed \gloss{} you should be able to typeset the
+|sample.tex| file, which will enlighten the usage
+of this package --- \LaTeX{} to write the auxiliary file, \bibTeX{}
+to create the glossary, \LaTeX{} to define the labels, and \LaTeX{}
+to see the final result. Disclaimer: its text is in Spanish.
+
+\subsection{Backward incompatibility}
+
+Version 0.1 beta had a different syntax for the |\gloss| 
+command. The old syntax |\gloss[<word>]{<key>}| does not work
+and |<word>\gloss[nocite]{<key>}| should be used instead. The
+|\glossstyle| command has been removed and its functionality
+merged into |\newgloss|.
+
+\subsection{Language support}
+
+The following package options provide translation of the glossary 
+heading and page abbreviation: |basque|, |catalan|, |danish|, |dutch|, 
+|french|, |german|, |italian|, |portuguese| (and |brazilian|), 
+|russian| (any encoding), |polish|, |spanish| and |swedish|.  
+Translations to other languages are welcome.
+
+\end{document}
+

@@ -1,0 +1,634 @@
+% This is an option style (substyle) for writing a dissertation
+% in the Rackham required format using reportx.sty.  -- jin ji, 1/88
+% Modified on 29. April 2006, olsonse
+%          Added the two '\protect\nopagebreak's in chapter toc entries to
+%          disallow widow lines for chapter headings.
+% Modified on 23. April 2006, olsonse
+%          commented out extra \hspace in titlepage command.  Perhaps the
+%          rackham style has changed, but it must now not have this extra
+%          space before the committee.
+%
+%          commented out the makecaption code.  The report.cls makecaption is
+%          now used.  See comments below for reasoning.
+% Modified on 31. March 2006, olsonse
+%          uncommented out some stuff that jj did, but smb commented out for
+%          some odd reason.  The appendices don't come out right without
+%          using jj's code.
+% Modified on 21. March 2006, olsonse
+%          suppressbibtoc function added (see below for use)
+% Modified on 05/19/88, jj.
+% Modified on 12/13/88, for "CHAPTER" in toc and \@makecaption, jj.
+% Modified on 01/08/89, for sections in loa (look for \@sect), jj.
+% Modified on 89/11/29  by tex
+%          Removed the last three lines of file which consisted of
+%          <blank line>
+%          % Get something else
+%          \input indent
+% Modified on 07/24/1992 by Roque D. Oliveira.
+%          \startappendices was modified to work
+%          with the New Font Selection Scheme.
+%          Further (similar) changes may be needed for other macros.
+%
+%  usage:
+%  \def\suppressbibtoc{0} :  do not suppress adding bibliography to
+%                            table of contents [default]
+%  \def\suppressbibtoc{1} :  suppress adding bibliography to table of contents
+%
+\typeout{  }
+\typeout{Substyle `rac' for Rackham dissertation.}
+\typeout{The sample files used to be in '/usr/um/lib/tex/doc/local/rac'.}
+\typeout{  }
+\typeout{This style file has been edited and passed through various hands:}
+\typeout{ 1988       jj}
+\typeout{ 1989       tex}
+\typeout{ 1992       Roque D. Oliveira}
+\typeout{ 19??       smb}
+\typeout{ 19??-200?  who knows who else}
+\typeout{ 2006       Spencer E. Olson}
+\typeout{  }
+
+%-- Page styles --
+
+\def\ps@chappage{% jj: the first page for chapters
+ \def\@oddhead{}
+ \def\@oddfoot{\hfil \rm \thepage \hfil}
+ \def\@evenhead{}
+ \let\@evenfoot\@oddfoot
+}
+
+\def\ps@plain{%
+ \def\@oddhead{\hfil \rm \thepage \hfil}
+ \def\@oddfoot{}
+ \let\@evenhead\@oddhead
+ \def\@evenfoot{}
+}
+
+% jj: This \ttlpg is the same as \titlepage in report.sty.
+\def\ttlpg{\@restonecolfalse \if@twocolumn \@restonecoltrue \onecolumn
+ \else \newpage \fi \thispagestyle{empty} \c@page \z@}
+
+
+%-- Margins --
+
+\if@twoside \oddsidemargin 0.55in \evensidemargin 0.05in \marginparwidth 85pt
+\else \oddsidemargin 0.55in \evensidemargin 0.55in \marginparwidth 68pt
+\fi
+\topmargin -0.7in \headheight 0.35in \headsep 0.35in \footskip 0.5in
+
+\textheight 648pt
+\textwidth 430pt
+
+
+%-- Front pages --
+
+\normalsize
+
+\def\titlepage#1#2#3{
+ \ttlpg
+ \hbox{ }
+ \vfill
+ \begin{center}
+  \small\normalsizedbl
+  {\LARGE\bf #1 \mbox{}} \\
+  \large\normalsize
+  \vfill
+  \vspace{1ex}
+  %#2 \\
+  \vfill
+  \parbox{4in}{#2\vspace{1.5em}\\#3}
+ \end{center}
+ \vfill
+}
+
+\def\unnumberedpage{%
+ \newpage
+ \thispagestyle{empty}
+ \hbox{ }
+}
+
+\def\copyrightpage#1#2{%
+ \ttlpg
+ \hbox{ }
+ \vfill
+ \begin{center}
+  {\large $\copyright$} \hspace{0.25in}
+%  \parbox{3in}{
+%     \makebox[3in][l]{\underline{#1} \hspace{0.125in} \number\year}
+%     All Rights Reserved}
+%
+%  \parbox{3in}{
+%      \underline{#1}
+%      \par
+%      All Rights Reserved
+%  }
+   {\Large $\mathrm{\frac{#1}{All\ Rights\ Reserved}}$}
+  \hspace{0.125in} \number\year
+ \end{center}
+ \vfill
+}
+
+\def\initializefrontsections{%
+ \setcounter{page}{1}   % -- begins with "ii"
+ \pagestyle{chappage}   % -- numbers at bottom
+ \renewcommand{\thepage}{\roman{page}}   % roman numeral
+ \small\normalsize
+}
+
+\def\dedicationpage#1{%
+ \newpage
+ \addcontentsline{toc}{chapter}{DEDICATION}
+ \hbox{ }
+ \vfill
+ \begin{center}
+  #1
+ \end{center}
+ \vfill
+}
+
+\def\startacknowledgementspage{%
+ \normalsizedbl
+ \newpage
+ \addcontentsline{toc}{chapter}{ACKNOWLEDGEMENTS}
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf ACKNOWLEDGEMENTS}
+ \vspace{0.7in}
+}
+
+\def\startprefacepage{%
+ \newpage
+ \addcontentsline{toc}{chapter}{PREFACE}
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf PREFACE}
+ \vspace{0.7in}
+}
+
+\def\startabstractpage#1#2#3{%
+ \ttlpg
+ \hbox{ }
+ \vspace{0.5in}
+ \begin{center}
+  {\large\bf ABSTRACT} \\
+  \vspace{0.25in}
+   #1 \\
+  \vspace{0.25in}
+   by \\
+   #2 \\
+ \end{center}
+ \vspace{0.5in}
+ \noindent #3 \vspace{0.25in} \\
+ \small\normalsizedbl
+}
+
+%%%  Added by SEO to create an abstract inline;  According to 2006 Rackham
+% guidelines, the abstract is optionally allowed just before the chapters.
+\def\startinlineabstractpage{%
+ \newpage
+ \addcontentsline{toc}{chapter}{ABSTRACT}
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf ABSTRACT}
+ \vspace{0.7in}
+ \small\normalsizedbl
+}
+
+
+%-- Table of contents and lists --
+
+\def\dotfill{\leaders\hbox{$\m@th \mkern \@dotsep mu.\mkern \@dotsep mu$}\hfill}
+
+\def\producetableofcontents{\tableofcontents}
+\def\producelistoffigures{\listoffigures}
+\def\producelistoftables{\listoftables}
+\def\producelistofmaps{\listofmaps}
+\def\producelistofanythings{\listofanythings}
+\def\producelistofappendices{\listofappendices}
+
+% jj: The only difference is \dotfill instead of \hfil.
+\def\l@chapter#1#2{\pagebreak[3]
+ \vskip 1.0em plus 1pt \@tempdima 1.5em \begingroup
+ \parindent \z@ \rightskip \@pnumwidth
+ \parfillskip -\@pnumwidth
+ \bf \leavevmode #1\dotfill \hbox to\@pnumwidth{\hss #2}\par
+ \endgroup
+}
+%\def\l@section{\@dottedtocline{1}{1.5em}{2.3em}} -- in report.sty.
+%\def\l@subsection{\@dottedtocline{2}{3.8em}{3.2em}}
+%\def\l@subsubsection{\@dottedtocline{3}{7.0em}{4.1em}}
+%\def\l@paragraph{\@dottedtocline{4}{10em}{5em}}
+%\def\l@subparagraph{\@dottedtocline{5}{12em}{6em}}
+
+\def\l@chap{\@dottedtocline{1}{0.5em}{3.5em}}
+\def\l@section{\@dottedtocline{2}{5.0em}{2.3em}}
+\def\l@subsection{\@dottedtocline{3}{8.3em}{3.2em}}
+\def\l@subsubsection{\@dottedtocline{4}{12.5em}{4.1em}}
+%smb: changed tocdepth to 2 from 3 so as to make the toc way shorter.
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{2}
+
+% jj: \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}} -- in report.sty.
+\def\l@figure{\@dottedtocline{1}{1.0em}{3.5em}}
+\let\l@table\l@figure
+\let\l@map\l@figure
+\let\l@anything\l@figure
+\def\l@appendix{\@dottedtocline{1}{1.0em}{2.5em}}
+
+\def\tableofcontents{%
+ \newpage\small\normalsize
+ \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf TABLE OF CONTENTS}
+ \vspace{0.7in}
+ \@mkboth{CONTENTS}{CONTENTS}
+ \@starttoc{toc}\if@restonecol\twocolumn\fi
+}
+
+\def\listoffigures{%
+ \newpage\small\normalsize
+ \addcontentsline{toc}{chapter}{LIST OF FIGURES}
+ \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf LIST OF FIGURES}
+ \vspace{0.7in}
+ \@mkboth{LIST OF FIGURES}{LIST OF FIGURES}
+ \@starttoc{lof}\if@restonecol\twocolumn\fi
+ \addtocontents{lof}{\noindent\underline{\bf Figure}\hfill\rm\protect\newline}
+% \addtocontents{lof}{\hbox{ }}
+}
+
+\def\listoftables{%
+ \newpage\small\normalsize
+ \addcontentsline{toc}{chapter}{LIST OF TABLES}
+ \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf LIST OF TABLES}
+ \vspace{0.7in}
+ \@mkboth{LIST OF TABLES}{LIST OF TABLES}
+ \@starttoc{lot}\if@restonecol\twocolumn\fi
+ \addtocontents{lot}{\noindent\underline{\bf Table}\hfill\rm\protect\newline}
+% \addtocontents{lot}{\hbox{ }}
+}
+
+\def\listofmaps{%
+ \newpage\small\normalsize
+ \addcontentsline{toc}{chapter}{LIST OF MAPS}
+ \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf LIST OF MAPS}
+ \vspace{0.7in}
+ \@mkboth{LIST OF MAPS}{LIST OF MAPS}
+ \@starttoc{lom}\if@restonecol\twocolumn\fi
+ \addtocontents{lom}{\noindent\underline{\bf Map}\hfill\rm\protect\newline}
+% \addtocontents{lom}{\hbox{ }}
+}
+
+\def\listofanythings#1{%
+ \newpage\small\normalsize
+ \def\anythingtitle{#1}
+ \addcontentsline{toc}{chapter}{#1}
+ \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf \anythingtitle}
+ \vspace{0.7in}
+ \@mkboth{\anythingtitle}{\anythingtitle}
+ \@starttoc{lox}\if@restonecol\twocolumn\fi
+ \addtocontents{lox}{\noindent\underline{\bf \anythingtopic}\hfill\rm\protect\newline}
+% \addtocontents{lox}{\hbox{ }}
+}
+
+\def\listofappendices{%
+ \newpage\small\normalsize
+ \addcontentsline{toc}{chapter}{LIST OF APPENDICES}
+ \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf LIST OF APPENDICES}
+ \vspace{0.7in}
+ \@mkboth{LIST OF APPENDICES}{LIST OF APPENDICES}
+ \@starttoc{loa}\if@restonecol\twocolumn\fi
+ \addtocontents{loa}{\noindent\underline{\bf Appendix}\hfill\rm\protect\newline}
+% \addtocontents{loa}{\hbox{ }}
+}
+
+\def\arbitraryfrontsection#1{%
+ \newpage
+ \addcontentsline{toc}{chapter}{#1}
+ \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf #1}
+ \vspace{0.7in}
+}
+
+
+%-- Start chapters --
+
+\def\thechapter {\Roman{chapter}}
+\def\thesection {\@arabic\c@chapter.\@arabic\c@section}
+\def\thefigure {\@arabic\c@chapter.\@arabic\c@figure}
+\def\thetable {\@arabic\c@chapter.\@arabic\c@table}
+\def\theequation {\@arabic\c@chapter.\@arabic\c@equation}
+
+%\def\anythingtopic{Anything}
+\def\defineanythingtopic#1{\def\anythingtopic{#1}}
+
+\newcounter{anything}[chapter]
+\def\theanything{\@arabic\c@chapter.\@arabic\c@anything}
+\def\fps@anything{tbp}
+\def\ftype@anything{1}
+\def\ext@anything{lox}
+\def\fnum@anything{\anythingtopic\ \theanything}
+\def\anything{\@float{anything}}
+\let\endanything\end@float
+\@namedef{anything*}{\@dblfloat{anything}}
+\@namedef{endanything*}{\end@dblfloat}
+
+\newcounter{map}[chapter]
+\def\themap{\@arabic\c@chapter.\@arabic\c@map}
+\def\fps@map{tbp}
+\def\ftype@map{1}
+\def\ext@map{lom}
+\def\fnum@map{Map \themap}
+\def\map{\@float{map}}
+\let\endmap\end@float
+\@namedef{map*}{\@dblfloat{map}}
+\@namedef{endmap*}{\end@dblfloat}
+
+\newcounter{appendix}[chapter]
+\def\theappendix{\@Alph\c@appendix}
+\def\fps@appendix{tbp}
+\def\ftype@appendix{1}
+\def\ext@appendix{loa}
+
+\def\startthechapters{%
+ \def\@chapapp{CHAPTER}
+ \addtocontents{toc}{\protect\mbox{ }\protect\newline\noindent{\bf CHAPTER}\protect\newline}
+ \addtocontents{toc}{\hbox{ }}
+ \normalsizedbl
+ \clearpage % This has to be before the rest.  jj
+ \setcounter{chapter}{0}
+ \setcounter{page}{1} % -- ...always begin with ii.
+ \renewcommand{\thepage}{\arabic{page}}
+ \pagestyle{plain}
+ \def\tocname{toc}
+}
+
+\def\chapter{\clearpage \thispagestyle{chappage} \global\@topnum\z@
+ \@afterindenttrue \secdef\@chapter\@schapter
+}
+\def\@chapter[#1]#2{%
+ \ifnum \c@secnumdepth >\m@ne
+  \refstepcounter{chapter}
+  \typeout{\@chapapp\space\thechapter.}
+  \addtocontents{toc}{\hbox{ }}
+  \addcontentsline{toc}{chap}{\protect\numberline{\hbox{ }\hfill\bf\thechapter.\hspace{5pt}}{\bf #1}}
+% seo:  Added the following two '\protect\nopagebreak's so to disallow widow lines
+% for chapter headings.  29. April 2006
+  \addtocontents{toc}{\protect\nopagebreak\hbox{ }\protect\nopagebreak}
+ \else
+  \addtocontents{toc}{\hbox{ }}
+  \addcontentsline{toc}{chap}{#1}
+  \addtocontents{toc}{\hbox{ }}
+ \fi
+ \chaptermark{#1}
+% \addtocontents{lof}{\hbox{ }}
+% \addtocontents{lot}{\hbox{ }}
+% \addtocontents{lom}{\hbox{ }}
+% \addtocontents{lox}{\hbox{ }}
+ \if@twocolumn \@topnewpage[\@makechapterhead{#2}]
+ \else \@makechapterhead{#2} \@afterheading \fi
+}
+
+\def\@makechapterhead#1{%-- The top margin is required to be 2 in.
+ \vspace*{0.7in}
+ {\parindent 0pt \raggedright
+  \ifnum \c@secnumdepth >\m@ne
+  \centerline{\large\bf \@chapapp{} \thechapter} \par
+  \vskip 0.3in \fi
+  \begin{center}
+   \Large\bf #1
+  \end{center}
+  \nobreak \vskip 0.7in
+ }
+}
+
+\def\@makeschapterhead#1{%
+ \vspace*{0.7in}
+ {\parindent 0pt \raggedright
+  \centerline{\Large\bf #1} \par
+  \nobreak \vskip 0.7in
+ }
+}
+
+\def\section{\@startsection{section}{1}{\z@}{3.5ex plus 1ex minus
+ .2ex}{2.3ex plus .2ex}{\large\bf}}
+\def\subsection{\@startsection{subsection}{2}{\z@}{3.25ex plus 1ex minus
+ .2ex}{1.5ex plus .2ex}{\normalsize\bf}}
+\def\subsubsection{\@startsection{subsubsection}{3}{\z@}{3.25ex plus
+ 1ex minus .2ex}{1.5ex plus .2ex}{\normalsize\bf}}
+
+% jj: The following is copied from latex.tex, with \addcontentline
+%     changed to conditional -- only the sections in chapters will be
+%     added to toc, noly the ones in appendices.  12/15/88
+% smb commented it out as it seemed to not do the correct thing.
+% seo uncommented out smb's 'comment out' because it does the correct thing
+%     with and not without. 31. March 2006
+
+\def\@chaptest{APPENDIX}
+\def\@sect#1#2#3#4#5#6[#7]#8{
+ \ifnum #2>\c@secnumdepth \def\@svsec{}
+ \else
+  \refstepcounter{#1}\edef\@svsec{\csname the#1\endcsname\hskip 1em }
+ \fi
+ \@tempskipa #5\relax
+ \ifdim \@tempskipa>\z@
+  \begingroup #6\relax
+   \@hangfrom{\hskip #3\relax\@svsec}{\interlinepenalty \@M #8\par}
+  \endgroup
+  \csname #1mark\endcsname{#7}
+  \ifx \@chapapp \@chaptest
+  \else
+   \addcontentsline{toc}{#1}{\ifnum #2>\c@secnumdepth \else
+   \protect\numberline{\csname the#1\endcsname}\fi #7}
+  \fi
+ \else
+  \def\@svsechd{#6\hskip #3\@svsec #8\csname #1mark\endcsname {#7}
+  \ifx \@chapapp \@chaptest
+  \else
+   \addcontentsline{toc}{#1}{\ifnum #2>\c@secnumdepth \else
+   \protect\numberline{\csname the#1\endcsname}\fi #7}
+  \fi
+  }
+ \fi
+ \@xsect{#5}
+}
+
+\long\def\@caption#1[#2]#3{%
+ \addtocontents{\csname ext@#1\endcsname}{\hbox{ }}
+ \addcontentsline{\csname ext@#1\endcsname}{#1}{\protect\numberline{\csname
+  the#1\endcsname}{\ignorespaces\protect\small\protect\normalsize\rm #2}}
+ \par
+ \begingroup
+  \@parboxrestore
+  \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces\protect\small\normalsize\rm #3}
+  \par
+ \endgroup
+}
+
+%\long\def\@makecaption#1#2{
+% \vskip 10pt
+% \setbox\@tempboxa\hbox{#1: #2}
+% \ifdim \wd\@tempboxa >\hsize #1: #2\par
+% \else \hbox to\hsize{\hfill\box\@tempboxa\hfill}
+% \fi}
+
+%% 23. April 2006:  (seo)  commented this out;
+%% This code writes the caption next to the figure/table/... label without
+%% wrapping the caption text under the label.  It creates a lot of "Overfull
+%% hbox"'s.  It also appears that LaTeX changes some caption things internall
+%% from time to time.  Examining various theses from other schools, all others
+%% I've seen use the default caption style.
+%% 
+%\long\def\@makecaption#1#2{
+% \vskip 10pt
+% \setbox\@tempboxa\hbox{#1: #2}
+% \ifdim \wd\@tempboxa >\hsize
+%  \setbox\@tempboxa\hbox{#1: }
+%  \def\@tempdimj{\hsize}
+%  \advance\@tempdimj -\wd\@tempboxa
+%  \hbox to\hsize{#1: \parbox[t]{\@tempdimj}{#2}}
+% \else \hbox to\hsize{\hfill\box\@tempboxa\hfill}
+% \fi}
+
+
+%-- Appendices and bibliography --
+
+% jj:  \@sect is copied from latex.tex; toc changed to \tocname.
+%smb commented it out to see the effect. there seems to be none.
+% seo:  uncommented it out because there is indeed an effect.  i don't think
+%       that smb must have had large appedices, otherwise smb would have
+%       noticed.  31. March 2006
+\def\@sect#1#2#3#4#5#6[#7]#8{\ifnum #2>\c@secnumdepth
+   \def\@svsec{}\else
+   \refstepcounter{#1}\edef\@svsec{\csname the#1\endcsname\hskip 1em }\fi
+   \@tempskipa #5\relax
+   \ifdim \@tempskipa>\z@
+       \begingroup #6\relax
+           \@hangfrom{\hskip #3\relax\@svsec}{\interlinepenalty \@M #8\par}
+       \endgroup
+       \csname #1mark\endcsname{#7}
+       \addcontentsline{\tocname}{#1}{\ifnum #2>\c@secnumdepth \else
+           \protect\numberline{\csname the#1\endcsname}\fi #7}
+   \else
+       \def\@svsechd{#6\hskip #3\@svsec #8
+       \csname #1mark\endcsname{#7}
+       \addcontentsline{\tocname}{#1}{\ifnum #2>\c@secnumdepth \else
+           \protect\numberline{\csname the#1\endcsname}\fi #7}}
+   \fi
+   \@xsect{#5}
+}
+
+
+\def\startappendices{\par
+ \def\thechapter{\Alph{chapter}}
+ \def\thesection{\thechapter.\arabic{section}}
+
+% \ifx \selectfont\undefined
+ \def\theequation{{\rm \thechapter}.\arabic{equation}}
+ \def\thefigure{{\rm \thechapter}.\@arabic\c@figure}
+ \def\thetable{{\rm \thechapter}.\@arabic\c@table}
+ \def\themap{{\rm \thechapter}.\@arabic\c@map}
+ \def\theanything{{\rm \thechapter}.\@arabic\c@anything}
+% \else
+% \def\theequation{{\mathrm \thechapter}.\arabic{equation}}
+% \def\thefigure{{\mathrm \thechapter}.\@arabic\c@figure}
+% \def\thetable{{\mathrm \thechapter}.\@arabic\c@table}
+% \def\themap{{\mathrm \thechapter}.\@arabic\c@map}
+% \def\theanything{{\mathrm \thechapter}.\@arabic\c@anything}
+% \fi
+
+ \let\theappendix=\thechapter
+%changed word chapter to word appendix in 1st half of line so that
+% loa would have stuff instead of toc
+ \let\appendix=\startanappendix
+ \setcounter{chapter}{0}
+ \setcounter{section}{0}
+ \def\@chapapp{APPENDIX}
+ \def\tocname{loa}
+ \pagestyle{plain}
+ \clearpage
+ \thispagestyle{chappage}
+ \addcontentsline{toc}{chapter}{APPENDICES}
+ \hbox{ }
+ \vfill
+ \centerline{\large\bf APPENDICES}
+ \vfill
+}
+
+% commented this out to get rid of bad referencing
+%\let\appendix=\chapter
+
+\def\startanappendix#1{%
+ \clearpage \global\@topnum\z@ \@afterindenttrue
+ \refstepcounter{chapter}
+ \typeout{\@chapapp\space\thechapter.}
+ \addtocontents{loa}{\hbox{ }}
+ \addcontentsline{loa}{appendix}{\protect\numberline{\thechapter.}{\ignorespaces\rm #1}}
+% \addtocontents{loa}{\hbox{ }}
+% \addtocontents{lof}{\hbox{ }}
+% \addtocontents{lot}{\hbox{ }}
+% \addtocontents{lom}{\hbox{ }}
+% \addtocontents{lox}{\hbox{ }}
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf \@chapapp{} \thechapter} \par
+ \vspace{0.3in}
+ \begin{center}
+  \Large\bf #1
+ \end{center}
+ \vspace{0.7in}
+}
+
+\def\endofchapterbibliography{%
+    \clearpage
+    \addtocontents{toc}{\hspace{0.6in} Bibliography} % adds entry to table of contents
+    \hbox{ }
+    \vspace{0.7in}
+    \begin{center}
+        {\large \bf BIBLIOGRAPHY}
+    \end{center}
+    \vspace{0.75in}
+}
+
+% olsonse:  added option to suppress bibliography entry in TOC
+\def\suppressbibtoc{0}
+
+\def\thebibliography#1{%
+ \clearpage
+ \thispagestyle{chappage}
+ \if1\suppressbibtoc \else \addcontentsline{toc}{chapter}{BIBLIOGRAPHY} \fi
+ \hbox{ }
+ \vfill
+ \centerline{\large\bf BIBLIOGRAPHY}
+ \vfill
+ \newpage
+ \hbox{ }
+ \vspace{0.5in}
+ \centerline{\large\bf BIBLIOGRAPHY}
+ \vspace{0.7in}
+ \@mkboth{BIBLIOGRAPHY}{BIBLIOGRAPHY}
+ \small\normalsize
+ \list{[\arabic{enumi}]}{\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+ \advance\leftmargin\labelsep
+ \usecounter{enumi}}
+ \def\newblock{\hskip .11em plus .33em minus -.07em}
+ \sloppy\clubpenalty4000\widowpenalty4000
+ \sfcode`\.=1000\relax}
+\let\endthebibliography=\endlist
+\def\startbibliography{ }

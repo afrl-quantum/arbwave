@@ -1,0 +1,448 @@
+% +--------------------------------------------------+
+% | Typeset gloss.tex to get the documentation.      |
+% +--------------------------------------------------+
+%
+% (c) 1998 Jose Luis Diaz, 1999-2002 Jose Luis Diaz and Javier Bezos.
+% All Rights Reserved.
+%
+% This file is part of the gloss distribution release 1.5.2
+% -----------------------------------------------------------
+%
+% This file can be redistributed and/or modified under the terms
+% of the LaTeX Project Public License Distributed from CTAN
+% archives in directory macros/latex/base/lppl.txt; either
+% version 1 of the License, or any later version.
+
+\def\fileversion{1.5.2}
+\def\filedate{2002/07/26}
+
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+\ProvidesPackage{gloss}[\filedate\space\fileversion\space Gloss package]
+
+\edef\gls@a{\catcode`\string:=\the\catcode`:\relax}
+\catcode`:=12
+
+\providecommand\glossname{Glossary}
+\newcommand\glosspage[1]{, p.\nobreakspace#1.}
+\newcommand\xglosspage{\glosspage}
+
+\DeclareOption{refpages}{%
+  \def\endglossitem{%
+    \@ifundefined{gls@thispage}%
+      {.}%
+      {\glosspage\gls@thispage}%
+    \par}%
+  \@namedef{endglossitem*}{%
+    \@ifundefined{gls@thispage}%
+      {}%
+      {\xglosspage\gls@thispage}%
+    \par}}
+
+% Declaring new glossaries
+% ~~~~~~~~~~~~~~~~~~~~~~~~
+
+% 1:label 2:ext 3:title 4:bibstyle
+%   2008/9/7  SEO:   Added options to newgloss.
+%                    First option is to disable hyperlinks with gloss items
+%                    using the hyperref package (if it has been loaded).
+%                    There might be a better way to do what I've done here.
+%  synopsis:  \newgloss[<opts-list>]{<name>}{<ext>}{<title>}{<bibstyle>}
+%  options:
+%       any \gloss options work here (for glossary wide settings), such as
+%       (refpage, norefpage, nocite, nolink).  See \gloss command.
+
+
+\newcommand{\newgloss}[5][nothing]{%
+  \if@filesw
+    \expandafter\newwrite\csname glsf@#2\endcsname
+    \immediate\openout\csname glsf@#2\endcsname\jobname#3.aux %
+    \PackageInfo{gloss}{Writing gloss file \jobname#3.aux}%
+    \immediate\write\csname glsf@#2\endcsname{\string\bibstyle{#5}}%
+  \fi
+  \@namedef{glst@#2}{\def\gls@title{#4}}%
+  \@namedef{glso@#2}{%
+      \edef\gls@base{\jobname#3}%
+      \edef\gls@name{#2}%
+      \edef\gls@opts{#1}% save a list of the options
+%       now loop through options and execute them each.
+%       This amounts to setting boolean flags for the current environment.
+      \@for\gls@b:=\gls@opts\do{%
+        \@ifundefined{glso@\gls@b}%
+           {\PackageError{gloss}{Unknown option}%
+              {You have used an unknown option in \string\newgloss}}%
+           {\csname glso@\gls@b\endcsname}}%
+  }
+%   set the first defined glossary to default unless requested for this one
+%   explicitly
+  \@ifundefined{glspp@default}{%
+    \global\@namedef{glspp@default}{#2}%
+    \begingroup%
+      \def\defaultgloss{default}%
+      {\ifx\glspp@default \defaultgloss%
+       \else%
+          \global\def\glso@default{\csname glso@#2\endcsname }%
+       \fi}%
+    \endgroup%
+  }{%
+  }%
+}
+
+\newcommand\makegloss{%
+  \newgloss{default}{.gls}{\glossname}{glsplain}}
+
+\def\glso@default{\PackageError{gloss}{Missing default glossary}%
+  {You missed either \string\makegloss \ or \string\newgloss}}
+
+% Two .aux related commands
+% ~~~~~~~~~~~~~~~~~~~~~~~~
+% In both of them, #1 includes (already expanded) \gls@name ::
+
+\def\gls@cite{%
+  \begingroup
+    \catcode`:=12
+    \gls@cite@i}
+\def\gls@cite@i#1#2#3#4{%
+  \endgroup
+  \global\@namedef{gls@#1}{{#2}{#3}{#4}}}
+
+\def\gls@page{%
+  \begingroup
+    \catcode`:=12
+    \gls@page@i}
+\def\gls@page@i#1#2{%
+  \endgroup
+  \global\@namedef{glsp@#1}{#2}}
+
+% The \gloss command
+% ~~~~~~~~~~~~~~~~~~
+% The command:
+
+%   2008/9/7  SEO:   Added some options to gloss and simplified the
+%                    implementation.  Also added some various '%' to end of
+%                    lines to try and get rid of extra white space put into
+%                    the document (mostly visible in mixed mathmode/textmode
+%                    cases).
+%  synopsis:  \gloss[<opts-list>]{<key-list>}
+%  options:
+%       nolink    : when using hyperref in the document, this disables
+%                   hyperlinks made to the glossary from glossary items in the
+%                   text. 
+%       refpage   : tells \gloss{} to ignore previous references to pages for
+%                   this word.
+%       norefpage : do not use this instance of the word as the reference in
+%                   the glossary.
+%       nocite    : don't cite the glossary item here, just include it in the
+%                   glossary list.
+%       nolink    : Disable hyperlinking for this instance of the gloss item
+%                   when using the hyperref package.  Useful for symbols, and
+%                   symbols in equations where hyperlinking can obscure the
+%                   math.
+%       <name>    : Select the glossary <name> to which this entry will be
+%                   tied.
+
+\newcommand{\gloss}[2][nothing]{%
+  \@bsphack%
+  \begingroup%
+    \def\gls@a{\def\gls@a{,\penalty\@m\ }}%
+%   set default options for gloss command
+    \glso@default%
+    \glso@word%
+%   loop through each given option and execute
+    \@for\gls@b:=#1\do{%
+      \@ifundefined{glso@\gls@b}%
+         {\PackageError{gloss}{Unknown option}%
+            {You have used an unknown option in \string\gloss}}%
+         {\csname glso@\gls@b\endcsname}}%
+    \@for\gls@b:=#2\do%
+      {\gls@a%%% 2001/08/29 Missing
+       \edef\gls@b{\expandafter\@firstofone\gls@b\@empty}%
+       \ifgls@cite%%% 2001/12/20 a few lines rewritten
+%   2006/4/10 SEO:  Added support for norefpage option to ignore the refpage
+%                   setting with this instance of a \gloss item
+         \@ifundefined{glspp@\gls@name::\gls@b}{%
+             \ifgls@norefpage%
+             \else%
+                \gls@refpagetrue%
+             \fi%
+         }{}%
+       \fi%
+       \ifgls@refpage%
+         \protected@write\@auxout{}%
+           {\string\gls@page{\gls@name::\gls@b}{\noexpand\thepage}}%
+         \global\@namedef{glspp@\gls@name::\gls@b}{}%
+       \fi%
+       \if@filesw%
+         \immediate\write\csname glsf@\gls@name\endcsname%
+            {\string\citation{\gls@b}}%
+       \fi%
+       \@ifundefined{gls@\gls@name::\gls@b}%
+         {\ifgls@cite%
+%   2008/9/7  SEO:  Until mathmode supports bfseries, we change bfseries to
+%                   the LaTeX 2.09 \bf command that can be used in both math
+%                   mode and in normal text without complaining. 
+            {\reset@font\bf[\gls@unlabel{#2}??]}%
+          \fi%
+          \G@refundefinedtrue%
+          \PackageWarning{gloss}%
+            {Term `\gls@b' on page \thepage\space%
+                not defined in glossary `\gls@name'}}%
+         {\ifgls@cite%
+%   2008/9/7  SEO:  Added nolink option to avoid linking for special cases
+%                   (especially when in mathmode). 
+          {\ifgls@nolink%
+              {\expandafter\expandafter\expandafter%
+                \gls@printtext\csname gls@\gls@name::\gls@b\endcsname}%
+           \else%
+              {\edef\@pdfborder{\glosslinkborder}%
+               \edef\@linkcolor{\glosslinkcolor}%
+               \edef\@linkbordercolor{\glosslinkbordercolor}%
+               \gls@hyperlink{\gls@name::\gls@b}{%
+                 \expandafter\expandafter\expandafter
+                   \gls@printtext\csname gls@\gls@name::\gls@b\endcsname}%
+              }%
+           \fi%
+          }%
+          \fi}}%
+  \expandafter%
+  \endgroup%2002/07/25 wrong tempswa replaced by gls@cite
+  \ifgls@cite\else\expandafter\@esphack\fi}%
+
+\def\gls@unlabel#1{%
+  \expandafter\expandafter\expandafter
+  \@gobble\expandafter\string\csname #1\endcsname}
+
+\AtBeginDocument{%
+  \@ifpackageloaded{hyperref}%
+    {\let\gls@hyperlink\hyperlink
+     \let\gls@raisedlink\Hy@raisedlink}%
+    {\let\gls@hyperlink\@secondoftwo
+     \let\gls@raisedlink\@gobble
+     \let\glosslinkborder\relax
+     \let\glosslinkcolor\relax
+     \let\glosslinkbordercolor\relax}}
+
+\def\glosslinkborder{\@pdfborder}%
+\def\glosslinkcolor{\@linkcolor}%
+\def\glosslinkbordercolor{\@linkbordercolor}
+
+% Options:
+
+%   2006/4/10 SEO:  Simple do-nothing default dummy option to help make
+%   implementations of \newgloss and \gloss simpler.
+\def\glso@nothing{}
+
+\newif\ifgls@cite
+\gls@citetrue
+\def\glso@nocite{%
+  \gls@citefalse
+  \let\gls@a\@empty}
+
+\newif\ifgls@refpage % false by default
+\def\glso@refpage{\gls@refpagetrue}
+%   2006/4/10 SEO:  Added support for norefpage option to ignore the refpage
+%                   setting with this instance of a \gloss item
+\newif\ifgls@norefpage % false by default
+\def\glso@norefpage{\gls@norefpagetrue}
+
+
+%   2008/9/7  SEO:  Added nolink (for when hyperref used) to be used by
+%                   newgloss command. 
+\newif\ifgls@nolink % false by default
+\def\glso@nolink{\gls@nolinktrue}
+
+
+\newcommand\setglosstext[2]{%
+  \@namedef{gls@prtext@#1}##1##2##3{{\def\gls@short{##3}#2}}%
+  \@namedef{glso@#1}{%
+    \def\gls@printtext{\csname gls@prtext@#1\endcsname}}}
+
+\setglosstext{short}{\ifglossshort*{#3}{}}
+\setglosstext{word}{#1}
+\setglosstext{Word}{#2}
+\setglosstext{long}{#1\ifglossshort*{ (#3)}{}}
+\setglosstext{Long}{#2\ifglossshort*{ (#3)}{}}
+
+\def\ifglossshort{%
+  \@ifstar
+    {\ifx\gls@short\@empty
+       \PackageError{gloss}{Empty short}%
+          {You cannot print a short form of a term lacking it}%
+       {\reset@font\bfseries[??]}%
+       \expandafter\@secondoftwo
+     \else
+       \expandafter\@firstoftwo
+     \fi}%
+    {\ifx\gls@short\@empty
+       \expandafter\@secondoftwo
+     \else
+       \expandafter\@firstoftwo
+     \fi}}
+
+% \newcommand\maingloss[2][word]{\textit{\gloss[refpage,#1]{#2}}}
+
+\newcommand\Gloss[1]{\gloss[Word]{#1}}
+\newcommand\onlygloss[1]{\gloss[nocite]{#1}}
+
+% Printing the gloss
+% ~~~~~~~~~~~~~~~~~~
+% The whole list:
+
+\@ifundefined{chapter}
+  {\def\gls@section{%
+     \section*{\gls@title}%
+     \@mkboth{\MakeUppercase\gls@title}{\MakeUppercase\gls@title}%
+     \addcontentsline{toc}{section}{\gls@title}}}%
+  {\def\gls@section{%
+     \chapter*{\gls@title}%
+     \@mkboth{\MakeUppercase\gls@title}{\MakeUppercase\gls@title}%
+     \addcontentsline{toc}{chapter}{\gls@title}}}
+
+\newcommand\printgloss[2][default]{%
+  \if@filesw
+    \csname glso@#1\endcsname
+    \immediate\write\csname glsf@\gls@name\endcsname
+       {\string\bibdata{#2}}%
+  \fi
+  \csname glst@#1\endcsname
+  \InputIfFileExists{\gls@base.bbl}%
+    {}%
+    {\typeout{No file \gls@base.bbl}}}
+
+\newenvironment{thegloss}
+  {\gls@section
+   \def\+##1+{}%
+   \@beginparpenalty\@M}%  
+  {\stopglosslist}
+
+
+%   2008/10/7 SEO:
+%          This function (\lookupitem) is only to be used from glslookup.bst
+%          which uses the glossary bibtex file as a database of words, or
+%          symbols.  This is most helpful for creating consistency throughout
+%          a large document that uses many mathematical symbols.   The
+%          printgloss command will still need to be used, but it will not
+%          generate any explicit output, rather only get the bibtex stuff
+%          parsed and ready.  
+% #1:key, #2:[word or $word$] #3:[ucword or $word$], #4:short, #5:definition
+\newcommand{\lookupitem}[5]%
+  { \begingroup
+       \let\protect\noexpand
+       \immediate\write\@auxout{%
+         \string\gls@cite{\gls@name::#1}{#2}{#3}{#4}}%
+     \endgroup
+   \ignorespaces
+  }
+
+
+% Headings:
+
+\newcommand\setglossgroup[1]{\@namedef{gls@group@#1}}
+\newcommand\glossgroup[1]{%
+  \expandafter\glossheading\csname gls@group@#1\endcsname}
+
+\newcommand\glossheading[1]{%
+  \stopglosslist
+  \subsection*{#1}}
+
+% The list itself:
+
+\newlength{\glosshang}
+\setlength{\glosshang}{2cm}
+
+\newenvironment{glosslist}
+  {\begin{list}{\relax}{%
+        \def\makelabel##1{##1\hfil}%
+        \setlength{\labelsep}{1em}%
+        \setlength{\labelwidth}{\glosshang}%
+        \addtolength{\labelwidth}{-\labelsep}%
+        \setlength{\itemindent}{0em}%
+        \setlength{\leftmargin}{\glosshang}}}
+  {\end{list}}
+
+% The gloss items:
+
+% 1:key  2:term  3:text  4:shorthand 
+
+\newcommand\stopglosslist{}
+
+\newif\ifgls@list
+
+\newenvironment{glossitem}[4]%
+  {\ifgls@list
+     \expandafter\let\expandafter\gls@thispage% relax if undefined
+             \csname glsp@\gls@name::#1\endcsname
+     \item[%
+       \gls@raisedlink{\hyper@anchorstart{\gls@name::#1}\hyper@anchorend}%
+       \gls@label{#2}{#3}{#4}]%
+     \begingroup
+       \let\protect\noexpand
+       \immediate\write\@auxout{%
+         \string\gls@cite{\gls@name::#1}{#2}{#3}{#4}}%
+     \endgroup
+   \else
+     \xdef\gls@a{\noexpand\begin{\@currenvir}}%
+     \endgroup
+     \begin{glosslist}%
+     \gls@listtrue
+     \def\stopglosslist{\end{glosslist}}%
+     \gls@a{#1}{#2}{#3}{#4}%
+   \fi
+   \ignorespaces}
+  {.\@@par}
+
+\expandafter\let\csname glossitem*\endcsname\glossitem
+\expandafter\let\csname endglossitem*\endcsname\@@par
+
+\newcommand\setglosslabel[1]{%
+   \def\gls@label##1##2##3{\def\gls@short{##3}#1}}
+
+\setglosslabel{\sffamily\bfseries#1\ifglossshort{ (#3)}{}}
+
+% Language support
+
+\DeclareOption{basque}{%
+  \def\glossname{Glosategi}%
+  \def\glosspage#1{, orri \nobreakspace#1.}}%*********
+\DeclareOption{brazilian}{%
+  \def\glossname{Gloss\'ario}%
+  \def\glosspage#1{, p\'ag.\nobreakspace#1.}}
+\DeclareOption{catalan}{%
+  \def\glossname{Glossari}%
+  \def\glosspage#1{, p\`ag.\nobreakspace#1.}}
+\DeclareOption{danish}{%
+  \def\glossname{Ordliste}%
+  \def\glosspage#1{, s.\nobreakspace#1.}}
+\DeclareOption{dutch}{%
+  \def\glossname{Verklarende woordenlijst}%
+  \def\glosspage#1{, p.\nobreakspace#1.}}
+\DeclareOption{french}{%
+  \def\glossname{Glossaire}%
+  \def\glosspage#1{, p.\nobreakspace#1.}}
+\DeclareOption{german}{%
+  \def\glossname{Glossar}%
+  \def\glosspage#1{, S.\nobreakspace#1.}}
+\DeclareOption{italian}{%
+  \def\glossname{Glossario}%
+  \def\glosspage#1{, pag.\nobreakspace#1.}}
+\DeclareOption{polish}{%
+  \def\glossname{S\l owniczek}%
+  \def\glosspage#1{, str.\nobreakspace#1.}}%
+\DeclareOption{portuguese}{%
+  \def\glossname{Gloss\'ario}%
+  \def\glosspage#1{, p\'ag.\nobreakspace#1.}}
+\DeclareOption{russian}{%
+  \def\glossname{%
+     {\cyr\CYRG\cyrl\cyro\cyrs\cyrs\cyra\cyrr\cyri\cyrishrt}}%
+  \def\glosspage#1{, {\cyr\cyrs.}\nobreakspace#1.}}
+\DeclareOption{spanish}{%
+  \def\glossname{Glosario}%
+  \def\glosspage#1{, p\'ag.\nobreakspace#1.}}
+\DeclareOption{swedish}{%
+  \def\glossname{Ordlista}%
+  \def\glosspage#1{, s.\nobreakspace#1.}}%*******
+
+\ProcessOptions*
+
+\gls@a  % restores the colon catcode
+
+\endinput

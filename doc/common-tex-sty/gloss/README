@@ -1,0 +1,31 @@
+Gloss 1.5.2
+~~~~~~~~~~~
+
+Gloss is a package which allows the creation of glossaries 
+using bibTeX. This approach has several advantages:
+- bibTeX is available in every platform where TeX is.
+- Glossary entries can be stored in databases, and you needn't
+  rewrite the definitions.
+- There are a lot of tools for managing bibTeX databases.
+- bibTeX is a programable tool and you can define your own 
+  styles for acronyms, symbols, and so on.
+
+The file gloss.tex contains the documentation.
+
+Release 1.5.1 fixes a few bugs:
+
+- page was missing when a nocite form was followed by a
+  "normal" form (not a frequent situation, however).
+- chars usually allowed in \cite now are allowed in \gloss
+  as well
+- refpage was no-op with nocite. Now it can be used to
+  refer to the page even if the term in not cited in the
+  text (and since this combination did not make sense
+  formerly, I hope there won't be uncompatibilities).
+
+Release 1.5.2 fixes a bug:
+
+- Sometimes the space following \gloss was gobbled.
+
+2002/07/26
+http://www.texytipografia.com
