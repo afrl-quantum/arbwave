@@ -1,0 +1,17 @@
+*.blg
+*.end
+*.bbl
+*.lof
+*.aux
+*.dvi
+*.log
+*.toc
+*.idx
+*.ilg
+*.ind
+*.loa
+*.lot
+*.out
+*.brf
+DVIoutput.tex
+manual.pdf
