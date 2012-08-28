@@ -137,7 +137,7 @@ class ArbWave(gtk.Window):
     # LOAD THE STORAGE
     self.config_file = ''
     self.plotter = Plotter( self )
-    self.processor = Processor( self, self.plotter )
+    self.processor = Processor( self )
     self.script = stores.Script(
       default_script,
       title='Global Variables/Functions...',
@@ -498,7 +498,8 @@ class ArbWave(gtk.Window):
         ( self.clocks.representation(),    item in [ self.ALL_ITEMS, self.clocks] ),
         ( self.signals.representation(),   item in [ self.ALL_ITEMS, self.signals] ),
         ( self.channels.representation(),  item in [ self.ALL_ITEMS, self.channels] ),
-        ( self.waveforms.representation(), item in [ self.ALL_ITEMS, self.waveforms] ),
+        ( self.waveforms.representation(store_path=True),
+                                           item in [ self.ALL_ITEMS, self.waveforms] ),
         ( self.script.representation(),    item in [ self.ALL_ITEMS, self.script] ),
         toggle_run=toggle_run,
         show_stopped=show_stopped,

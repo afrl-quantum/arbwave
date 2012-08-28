@@ -25,8 +25,8 @@ class Arbwave:
 
   StopGeneration = StopGeneration
   
-  def __init__(self, plotter):
-    self.plotter = plotter
+  def __init__(self, ui):
+    self.ui = ui
     self.devcfg = None
     self.clocks = None
     self.signals = None
@@ -73,7 +73,7 @@ class Arbwave:
     if (stop & self.BEFORE) and self.stop_request:
       self.dostop()
 
-    analog, digital, transitions, t_max, end_clocks = \
+    analog, digital, transitions, t_max, end_clocks, eval_cache = \
       compute.waveforms( self.devcfg[0],
                          self.clocks[0],
                          self.signals[0],
@@ -81,7 +81,8 @@ class Arbwave:
                          self.waveforms[0],
                          globals=globals )
 
-    send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
+    self.ui.waveform_editor.set_eval_cache( eval_cache )
+    send.to_plotter( self.ui.plotter, analog, digital, self.channels[0], t_max )
     send.to_driver.waveform( analog, digital, transitions, t_max, end_clocks, continuous )
     send.to_driver.start(self.devcfg[0], self.clocks[0], self.signals[0])
     if wait and not continuous:
@@ -119,7 +120,7 @@ class Arbwave:
     """
     exec global_load
 
-    analog, digital, transitions, t_max, end_clocks = \
+    analog, digital, transitions, t_max, end_clocks, eval_cache = \
       compute.waveforms( self.devcfg[0],
                          self.clocks[0],
                          self.signals[0],
@@ -127,7 +128,8 @@ class Arbwave:
                          self.waveforms[0],
                          globals=globals )
 
-    send.to_plotter( self.plotter, analog, digital, self.channels[0], t_max )
+    self.ui.waveform_editor.set_eval_cache( eval_cache )
+    send.to_plotter( self.ui.plotter, analog, digital, self.channels[0], t_max )
 
 
   def request_stop(self, request=STOP, restart=False):

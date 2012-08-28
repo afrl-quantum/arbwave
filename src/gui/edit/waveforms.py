@@ -3,6 +3,7 @@ import gtk, gobject
 
 from helpers import *
 from script import edit as do_script_edit
+import threading
 
 ui_info = \
 """<ui>
@@ -70,39 +71,6 @@ def allow_value_edit( cell, editable, path, model ):
   if is_group( model, path ):
     editable.set_property('editable', False)
 
-
-
-def query_tooltip(widget, x, y, keyboard_tip, tooltip):
-  try:
-    waveforms, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
-    markup = ''
-    sep = ''
-    script, async = waveforms.get(iter, waveforms.SCRIPT, waveforms.ASYNC)
-
-    if is_group( waveforms, path ): # group-only information
-      if async is not None:
-        desc = {
-          True : 'will <u><b>not</b></u>',
-          False: '<b>will</b>',
-        }
-        markup += sep + \
-          '<b>Asynchronous:</b>  {a}\n' \
-          '    Group {d} be used for calculation of \n' \
-          "    natural time 't' for subsequent waveform groups" \
-          ''.format(a=async,d=desc[async])
-        sep = '\n'
-      if script:
-        markup += sep + \
-          '<b>Script:</b>\n' \
-          '<span size="small">{s}</span>' \
-          .format(s=script)
-        sep = '\n'
-
-    tooltip.set_markup( markup )
-    widget.set_tooltip_row(tooltip, path)
-    return True
-  except:
-    return False
 
 
 
@@ -215,7 +183,7 @@ class Waveforms:
 
     V.set_property( 'hover_selection', True )
     V.set_property( 'has_tooltip', True )
-    V.connect('query-tooltip', query_tooltip)
+    V.connect('query-tooltip', self.query_tooltip)
     V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
     V.append_column( C['channel'  ] )
     V.append_column( C['time'     ] )
@@ -232,6 +200,66 @@ class Waveforms:
       [('/WFG:Edit/WFG:Async', toggle_item,  waveforms.ASYNC,  self.add_undo),
        ('/WFG:Edit/WFG:Script', edit_script, waveforms.SCRIPT, self.add_undo)],
     )
+
+    self.eval_cache_lock = threading.Lock()
+    self.eval_cache = dict()
+
+
+  def set_eval_cache(self, cache):
+    try:
+      self.eval_cache_lock.acquire()
+      self.eval_cache = cache
+    finally:
+      self.eval_cache_lock.release()
+
+  def get_eval_cache(self):
+    try:
+      self.eval_cache_lock.acquire()
+      return self.eval_cache
+    finally:
+      self.eval_cache_lock.release()
+
+  def query_tooltip(self, widget, x, y, keyboard_tip, tooltip):
+    try:
+      waveforms, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
+      markup = ''
+      sep = ''
+      script, async = waveforms.get(iter, waveforms.SCRIPT, waveforms.ASYNC)
+
+      if is_group( waveforms, path ): # group-only information
+        if async is not None:
+          desc = {
+            True : 'will <u><b>not</b></u>',
+            False: '<b>will</b>',
+          }
+          markup += sep + \
+            '<b>Asynchronous:</b>  {a}\n' \
+            '    Group {d} be used for calculation of \n' \
+            "    natural time 't' for subsequent waveform groups" \
+            ''.format(a=async,d=desc[async])
+          sep = '\n'
+        if script:
+          markup += sep + \
+            '<b>Script:</b>\n' \
+            '<span size="small">{s}</span>' \
+            .format(s=script)
+          sep = '\n'
+
+      cache = self.get_eval_cache()
+      if path in cache:
+        C = cache[path]
+        markup += sep + \
+          '<b>time:</b>\n' + \
+          '  {t} -&gt; {tf}  (dt = {dt})' \
+          .format(tf=C['t']+C['dt'], **C).replace('<','').replace('>','')
+        sep = '\n'
+
+      tooltip.set_markup( markup )
+      widget.set_tooltip_row(tooltip, path)
+      return True
+    except:
+      return False
+
 
 
 

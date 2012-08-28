@@ -26,12 +26,12 @@ def get_range( scaling, globals, **kwargs ):
 
 
 class Processor:
-  def __init__(self, main_window, plotter):
+  def __init__(self, ui):
     self.Globals = default.get_globals()
-    self.engine = engine.Arbwave(plotter)
+    self.engine = engine.Arbwave(ui)
     sys.modules['arbwave'] = self.engine # fake arbwave module
     sys.modules['msg'] = msg
-    msg.set_main_window( main_window )
+    msg.set_main_window( ui )
     self.running = False
     self.engine_thread = None
     self.show_stopped = None

@@ -31,20 +31,21 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
     TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
-  def list_recursive(self, iter):
+  def list_recursive(self, iter, store_path):
     L = list()
     for i in iter:
       D = dict()
       D['time'    ] = i[Waveforms.TIME]
       D['duration'] = i[Waveforms.DURATION]
       D['enable'  ] = i[Waveforms.ENABLE]
+      D['path'    ] = self.get_path( i.iter )
 
       if self.iter_has_child( i.iter ):
         # is group
         D['group-label' ] = i[Waveforms.CHANNEL]
         D['script'      ] = i[Waveforms.SCRIPT]
         D['asynchronous'] = i[Waveforms.ASYNC]
-        D['elements'    ] = self.list_recursive( i.iterchildren() )
+        D['elements'    ] = self.list_recursive( i.iterchildren(), store_path )
       else:
         # is element
         D['channel'     ] = i[Waveforms.CHANNEL]
@@ -55,8 +56,8 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
     return L
 
 
-  def list(self):
-    return self.list_recursive( iter(self) )
+  def list(self, store_path=False):
+    return self.list_recursive( iter(self), store_path )
 
 
   def load_recursive(self, L, parent=None):
@@ -77,5 +78,5 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
     self.load_recursive(L)
 
 
-  def representation(self):
-    return self.list()
+  def representation(self, store_path=False):
+    return self.list(store_path)

@@ -131,23 +131,18 @@ class WaveformEvalulator:
     self.finite_mode_end_clocks_required = set()
     self.channel_info = make_channel_info(channels)
     self.t_max = 0.0*unit.s
-    self.next_groupNum = 0
+    self.eval_cache = dict()
 
 
 
-  def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict(),
-            path=[]):
-    self.next_groupNum += 1
-    groupNum = self.next_groupNum
+  def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict()):
 
     # natural time for all elements immediately in this group
     t_locals = dict()
     # t is used for calculating natural time 't' for sub-groups
     t_start = t # the start of *this* group
 
-    path = path + [-1]
     for gi in group:
-      path[-1] += 1
       if not gi['enable']:  continue
 
       # this will allow the sub-group to have t and dt (from its parent) while
@@ -173,9 +168,10 @@ class WaveformEvalulator:
         else:
           gi_dt = eval( gi['duration'], globals, L )
           unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
+        self.eval_cache[ gi['path'] ] = {'t':gi_t, 'dt':gi_dt}
 
         # 3.  recurse
-        self.group( gi['elements'], gi_t, gi_dt, globals, L, path )
+        self.group( gi['elements'], gi_t, gi_dt, globals, L )
 
         # 4.  increment natural time for siblings
         if not gi['asynchronous']:
@@ -200,12 +196,12 @@ class WaveformEvalulator:
 
         t_locals.setdefault(chname, t_start)
         locals['t'] = t_locals[ chname ]
-        t_locals[ chname ] = self.element( gi, tuple(path), globals, locals )
+        t_locals[ chname ] = self.element( gi, globals, locals )
 
     if t_locals:
       self.t_max = max( self.t_max, *t_locals.values() )
 
-  def element(self, e, group, globals, locals):
+  def element(self, e, globals, locals):
     chname = e['channel']
     ci = self.channel_info[chname]
     if not ci['type']:
@@ -257,6 +253,7 @@ class WaveformEvalulator:
       dt = eval( e['duration'], globals, locals )
       unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
     assert dt > 0*unit.s, e['channel'] + ': waveform element duration MUSt be > 0!'
+    self.eval_cache[ e['path'] ] = {'t':t, 'dt':dt}
 
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
@@ -264,12 +261,12 @@ class WaveformEvalulator:
     value = eval( e['value'], globals, locals )
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
-      insert_value( t, dt, value, ci['min_period'], chname, ci, trans, group )
+      insert_value(t, dt, value, ci['min_period'], chname, ci, trans, e['path'])
       ci['last'] = value
     else:
       value.set_vars( ci['last'], t, dt, ci['min_period'] )
       for t_j, dt_j, v_j in value:
-        insert_value( t_j, dt_j, v_j, ci['min_period'], chname, ci, trans, group )
+        insert_value(t_j,dt_j,v_j,ci['min_period'],chname,ci,trans,e['path'])
         ci['last'] = v_j
 
     locals.pop('dt_clk')
@@ -307,7 +304,8 @@ class WaveformEvalulator:
         raise RuntimeError("type of channel '"+ci[0]+"' reset?!")
 
     return analog, digital, self.transitions, self.t_max.coeff, \
-           self.finite_mode_end_clocks_required
+           self.finite_mode_end_clocks_required, \
+           self.eval_cache
 
 
 def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
