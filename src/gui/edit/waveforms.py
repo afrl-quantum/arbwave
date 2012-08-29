@@ -248,10 +248,12 @@ class Waveforms:
       cache = self.get_eval_cache()
       if path in cache:
         C = cache[path]
+        tf = C['t'] + C['dt']
+        tf.fmt = C['t'].fmt = C['dt'].fmt = '{coeff} {units}'
         markup += sep + \
           '<b>time:</b>\n' + \
           '  {t} -&gt; {tf}  (dt = {dt})' \
-          .format(tf=C['t']+C['dt'], **C).replace('<','').replace('>','')
+          .format(tf=tf, **C)
         sep = '\n'
 
       tooltip.set_markup( markup )
