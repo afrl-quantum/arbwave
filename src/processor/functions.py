@@ -135,7 +135,62 @@ class Pulse:
     L.append( (self.t + self.duration, self.min_period, self.low) )
     return iter(L)
 
+class PulseTrain:
+  """
+  Generate a pulse over the duration of a waveform element.
+  """
+  def __init__(self, n, dt=None, high=True,low=False):
+    """
+    Usage:  pulse(n, dt=None, high=True, low=False)
+
+    n     : Number of evenly spaced pulses to generate.
+    dt    : On width of a single pulse in the pulse train
+            [Default:  duration/n - dt_clk].
+    high  : The value to generate for the pulse [Default:  True].
+    low   : The value to return to after the pulse [Default:  False].
+   """
+    self.n          = n
+    self.dt_on      = dt
+    self.high       = high
+    self.low        = low
+    self._from      = None
+    self.t          = None
+    self.duration   = None
+    self.min_period = None
+
+  def set_vars(self, _from, t, duration, min_period):
+    self._from = _from
+    self.t = t
+    self.min_period = min_period
+    self.duration = duration - self.min_period
+
+    self.pulse_period = duration / self.n
+    max_dt_on = self.pulse_period - min_period
+    if self.dt_on is None:
+      self.dt_on = max_dt_on
+    elif self.dt_on > max_dt_on:
+      raise RuntimeError(
+        'pulses:  cannot make pulse train where dt > duration/n-dt_clk'
+      )
+    self.dt_off = self.pulse_period - self.dt_on
+
+  def __iter__(self):
+    L = list()
+    t = self.t
+    for i in xrange(self.n):
+      L.append( (t, self.dt_on, self.high) )
+      L.append( (t + self.dt_on, self.dt_off, self.low) )
+      t += self.pulse_period
+
+    if self._from == self.high:
+      # we only really need to add the first transition to go high if the
+      # channel was not already high
+      L.pop(0)
+
+    return iter(L)
+
 registered = {
   'ramp'  : Ramp,
   'pulse' : Pulse,
+  'pulses': PulseTrain,
 }
