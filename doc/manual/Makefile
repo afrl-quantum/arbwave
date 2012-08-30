@@ -32,7 +32,11 @@ endif
 DVIoutput.tex:
 	@echo "\setboolean{DVIoutput}{$(DVIOUT)}" > $@
 
-dviall: DVIoutput.tex
+.PHONY: ../common-tex-sty/arbwave-version.sty
+../common-tex-sty/arbwave-version.sty:
+	../common-tex-sty/mk_version.py
+
+dviall: DVIoutput.tex ../common-tex-sty/arbwave-version.sty
 	make dvi
 	make biball
 	make dvi
