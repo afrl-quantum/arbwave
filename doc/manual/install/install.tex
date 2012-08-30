@@ -1,7 +1,58 @@
 % vim: ts=2:sw=2:tw=80:et
+
 \section{Prerequisites\index{Installing prerequisites}}
 
-See the README and INSTALL files for the requirements.
+This project depends on several other python-related projects and these must
+first be installed.
+
+\subsection{Third-party Dependencies}
+\begin{itemize}
+  \item Python packages/libraries:
+    \begin{itemize}
+    \item \textbf{python (2.X)} \\
+      Python version 3.X will not currently work.
+    \item \textbf{pygtk} \\
+      Including of course the Gtk runtime.
+      This package provides pygtk, gtk, and gobject imports.
+    \item \textbf{matplotlib} \\
+      This package also provides mpl\_toolkits import.
+    \item \textbf{numpy} \\
+      Generally, this is included as part of scipy and required for matplotlib.
+    \item \textbf{scipy} \\
+      scipy.interpolate imports are required for channel scaling/calibration.
+    \item \textbf{python-graph} \\
+      pygraph package is used for graph-analysis of connections between hardware
+      components.
+      On ubuntu, this package is named python-pygraph on ubuntu.
+    \end{itemize}
+  \item C libraries:
+    \begin{itemize}
+    \item \textbf{NI DAQmx (nicaiu.dll)} \\
+      Only needed if Viewpoint's DIO64 digital output/input board will be used.
+    \item \textbf{Viewpoint DIO64 (dio64\_32.dll)} \\
+      Only needed if NIDAQmx relevant hardware is going to be used.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Dependencies by S. Olson}
+Most of the dependencies that are not satisfied by third-party vendors and/or
+projects are a part of the arbwave project and, as such, are easily obtained by
+downloading the entire project.  The project includes the following
+dependencies:
+\begin{itemize}
+\item \textbf{physical} \\
+  dimensional analysis
+  units and constants library (c++, python, octave, gnuplot).
+\item \textbf{viewpoint} \\
+  python wrapper library (wraps Viewpoint dio64\_32.dll c library)
+  Only needed if Viewpoint's DIO64 digital output/input board will be used.
+\item \textbf{pylibnidaqmx} \\
+  This python wrapper library (wraps NI DAQmx nicaiu.dll c library) provides
+  actual linkage to the NIDAQmx drivers.  Although this package is actually
+  developed by a third party, modifications by S. Olson must be included.  It is
+  therefore easist to use the version that comes with the Arbwave project.
+  Only needed if NIDAQmx relevant hardware is going to be used.
+\end{itemize}
 
 \section{Installation\index{Installing Arbwave}}
 

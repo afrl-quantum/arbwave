@@ -3,7 +3,7 @@ Python based arbitrary waveform generator.
 
 Sample/Update rates:
   There will be two types of sample- or update-rates permissable.
-  1.  Static update rates.
+  1.  Fixed update rates.
     An example of this would be a hardware card that updates a channel for every
     clock pulse and this clock pulse rate is fixed.  For hardware devices
     configured to operate with this type of update clock, the number of samples

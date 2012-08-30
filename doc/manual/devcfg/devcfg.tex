@@ -1,4 +1,41 @@
 % vim: ts=2:sw=2:tw=80:et
+\section{General Discussion}
+Analog and digital output cards generally have the notion of changing the output
+levels at times based upon some digital clock pulse.  As a very generic example,
+a particular hardware device will have a list of output values that it is to
+generate.  Each time that the rising edge (usually) of a clock pulse is
+detected, the circuitry of the particular hardware device reads the next output
+value and sets it actual output accordingly.
+
+In some hardware, this notion of clock driven output is very explicit while for
+other hardware, this notion is less explicit.  For Arbwave, regardless of the
+function and/or capability of the hardware, each output device must have an
+driving clock assigned explicitly to it.
+
+\subsection{Sample/Update rates}
+There will be two types of sample- or update-rates permissible.
+\begin{itemize}
+\item  Fixed update rates.
+  An example of this would be a hardware card that updates a channel for every
+  clock pulse and this clock pulse rate is fixed.  For hardware devices
+  configured to operate with this type of update clock, the number of samples
+  to update will automatically be calculated to the nearest clock pulse.
+\item  Arbitrary timing update rates.
+  Some hardware devices may be configured to use an arbitrary timing signal as
+  the update clock.  An example of this would be when a channel from a
+  Viewpoint DIO-64 card is configured to be used as a clock for other devices.
+  For this type of configuration, the clock rate will automatically change
+  such that the minimum number of clocks are emitted to support all
+  channels/devices tied to the clock.  Clock pulses will designed to allow
+  all voltage transitions as specified at their transition time within the
+  maximum clock resolution possible (the internal clock rate of the DIO-64 for
+  example).  In other words, a single waveform element may have a variable
+  clock depending on whether other waveform channels similarly clocked need to
+  have transitions in the mean time.
+\end{itemize}
+
+
+
 \section{Clocks}
 \section{Signal Routes}
 \section{Clock Sources for Devices}

@@ -16,3 +16,45 @@ We can also refer to a figure as Fig.~\ref{fig:intro:jdk_grid_example}.
 \end{figure}
 
 We just love to cite \citet{Rambo:1989}.
+
+
+\section{Supported Hardware}
+\begin{center}
+\tablefirsthead{%
+  \hline
+  \textbf{\large Manufacturer} &
+  \textbf{\large Model} &
+  \textbf{\large Description} &
+  \textbf{\large Support} \\
+  \hline
+  \hline
+}
+\tablehead{%
+  \hline
+  \multicolumn{4}{|l|}{\small\sl continued from previous page}\\
+  \hline
+  \textbf{\large Manufacturer} &
+  \textbf{\large Model} &
+  \textbf{\large Description} &
+  \textbf{\large Support} \\
+  \hline
+  \hline
+}
+\tabletail{%
+  \hline
+  \multicolumn{4}{|r|}{\small\sl continued on next page}\\
+  \hline
+}
+\tablelasttail{\hline}
+\bottomcaption{Supported Hardware}
+%
+%
+\begin{supertabular}{|l|c|l|r|}
+  NI & PCI-6733 & 16-bit Analog output, 8-channel & Yes \\
+  NI & PCI-6729 & 8-bit Analog output, 32-channel & Yes \\
+  Viewpoint & DIO-64 & Digital input/output, 64-channel & Yes \\
+  UEI & ? & ? & No (future?) \\
+  ? & ? & FPGA & No (future?) \\
+  ? & ? & Microcontroller & No (future?) \\
+\end{supertabular}
+\end{center}
