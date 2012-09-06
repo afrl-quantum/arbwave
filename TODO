@@ -105,3 +105,27 @@ DONE
 
 10.  Be able to add notes for each channel.  This could probably be best added
 via a popup menu like scaling.  Display the notes via the tooltip.
+
+11.  Can we drop the boolean "change" value from the waveforms, clocks, devcfg,
+  _before_ arbwave.update() is to be called?  Do we really need to keep these
+  booleans around past processor.update()?
+
+12.  create a function provided either by the fake "arbwave" module or in the
+  global env that helps to search through and index waveform elements/groups by
+  name of group/index of that name:
+    def get_wf_element( label, index=0 ):
+      ...
+
+13.  Change the index 'elements' in waveforms to be something like 'children'.
+  This may make it clearer as to what is being accessed for access of the
+  waveform representation format in something like loop_control.
+  
+14.	(BRIAN) Add a button in GUI with a drop down selector to determine which 
+arbwave.set_loop_control function to run from the global script. This would
+save having to edit the global script, scroll to the bottom, comment out the 
+previous script choice and comment in the new one. 
+
+15. Cache waveform gui text-entries like natural time ('t') and duration ('dt').
+  Display in tooltip.  Each time that engine.compute.waveforms is called, the
+  computed values for these text-entries need to be sent back to the gui for
+  tooltip generation.
