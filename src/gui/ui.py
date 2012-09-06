@@ -16,7 +16,7 @@ import storage
 from notification import Notification
 
 from ..processor import Processor
-from ..processor.default import get_globals
+from ..processor import default
 from .. import backend
 from .. import version
 
@@ -135,7 +135,7 @@ class ArbWave(gtk.Window):
 
 
     # LOAD THE STORAGE
-    self.config_file = ''
+    self.set_config_file('')
     self.plotter = Plotter( self )
     self.processor = Processor( self )
     self.script = stores.Script(
@@ -357,7 +357,7 @@ class ArbWave(gtk.Window):
     # Finish off with creating references to each of the actual actions
     self.actions = {
       'New'       : lambda a: self.clearvars(),
-      'Open'      : ( storage.gtk_tools.gtk_open_handler, self, get_globals() ),
+      'Open'      : ( storage.gtk_tools.gtk_open_handler, self, default.get_globals() ),
       'Save'      : ( storage.gtk_tools.gtk_save_handler, self ),
       'SaveAs'    : ( storage.gtk_tools.gtk_save_handler, self, True),
       'Quit'      : lambda a: self.destroy(),
@@ -450,7 +450,7 @@ class ArbWave(gtk.Window):
     self.script.set_text(default_script)
     self.clocks.clear()
     self.devcfg.clear()
-    self.config_file = ''
+    self.set_config_file('')
 
     # re-enable updates and directly call for an update
     self.unpause()
@@ -460,6 +460,7 @@ class ArbWave(gtk.Window):
   def set_config_file(self,f):
     self.config_file = f
     self.set_title( self.TITLE + ':  ' + f )
+    default.registered_globals['__file__'] = f
 
 
   def get_config_file(self):
