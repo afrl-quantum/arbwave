@@ -32,29 +32,40 @@ class Arbwave:
     self.signals = None
     self.channels = None
     self.waveforms = None
-    self.start = None
-    self.stop = None
-    self.loop_control = None
     self.stop_request = False
 
+    class Runnable:
+      def onstart(rself):
+        """
+        Executed before the runnable is started.
+        """
+        pass
 
-  def connect(self, signal, callback, *args, **kwargs):
-    if signal == 'start':
-      self.start = CallFunc( callback, args, kwargs )
-    elif signal == 'stop':
-      self.stop = CallFunc( callback, args, kwargs )
-    else:
-      raise NameError('Unknown signal')
+      def onstop(rself):
+        """
+        Executed after the runnable is stopped.
+        """
+        pass
+
+      def run(rself):
+        """
+        The body of any inner loop.
+        """
+        self.update(continuous=True)
+
+    self.Runnable = Runnable
+    self.runnables = dict( Default = Runnable() )
 
 
-  def set_loop_control( self, callback, *args, **kwargs ):
-    self.loop_control = CallFunc( callback, args, kwargs )
+  def add_runnable( self, label, runnable ):
+    """
+    Adds a Runnable class to the list of possible runs.
+    """
+    self.runnables[label] = runnable
 
 
-  def clear_callbacks(self):
-    self.start        = None
-    self.stop         = None
-    self.loop_control = None
+  def clear_runnables(self):
+    self.runnables = dict( Default = self.Runnable() )
 
 
   def dostop(self):

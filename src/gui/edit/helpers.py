@@ -125,7 +125,7 @@ def add_paths_to_combobox_tree( T, P, category=None, M=None, skip_CAT=None ):
   for c in P:
     add_path_to_combobox_tree( T, CAT + c.split('/'), skip_CAT, M )
 
-def prep_combobox_for_tree(cbox):
+def prep_combobox_for_tree(cbox,select_intermediate=False):
   # This ensures you can't select "Analog" or Dev2 instead of ni/Dev2/ao0
   def is_sensitive(celllayout, cell, model, i, *user_args):
     cell.set_property('sensitive', not model.iter_has_child(i))
@@ -134,7 +134,8 @@ def prep_combobox_for_tree(cbox):
   cbox.clear()
   cbox.pack_start( renderer )
   cbox.add_attribute( renderer, 'text', 1 )
-  cbox.set_cell_data_func( renderer, is_sensitive )
+  if not select_intermediate:
+    cbox.set_cell_data_func( renderer, is_sensitive )
 
 
 

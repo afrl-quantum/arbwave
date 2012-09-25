@@ -1,0 +1,409 @@
+# vim: ts=2:sw=2:tw=80:nowrap
+
+import gtk
+
+import sys, re, pydoc
+
+import numpy as np
+from matplotlib import mlab
+
+from ... import stores
+from .. import generic
+from .. import helpers
+from ..helpers import GTVC
+
+from show import Show
+from algorithms import algorithms
+
+FMAX = sys.float_info.max
+
+class Parameters(gtk.ListStore):
+  NAME = 0
+  VALUE = 1
+  MIN = 2
+  MAX = 3
+  SCALE = 4
+  ENABLE = 5
+
+  def __init__(self):
+    gtk.ListStore.__init__(self,
+      str, #name
+      str, #value
+      str, #min
+      str, #max
+      str, #scale
+      bool,#enable
+    )
+
+
+
+def drag_motion(w, ctx, x, y, time):
+  mask = w.window.get_pointer()[2]
+  if mask & gtk.gdk.CONTROL_MASK:
+    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+
+def set_item_name( cell, path, new_item, model, Globals, type=str ):
+  """
+    if unique is True, this searches through the immediate chlidren for
+      duplicate names before allowing the edit.
+  """
+  new_item = type(new_item)
+
+  if model[path][model.NAME] == new_item:
+    return  # avoid triggering a change if there is not actually a change
+  model[path][model.NAME] = new_item
+  try:    model[path][model.VALUE] = eval(new_item,Globals)
+  except: model[path][model.VALUE] = ''
+
+def set_item_value( cell, path, new_item, model, Globals, type=str ):
+  """
+    if unique is True, this searches through the immediate chlidren for
+      duplicate names before allowing the edit.
+  """
+  new_item = type(new_item)
+
+  # first, search for corresponding global variable.  Only updates for valid
+  # variables will be allowed
+  # Also avoid triggering a change if there is not actually a change
+  name = model[path][model.NAME]
+  if not name:
+    return
+  try:
+    if not re.search('["\'\[]', name):
+      exec 'global ' + name
+    if eval(name,Globals) == eval(new_item,Globals) and \
+       model[path][model.VALUE] == new_item:
+      return
+    exec '{n} = {v}'.format(n=name, v=new_item) in Globals
+    model[path][model.VALUE] = new_item
+  except:
+    return
+
+
+
+def query_alg_tooltip(widget, x, y, keyboard_tip, tooltip):
+  try:
+    algs, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
+    iter = algs.get_iter( path[0:1] ) # only consider root for alg
+    alg, = algs.get(iter, algs.LABEL)
+
+    td = pydoc.TextDoc()
+    markup = td.docroutine( algorithms[alg]['actual_func'] )
+    markup = ''.join(re.split('\x08.',markup))
+    markup = '\n'.join(markup.split('\n')[0:20])
+    markup += '\n...\n<b>For more, see scipy.optimize</b>'
+    tooltip.set_markup( markup )
+    widget.set_tooltip_row(tooltip, path)
+
+    return True
+  except:
+    return False
+
+
+class OptimView(gtk.Dialog):
+  def __init__(self, settings, Globals, title='Optimization Parameters',
+               parent=None, target=None, model=False):
+    actions = [
+      gtk.STOCK_OK,     gtk.RESPONSE_OK,
+      gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+    ]
+    flags = gtk.DIALOG_DESTROY_WITH_PARENT
+    if model:
+      flags |= gtk.DIALOG_MODAL
+      actions.pop(2)
+      actions.pop(2)
+
+    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+
+    self.set_default_size(550, 600)
+    self.set_border_width(10)
+    body = gtk.VPaned()
+    body.show()
+    self.vbox.pack_start( body )
+
+
+    self.algs = stores.Generic(use_enable=True,keep_order=True)
+    if 'algorithms' in settings:
+      self.algs.load( settings['algorithms'] )
+    else:
+      self.algs.load( algorithms )
+    GV = generic.Generic(
+      self.algs, reorderable=True,
+      range_factory=generic.RangeFactory(algorithms,use_enable=True) )
+    GV.view.set_property( 'has_tooltip', True )
+    GV.view.connect('query-tooltip', query_alg_tooltip)
+    GV.view.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), GV.view)
+
+    scroll = gtk.ScrolledWindow()
+    scroll.set_size_request(-1,200)
+    scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    scroll.add( GV.view )
+    scroll.show()
+    body.pack1(scroll)
+
+
+    self.params = Parameters()
+    if 'parameters' in settings:
+      for p in settings['parameters']:
+        self.params.append(
+          ( p['name'], eval(p['name'],Globals),
+            p['min'], p['max'], p['scale'], p['enable'] )
+        )
+    else:
+      self.params.append( ('', '', '0.0', '1.0', '1.0', True) )
+
+    V = gtk.TreeView( self.params )
+    V.set_reorderable(True)
+    #V.connect('drag-begin', begin_drag, self.window)
+    #V.connect('drag-end', end_drag, self.window, waveforms)
+    V.connect('drag-motion', drag_motion)
+    R = {
+      'name'  : gtk.CellRendererText(),
+      'value' : gtk.CellRendererText(),
+      'min'   : gtk.CellRendererText(),
+      'max'   : gtk.CellRendererText(),
+      'scale' : gtk.CellRendererText(),
+    }
+    R['name'].set_property( 'editable', True )
+    R['name'].connect( 'edited', set_item_name, self.params, Globals )
+    R['value'].set_property( 'editable', True )
+    R['value'].connect( 'edited', set_item_value, self.params, Globals )
+    R['min'].set_property( 'editable', True )
+    R['min'].connect( 'edited', helpers.set_item, self.params, Parameters.MIN )
+    R['max'].set_property( 'editable', True )
+    R['max'].connect( 'edited', helpers.set_item, self.params, Parameters.MAX )
+    R['scale'].set_property( 'editable', True )
+    R['scale'].connect( 'edited', helpers.set_item, self.params, Parameters.SCALE )
+
+    C = {
+      'name' : GTVC('Variable', R['name'], text=Parameters.NAME),
+      'value' : GTVC('Value', R['value'], text=Parameters.VALUE),
+      'min' : GTVC('Min', R['min'], text=Parameters.MIN),
+      'max' : GTVC('Max', R['max'], text=Parameters.MAX),
+      'scale' : GTVC('Scale', R['scale'], text=Parameters.SCALE),
+    }
+    V.append_column( C['name'] )
+    V.append_column( C['value'] )
+    V.append_column( C['min'] )
+    V.append_column( C['max'] )
+    V.append_column( C['scale'] )
+
+    V.show()
+
+    vbox = gtk.VBox()
+    vbox.show()
+    vbox.pack_start( V )
+
+
+    self.constraints = gtk.ListStore(str)
+    if 'constraints' in settings:
+      for c in settings['constraints']:
+        self.constraints.append( (c,) )
+    else:
+      self.constraints.append( ('',) )
+
+    V = gtk.TreeView( self.constraints )
+    V.set_reorderable(True)
+    #V.connect('drag-begin', begin_drag, self.window)
+    #V.connect('drag-end', end_drag, self.window, waveforms)
+    V.connect('drag-motion', drag_motion, self.window)
+    R = gtk.CellRendererText()
+    R.set_property( 'editable', True )
+    R.connect( 'edited', helpers.set_item, self.constraints, 0)
+    C = GTVC('Constraint Equations', R, text=0)
+    V.append_column( C )
+
+    V.show()
+    vbox.pack_start( V )
+
+
+    scroll = gtk.ScrolledWindow()
+    scroll.set_size_request(-1,-1)
+    scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    scroll.add_with_viewport( vbox )
+    scroll.show()
+    body.pack2(scroll)
+
+
+
+class Make:
+  def __init__(self, run_label, settings):
+    self.run_label = run_label
+    self.settings = settings
+
+  def __call__(self, *args, **kwargs):
+    S = self.settings.get(self.run_label,dict())
+    e = Executor( settings=S, *args, **kwargs )
+    S = e.get_settings()
+    if S:
+      self.settings[self.run_label] = S
+    return e()
+
+class Executor:
+  def __init__(self, runnable, Globals, settings, cache_tolerance=1e-3):
+    self.runnable = runnable
+    self.Globals = Globals
+
+    self._cache = None
+    self.results = dict()
+    self.cache_tolerance = cache_tolerance
+    self.show = None
+    self.pnames = None
+    self.skipped_evals = 0
+
+    opt = OptimView(settings, Globals)
+    self.cancelled = False
+    try:
+      if opt.run() not in [ gtk.RESPONSE_OK ]:
+        print 'cancelled!'
+        self.cancelled = True
+        return
+    finally:
+      opt.hide()
+
+    old_pnames = self.pnames
+    self.pnames = list()
+    self.params = list()
+    self.parameters = list()
+    for p in opt.params:
+      if p[opt.params.ENABLE]:
+        self.pnames.append( p[opt.params.NAME] )
+        self.params.append( (
+          eval(p[opt.params.NAME],Globals),
+          eval(p[opt.params.MIN],Globals),
+          eval(p[opt.params.MAX],Globals),
+          eval(p[opt.params.SCALE],Globals),
+        ) )
+      self.parameters.append(
+        { 'name'  : p[opt.params.NAME],
+          'min'   : p[opt.params.MIN],
+          'max'   : p[opt.params.MAX],
+          'scale' : p[opt.params.SCALE],
+          'enable': p[opt.params.ENABLE],
+        }
+      )
+
+    self.params = np.array( self.params )
+
+    self.constraints = list()
+    for c in opt.constraints:
+      if c[0]:
+        self.constraints.append( [c[0], lambda G : eval(c[0], G)] )
+
+    if old_pnames is None or old_pnames != self.pnames:
+      self.show = Show( columns=(self.pnames+['Merit']) )
+
+    algs = opt.algs
+    self.alg_settings = opt.algs.representation()
+    self.algorithms = {
+      alg[algs.LABEL] :
+        {
+          arg[algs.LABEL] :
+            arg[  algs.to_index[ arg[algs.TYPE] ]  ]
+          for arg in alg.iterchildren()  if arg[algs.ENABLE]
+        }
+      for alg in algs  if alg[algs.ENABLE]
+    }
+
+  def get_settings(self):
+    if self.cancelled: return None
+    return {
+      'algorithms' : self.alg_settings,
+      'parameters' : self.parameters,
+      'constraints': [ c[0] for c in self.constraints ],
+    }
+
+
+  def __call__(self):
+    class Cancelled:
+      def onstart(OSelf): pass
+      def onstop(OSelf): pass
+      def run(OSelf): pass
+
+    class ORun:
+      def onstart(OSelf):
+        self.runnable.onstart()
+
+      def onstop(OSelf):
+        self.runnable.onstop()
+
+      def run(OSelf):
+        self.show.show()
+        x0 = self.params[:,0]
+        scale = self.params[:,3]
+        # first unscale all parameters
+        x0 /= scale
+        for alg in self.algorithms.items():
+          self.evals = 0
+          x0, merit = algorithms[alg[0]]['func'](self._call_func, x0, **alg[1])
+          # print parameters rescaled
+          print 'After', alg[0], 'x0: ', x0*scale, ', merit: ', merit
+          print 'Number function evaluations: ', self.evals
+
+        self.save_globals( x0 * scale )
+
+        return True
+
+    if self.cancelled: return Cancelled()
+    else:              return ORun()
+
+
+  def save_globals(self, x):
+    # only try to make global variables that are fundamental types
+    # (str,int,float, ...)
+    globalize = [ i for i in self.pnames if not re.search('["\'\[]', i) ]
+    if globalize:
+      exec 'global ' + ','.join( globalize )
+    for i in xrange(len(x)):
+      exec '{n} = {v}'.format(n=self.pnames[i], v=x[i]) in self.Globals
+
+
+  def _call_func(self, x):
+    # before using x, ensure that it is rescaled
+    x = x * self.params[:,3] # dont multiply in-place
+
+    cached = self.lookup(x)
+    if cached is not None:
+      self.show.add( *(list(x) + [cached]) )
+      self.skipped_evals += 1
+      return cached
+
+    self.save_globals(x)
+
+    # now, test constraints before running the function
+    c_failed = [ True  for c in self.constraints  if not c[1](self.Globals) ]
+    if c_failed:
+      print 'constraint failed'
+      result = FMAX
+    else:
+      self.evals += 1
+      result = self.runnable.run()
+      self.show.add( *(list(x) + [result]) )
+    self.cache( x, result )
+    return result
+
+  def lookup(self, x):
+    if self._cache is None:
+      return None
+
+    cols = self._cache.shape[1]
+    found = mlab.find( abs( (
+        (self._cache - x) / ( self._cache + 1e-30 )
+      ).dot(np.ones(cols)) ) < self.cache_tolerance )
+
+    if len( found ) == 0:
+      return None
+
+    # if there are for some reason more, ignore them
+    return self.results[ tuple( self._cache[ found[0] ] ) ]
+
+  def cache(self, x, result):
+    if self._cache is None:
+      self._cache = np.array( [x] )
+      self.results[ tuple(x) ] = result
+
+    elif self.lookup(x) is None:
+      self._cache = np.append( self._cache, [x], 0 )
+      self.results[ tuple(x) ] = result

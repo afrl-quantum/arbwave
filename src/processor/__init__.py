@@ -27,14 +27,14 @@ def get_range( scaling, globals, **kwargs ):
 
 class Processor:
   def __init__(self, ui):
+    self.ui = ui
     self.Globals = default.get_globals()
     self.engine = engine.Arbwave(ui)
     sys.modules['arbwave'] = self.engine # fake arbwave module
     sys.modules['msg'] = msg
     msg.set_main_window( ui )
-    self.running = False
+    self.running = None
     self.engine_thread = None
-    self.show_stopped = None
 
     self.lock = threading.Lock()
     self.end_condition = threading.Condition( self.lock )
@@ -47,13 +47,13 @@ class Processor:
   def exec_script(self, script):
     try: exec '__del__()' in self.Globals
     except: pass
-    self.engine.clear_callbacks()
+    self.engine.clear_runnables()
     self.Globals = default.get_globals() # reset the global environment
     exec script in self.Globals
+    self.ui.update_runnables( self.engine.runnables.keys() )
 
 
-  def update(self, devcfg, clocks, signals, channels, waveforms, script,
-             toggle_run, show_stopped):
+  def update(self,devcfg,clocks,signals,channels,waveforms,script,toggle_run):
     """
     Updates that are driven from user-interface changes sent to the engine.
     """
@@ -110,10 +110,10 @@ class Processor:
         engine.send.to_driver.signals(collect_prefix(signals[0]))
 
       if self.running or toggle_run:
-        self.start( show_stopped )
+        self.start()
       else:
         if stopped or channels[1] or script[1]:
-          exec 'import arbwave\narbwave.update_static()' in self.Globals
+          self.engine.update_static()
 
         # TODO:  have more fine-grained change information:
         #   Instead of just "did channels change" have
@@ -124,62 +124,79 @@ class Processor:
         #   With this information, we would more correctly only update plots or
         #   static output when the corresponding information has changed.
         if channels[1] or script[1] or waveforms[1]:
-          exec 'import arbwave\narbwave.update_plotter()' in self.Globals
+          self.engine.update_plotter()
     finally:
       self.lock.release()
 
 
-  def run_loop(self, show_stopped):
-    if not show_stopped:
-      show_stopped = self.show_stopped # restarting...
-    assert callable(show_stopped), 'expected callable show_stopped'
-    if self.engine.start:
-      exec 'import arbwave\narbwave.start()' in self.Globals
-
-    do_restart = False
+  def run_loop(self, runnable):
     try:
-      exec 'import arbwave\narbwave.loop_control()' in self.Globals
-    except engine.StopGeneration, e:
-      do_restart = e.request & engine.RESTART
-    except Exception, e:
-      print 'halting waveform output because of unexpected error: ', e
-      traceback.print_exc()
+      do_restart = False
+      do_gui_operation( self.ui.show_started )
 
-    self.engine.halt() # ensure that generation is stopped!
+      self.running = runnable
+      try:
+        runnable.onstart()
+        runnable.run()
 
-    if self.engine.stop:
-      exec 'import arbwave\narbwave.stop()' in self.Globals
+      except engine.StopGeneration, e:
+        do_restart = e.request & engine.RESTART
+      except Exception, e:
+        print 'halting waveform output because of unexpected error: ', e
+        traceback.print_exc()
 
-    try:
-      self.lock.acquire()
-      self.engine_thread = None
+      self.engine.halt() # ensure that generation is stopped!
+
+      try:
+        runnable.onstop()
+      except Exception, e:
+        print 'unexpected error in stopping waveform: ', e
+        traceback.print_exc()
+
+    finally:
+      try:
+        self.lock.acquire()
+        self.engine_thread = None
+        if not do_restart:
+          self.running = None
+        self.end_condition.notify()
+      finally:
+        self.lock.release()
+
       if not do_restart:
-        self.running = False
-        do_gui_operation( show_stopped )
-      else:
-        self.show_stopped = show_stopped
-      self.end_condition.notify()
-    finally:
-      self.lock.release()
+        do_gui_operation( self.ui.show_stopped )
 
 
-  def start(self, show_stopped): # start a continuous (re)cycling
-    if self.engine.loop_control:
+  def start(self): # start a continuous (re)cycling
+    run_label, Control = self.ui.get_active_runnable()
+
+    if run_label not in self.engine.runnables:
+      print 'Runnable ({r}) not found'.format(r=run_label)
+      return
+    runnable = self.engine.runnables[run_label]
+
+    if run_label != 'Default':
       assert self.engine_thread is None, 'Already existing engine thread?!!'
+      if Control:
+        runnable = Control( runnable, self.Globals )
 
       # run the loop control inside its own thread
       self.engine_thread = threading.Thread(
         target=self.run_loop,
-        kwargs={ 'show_stopped' : show_stopped },
+        kwargs={ 'runnable' : runnable },
       )
       self.engine_thread.daemon = True # ensure thread exits if program exits
       self.engine_thread.start()
 
-    else: # we try to do continuous recycling--> don't call show_stopped()
-      if not self.running and self.engine.start:
-        exec 'import arbwave\narbwave.start()' in self.Globals
-      exec 'import arbwave\narbwave.update(continuous=True)' in self.Globals
-    self.running = True
+    else:
+      # we try to do continuous recycling
+      #--> just call show_started()
+      #--> don't call show_stopped()
+      if not self.running:
+        runnable.onstart()
+      self.running = runnable
+      runnable.run()
+      self.ui.show_started()
 
 
   def stop(self, toggle_run):
@@ -191,7 +208,7 @@ class Processor:
       t.join()
     elif toggle_run:
       self.engine.halt()
-      if self.engine.stop:
-        exec 'import arbwave\narbwave.stop()' in self.Globals
+      self.running.onstop()
+      self.ui.show_stopped()
     if toggle_run:
-      self.running = False
+      self.running = None

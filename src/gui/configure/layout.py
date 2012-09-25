@@ -272,12 +272,12 @@ class Range:
   def __iter__(self):
     return iter(self())
 
-  def get_min_max(self):
+  def get_adjustment(self):
     r = self()
     if type(r) is xrange:
-      return r[0], r[-1]
+      return r[0], r[-1], -1, -1
     else:
-      return min(r), max(r)
+      return min(r), max(r), -1, -1
 
 
 class ClockRange:

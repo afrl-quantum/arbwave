@@ -1,8 +1,99 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import gtk
+from math import log10
 import spreadsheet
 import helpers
+from helpers import GTVC
+
+def get_leaf_node( D, path ):
+  if len(path) > 1:
+    return get_leaf_node( D[path[0]], path[1:] )
+  else:
+    return D.get(path[0],None)
+
+def get_leaf_node_parameters( D, path ):
+  if len(path) > 1:
+    return get_leaf_node( D[path[0]]['parameters'], path[1:] )
+  else:
+    return D.get(path[0],None)
+
+
+class Range:
+  def __init__(self, template, cfg_path, use_enable):
+    self.template = template
+    self.cfg_path = cfg_path
+    if use_enable:
+      self.get_leaf_node = get_leaf_node_parameters
+    else:
+      self.get_leaf_node = get_leaf_node
+
+    cfg = self.cfg()
+
+    if cfg is None:
+      self.doreload = False
+      self.combo = False
+      self.r = None
+      return
+
+    self.doreload = 'doreload' in cfg and cfg['doreload']
+    r = cfg['range']
+    if not self.doreload:
+      self.r = r
+
+    # if range is list/tuple or callable, this entry needs a combo box
+    if 'combo' in cfg:
+      self.combo = cfg['combo']
+    else:
+      self.combo = type(r) in [list, tuple]
+
+  def cfg(self):
+    """
+    Return the full config item.
+    """
+    return self.get_leaf_node( self.template, self.cfg_path )
+
+  def __call__(self):
+    """
+    Return the range.
+    """
+    if self.doreload:
+      r = self.cfg()['range']
+    else:
+      r = self.r
+    if callable(r):
+      return r()
+    else:
+      return r
+
+  def is_combo(self):
+    return self.combo
+
+  def __iter__(self):
+    return iter(self())
+
+  def get_adjustment(self):
+    r = self()
+    if type(r) is xrange:
+      return r[0], r[-1], -1, -1
+    else:
+      if len(r) == 4:
+        return r[0:4]
+      return min(r), max(r), -1, -1
+
+
+class RangeFactory:
+  def __init__( self, template=dict(), use_enable=False ):
+    self.template = template
+    self.use_enable = use_enable
+
+  def set_template(self, template):
+    self.template = self.template
+
+  def __call__( self, path, i, model ):
+    return Range( self.template, path, self.use_enable )
+
+
 
 def coerce_range( editable, TYPE ):
   v = TYPE(editable.get_text())
@@ -18,15 +109,24 @@ def set_range( cell, editable, path, model ):
   RANGE = row[model.RANGE]
   assert not RANGE.is_combo(), 'Generic.set_range called with tuple/list'
 
-  mn, mx = RANGE.get_min_max()
+  mn, mx, step, page = RANGE.get_adjustment()
   TYPE = row[model.TYPE]
 
   editable.connect('activate', coerce_range, TYPE )
 
   if TYPE is int:
-    adj.configure(row[model.VAL_INT], mn, mx, 1, max(1,.1*(mx-mn)), 0)
+    if step == -1 and page == -1:
+      step = 1
+      page = max(1,.1*(mx-mn))
+    adj.configure(row[model.VAL_INT], mn, mx, step, page, 0)
   elif TYPE is float:
-    adj.configure(row[model.VAL_FLOAT], mn, mx, .01*(mx-mn), .1*(mx-mn), 0)
+    if step == -1 and page == -1:
+      step = .01*(mx-mn)
+      page = .1*(mx-mn)
+    digits = int(round( -log10( step * 0.01 ) ))
+    if digits > 0:
+      editable.set_digits(digits)
+    adj.configure(row[model.VAL_FLOAT], mn, mx, step, page, 0)
   else:
     raise RuntimeError('expected int or float')
 
@@ -59,16 +159,30 @@ def get_config_path(path, model, CPath=None):
   return CPath
 
 
+def drag_motion(w, ctx, x, y, time):
+  mask = w.window.get_pointer()[2]
+  if mask & gtk.gdk.CONTROL_MASK:
+    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+
+
 class Generic:
-  def __init__(self, model, add_undo=None, range_factory=None):
+  def __init__(self, model, add_undo=None,
+               range_factory=RangeFactory(), template=None,
+               reorderable=False):
     self.add_undo = add_undo
     self.range_factory = range_factory
-    assert self.range_factory is None or callable(range_factory), \
-      'Generic.range_factory must be either None or callable'
+    assert callable(range_factory), 'Generic.range_factory must be callable'
+    if template is not None:
+      self.range_factory.set_template( template )
 
     V = self.view = gtk.TreeView(model)
     V.set_property( 'rules-hint', True )
     sheet_cb = spreadsheet.Callbacks(V)
+    enable = 'ENABLE' in dir(model)
+
+    if reorderable:
+      V.set_reorderable(True)
+      V.connect('drag-motion', drag_motion)
 
     R = {
       'label'     : gtk.CellRendererText(),
@@ -108,7 +222,6 @@ class Generic:
     R['cmb:float'].connect( 'editing-started', load_combobox, model )
 
 
-
     sheet_cb.connect_column(
       R['val:bool'],
       toggleitem=(helpers.toggle_item, model, model.VAL_BOOL, add_undo) )
@@ -139,8 +252,8 @@ class Generic:
 
 
     C = {
-      'L' : gtk.TreeViewColumn('Parameter', R['label'], text=0),
-      'V' : gtk.TreeViewColumn('Value'),
+      'L' : GTVC('Parameter', R['label'], text=0),
+      'V' : GTVC('Value'),
     }
     C['L'].set_flags(gtk.CAN_FOCUS)
     C['V'].set_flags(gtk.CAN_FOCUS)
@@ -175,6 +288,8 @@ class Generic:
 
         if combo != model[i][model.RANGE].is_combo():
           show = False
+      if show and TYPE == float:
+        cell.set_property('text', '%g' %  model[i][model.VAL_FLOAT])
 
       cell.set_property('sensitive', show)
       cell.set_property('visible', show)
@@ -190,39 +305,19 @@ class Generic:
 
     V.append_column(C['L'])
     V.append_column(C['V'])
+
+    if enable:
+      R['enable'] = gtk.CellRendererToggle()
+      R['enable'].set_property('activatable', True)
+      R['enable'].connect('toggled', helpers.toggle_item, model, model.ENABLE, add_undo)
+      C['enable'] = GTVC('Enabled', R['enable'])
+      C['enable'].add_attribute(R['enable'], 'active', model.ENABLE)
+      V.append_column( C['enable'] )
+
     V.show()
 
 
 if __name__ == '__main__':
-  class Range:
-    def __init__(self, r):
-      self.r = r
-      # if range is list/tuple or callable, this entry needs a combo box
-      self.combo = type(r) in [list, tuple] or callable(r)
-
-    def is_combo(self):
-      return self.combo
-
-    def __iter__(self):
-      if callable(self.r):
-        return iter(self.r())
-      return iter(self.r)
-
-    def get_min_max(self):
-      if type(self.r) is xrange:
-        return self.r[0], self.r[-1]
-      else:
-        return min(self.r), max(self.r)
-
-
-  class range_factory:
-    def __init__( self, D=dict() ):
-      self.D = D
-      
-    def __call__( self, path, i, model ):
-      return Range( self.D.get('/'.join(path),None) )
-
-
   model = gtk.TreeStore( str, object, object, bool, str, int, float )
   model.LABEL     = 0
   model.TYPE      = 1
@@ -252,7 +347,21 @@ if __name__ == '__main__':
   #     ]
   #   _OR_:  combo box range object can be a callable that returns list/tuple
 
-  rf = range_factory()
+  template = {
+    'Dev1' : {
+      'group0' : {
+        'param0' : {'range':xrange(11)},
+        'param2' : {'range':xrange(-3,10)},
+        'intlst' : {'range':[(0,'zero'), 5, (10,'ten')]},
+      },
+      'group1' : {
+        'fltlst' : {'range':[(0.5,'point 5'), 5.5, (10.5,'ten point five')]},
+        'strlst' : {'range':[('zero',0), 'five', ('ten','10')]},
+        'intflst': {'range':intlist, 'combo':True},
+      },
+    },
+  }
+  rf = RangeFactory(template)
 
   #                   # label  type  range         bool   str int  flt
   dev1 = \
@@ -261,23 +370,17 @@ if __name__ == '__main__':
   model.append(dev1, ('group0',None, None, False, '',  0,  0.0) )
 
   model.append(grp1, ('param0',int,  None, False, '',  10, 0.0) )
-  rf.D['Dev1/group0/param0'] = xrange(11)
   model.append(grp1, ('param1',bool, None, True,  '',  42, 0.0) )
   model.append(grp1, ('param2',float,None, False, '',  42, 0.5) )
-  rf.D['Dev1/group0/param2'] = xrange(-3,10)
   model.append(grp1, ('param3',str,  None,         False, 'A', 0,  0) )
   model.append(grp1, ('intlst',int,  None, False, '', 0,  0) )
-  rf.D['Dev1/group0/intlst'] = [(0,'zero'), 5, (10,'ten')]
 
   grp2 = \
   model.append(dev1, ('group1',None, None, False, '',  0,  0.0) )
 
   model.append(grp2, ('fltlst',float,None, False, '', 0,  0) )
-  rf.D['Dev1/group1/fltlst'] = [(0.5,'point 5'), 5.5, (10.5,'ten point five')]
   model.append(grp2, ('strlst',str,  None, False, '-', 0,  0) )
-  rf.D['Dev1/group1/strlst'] = [('zero',0), 'five', ('ten','10')]
   model.append(grp2, ('intflst',int, None, False, '', 0,  0) )
-  rf.D['Dev1/group1/intflst'] =  intlist
   g = Generic(model, range_factory=rf)
 
   window = gtk.Window()

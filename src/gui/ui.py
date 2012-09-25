@@ -10,6 +10,8 @@ import traceback
 
 # local packages
 import about, tips, configure, stores, edit
+import edit.optimize
+import edit.loop
 from plotter import Plotter
 from packing import Args as PArgs, hpack, vpack, VBox
 import storage
@@ -74,24 +76,13 @@ default_script = """\
 from physical.unit import *
 from physical.constant import *
 from physical import unit
-
-def onstart():
-	'''Called when 'play' button is clicked'''
-	pass
-
-def onstop():
-	'''Called when 'stop' button is clicked.'''
-	pass
-
 import arbwave
-def loop_control(*args, **kwargs):
-	for i in [1,2,3]:
-		for j in [1,2,3]:
-			arbwave.update()
 
-arbwave.connect( 'start', onstart )
-arbwave.connect( 'stop', onstop )
-#arbwave.set_loop_control( loop_control )
+class SimpleRun(arbwave.Runnable):
+	def run(self):
+		arbwave.update()
+
+arbwave.add_runnable( 'Simple', SimpleRun() )
 """
 
 def notify_position(w):
@@ -165,9 +156,6 @@ class ArbWave(gtk.Window):
     # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = True
 
-    # ensure that the default_script is executed for default the global env
-    self.processor.exec_script( default_script )
-
 
     #  ###### SET UP THE PANEL #######
     merge = gtk.UIManager()
@@ -235,10 +223,21 @@ class ArbWave(gtk.Window):
     body.pack1( top, True )
     body.pack2( bottom, True )
 
+
+    self.runnable_settings = dict()
+    self.runnables = set()
+    self.runnable_tree = gtk.TreeStore(str,str)
+    self.run_combo = gtk.ComboBox(self.runnable_tree)
+    edit.helpers.prep_combobox_for_tree(self.run_combo,True)
+    self.update_runnables([])
+    self.run_combo.set_size_request(10,-1)
+
+
     self.add( vpack(
         PArgs( merge.get_widget('/MenuBar'), False, False, 0 ),
         PArgs( # MENU BAR LOCATION
           hpack( merge.get_widget('/ToolBar'),
+                 self.run_combo,
                  PArgs(gtk.VSeparator(), False),
                  PArgs(gtk.VSeparator(), False),
                  self.plotter.toolbar,
@@ -248,6 +247,54 @@ class ArbWave(gtk.Window):
 
     self.show_all()
 
+    # ensure that the default_script is executed for default the global env
+    self.processor.exec_script( default_script )
+
+
+  def update_runnables(self, runnables):
+    T = self.runnable_tree
+    active_i = self.run_combo.get_active_iter()
+    active_txt = 'Default'
+    if active_i:
+      active_txt = T[active_i][1]
+    active_i = None
+
+    self.runnables = set(runnables)
+    T.clear()
+    for r in self.runnables:
+      i = T.append( None, (r,r) )
+      if r == active_txt:
+        active_i = i
+
+      if r == 'Default':
+        continue
+
+      for op in ['Loop', 'Optimize']:
+        r_op = r + ':  ' + op
+        ii = T.append( i, (r,r_op) )
+        if r_op == active_txt:
+          active_i = ii
+
+    if not len(T):
+      return
+
+    if not active_i:
+      active_i = T.get_iter(0)
+    self.run_combo.set_active_iter(active_i)
+
+  def get_active_runnable(self):
+    T = self.runnable_tree
+    active_i = self.run_combo.get_active_iter()
+    if active_i:
+      runnable  = self.runnable_tree[ active_i ][0]
+      run_label = self.runnable_tree[ active_i ][1]
+      if 'Loop' in run_label:
+        return runnable, edit.loop.Make(run_label, self.runnable_settings)
+      elif 'Optimize' in run_label:
+        return runnable, edit.optimize.Make(run_label, self.runnable_settings)
+      else:
+        return runnable, None
+    return 'Default', None
 
   def create_action_group(self):
     # GtkActionEntry
@@ -335,24 +382,11 @@ class ArbWave(gtk.Window):
         False ),                                    # is_active
     )
 
-    def run_waveforms(action):
-      def show_stopped():
-        action.set_property('stock-id', gtk.STOCK_MEDIA_PLAY)
-
-      # make sure that we switch the icons, and then update output
-      if action.get_property('stock-id') == gtk.STOCK_MEDIA_PLAY:
-        action.set_property('stock-id', gtk.STOCK_MEDIA_STOP)
-      else:
-        show_stopped()
-        show_stopped = None
-
-      # now update the output...
-      self.update( toggle_run=True, show_stopped=show_stopped )
-
     #     # Create the menubar and toolbar
     action_group = gtk.ActionGroup('ArbWaveGUIActions')
     action_group.add_actions(entries)
     action_group.add_toggle_actions(toggle_entries)
+    self.run_action = action_group.get_action('Run')
 
     # Finish off with creating references to each of the actual actions
     self.actions = {
@@ -363,7 +397,7 @@ class ArbWave(gtk.Window):
       'Quit'      : lambda a: self.destroy(),
       'Configure' : lambda a: configure.show(self, self),
       'Script'    : lambda a: self.script.edit(),
-      'Run'       : run_waveforms,
+      'Run'       : lambda a: self.update(toggle_run=True),
       'About'     : lambda a: about.show(),
       'VGens'     : lambda a: tips.show_generators(self),
       'CH:Add'    : lambda a: self.channel_editor.insert_row(),
@@ -373,6 +407,14 @@ class ArbWave(gtk.Window):
     }
 
     return action_group
+
+  def show_stopped(self):
+    if self.run_action.get_property('stock-id') != gtk.STOCK_MEDIA_PLAY:
+      self.run_action.set_property('stock-id', gtk.STOCK_MEDIA_PLAY)
+
+  def show_started(self):
+    if self.run_action.get_property('stock-id') != gtk.STOCK_MEDIA_STOP:
+      self.run_action.set_property('stock-id', gtk.STOCK_MEDIA_STOP)
 
   def activate_action(self, action):
     if action.get_name() not in self.actions:
@@ -467,7 +509,7 @@ class ArbWave(gtk.Window):
     return self.config_file
 
 
-  def update(self, item=None, toggle_run=False, show_stopped=None):
+  def update(self, item=None, toggle_run=False):
     """
     This is the main callback function for 'changed' type signals.  This
     callback will collect the current inputs and send them to the processor.
@@ -476,9 +518,6 @@ class ArbWave(gtk.Window):
 
     item : should generally be one of
            [devcfg, clocks, signals, channels, waveforms, script]
-
-    show_stopped : if not None, then waveforms will be generated.  This should be a
-    callable that will indicate back to the user that running has ceased.
     """
 
     if not self.allow_updates:
@@ -491,9 +530,6 @@ class ArbWave(gtk.Window):
       ]:
         raise TypeError('Unknown item sent to update()')
 
-      assert show_stopped is None or callable(show_stopped), \
-        'expected callable show_stopped'
-
       self.processor.update(
         ( self.devcfg.representation(),    item in [ self.ALL_ITEMS, self.devcfg] ),
         ( self.clocks.representation(),    item in [ self.ALL_ITEMS, self.clocks] ),
@@ -503,7 +539,6 @@ class ArbWave(gtk.Window):
                                            item in [ self.ALL_ITEMS, self.waveforms] ),
         ( self.script.representation(),    item in [ self.ALL_ITEMS, self.script] ),
         toggle_run=toggle_run,
-        show_stopped=show_stopped,
       )
       self.next_untested_undo = len(self.undo)
     except Exception, e:
