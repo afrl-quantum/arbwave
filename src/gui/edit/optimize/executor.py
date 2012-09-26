@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import mlab
 
 from ... import stores
+from ...packing import *
 from .. import generic
 from .. import helpers
 from ..helpers import GTVC
@@ -132,8 +133,16 @@ class OptimView(gtk.Dialog):
 
     self.set_default_size(550, 600)
     self.set_border_width(10)
+
+    self.repetitions = gtk.SpinButton(
+      gtk.Adjustment(lower=1, upper=sys.maxint, step_incr=1, page_incr=5)
+    )
+    self.vbox.pack_start(
+      hpack(gtk.Label('Number of Repetitions'), self.repetitions) )
+    if 'repetitions' in settings:
+      self.repetitions.set_value( settings['repetitions'] )
+
     body = gtk.VPaned()
-    body.show()
     self.vbox.pack_start( body )
 
 
@@ -150,11 +159,10 @@ class OptimView(gtk.Dialog):
     GV.view.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), GV.view)
 
     scroll = gtk.ScrolledWindow()
-    scroll.set_size_request(-1,200)
+    scroll.set_size_request(-1,250)
     scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
     scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
     scroll.add( GV.view )
-    scroll.show()
     body.pack1(scroll)
 
 
@@ -211,10 +219,8 @@ class OptimView(gtk.Dialog):
     V.append_column( C['scale'] )
     V.append_column( C['enable'] )
 
-    V.show()
 
-    vbox = gtk.VBox()
-    vbox.show()
+    vbox = VBox()
     vbox.pack_start( V )
 
 
@@ -247,17 +253,17 @@ class OptimView(gtk.Dialog):
     V.append_column( C['constraint'] )
     V.append_column( C['enable'] )
 
-    V.show()
     vbox.pack_start( V )
 
 
     scroll = gtk.ScrolledWindow()
-    scroll.set_size_request(-1,-1)
+    scroll.set_size_request(-1,250)
     scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
     scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
     scroll.add_with_viewport( vbox )
-    scroll.show()
     body.pack2(scroll)
+
+    self.show_all()
 
 
   def view_keypress_cb(self, entry, event, view, DEFAULT):
@@ -362,12 +368,15 @@ class Executor:
       for alg in algs  if alg[algs.ENABLE]
     }
 
+    self.repetitions = opt.repetitions.get_value_as_int()
+
   def get_settings(self):
     if self.cancelled: return None
     return {
       'algorithms' : self.alg_settings,
       'parameters' : self.parameters,
       'constraints': { c[0]:c[2] for c in self.constraints },
+      'repetitions': self.repetitions,
     }
 
 
@@ -435,7 +444,9 @@ class Executor:
       result = FMAX
     else:
       self.evals += 1
-      result = self.runnable.run()
+      # average result for the given number of repetitions
+      result = sum([ self.runnable.run() for i in xrange(self.repetitions)]) \
+             / float(self.repetitions)
       self.show.add( *(list(x) + [result]) )
     self.cache( x, result )
     return result
