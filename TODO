@@ -48,8 +48,7 @@
   the location of all necessary clock pulses, we loop through each 'value' cell
   and use the local set of the arbitrary clock pulses to determine how many
   samples to create for each value.
-
-MOSTLY DONE
+DONE
 
 5.  Implement a 'control-z' undo stack (and with it a redo stack).
   The first notion for doing this is to implement a robust and non-instrusive
@@ -124,8 +123,10 @@ via a popup menu like scaling.  Display the notes via the tooltip.
 arbwave.set_loop_control function to run from the global script. This would
 save having to edit the global script, scroll to the bottom, comment out the 
 previous script choice and comment in the new one. 
+DONE
 
 15. Cache waveform gui text-entries like natural time ('t') and duration ('dt').
   Display in tooltip.  Each time that engine.compute.waveforms is called, the
   computed values for these text-entries need to be sent back to the gui for
   tooltip generation.
+DONE
