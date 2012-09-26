@@ -11,6 +11,7 @@ from ... import stores
 from .. import generic
 from .. import helpers
 from ..helpers import GTVC
+from ..spreadsheet import keys
 
 from show import Show
 from algorithms import algorithms
@@ -25,6 +26,8 @@ class Parameters(gtk.ListStore):
   SCALE = 4
   ENABLE = 5
 
+  DEFAULT = ('', '', '0.0', '1.0', '1.0', True)
+
   def __init__(self):
     gtk.ListStore.__init__(self,
       str, #name
@@ -35,6 +38,18 @@ class Parameters(gtk.ListStore):
       bool,#enable
     )
 
+
+class Constraints(gtk.ListStore):
+  EQ = 0
+  ENABLE = 1
+
+  DEFAULT = ('', True)
+
+  def __init__(self):
+    gtk.ListStore.__init__(self,
+      str, #constraint
+      bool,#enable
+    )
 
 
 def drag_motion(w, ctx, x, y, time):
@@ -151,19 +166,21 @@ class OptimView(gtk.Dialog):
             p['min'], p['max'], p['scale'], p['enable'] )
         )
     else:
-      self.params.append( ('', '', '0.0', '1.0', '1.0', True) )
+      self.params.append( Parameters.DEFAULT )
 
     V = gtk.TreeView( self.params )
     V.set_reorderable(True)
     #V.connect('drag-begin', begin_drag, self.window)
     #V.connect('drag-end', end_drag, self.window, waveforms)
     V.connect('drag-motion', drag_motion)
+    V.connect('key-press-event', self.view_keypress_cb, V, Parameters.DEFAULT)
     R = {
       'name'  : gtk.CellRendererText(),
       'value' : gtk.CellRendererText(),
       'min'   : gtk.CellRendererText(),
       'max'   : gtk.CellRendererText(),
       'scale' : gtk.CellRendererText(),
+      'enable'  : gtk.CellRendererToggle(),
     }
     R['name'].set_property( 'editable', True )
     R['name'].connect( 'edited', set_item_name, self.params, Globals )
@@ -175,6 +192,8 @@ class OptimView(gtk.Dialog):
     R['max'].connect( 'edited', helpers.set_item, self.params, Parameters.MAX )
     R['scale'].set_property( 'editable', True )
     R['scale'].connect( 'edited', helpers.set_item, self.params, Parameters.SCALE )
+    R['enable'].set_property( 'activatable', True )
+    R['enable'].connect('toggled', helpers.toggle_item, self.params, Parameters.ENABLE)
 
     C = {
       'name' : GTVC('Variable', R['name'], text=Parameters.NAME),
@@ -182,12 +201,15 @@ class OptimView(gtk.Dialog):
       'min' : GTVC('Min', R['min'], text=Parameters.MIN),
       'max' : GTVC('Max', R['max'], text=Parameters.MAX),
       'scale' : GTVC('Scale', R['scale'], text=Parameters.SCALE),
+      'enable' : GTVC('Enable', R['enable']),
     }
+    C['enable'].add_attribute(R['enable'], 'active', Parameters.ENABLE)
     V.append_column( C['name'] )
     V.append_column( C['value'] )
     V.append_column( C['min'] )
     V.append_column( C['max'] )
     V.append_column( C['scale'] )
+    V.append_column( C['enable'] )
 
     V.show()
 
@@ -196,23 +218,34 @@ class OptimView(gtk.Dialog):
     vbox.pack_start( V )
 
 
-    self.constraints = gtk.ListStore(str)
+    self.constraints = Constraints()
     if 'constraints' in settings:
       for c in settings['constraints']:
-        self.constraints.append( (c,) )
+        self.constraints.append( (c,settings['constraints'][c]) )
     else:
-      self.constraints.append( ('',) )
+      self.constraints.append( Constraints.DEFAULT )
 
     V = gtk.TreeView( self.constraints )
     V.set_reorderable(True)
     #V.connect('drag-begin', begin_drag, self.window)
     #V.connect('drag-end', end_drag, self.window, waveforms)
     V.connect('drag-motion', drag_motion, self.window)
-    R = gtk.CellRendererText()
-    R.set_property( 'editable', True )
-    R.connect( 'edited', helpers.set_item, self.constraints, 0)
-    C = GTVC('Constraint Equations', R, text=0)
-    V.append_column( C )
+    V.connect('key-press-event', self.view_keypress_cb, V, Constraints.DEFAULT)
+    R = {
+      'constraint' : gtk.CellRendererText(),
+      'enable'  : gtk.CellRendererToggle(),
+    }
+    R['constraint'].set_property( 'editable', True )
+    R['constraint'].connect( 'edited', helpers.set_item, self.constraints, 0)
+    R['enable'].set_property( 'activatable', True )
+    R['enable'].connect('toggled', helpers.toggle_item, self.constraints, Constraints.ENABLE)
+    C = {
+      'constraint' : GTVC('Constraint Equations', R['constraint'], text=0),
+      'enable' : GTVC('Enable', R['enable']),
+    }
+    C['enable'].add_attribute(R['enable'], 'active', Constraints.ENABLE)
+    V.append_column( C['constraint'] )
+    V.append_column( C['enable'] )
 
     V.show()
     vbox.pack_start( V )
@@ -225,6 +258,27 @@ class OptimView(gtk.Dialog):
     scroll.add_with_viewport( vbox )
     scroll.show()
     body.pack2(scroll)
+
+
+  def view_keypress_cb(self, entry, event, view, DEFAULT):
+    if event.keyval == keys.INSERT:
+      model, rows = view.get_selection().get_selected_rows()
+      # we convert paths to row references so that references are persistent
+      if rows:
+        rows = [ model.get_iter(p)  for p in rows ]
+        for row in rows:
+          model.insert_before( row, DEFAULT )
+      else:
+        model.append( DEFAULT )
+      return True
+    elif event.keyval == keys.DEL:
+      model, rows = view.get_selection().get_selected_rows()
+      # we convert paths to row references so that references are persistent
+      rows = [ gtk.TreeRowReference(model, p)  for p in rows ]
+      for r in rows:
+        model.remove( model.get_iter( r.get_path() ) )
+      return True
+    return False
 
 
 
@@ -288,9 +342,10 @@ class Executor:
     self.params = np.array( self.params )
 
     self.constraints = list()
+    EQ = Constraints.EQ
     for c in opt.constraints:
-      if c[0]:
-        self.constraints.append( [c[0], lambda G : eval(c[0], G)] )
+      if c[EQ]:
+        self.constraints.append( [c[EQ], lambda G : eval(c[EQ], G), Constraints.ENABLE] )
 
     if old_pnames is None or old_pnames != self.pnames:
       self.show = Show( columns=(self.pnames+['Merit']) )
@@ -312,7 +367,7 @@ class Executor:
     return {
       'algorithms' : self.alg_settings,
       'parameters' : self.parameters,
-      'constraints': [ c[0] for c in self.constraints ],
+      'constraints': { c[0]:c[2] for c in self.constraints },
     }
 
 
@@ -373,7 +428,8 @@ class Executor:
     self.save_globals(x)
 
     # now, test constraints before running the function
-    c_failed = [ True  for c in self.constraints  if not c[1](self.Globals) ]
+    c_failed = [ True  for c in self.constraints
+                  if c[2] and not c[1](self.Globals) ]
     if c_failed:
       print 'constraint failed'
       result = FMAX

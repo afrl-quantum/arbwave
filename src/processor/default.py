@@ -8,6 +8,7 @@ import functions
 
 registered_globals = {
   'float_range' : float_range,
+  'inf' : float('inf'),
 }
 
 registered_globals.update( functions.registered )

@@ -7,12 +7,11 @@ import sys, re, pydoc
 import numpy as np
 from matplotlib import mlab
 
-from .. import stores
-import generic
 import helpers
 from helpers import GTVC
 
 from optimize.show import Show
+from spreadsheet import keys
 
 class Parameters(gtk.ListStore):
   NAME    = 0
@@ -21,6 +20,8 @@ class Parameters(gtk.ListStore):
   STEP    = 3
   ISGLOBAL= 4
   ENABLE  = 5
+
+  DEFAULT = ('', '0', '10', '1', False, True)
 
   def __init__(self):
     gtk.ListStore.__init__(self,
@@ -66,13 +67,14 @@ class LoopView(gtk.Dialog):
           (p['name'], p['min'], p['max'], p['step'], p['isglobal'], p['enable'])
         )
     else:
-      self.params.append( ('', '0', '10', '1', False, True) )
+      self.params.append( Parameters.DEFAULT )
 
-    V = gtk.TreeView( self.params )
+    V = self.view = gtk.TreeView( self.params )
     V.set_reorderable(True)
     #V.connect('drag-begin', begin_drag, self.window)
     #V.connect('drag-end', end_drag, self.window, waveforms)
     V.connect('drag-motion', drag_motion)
+    V.connect('key-press-event', self.view_keypress_cb)
     R = {
       'name'    : gtk.CellRendererText(),
       'min'     : gtk.CellRendererText(),
@@ -121,6 +123,26 @@ class LoopView(gtk.Dialog):
     scroll.show()
     self.vbox.pack_start( scroll )
 
+
+  def view_keypress_cb(self, entry, event):
+    if event.keyval == keys.INSERT:
+      model, rows = self.view.get_selection().get_selected_rows()
+      # we convert paths to row references so that references are persistent
+      if rows:
+        rows = [ model.get_iter(p)  for p in rows ]
+        for row in rows:
+          model.insert_before( row, Parameters.DEFAULT )
+      else:
+        model.append( Parameters.DEFAULT )
+      return True
+    elif event.keyval == keys.DEL:
+      model, rows = self.view.get_selection().get_selected_rows()
+      # we convert paths to row references so that references are persistent
+      rows = [ gtk.TreeRowReference(model, p)  for p in rows ]
+      for r in rows:
+        model.remove( model.get_iter( r.get_path() ) )
+      return True
+    return False
 
 
 class Make:

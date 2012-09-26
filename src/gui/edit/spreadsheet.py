@@ -14,6 +14,7 @@ class keys:
   RTAB  = 65056
   BACKSP= 65288
   DEL   = 65535
+  INSERT= 65379
 
   n     = gtk.keysyms.n
   p     = gtk.keysyms.p

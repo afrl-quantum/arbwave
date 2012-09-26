@@ -437,6 +437,7 @@ class ArbWave(gtk.Window):
       'waveforms' : self.waveforms.representation(),
       'signals'   : self.signals.representation(),
       'version'   : version.version(),
+      'runnable_settings' : self.runnable_settings,
     }
 
   def clearundo(self):
@@ -477,6 +478,9 @@ class ArbWave(gtk.Window):
     if 'devices' in vardict:
       self.devcfg.load( vardict['devices'] )
 
+    if 'runnable_settings' in vardict:
+      self.runnable_settings = vardict['runnable_settings']
+
     # re-enable updates and directly call for an update
     self.unpause()
     self.update(self.ALL_ITEMS)
@@ -493,6 +497,7 @@ class ArbWave(gtk.Window):
     self.clocks.clear()
     self.devcfg.clear()
     self.set_config_file('')
+    self.runnable_settings.clear()
 
     # re-enable updates and directly call for an update
     self.unpause()
