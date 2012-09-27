@@ -10,7 +10,7 @@ current_dir = '~'
 class NoFileError(Exception):
   pass
 
-def get_file(doopen=True):
+def get_file(doopen=True, filters=[('*.py', 'Python Files')]):
   info = {
     True : { 'action':gtk.FILE_CHOOSER_ACTION_OPEN, 'stock':gtk.STOCK_OPEN },
    False : { 'action':gtk.FILE_CHOOSER_ACTION_SAVE, 'stock':gtk.STOCK_SAVE },
@@ -24,7 +24,7 @@ def get_file(doopen=True):
               info[doopen]['stock'],
               gtk.RESPONSE_OK )
   )
-  for p, n in [ ('*.py', 'Python Files') ]:
+  for p, n in filters:
     filter = gtk.FileFilter()
     filter.add_pattern(p)
     filter.set_name(n)
