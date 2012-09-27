@@ -455,6 +455,20 @@ class ArbWave(gtk.Window):
 
 
   def setvars(self, vardict):
+    # first check the version of the configuration file
+    if 'version' not in vardict or not version.supported( vardict['version'] ):
+      v = vardict.get('version','UNKNOWN')
+      self.notify.show(
+        '<span color="red"><b>Error</b>:  \n' \
+        '   Config file version:'        '\n' \
+        '     <span color="blue">{}</span>\n' \
+        '   older than'                  '\n' \
+        '     <span color="blue">{}</span>\n' \
+        '   Cannot load!'                '\n' \
+        '</span>'                        '\n' \
+        .format(v, version.last_key_version()) )
+      raise RuntimeError('Loading unsupported config file version')
+
     self.clearundo()
 
     # suspend all updates
