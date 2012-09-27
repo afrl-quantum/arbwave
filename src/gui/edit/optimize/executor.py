@@ -289,20 +289,21 @@ class OptimView(gtk.Dialog):
 
 
 class Make:
-  def __init__(self, run_label, settings):
+  def __init__(self, win, run_label, settings):
+    self.win = win
     self.run_label = run_label
     self.settings = settings
 
   def __call__(self, *args, **kwargs):
     S = self.settings.get(self.run_label,dict())
-    e = Executor( settings=S, *args, **kwargs )
+    e = Executor( self.win, settings=S, *args, **kwargs )
     S = e.get_settings()
     if S:
       self.settings[self.run_label] = S
     return e()
 
 class Executor:
-  def __init__(self, runnable, Globals, settings, cache_tolerance=1e-3):
+  def __init__(self, parent, runnable, Globals, settings, cache_tolerance=1e-3):
     self.runnable = runnable
     self.Globals = Globals
 
@@ -313,7 +314,7 @@ class Executor:
     self.pnames = None
     self.skipped_evals = 0
 
-    opt = OptimView(settings, Globals)
+    opt = OptimView(settings, Globals, parent=parent)
     self.cancelled = False
     try:
       if opt.run() not in [ gtk.RESPONSE_OK ]:
@@ -354,7 +355,7 @@ class Executor:
         self.constraints.append( [c[EQ], lambda G : eval(c[EQ], G), Constraints.ENABLE] )
 
     if old_pnames is None or old_pnames != self.pnames:
-      self.show = Show( columns=(self.pnames+['Merit']) )
+      self.show = Show( columns=(self.pnames+['Merit']), parent=parent )
 
     algs = opt.algs
     self.alg_settings = opt.algs.representation()

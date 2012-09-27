@@ -146,26 +146,27 @@ class LoopView(gtk.Dialog):
 
 
 class Make:
-  def __init__(self, run_label, settings):
+  def __init__(self, win, run_label, settings):
+    self.win = win
     self.run_label = run_label
     self.settings = settings
 
   def __call__(self, *args, **kwargs):
     S = self.settings.get(self.run_label,dict())
-    e = Executor( settings=S, *args, **kwargs )
+    e = Executor( self.win, settings=S, *args, **kwargs )
     S = e.get_settings()
     if S:
       self.settings[self.run_label] = S
     return e()
 
 class Executor:
-  def __init__(self, runnable, Globals, settings):
+  def __init__(self, parent, runnable, Globals, settings):
     self.runnable = runnable
     self.Globals = Globals
 
     self.show = None
 
-    loop = LoopView(settings, Globals)
+    loop = LoopView(settings, Globals, parent=parent)
     self.cancelled = False
     try:
       if loop.run() not in [ gtk.RESPONSE_OK ]:
@@ -188,7 +189,8 @@ class Executor:
       )
 
     self.show = Show(
-      columns=[ i['name']  for i in self.parameters if i['enable'] ]
+      columns=[ i['name']  for i in self.parameters if i['enable'] ],
+      parent=parent,
     )
 
 

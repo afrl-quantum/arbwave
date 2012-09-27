@@ -289,9 +289,9 @@ class ArbWave(gtk.Window):
       runnable  = self.runnable_tree[ active_i ][0]
       run_label = self.runnable_tree[ active_i ][1]
       if 'Loop' in run_label:
-        return runnable, edit.loop.Make(run_label, self.runnable_settings)
+        return runnable, edit.loop.Make(self, run_label, self.runnable_settings)
       elif 'Optimize' in run_label:
-        return runnable, edit.optimize.Make(run_label, self.runnable_settings)
+        return runnable, edit.optimize.Make(self, run_label, self.runnable_settings)
       else:
         return runnable, None
     return 'Default', None

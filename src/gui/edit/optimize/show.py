@@ -3,8 +3,14 @@
 import gtk, gobject
 
 import numpy as np
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_gtkagg import \
+  FigureCanvasGTKAgg as FigCanvas
+from matplotlib.backends.backend_gtkagg import \
+  NavigationToolbar2GTKAgg as NavigationToolbar
 
 from ..helpers import GTVC
+from ...packing import vpack, Args as PArgs
 from ...storage.gtk_tools import get_file, NoFileError
 
 ui_info = \
@@ -50,19 +56,34 @@ class Show(gtk.Dialog):
       print 'building menus failed: {msg}'.format(msg=msg)
     self.vbox.pack_start( merge.get_widget('/MenuBar'), False, False, 0 )
 
+    body = gtk.VPaned()
+    self.vbox.pack_start(body)
+
     # Set up the Body of the display
     V = self.view = gtk.TreeView()
     scroll = gtk.ScrolledWindow()
-    scroll.set_size_request(-1,-1)
+    scroll.set_size_request(-1,400)
     scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
     scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
     scroll.add( V )
-    scroll.show_all()
-    self.vbox.pack_start(scroll)
+    body.pack1(scroll)
 
+
+    self.axes, self.canvas, toolbar = init_plot(self)
+
+    self.canvas.set_size_request(-1,150)
+    body.pack2( vpack( PArgs(toolbar,False,False,0), self.canvas ) )
+
+    body.show_all()
     self.set_columns( columns )
 
     self.filename = None
+    self.new_data = False
+
+
+  def show(self):
+    gobject.idle_add( self.plot_data )
+    gtk.Dialog.show(self)
 
 
   def set_columns(self,columns):
@@ -80,6 +101,23 @@ class Show(gtk.Dialog):
 
   def add(self, *stuff):
     self.params.append( stuff )
+    self.new_data = True
+
+
+  def plot_data(self):
+    if not self.is_drawable():
+      return False
+
+    if not self.new_data:
+      return True
+    self.new_data = False
+    data = self.get_all_data()
+    # reorder the data with respect to x-axis
+    data.view(','.join(['f8']*data.shape[1])).sort(order='f0',axis=0)
+    self.axes.clear()
+    self.axes.plot( data[:,0], data[:,-1] )
+    self.canvas.draw()
+    return True
 
 
   def get_all_data(self):
@@ -182,3 +220,18 @@ class Show(gtk.Dialog):
     F.write( Show.COLPREFIX + '\t'.join(self.columns) + '\n' )
     np.savetxt( F, self.get_all_data() )
     F.close()
+
+
+def init_plot(win):
+  dpi = 100
+  #  class matplotlib.figure.Figure(figsize=None,
+  #                                 dpi=None, facecolor=None,
+  #                                 edgecolor=None, linewidth=1.0,
+  #                                 frameon=True, subplotpars=None)
+  fig = Figure(figsize=(3.0, 3.0), dpi=dpi)
+  canvas = FigCanvas(fig)
+  rect = [.1, .01, .88, .85 ]
+  axes = fig.add_axes( rect, label='generic', navigate=True )
+  toolbar = NavigationToolbar( canvas, win )
+
+  return axes, canvas, toolbar
