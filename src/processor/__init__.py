@@ -112,8 +112,9 @@ class Processor:
       if self.running or toggle_run:
         self.start()
       else:
+        L = dict( arbwave = self.engine )
         if stopped or channels[1] or script[1]:
-          self.engine.update_static()
+          exec 'arbwave.update_static()' in self.Globals, L
 
         # TODO:  have more fine-grained change information:
         #   Instead of just "did channels change" have
@@ -124,7 +125,7 @@ class Processor:
         #   With this information, we would more correctly only update plots or
         #   static output when the corresponding information has changed.
         if channels[1] or script[1] or waveforms[1]:
-          self.engine.update_plotter()
+          exec 'arbwave.update_plotter()' in self.Globals, L
     finally:
       self.lock.release()
 
