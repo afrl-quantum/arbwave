@@ -5,9 +5,11 @@ from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg
 class NavigationToolbar(NavigationToolbar2GTKAgg):
   def __init__( self, canvas, window,
                 hspan_controls=None,
-                vspan_controls=None ):
+                vspan_controls=None,
+                set_max_ranges=lambda:None ):
     self.hspan_controls = hspan_controls
     self.vspan_controls = vspan_controls
+    self.set_max_ranges = set_max_ranges
     toolitems = [
       ('Home', 'Reset original view', 'home.png', 'home'),
       ('Back', 'Back to  previous view','back.png', 'back'),
@@ -57,6 +59,7 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
     """This version of 'home' resets the history, instead of just clipping it to
     this view"""
     NavigationToolbar2GTKAgg.home(self,*args)
+    self.set_max_ranges()
     self.update() # reset the history...
 
 

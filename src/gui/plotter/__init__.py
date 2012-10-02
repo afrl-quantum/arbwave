@@ -30,10 +30,10 @@ class Plotter:
       self.canvas, win,
       self.axes['hspan-controls'].values(),
       self.axes['vspan-controls'].values(),
+      self.set_max_ranges,
     )
     self.axes['__scroll_master'].toolbar = self.toolbar
-    self.max_analog = 0.0
-    self.max_digital = 0.0
+    self.ranges = dict( analog=(0,(0,0)), digital=(0,(0,0)) )
     self.vline = { 't':None, 'digital':None, 'analog':None }
     self.lines = dict()
     self.highlighted = None
@@ -45,13 +45,21 @@ class Plotter:
     self.yview = {'analog':None,'digital':None}
 
 
+  def set_max_ranges(self):
+    self.xlim = (0.0,self.ranges['analog'][0])
+    self.axes['t'].set_xlim( self.xlim )
+    self.axes['analog' ].set_xlim( self.xlim )
+    self.axes['analog' ].set_ylim( self.ranges['analog' ][1] )
+    self.axes['digital'].set_ylim( self.ranges['digital'][1] )
+    self.canvas.draw()
+
+
   def start(self):
     if self.xview is not None:
       self.xview = self.axes['analog'].get_xlim()
       self.yview['analog'] = self.axes['analog'].get_ylim()
       self.yview['digital'] = self.axes['digital'].get_ylim()
-    self.max_analog = 0.0
-    self.max_digital = 0.0
+    self.ranges = dict( analog=(0,0), digital=(0,0) )
     self.group_lines = dict()
 
   def finish(self, t_final=0.0):
@@ -68,7 +76,7 @@ class Plotter:
     self.canvas.draw()
 
   def plot_analog(self, signals, *args, **kwargs ):
-    self.max_analog, lines, group_lines \
+    self.ranges['analog'], lines, group_lines \
       = analog.plot( self.axes['analog'], signals, *args, **kwargs )
     # purge all old analog lines
     self.lines = { l[0]:l[1]  for l in self.lines.items()  if l[0].startswith('Analog/') }
@@ -79,7 +87,7 @@ class Plotter:
       {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
 
   def plot_digital(self, signals, *args, **kwargs ):
-    self.max_digital, group_lines \
+    self.ranges['digital'], group_lines \
       = digital.plot( self.axes['digital'], signals, *args, **kwargs )
     self.group_lines.update(
       {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
@@ -105,7 +113,7 @@ class Plotter:
     self.canvas.draw()
 
   def update_t_axes(self, max_x=0.0):
-    max_x = max( self.max_analog, self.max_digital, max_x )
+    max_x = max( self.ranges['analog'][0], self.ranges['digital'][0], max_x )
     self.axes['t'].set_xlim( self.xlim )
     for a in ['t', 'digital', 'analog']:
       if self.vline[a]:

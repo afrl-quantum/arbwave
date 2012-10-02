@@ -74,7 +74,7 @@ def plot( ax, signals, names=None, t_final=None ):
   pylab.setp(ax.get_xticklabels(), fontsize=8)
   pylab.setp(ax.get_yticklabels(), fontsize=8)
   ax.grid(True)
-  return t_final, group_lines
+  return (t_final, ax.get_ylim()), group_lines
 
 
 # This should be conformant to the output that the arbwave.Processor produces.
