@@ -7,6 +7,8 @@ import sys, re, pydoc
 import numpy as np
 from matplotlib import mlab
 
+import physical
+
 import helpers
 from helpers import GTVC
 
@@ -190,7 +192,7 @@ class Executor:
 
     self.show = Show(
       columns=[ i['name']  for i in self.parameters if i['enable'] ],
-      parent=parent,
+      parent=parent, globals=Globals,
     )
 
 
@@ -239,6 +241,9 @@ class Executor:
       x[i] = eval( p['min'], self.Globals )
       while x[i] < eval(p['max'], self.Globals):
         if p['isglobal']:
+          if type(x[i]) is physical.Quantity:
+            # to ensure that the output is parsable
+            x[i].set_print_style('math')
           exec '{n} = {xi}'.format(n=p['name'], xi=x[i]) in self.Globals
         self._loop_nexti(x,i+1,pi)
         x[i] += eval(p['step'], self.Globals)

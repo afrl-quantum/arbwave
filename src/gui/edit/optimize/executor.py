@@ -7,6 +7,8 @@ import sys, re, pydoc
 import numpy as np
 from matplotlib import mlab
 
+import physical
+
 from ... import stores
 from ...packing import *
 from .. import generic
@@ -355,7 +357,10 @@ class Executor:
         self.constraints.append( [c[EQ], lambda G : eval(c[EQ], G), Constraints.ENABLE] )
 
     if old_pnames is None or old_pnames != self.pnames:
-      self.show = Show( columns=(self.pnames+['Merit']), parent=parent )
+      self.show = Show(
+        columns=(self.pnames+['Merit']),
+        parent=parent, globals=Globals,
+      )
 
     algs = opt.algs
     self.alg_settings = opt.algs.representation()
@@ -422,6 +427,9 @@ class Executor:
     if globalize:
       exec 'global ' + ','.join( globalize )
     for i in xrange(len(x)):
+      if type(x[i]) is physical.Quantity:
+        # to ensure that the output is parsable
+        x[i].set_print_style('math')
       exec '{n} = {v}'.format(n=self.pnames[i], v=x[i]) in self.Globals
 
 

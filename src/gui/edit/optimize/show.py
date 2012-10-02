@@ -34,7 +34,7 @@ class Show(gtk.Dialog):
   COLPREFIX = '#Columns: '
 
   def __init__(self, columns, title='Optimization Parameters',
-               parent=None, target=None, model=False):
+               parent=None, model=False, globals=globals()):
     actions = [
     #  gtk.STOCK_OK,     gtk.RESPONSE_OK,
     #  gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL
@@ -79,6 +79,7 @@ class Show(gtk.Dialog):
 
     self.filename = None
     self.new_data = False
+    self.Globals = globals
 
 
   def show(self):
@@ -110,18 +111,27 @@ class Show(gtk.Dialog):
 
     if not self.new_data:
       return True
-    self.new_data = False
-    data = self.get_all_data()
-    # reorder the data with respect to x-axis
-    data.view(','.join(['f8']*data.shape[1])).sort(order='f0',axis=0)
-    self.axes.clear()
-    self.axes.plot( data[:,0], data[:,-1] )
-    self.canvas.draw()
+
+    try:
+      self.new_data = False
+      data = self.get_all_data()
+      # reorder the data with respect to x-axis
+      if data.shape[1] == 1:
+        # we'll just prepend an index column
+        data = np.append(np.transpose([xrange(0,data.shape[0])]), data, axis=1)
+      else:
+        data.view(','.join(['f8']*data.shape[1])).sort(order='f0',axis=0)
+      self.axes.clear()
+      self.axes.plot( data[:,0], data[:,-1] )
+      self.canvas.draw()
+    except: pass
     return True
 
 
   def get_all_data(self):
-    return np.array([[ i for i in row ]  for row in self.params]).astype(float)
+    return np.array([
+      [ eval(i,self.Globals) for i in row ] for row in self.params
+    ]).astype(float)
 
 
   def set_all_data(self, data):
