@@ -2,7 +2,7 @@
 
 import threading
 from pygraph.algorithms.sorting import topological_sorting
-from ..gui_callbacks import do_gui_operation
+from ...gui_callbacks import do_gui_operation
 from ... import backend
 from ... import signal_graphs
 

@@ -6,7 +6,7 @@ to more explicit channel-specific full waveforms.
 
 import sys, threading, traceback
 import engine
-from gui_callbacks import do_gui_operation
+from ..gui_callbacks import do_gui_operation
 import default
 import messages as msg
 from ..path import collect_prefix
