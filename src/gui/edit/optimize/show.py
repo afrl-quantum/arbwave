@@ -10,7 +10,7 @@ from matplotlib.backends.backend_gtkagg import \
   NavigationToolbar2GTKAgg as NavigationToolbar
 
 from ..helpers import GTVC
-from ...packing import vpack, Args as PArgs
+from ...packing import hpack, vpack, Args as PArgs
 from ...storage.gtk_tools import get_file, NoFileError
 from ....gui_callbacks import do_gui_operation
 
@@ -57,6 +57,24 @@ class Show(gtk.Dialog):
       print 'building menus failed: {msg}'.format(msg=msg)
     self.vbox.pack_start( merge.get_widget('/MenuBar'), False, False, 0 )
 
+    def mk_simple_combo(text_column=0,model=None):
+      combo = gtk.ComboBox(model)
+      cell = gtk.CellRendererText()
+      combo.pack_start(cell, True)
+      combo.add_attribute(cell, 'text', text_column)
+      combo.connect('changed', self.update_col_selection)
+      return combo
+
+    self.x_selection = mk_simple_combo()
+    self.y_selection = mk_simple_combo()
+
+    col_sel_box = hpack(
+        PArgs(gtk.Label('X'),False,False,0), self.x_selection,
+        PArgs(gtk.Label('Y'),False,False,0), self.y_selection,
+    )
+    col_sel_box.show_all()
+    self.vbox.pack_start( col_sel_box )
+
     body = gtk.VPaned()
     self.vbox.pack_start(body)
 
@@ -83,6 +101,10 @@ class Show(gtk.Dialog):
     self.Globals = globals
 
 
+  def update_col_selection(self, combo):
+    self.new_data = True
+
+
   def show(self):
     def do_show():
       gobject.idle_add( self.plot_data )
@@ -96,7 +118,13 @@ class Show(gtk.Dialog):
       self.view.remove_column( c )
 
     # add new model and columns
-    self.columns = columns
+    self.columns = gtk.ListStore( str )
+    self.columns.append( ('',) )
+    for c in columns:
+      self.columns.append( (c,) )
+    self.x_selection.set_model( self.columns )
+    self.y_selection.set_model( self.columns )
+
     self.params = gtk.ListStore( *([str]*(len(columns))) )
     self.view.set_model( self.params )
     for i in xrange(len(columns)):
@@ -119,15 +147,36 @@ class Show(gtk.Dialog):
 
     try:
       self.new_data = False
+
+      def get_col( combo ):
+        i = combo.get_active()
+        if i >= 1:
+          return i-1, self.columns[i][0]
+        else:
+          return -1, ''
+
+      xi, x_label = get_col( self.x_selection )
+      yi, y_label = get_col( self.y_selection )
+
+      if yi == -1:
+        self.axes.clear()
+        self.canvas.draw()
+        return True # nothing to plot, clear plot and return
+
       data = self.get_all_data()
       # reorder the data with respect to x-axis
-      if data.shape[1] == 1:
+      if data.shape[1] == 1 or xi == -1:
         # we'll just prepend an index column
+        x = xrange(0,data.shape[0])
         data = np.append(np.transpose([xrange(0,data.shape[0])]), data, axis=1)
+        xi = 0
+        yi += 1
       else:
-        data.view(','.join(['f8']*data.shape[1])).sort(order='f0',axis=0)
+        data.view(','.join(['f8']*data.shape[1])).sort(order='f'+str(xi),axis=0)
       self.axes.clear()
-      self.axes.plot( data[:,0], data[:,-1] )
+      self.axes.plot( data[:,xi], data[:,yi] )
+      self.axes.set_xlabel(x_label)
+      self.axes.set_ylabel(y_label)
       self.canvas.draw()
     except: pass
     return True
@@ -141,12 +190,12 @@ class Show(gtk.Dialog):
 
   def set_all_data(self, data):
     self.params.clear()
-    if len(data) > 0 and len(data[0]) != len(self.columns):
+    if len(data) > 0 and len(data[0]) != (len(self.columns)-1):
       raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
-                          .format(n=len(self.columns)) )
-
+                          .format(n=(len(self.columns)-1)) )
     for i in data:
       self.params.append( i )
+    self.new_data = True
 
 
   def create_action_group(self):
@@ -232,7 +281,13 @@ class Show(gtk.Dialog):
         self.filename = config_file
     except NoFileError:
       return # this happens when get_file returns None
-    F.write( Show.COLPREFIX + '\t'.join(self.columns) + '\n' )
+
+    def Y(m,start=1):
+      # yield all except the first, blank, entry
+      for i in xrange(start,len(m)):
+        yield m[i][0]
+
+    F.write( Show.COLPREFIX + '\t'.join([i for i in Y(self.columns)]) + '\n' )
     np.savetxt( F, self.get_all_data() )
     F.close()
 
