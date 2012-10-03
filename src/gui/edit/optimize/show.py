@@ -12,6 +12,7 @@ from matplotlib.backends.backend_gtkagg import \
 from ..helpers import GTVC
 from ...packing import vpack, Args as PArgs
 from ...storage.gtk_tools import get_file, NoFileError
+from ....gui_callbacks import do_gui_operation
 
 ui_info = \
 """<ui>
@@ -82,8 +83,10 @@ class Show(gtk.Dialog):
 
 
   def show(self):
-    gobject.idle_add( self.plot_data )
-    gtk.Dialog.show(self)
+    def do_show():
+      gobject.idle_add( self.plot_data )
+      gtk.Dialog.show(self)
+    do_gui_operation( do_show )
 
 
   def set_columns(self,columns):
@@ -100,8 +103,10 @@ class Show(gtk.Dialog):
 
 
   def add(self, *stuff):
-    self.params.append( stuff )
-    self.new_data = True
+    def do_append():
+      self.params.append( stuff )
+      self.new_data = True
+    do_gui_operation( do_append )
 
 
   def plot_data(self):
