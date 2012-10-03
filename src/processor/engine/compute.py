@@ -370,7 +370,7 @@ def apply_scaling(value, chname, ci):
   else:
     assert ci['units'], chname+':  dimensions required for scaling'
     val = value / ci['units']
-    assert type(val) is not physical.base.Quantity, \
+    assert type(val) is not physical.Quantity, \
       chname+':  wrong units: {}, expected [{}]' \
       .format(value, ci['units'])
     value = ci['scaling'](val)*unit.V
