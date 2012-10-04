@@ -9,6 +9,7 @@ import functions
 registered_globals = {
   'float_range' : float_range,
   'inf' : float('inf'),
+  'nan' : float('nan'),
 }
 
 registered_globals.update( functions.registered )
