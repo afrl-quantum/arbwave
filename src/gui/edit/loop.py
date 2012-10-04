@@ -228,31 +228,29 @@ class Executor:
 
   def _loop_func(self):
     self.show.show()
-    x = list()
-    for p in self.parameters:
-      if not p['enable']:
-        continue
-      x.append( eval( p['min'], self.Globals ) )
-
-    self._loop_i( x, 0, 0 )
+    x = [ 0 for p in self.parameters  if p['enable'] ]
+    Locals = dict()
+    self._loop_i( x, 0, 0, Locals )
 
 
-  def _loop_i(self, x, i, pi):
+  def _loop_i(self, x, i, pi, Locals):
     p = self.parameters[pi]
     if p['enable']:
       if p['isglobal'] and not re.search('["\'\[]', p['name']):
         exec 'global ' + p['name']
 
-      x[i] = eval( p['min'], self.Globals )
-      while x[i] < eval(p['max'], self.Globals):
+      x[i] = eval( p['min'], self.Globals, Locals )
+      while x[i] < eval(p['max'], self.Globals, Locals):
         if p['isglobal']:
           exec '{n} = {xi}'.format(n=p['name'], xi=M(x[i])) in self.Globals
-        self._loop_nexti(x,i+1,pi)
-        x[i] += eval(p['step'], self.Globals)
+        else:
+          Locals[ p['name'] ] = x[i]
+        self._loop_nexti(x,i+1,pi,Locals)
+        x[i] += eval(p['step'], self.Globals, Locals)
     else:
-      self._loop_nexti(x,i,pi)
+      self._loop_nexti(x,i,pi,Locals)
 
-  def _loop_nexti(self, x, i, pi):
+  def _loop_nexti(self, x, i, pi, Locals):
     def L(r):
       # need better test like "if iterable"
       if r is None:
@@ -263,7 +261,7 @@ class Executor:
         return [r]
 
     if pi < (len(self.parameters)-1):
-      self._loop_i(x, i, pi+1)
+      self._loop_i(x, i, pi+1, Locals)
     else:
       result = list(x) + L( self.runnable.run() )
       self.show.add( *M(result) )
