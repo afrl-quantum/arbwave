@@ -13,43 +13,90 @@ available = {
     },
     'PFI{0..9}' : {
       'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}',
-      'ctr{0..1}{Gate,Source}',
+      'Ctr{0..1}{Gate,Source}',
       ('External/', None),
     },
     ('TRIG/{0..6}','RTSI{0..6}') : {
       'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}',
-      'ctr{0..1}{Out,Gate,Source}',
+      'Ctr{0..1}{Out,Gate,Source}',
     },
     ('TRIG/7','RTSI7') : {
       'ao/SampleClockTimebase',
-      'ctr{0..1}Source',
+      'Ctr{0..1}Source',
     },
-    'ctr0Out' : {
+    'Ctr0Out' : {
       ('TRIG/{0..6}','RTSI{0..6}'),
     },
-    'ctr0Gate' : {
+    'Ctr0Gate' : {
       'PFI9',
       ('TRIG/{0..6}','RTSI{0..6}'),
     },
-    'ctr0Source' : {
+    'Ctr0Source' : {
       'PFI8',
       ('TRIG/{0..6}','RTSI{0..6}'),
     },
-    'ctr0InternalOutput' : {
+    'Ctr0InternalOutput' : {
       ('TRIG/{0..6}','RTSI{0..6}'),
-      'ctr0Out',
-      'ctr1Gate',
+      'Ctr0Out',
+      'Ctr1Gate',
     },
-    'ctr1Gate' : {
+    'Ctr1Gate' : {
       'PFI4',
     },
-    'ctr1Source' : {
+    'Ctr1Source' : {
       'PFI3',
     },
-    'ctr1InternalOutput' : {
+    'Ctr1InternalOutput' : {
       'ao/SampleClock',
-      'ctr1Out',
-      'ctr0Gate',
+      'Ctr1Out',
+      'Ctr0Gate',
+    },
+  },
+
+
+  'PXI-6733' : {
+    ('External/', None) : {
+      'PFI{0..9}',
+    },
+    'PFI{0..9}' : {
+      'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}',
+      'Ctr{0..1}{Gate,Source}',
+      ('External/', None),
+    },
+    ('TRIG/{0..6}','{PXI_Trig{0..5},PXI_Star}') : {
+      'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}',
+      'Ctr{0..1}{Out,Gate,Source}',
+    },
+    ('TRIG/7','PXI_Trig7') : {
+      'ao/SampleClockTimebase',
+      'Ctr{0..1}Source',
+    },
+    'Ctr0Out' : {
+      ('TRIG/{0..6}','{PXI_Trig{0..5},PXI_Star}'),
+    },
+    'Ctr0Gate' : {
+      'PFI9',
+      ('TRIG/{0..6}','{PXI_Trig{0..5},PXI_Star}'),
+    },
+    'Ctr0Source' : {
+      'PFI8',
+      ('TRIG/{0..6}','{PXI_Trig{0..5},PXI_Star}'),
+    },
+    'Ctr0InternalOutput' : {
+      ('TRIG/{0..6}','{PXI_Trig{0..5},PXI_Star}'),
+      'Ctr0Out',
+      'Ctr1Gate',
+    },
+    'Ctr1Gate' : {
+      'PFI4',
+    },
+    'Ctr1Source' : {
+      'PFI3',
+    },
+    'Ctr1InternalOutput' : {
+      'ao/SampleClock',
+      'Ctr1Out',
+      'Ctr0Gate',
     },
   },
 }
