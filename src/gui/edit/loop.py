@@ -9,7 +9,7 @@ from matplotlib import mlab
 
 import physical
 
-from ...print_units import M
+from ...tools.print_units import M
 
 import helpers
 from helpers import GTVC

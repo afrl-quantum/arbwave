@@ -4,8 +4,8 @@ import copy
 from logging import error, warn, debug, log, DEBUG, INFO
 from .. import routes
 from ....device import Device as Base
-from .....signal_graphs import nearest_terminal
-from .....cmp import cmpeps
+from .....tools.signal_graphs import nearest_terminal
+from .....tools.cmp import cmpeps
 from physical import unit
 import nidaqmx
 

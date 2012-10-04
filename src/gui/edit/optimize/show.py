@@ -12,7 +12,7 @@ from matplotlib.backends.backend_gtkagg import \
 from ..helpers import GTVC
 from ...packing import hpack, vpack, Args as PArgs
 from ...storage.gtk_tools import get_file, NoFileError
-from ....gui_callbacks import do_gui_operation
+from ....tools.gui_callbacks import do_gui_operation
 
 ui_info = \
 """<ui>

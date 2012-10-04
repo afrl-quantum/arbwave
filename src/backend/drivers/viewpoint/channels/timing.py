@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from physical import unit
-from .....float_range import float_range
+from .....tools.float_range import float_range
 from ....channels import Timing as Base
 
 class Timing(Base):

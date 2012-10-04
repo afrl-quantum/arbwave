@@ -3,7 +3,7 @@
 Default environment settings.
 """
 
-from ..float_range import float_range
+from ..tools.float_range import float_range
 import functions
 
 registered_globals = {

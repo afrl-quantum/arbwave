@@ -4,7 +4,7 @@ Implements message dialogs for use in scripts.
 """
 
 import gtk
-from ..gui_callbacks import do_gui_operation
+from ..tools.gui_callbacks import do_gui_operation
 
 main_window = None
 

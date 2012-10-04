@@ -6,7 +6,7 @@ import gobject
 from ..packing import Args as PArgs, VBox, hpack, vpack
 from .. import edit
 from ... import backend
-from ...signal_graphs import accessible_clocks
+from ...tools.signal_graphs import accessible_clocks
 
 ui_info = \
 '''<ui>

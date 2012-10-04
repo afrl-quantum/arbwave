@@ -2,9 +2,9 @@
 
 import threading
 from pygraph.algorithms.sorting import topological_sorting
-from ...gui_callbacks import do_gui_operation
+from ...tools.gui_callbacks import do_gui_operation
 from ... import backend
-from ... import signal_graphs
+from ...tools import signal_graphs
 
 def plot_stuff( plotter, analog, digital, names, t_max ):
   if analog or digital:

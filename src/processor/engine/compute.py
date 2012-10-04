@@ -6,7 +6,7 @@ import bisect
 
 from ... import backend
 from .. import functions
-from ...cmp import cmpeps
+from ...tools.cmp import cmpeps
 from common import *
 import physical
 from physical import unit

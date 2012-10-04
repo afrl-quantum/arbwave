@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from .....float_range import float_range
+from .....tools.float_range import float_range
 from task import Task as Base
 import nidaqmx
 

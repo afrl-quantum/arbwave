@@ -4,7 +4,7 @@ import logging
 from device import Device
 import capabilities
 from .... import options
-from ....path import collect_prefix
+from ....tools.path import collect_prefix
 
 def prefix():
   return 'vp'

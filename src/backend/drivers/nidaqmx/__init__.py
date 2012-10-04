@@ -3,8 +3,8 @@
 import logging
 import re
 from .... import options
-from ....path import collect_prefix
-from ....expand import expand_braces
+from ....tools.path import collect_prefix
+from ....tools.expand import expand_braces
 
 import nidaqmx
 
