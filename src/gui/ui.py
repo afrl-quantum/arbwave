@@ -45,6 +45,9 @@ ui_info = \
       <menuitem action='Configure'/>
       <menuitem action='Script'/>
     </menu>
+    <menu action='ViewMenu'>
+      <menuitem action='ViewData'/>
+    </menu>
     <menu action='HelpMenu'>
       <menuitem action='About'/>
       <menuitem action='VGens'/>
@@ -98,6 +101,14 @@ def finished(*args, **kwargs):
   backend.unload_all()
   gtk.main_quit()
 
+
+def show_data_viewer(parent):
+  s = edit.optimize.show.Show(
+    columns=['Undefined'],
+    title='Data Viewer',
+    parent=parent
+  )
+  s.show()
 
 
 class ArbWave(gtk.Window):
@@ -301,6 +312,7 @@ class ArbWave(gtk.Window):
     entries = (
       ( 'FileMenu', None, '_File' ),               # name, stock id, label
       ( 'EditMenu', None, '_Edit' ),               # name, stock id, label
+      ( 'ViewMenu', None, '_View' ),               # name, stock id, label
       ( 'HelpMenu', None, '_Help' ),               # name, stock id, label
       ( 'New', gtk.STOCK_NEW,                      # name, stock id
         '_New', '<control>N',                      # label, accelerator
@@ -341,6 +353,10 @@ class ArbWave(gtk.Window):
       ( 'Script', gtk.STOCK_EDIT,                  # name, stock id
         'Edit Global _Script', None,               # label, accelerator
         'Set global variables, define global functions...',# tooltip
+        self.activate_action ),
+      ( 'ViewData', gtk.STOCK_EDIT,                # name, stock id
+        'Data Viewer', None,                       # label, accelerator
+        'View saved text data...',# tooltip
         self.activate_action ),
       ( 'About', None,                             # name, stock id
         '_About', '<control>A',                    # label, accelerator
@@ -398,6 +414,7 @@ class ArbWave(gtk.Window):
       'Configure' : lambda a: configure.show(self, self),
       'Script'    : lambda a: self.script.edit(),
       'Run'       : lambda a: self.update(toggle_run=True),
+      'ViewData'  : lambda a: show_data_viewer(self),
       'About'     : lambda a: about.show(),
       'VGens'     : lambda a: tips.show_generators(self),
       'CH:Add'    : lambda a: self.channel_editor.insert_row(),
