@@ -7,14 +7,14 @@ import sys
 import gtk
 
 class Editor(gtk.Dialog):
-  def __init__(self, title='Edit Script', parent=None, target=None, model=False):
+  def __init__(self, title='Edit Script', parent=None, target=None, modal=False):
     actions = [
       gtk.STOCK_SAVE,   gtk.RESPONSE_OK,
       gtk.STOCK_APPLY,  gtk.RESPONSE_APPLY,
       gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL
     ]
     flags = gtk.DIALOG_DESTROY_WITH_PARENT
-    if model:
+    if modal:
       flags |= gtk.DIALOG_MODAL
       actions.pop(2)
       actions.pop(2)

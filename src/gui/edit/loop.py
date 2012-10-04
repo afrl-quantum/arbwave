@@ -47,13 +47,13 @@ def drag_motion(w, ctx, x, y, time):
 
 class LoopView(gtk.Dialog):
   def __init__(self, settings, Globals, title='Loop Parameters',
-               parent=None, target=None, model=False):
+               parent=None, target=None, modal=False):
     actions = [
       gtk.STOCK_OK,     gtk.RESPONSE_OK,
       gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
     ]
     flags = gtk.DIALOG_DESTROY_WITH_PARENT
-    if model:
+    if modal:
       flags |= gtk.DIALOG_MODAL
       actions.pop(2)
       actions.pop(2)
