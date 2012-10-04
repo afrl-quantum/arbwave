@@ -33,8 +33,9 @@ class Show(gtk.Dialog):
     ('*',     'All files (*)'),
   ]
   COLPREFIX = '#Columns: '
+  DEFAULT_LINE_STYLE = 'o-'
 
-  def __init__(self, columns, title='Optimization Parameters',
+  def __init__(self, columns, title='Optimization Parameters/Results',
                parent=None, model=False, globals=globals()):
     actions = [
     #  gtk.STOCK_OK,     gtk.RESPONSE_OK,
@@ -62,15 +63,19 @@ class Show(gtk.Dialog):
       cell = gtk.CellRendererText()
       combo.pack_start(cell, True)
       combo.add_attribute(cell, 'text', text_column)
-      combo.connect('changed', self.update_col_selection)
+      combo.connect('changed', self.update_plot)
       return combo
 
     self.x_selection = mk_simple_combo()
     self.y_selection = mk_simple_combo()
+    self.line_style = gtk.Entry()
+    self.line_style.set_text( self.DEFAULT_LINE_STYLE )
+    self.line_style.connect('activate', self.update_plot)
 
     col_sel_box = hpack(
         PArgs(gtk.Label('X'),False,False,0), self.x_selection,
         PArgs(gtk.Label('Y'),False,False,0), self.y_selection,
+        PArgs(gtk.Label('Style'),False,False,0), self.line_style,
     )
     col_sel_box.show_all()
     self.vbox.pack_start( col_sel_box )
@@ -101,7 +106,7 @@ class Show(gtk.Dialog):
     self.Globals = globals
 
 
-  def update_col_selection(self, combo):
+  def update_plot(self, *args, **kwargs):
     self.new_data = True
 
 
@@ -157,6 +162,9 @@ class Show(gtk.Dialog):
 
       xi, x_label = get_col( self.x_selection )
       yi, y_label = get_col( self.y_selection )
+      line_style = self.line_style.get_text()
+      if not line_style:
+        line_style = self.DEFAULT_LINE_STYLE
 
       if yi == -1:
         self.axes.clear()
@@ -174,7 +182,7 @@ class Show(gtk.Dialog):
       else:
         data.view(','.join(['f8']*data.shape[1])).sort(order='f'+str(xi),axis=0)
       self.axes.clear()
-      self.axes.plot( data[:,xi], data[:,yi] )
+      self.axes.plot( data[:,xi], data[:,yi], line_style )
       self.axes.set_xlabel(x_label)
       self.axes.set_ylabel(y_label)
       self.canvas.draw()
