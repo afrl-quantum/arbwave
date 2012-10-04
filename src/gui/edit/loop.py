@@ -196,6 +196,7 @@ class Executor:
       columns=(  [ i['name']  for i in self.parameters if i['enable'] ]
                + ['Merit']
                + self.runnable.extra_data_labels() ),
+      title='Loop Parameters/Results',
       parent=parent, globals=Globals,
     )
 
