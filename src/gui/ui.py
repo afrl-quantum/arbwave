@@ -248,6 +248,8 @@ class ArbWave(gtk.Window):
         PArgs( merge.get_widget('/MenuBar'), False, False, 0 ),
         PArgs( # MENU BAR LOCATION
           hpack( merge.get_widget('/ToolBar'),
+                 PArgs(gtk.VSeparator(), False),
+                 PArgs(gtk.VSeparator(), False),
                  self.run_combo,
                  PArgs(gtk.VSeparator(), False),
                  PArgs(gtk.VSeparator(), False),
