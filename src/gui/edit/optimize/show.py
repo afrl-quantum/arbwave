@@ -27,13 +27,61 @@ ui_info = \
   </menubar>
 </ui>"""
 
+
+class ComputeStats:
+  types = ['raw', 'average', 'error']
+
+  def __init__(self, X, Y):
+    self.X = X
+    self.Y = Y
+    self.x, self.y0, self.y2 = list(), list(), list()
+    if len(X)==0 or len(X) != len(Y):
+      return
+    N = 0.0
+    I = 0
+    xi = X[0]
+    y0 = y2 = 0.0
+    while I < len(X):
+      if xi != X[I]:
+        self.x.append( xi )
+        self.y0.append( y0/N )
+        self.y2.append( y2/N )
+        N = 0.0
+        xi = X[I]
+        y0 = y2 = 0.0
+      else:
+        y0 += Y[I]
+        y2 += Y[I]**2
+        N += 1.0
+        I += 1
+    self.x.append( xi )
+    self.y0.append( y0 / N )
+    self.y2.append( y2 / N )
+
+  def raw(self,ax,lt):
+    ax.plot(self.X,self.Y,lt)
+
+  def error(self,ax,lt):
+    y0 = np.array(self.y0)
+    y2 = np.array(self.y2)
+    ax.errorbar( self.x, y0, yerr=((y2 - y0**2)**0.5), fmt=lt )
+
+  def average(self,ax,lt):
+    ax.plot(self.x,self.y0,lt)
+
+  def plot(self, label, ax, lt):
+    exec 'self.{l}(ax,lt)'.format(l=label)
+
+
+DEFAULT_DATA_FUNCDTION = 'raw'
+
 class Show(gtk.Dialog):
   FILTERS = [
     ('*.txt', 'ASCII Data file (*.txt)'),
     ('*',     'All files (*)'),
   ]
   COLPREFIX = '#Columns: '
-  DEFAULT_LINE_STYLE = 'o-'
+  DEFAULT_LINE_STYLE = 'o, ro--, kD'
 
   def __init__(self, columns, title='Optimization Parameters/Results',
                parent=None, model=False, globals=globals()):
@@ -72,13 +120,26 @@ class Show(gtk.Dialog):
     self.line_style.set_text( self.DEFAULT_LINE_STYLE )
     self.line_style.connect('activate', self.update_plot)
 
+    def mkCheckBox(l):
+      l = l[0].upper() + l[1:]
+      cb = gtk.CheckButton(label=l)
+      cb.connect( 'clicked', self.update_plot )
+      cb.set_active(True)
+      return cb
+
+    self.line_selection = { l:mkCheckBox(l)  for l in ComputeStats.types }
+
     col_sel_box = hpack(
         PArgs(gtk.Label('X'),False,False,0), self.x_selection,
         PArgs(gtk.Label('Y'),False,False,0), self.y_selection,
         PArgs(gtk.Label('Style'),False,False,0), self.line_style,
     )
     col_sel_box.show_all()
-    self.vbox.pack_start( col_sel_box )
+    self.vbox.pack_start( col_sel_box, False, False, 0 )
+
+    line_sel_box = hpack( *self.line_selection.values() )
+    line_sel_box.show_all()
+    self.vbox.pack_start( line_sel_box, False, False, 0 )
 
     body = gtk.VPaned()
     self.vbox.pack_start(body)
@@ -165,6 +226,7 @@ class Show(gtk.Dialog):
       line_style = self.line_style.get_text()
       if not line_style:
         line_style = self.DEFAULT_LINE_STYLE
+      line_style = [ i.strip() for i in line_style.split(',') ]
 
       if yi == -1:
         self.axes.clear()
@@ -175,14 +237,23 @@ class Show(gtk.Dialog):
       # reorder the data with respect to x-axis
       if data.shape[1] == 1 or xi == -1:
         # we'll just prepend an index column
-        x = xrange(0,data.shape[0])
         data = np.append(np.transpose([xrange(0,data.shape[0])]), data, axis=1)
         xi = 0
         yi += 1
       else:
         data.view(','.join(['f8']*data.shape[1])).sort(order='f'+str(xi),axis=0)
       self.axes.clear()
-      self.axes.plot( data[:,xi], data[:,yi], line_style )
+
+      stats = ComputeStats(data[:,xi], data[:,yi])
+      i = -1
+      for l,cb in self.line_selection.items():
+        i += 1
+        if not cb.get_active(): continue
+        stats.plot(l, self.axes, line_style[i % len(line_style)])
+
+      mn, mx = min(stats.X), max(stats.X)
+      dx = mx - mn
+      self.axes.set_xlim(mn - .1*dx, mx + .1*dx)
       self.axes.set_xlabel(x_label)
       self.axes.set_ylabel(y_label)
       self.canvas.draw()
