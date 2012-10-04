@@ -29,7 +29,7 @@ class Processor:
   def __init__(self, ui):
     self.ui = ui
     self.Globals = default.get_globals()
-    self.engine = engine.Arbwave(ui)
+    self.engine = engine.Arbwave(self,ui)
     sys.modules['arbwave'] = self.engine # fake arbwave module
     sys.modules['msg'] = msg
     msg.set_main_window( ui )

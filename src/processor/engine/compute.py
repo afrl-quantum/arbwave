@@ -7,7 +7,6 @@ import bisect
 from ... import backend
 from .. import functions
 from ...tools.cmp import cmpeps
-from common import *
 import physical
 from physical import unit
 from math import ceil
@@ -335,7 +334,7 @@ def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
   trans.append( ti.coeff )
 
 
-def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
+def waveforms( devcfg, clocks, signals, channels, waveforms, globals ):
   """
   Take the configuration as provided by the user and generate a set of waveforms
   that can then be sent to the plotter and/or a hardware driver for output.
@@ -344,7 +343,6 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals=None ):
     1.  Determine all times that must make a voltage transition on some channel.
     2.  Generate a voltage sample for each transition that must occur.
   """
-  exec global_load
   wve = WaveformEvalulator(devcfg, clocks, channels)
   wve.group( waveforms, globals=globals )
   return wve.finish()
@@ -428,13 +426,11 @@ def prefix( devname ):
 
 
 
-def static( devcfg, channels, globals=None ):
+def static( devcfg, channels, globals ):
   """
   Take the configuration as provided by the user and generate a set of static
   output values that can then be sent to hardware drivers for output.
   """
-  exec global_load
-
   # the return values are initially empty
   analog = dict()
   digital = dict()

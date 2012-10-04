@@ -2,7 +2,6 @@
 
 from callfunc import CallFunc
 import send, compute
-from common import *
 
 class StopGeneration(Exception):
   def __init__(self, request, *args, **kwargs):
@@ -25,7 +24,8 @@ class Arbwave:
 
   StopGeneration = StopGeneration
   
-  def __init__(self, ui):
+  def __init__(self, globals_source, ui):
+    self._globals_source = globals_source
     self.ui = ui
     self.devcfg = None
     self.clocks = None
@@ -79,11 +79,10 @@ class Arbwave:
     finally: self.stop_request = False
 
 
-  def update(self, stop=ANYTIME, continuous=False, wait=True, globals=None):
+  def update(self, stop=ANYTIME, continuous=False, wait=True):
     """
     Process inputs to generate waveform output and send to plotter.
     """
-    exec global_load
     if stop is None:
       stop = 0x0
 
@@ -96,7 +95,7 @@ class Arbwave:
                          self.signals[0],
                          self.channels[0],
                          self.waveforms[0],
-                         globals=globals )
+                         globals=self._globals_source.get_globals() )
 
     self.ui.waveform_editor.set_eval_cache( eval_cache )
     send.to_plotter( self.ui.plotter, analog, digital, self.channels[0], t_max )
@@ -117,25 +116,23 @@ class Arbwave:
     send.to_driver.stop()
 
 
-  def update_static(self, globals=None):
+  def update_static(self):
     """
     Only process static outputs and send to plotter.
     """
-    exec global_load
 
     analog, digital = \
       compute.static( self.devcfg[0],
                       self.channels[0],
-                      globals=globals )
+                      globals=self._globals_source.get_globals() )
 
     send.to_driver.static( analog, digital )
 
 
-  def update_plotter(self, globals=None):
+  def update_plotter(self):
     """
     Process inputs to send only to plotter.
     """
-    exec global_load
 
     analog, digital, transitions, t_max, end_clocks, eval_cache = \
       compute.waveforms( self.devcfg[0],
@@ -143,7 +140,7 @@ class Arbwave:
                          self.signals[0],
                          self.channels[0],
                          self.waveforms[0],
-                         globals=globals )
+                         globals=self._globals_source.get_globals() )
 
     self.ui.waveform_editor.set_eval_cache( eval_cache )
     send.to_plotter( self.ui.plotter, analog, digital, self.channels[0], t_max )
