@@ -35,6 +35,12 @@ class Arbwave:
     self.stop_request = False
 
     class Runnable:
+      def extra_data_labels(self):
+        """
+        Returns list of names of extra results returned by self.run()
+        """
+        return list()
+
       def onstart(rself):
         """
         Executed before the runnable is started.

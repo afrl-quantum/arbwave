@@ -9,6 +9,8 @@ from matplotlib import mlab
 
 import physical
 
+from ...print_units import M
+
 import helpers
 from helpers import GTVC
 
@@ -191,7 +193,9 @@ class Executor:
       )
 
     self.show = Show(
-      columns=[ i['name']  for i in self.parameters if i['enable'] ],
+      columns=(  [ i['name']  for i in self.parameters if i['enable'] ]
+               + ['Merit']
+               + self.runnable.extra_data_labels() ),
       parent=parent, globals=Globals,
     )
 
@@ -241,21 +245,27 @@ class Executor:
       x[i] = eval( p['min'], self.Globals )
       while x[i] < eval(p['max'], self.Globals):
         if p['isglobal']:
-          if type(x[i]) is physical.Quantity:
-            # to ensure that the output is parsable
-            x[i].set_print_style('math')
-          exec '{n} = {xi}'.format(n=p['name'], xi=x[i]) in self.Globals
+          exec '{n} = {xi}'.format(n=p['name'], xi=M(x[i])) in self.Globals
         self._loop_nexti(x,i+1,pi)
         x[i] += eval(p['step'], self.Globals)
     else:
       self._loop_nexti(x,i,pi)
 
   def _loop_nexti(self, x, i, pi):
+    def L(r):
+      # need better test like "if iterable"
+      if r is None:
+        return [0]
+      elif type(r) in [ np.ndarray, list, tuple ]:
+        return list(r)
+      else:
+        return [r]
+
     if pi < (len(self.parameters)-1):
       self._loop_i(x, i, pi+1)
     else:
-      self.runnable.run()
-      self.show.add( *x )
+      result = list(x) + L( self.runnable.run() )
+      self.show.add( *M(result) )
 
 
 

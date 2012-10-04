@@ -9,6 +9,7 @@ from matplotlib import mlab
 
 import physical
 
+from ....print_units import M
 from ... import stores
 from ...packing import *
 from .. import generic
@@ -60,25 +61,25 @@ def drag_motion(w, ctx, x, y, time):
   if mask & gtk.gdk.CONTROL_MASK:
     ctx.drag_status( gtk.gdk.ACTION_COPY, time )
 
-def set_item_name( cell, path, new_item, model, Globals, type=str ):
+def set_item_name( cell, path, new_item, model, Globals, typ=str ):
   """
     if unique is True, this searches through the immediate chlidren for
       duplicate names before allowing the edit.
   """
-  new_item = type(new_item)
+  new_item = typ(new_item)
 
   if model[path][model.NAME] == new_item:
     return  # avoid triggering a change if there is not actually a change
   model[path][model.NAME] = new_item
-  try:    model[path][model.VALUE] = eval(new_item,Globals)
+  try: model[path][model.VALUE] = M(eval(new_item,Globals))
   except: model[path][model.VALUE] = ''
 
-def set_item_value( cell, path, new_item, model, Globals, type=str ):
+def set_item_value( cell, path, new_item, model, Globals, typ=str ):
   """
     if unique is True, this searches through the immediate chlidren for
       duplicate names before allowing the edit.
   """
-  new_item = type(new_item)
+  new_item = typ(new_item)
 
   # first, search for corresponding global variable.  Only updates for valid
   # variables will be allowed
@@ -172,7 +173,7 @@ class OptimView(gtk.Dialog):
     if 'parameters' in settings:
       for p in settings['parameters']:
         self.params.append(
-          ( p['name'], eval(p['name'],Globals),
+          ( p['name'], M(eval(p['name'],Globals)),
             p['min'], p['max'], p['scale'], p['enable'] )
         )
     else:
@@ -334,10 +335,10 @@ class Executor:
       if p[opt.params.ENABLE]:
         self.pnames.append( p[opt.params.NAME] )
         self.params.append( (
-          eval(p[opt.params.NAME],Globals),
-          eval(p[opt.params.MIN],Globals),
-          eval(p[opt.params.MAX],Globals),
-          eval(p[opt.params.SCALE],Globals),
+          M(eval(p[opt.params.NAME],Globals)),
+          M(eval(p[opt.params.MIN],Globals)),
+          M(eval(p[opt.params.MAX],Globals)),
+          M(eval(p[opt.params.SCALE],Globals)),
         ) )
       self.parameters.append(
         { 'name'  : p[opt.params.NAME],
@@ -358,7 +359,7 @@ class Executor:
 
     if old_pnames is None or old_pnames != self.pnames:
       self.show = Show(
-        columns=(self.pnames+['Merit']),
+        columns=(self.pnames+['Merit']+self.runnable.extra_data_labels()),
         parent=parent, globals=Globals,
       )
 
@@ -427,10 +428,7 @@ class Executor:
     if globalize:
       exec 'global ' + ','.join( globalize )
     for i in xrange(len(x)):
-      if type(x[i]) is physical.Quantity:
-        # to ensure that the output is parsable
-        x[i].set_print_style('math')
-      exec '{n} = {v}'.format(n=self.pnames[i], v=x[i]) in self.Globals
+      exec '{n} = {v}'.format(n=self.pnames[i], v=M(x[i])) in self.Globals
 
 
   def _call_func(self, x):
@@ -439,9 +437,10 @@ class Executor:
 
     cached = self.lookup(x)
     if cached is not None:
-      self.show.add( *(list(x) + [cached]) )
+      self.show.add( *M(list(x) + list(cached)) )
       self.skipped_evals += 1
-      return cached
+      # the zeroth element of cached is the merit
+      return cached[0]
 
     self.save_globals(x)
 
@@ -450,23 +449,41 @@ class Executor:
                   if c[2] and not c[1](self.Globals) ]
     if c_failed:
       print 'constraint failed'
-      result = FMAX
+      result = [FMAX] + [0]*len(self.runnable.extra_data_labels())
     else:
+      def A(r):
+        # need better test like "if iterable"
+        if type(r) in [ np.ndarray, list, tuple ]:
+          return np.array(r)
+        else:
+          return np.array([r])
+
       self.evals += 1
       # average result for the given number of repetitions
-      result = sum([ self.runnable.run() for i in xrange(self.repetitions)]) \
+      result = sum([A(self.runnable.run()) for i in xrange(self.repetitions)]) \
              / float(self.repetitions)
-      self.show.add( *(list(x) + [result]) )
+      # result is necessarily a numpy array by now
+      self.show.add( *M(list(x) + list(result)) )
     self.cache( x, result )
-    return result
+
+    # the zeroth element of result is supposed to be the merit
+    return result[0]
+
 
   def lookup(self, x):
     if self._cache is None:
       return None
 
+    TINY = list()
+    for xi in x:
+      if type(xi) is physical.Quantity:
+        TINY.append( physical.Quantity(1e-30,xi.units) )
+      else:
+        TINY.append( 1e-30 )
+
     cols = self._cache.shape[1]
     found = mlab.find( abs( (
-        (self._cache - x) / ( self._cache + 1e-30 )
+        (self._cache - x) / ( self._cache + TINY )
       ).dot(np.ones(cols)) ) < self.cache_tolerance )
 
     if len( found ) == 0:
