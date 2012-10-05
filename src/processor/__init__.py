@@ -60,11 +60,9 @@ class Processor:
     try:
       self.lock.acquire()
 
-      stopped = False
       if self.running:
         self.stop(toggle_run) # might be a race condition
         toggle_run = False
-        stopped = True
 
       # First:  update the global script environment
       if script[1]:
@@ -112,9 +110,8 @@ class Processor:
       if self.running or toggle_run:
         self.start()
       else:
-        L = dict( arbwave = self.engine )
-        if stopped or channels[1] or script[1]:
-          exec 'arbwave.update_static()' in self.Globals, L
+        if channels[1] or script[1]:
+          self.engine.update_static()
 
         # TODO:  have more fine-grained change information:
         #   Instead of just "did channels change" have
@@ -125,7 +122,7 @@ class Processor:
         #   With this information, we would more correctly only update plots or
         #   static output when the corresponding information has changed.
         if channels[1] or script[1] or waveforms[1]:
-          exec 'arbwave.update_plotter()' in self.Globals, L
+          self.engine.update_plotter()
     finally:
       self.lock.release()
 
@@ -207,9 +204,10 @@ class Processor:
       self.engine.request_stop(restart=(not toggle_run))
       self.end_condition.wait()
       t.join()
-    elif toggle_run:
+    else:
       self.engine.halt()
-      self.running.onstop()
-      self.ui.show_stopped()
+      if toggle_run:
+        self.running.onstop()
+        self.ui.show_stopped()
     if toggle_run:
       self.running = None

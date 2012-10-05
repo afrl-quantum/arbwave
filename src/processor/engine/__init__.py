@@ -114,6 +114,7 @@ class Arbwave:
 
   def halt(self):
     send.to_driver.stop()
+    self.update_static()
 
 
   def update_static(self):
