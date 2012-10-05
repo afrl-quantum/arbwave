@@ -51,6 +51,7 @@ ui_info = \
     <menu action='HelpMenu'>
       <menuitem action='About'/>
       <menuitem action='VGens'/>
+      <menuitem action='arbhelp'/>
     </menu>
   </menubar>
   <toolbar  name='ToolBar'>
@@ -368,6 +369,10 @@ class ArbWave(gtk.Window):
         'Value _Generators', '<control>G',         # label, accelerator
         'Known value generator functions',         # tooltip
         self.activate_action ),
+      ( 'arbhelp', None,                           # name, stock id
+        'Arbwave Script _Functions', '',           # label, accelerator
+        'Scripting functions of arbwave module',   # tooltip
+        self.activate_action ),
 
       # CHANNEL EDITOR
       ( 'CH:Add', gtk.STOCK_ADD,                   # name, stock id
@@ -419,6 +424,7 @@ class ArbWave(gtk.Window):
       'ViewData'  : lambda a: show_data_viewer(self),
       'About'     : lambda a: about.show(),
       'VGens'     : lambda a: tips.show_generators(self),
+      'arbhelp'   : lambda a: tips.show_arbwavefunctions(self),
       'CH:Add'    : lambda a: self.channel_editor.insert_row(),
       'CH:Delete' : lambda a: self.channel_editor.delete_row(),
       'WF:Add'    : lambda a: self.waveform_editor.insert_waveform(),
