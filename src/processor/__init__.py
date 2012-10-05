@@ -71,11 +71,11 @@ class Processor:
         self.exec_script( script[0] )
 
       # set engine inputs
-      self.engine.devcfg    = devcfg
-      self.engine.clocks    = clocks
-      self.engine.signals   = signals
-      self.engine.channels  = channels
-      self.engine.waveforms = waveforms
+      self.engine.devcfg    = devcfg[0]
+      self.engine.clocks    = clocks[0]
+      self.engine.signals   = signals[0]
+      self.engine.channels  = channels[0]
+      self.engine.waveforms = waveforms[0]
 
       if clocks[1]:
         engine.send.to_driver.clocks( collect_prefix(clocks[0]) )

@@ -108,6 +108,7 @@ via a popup menu like scaling.  Display the notes via the tooltip.
 11.  Can we drop the boolean "change" value from the waveforms, clocks, devcfg,
   _before_ arbwave.update() is to be called?  Do we really need to keep these
   booleans around past processor.update()?
+DONE
 
 12.  create a function provided either by the fake "arbwave" module or in the
   global env that helps to search through and index waveform elements/groups by
