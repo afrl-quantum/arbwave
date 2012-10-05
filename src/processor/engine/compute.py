@@ -113,6 +113,14 @@ def set_units_and_scaling(chname, ci, chan, globals):
 
 
 
+def evalIfNeeded( s, G, L=dict() ):
+  if type(s) is str:
+    return eval( s, G, L )
+  else:
+    return s
+
+
+
 class WaveformEvalulator:
   def __init__(self,devcfg, clocks, channels):
     # currently configured...
@@ -158,14 +166,14 @@ class WaveformEvalulator:
           exec gi['script'] in globals, L
 
         # 2.  establish local start time and durations...
-        gi_t = eval( gi['time'], globals, L )
+        gi_t = evalIfNeeded( gi['time'], globals, L )
         unit.s.unitsMatch(gi_t, gi['group-label']+'(t):  expected dimensions of time')
 
         # sub-group dt defaults to this groups dt
         if not gi['duration']:
           gi_dt = dt
         else:
-          gi_dt = eval( gi['duration'], globals, L )
+          gi_dt = evalIfNeeded( gi['duration'], globals, L )
           unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
         self.eval_cache[ gi['path'] ] = {'t':gi_t, 'dt':gi_dt}
 
@@ -243,13 +251,13 @@ class WaveformEvalulator:
     locals['dt_clk'] = ci['min_period']
 
     # establish local start time / duration for the element
-    t = eval( e['time'], globals, locals )
+    t = evalIfNeeded( e['time'], globals, locals )
     unit.s.unitsMatch(t, e['channel']+'(t): expected dimensions of time')
 
     if not e['duration']:
       dt = locals['dt']
     else:
-      dt = eval( e['duration'], globals, locals )
+      dt = evalIfNeeded( e['duration'], globals, locals )
       unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
     assert dt > 0*unit.s, e['channel'] + ': waveform element duration MUSt be > 0!'
     self.eval_cache[ e['path'] ] = {'t':t, 'dt':dt}
@@ -257,7 +265,7 @@ class WaveformEvalulator:
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
     locals['dt'] = dt
-    value = eval( e['value'], globals, locals )
+    value = evalIfNeeded( e['value'], globals, locals )
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
       insert_value(t, dt, value, ci['min_period'], chname, ci, trans, e['path'])
@@ -451,7 +459,7 @@ def static( devcfg, channels, globals ):
     # we do most of the same basic things as for waveforms without transitions
     ci['type'] = determine_channel_type(chname, dev)
     set_units_and_scaling(chname, ci, chan, globals)
-    value = eval( chan['value'], globals )
+    value = evalIfNeeded( chan['value'], globals )
     value = apply_scaling(value, chname, ci)
     check_final_units( value, chname, ci )
 
