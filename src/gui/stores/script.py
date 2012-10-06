@@ -72,10 +72,12 @@ class Script:
   def edit(self):
 
     def unset_editor(*args):
+      print 'unsettling'
       self.editor = None
 
     if not self.editor:
       self.editor = edit.script.Editor( self.title, self.parent, target=self )
+      self.editor.connect('delete-event', self.editor.hide_on_delete)
       self.editor.connect('destroy', unset_editor)
 
     self.editor.present()
