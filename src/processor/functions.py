@@ -8,6 +8,7 @@ of 0.5 over the duration of the waveform element.
 """
 
 import numpy as np
+import math
 machine_arch = np.MachAr()
 
 class step_iter:
@@ -31,6 +32,89 @@ class step_iter:
     else:
       return t, self.dt, self.fun(t)
 
+
+###################
+
+
+
+class SinPulse:
+  """
+  Generate a sinusoidal pulse over the duration of a waveform element.
+  """
+  default_steps_per_cycle = 20
+  def __init__(self, A, F, average=None, phase_shift=0., steps_per_cycle=None):
+    """
+    Usage:  sinpulse(A, F, average=0., phase_shift=0., steps_per_cycle=None):
+
+    A       : Amplitude (0-to-peak)
+    F       : Frequency in Hz
+    average : Average value of sine wave.
+    phase_shift : 0 to 2 pi shift, where pi/2 represents +cos
+    steps_per_cycle   : number of steps per cycle
+
+    Only one of dt or steps can be used.
+   """
+    self.F = F
+    self.A = A
+    self.average = average
+    self.phase_shift = phase_shift
+    if steps_per_cycle > 0:
+      self.steps_per_cycle = steps_per_cycle
+    else:
+      self.steps_per_cycle = self.default_steps_per_cycle
+    self.skip_first = average is None
+    self.dt = None
+    self.t = None
+    self.duration = None
+    self.tf_safe = None
+
+  def __call__(self, t):
+    """
+    Return the value of the sin pulse at relative time t.
+
+    t_rel : relative time from beginning of sinpulse
+    """
+    if t > (self.tf_safe - self.dt):
+      return self.average
+
+    t_rel = (t - self.t)
+    return self.average + self.A * math.sin(self.phase_shift + 2*np.pi * self.F * t_rel)
+
+
+  def set_vars(self, _from, t, duration, min_period):
+    if self.average is None:
+      self.average = _from
+    elif _from is not None \
+         and abs(self.average - _from).coeff <= 10*machine_arch.eps:
+      # the user specified the value that the channel is already at
+      self.skip_first = True
+    self.t = t
+    self.min_period = min_period
+
+    # it is important to make sure that the final value is given at
+    # dt-self.min_period.  This allows for the following clock pulse to be used by
+    # the next waveform element.
+    self.duration = duration - self.min_period
+    self.dt = 1. / (self.F * self.steps_per_cycle)
+    # tf safe is the comparison that is used to tell whether time-stepping
+    # should cease.  We add one half a min_period to avoid precision
+    # error-prone comparisons.
+    self.tf_safe = self.t+self.duration + 0.5*min_period
+
+  def __iter__(self):
+    # Note that the first data point (i.e. t=0) is implicitly given by _from
+    # (where the channel is before this ramp).
+    if self.skip_first:
+      ti = self.t + self.dt
+    else:
+      ti = self.t
+    return step_iter(ti, self.tf_safe, self.dt, self.min_period, self)
+
+
+
+###################
+
+
 class Ramp:
   """
   Ramp from initial value to final value with a given exponent.
@@ -50,7 +134,7 @@ class Ramp:
    """
     self.to = to
     self.exponent = exponent
-    if steps:
+    if steps > 0:
       self.steps = steps
     else:
       self.steps = Ramp.default_steps
@@ -190,7 +274,8 @@ class PulseTrain:
     return iter(L)
 
 registered = {
-  'ramp'  : Ramp,
-  'pulse' : Pulse,
-  'pulses': PulseTrain,
+  'sinpulse' : SinPulse,
+  'ramp'    : Ramp,
+  'pulse'   : Pulse,
+  'pulses'  : PulseTrain,
 }
