@@ -232,7 +232,6 @@ class Executor:
     Locals = dict()
     self._loop_i( x, 0, 0, Locals )
 
-
   def _loop_i(self, x, i, pi, Locals):
     p = self.parameters[pi]
     if p['enable']:
@@ -240,7 +239,8 @@ class Executor:
         exec 'global ' + p['name']
 
       x[i] = eval( p['min'], self.Globals, Locals )
-      while x[i] < eval(p['max'], self.Globals, Locals):
+      while dir_cmp(eval(p['step'], self.Globals, Locals),
+                    x[i],eval(p['max'], self.Globals, Locals)):
         if p['isglobal']:
           exec '{n} = {xi}'.format(n=p['name'], xi=M(x[i])) in self.Globals
         else:
@@ -265,6 +265,13 @@ class Executor:
     else:
       result = list(x) + L( self.runnable.run() )
       self.show.add( *M(result) )
+
+
+def dir_cmp(step, x, max_x):
+  if np.signbit(float(step)):
+    return x > max_x
+  else:
+    return x < max_x
 
 
 
