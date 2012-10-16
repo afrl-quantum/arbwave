@@ -139,7 +139,7 @@ class Editor(gtk.Dialog):
 
 
 def edit(title='Edit Script', parent=None, text=''):
-  ed = Editor( title=title, parent=parent, model=True )
+  ed = Editor( title=title, parent=parent, modal=True )
   if text:
     ed.set_text(text)
   try:

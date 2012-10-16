@@ -84,7 +84,7 @@ class Show(gtk.Dialog):
   DEFAULT_LINE_STYLE = 'o, ro--, kD'
 
   def __init__(self, columns, title='Optimization Parameters/Results',
-               parent=None, model=False, globals=globals()):
+               parent=None, globals=globals()):
     actions = [
     #  gtk.STOCK_OK,     gtk.RESPONSE_OK,
     #  gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL
