@@ -379,8 +379,7 @@ def init_plot(win):
   #                                 frameon=True, subplotpars=None)
   fig = Figure(figsize=(3.0, 3.0), dpi=dpi)
   canvas = FigCanvas(fig)
-  rect = [.1, .01, .88, .85 ]
-  axes = fig.add_axes( rect, label='generic', navigate=True )
+  axes = fig.add_subplot(111, label='generic', navigate=True)
   toolbar = NavigationToolbar( canvas, win )
 
   return axes, canvas, toolbar
