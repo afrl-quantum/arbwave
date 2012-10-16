@@ -339,7 +339,7 @@ class Show(gtk.Dialog):
 
     firstline = F.readline()
     if firstline.startswith(Show.COLPREFIX):
-      self.set_columns( firstline[len(Show.COLPREFIX):].split() )
+      self.set_columns( firstline[len(Show.COLPREFIX):].split('\t') )
     F.seek(0)
 
     try:
