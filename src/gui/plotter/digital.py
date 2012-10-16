@@ -2,7 +2,6 @@
 """
 Utilities for plotting digital signals
 """
-import pylab
 from matplotlib.colors import ColorConverter
 
 import numpy as np
@@ -71,8 +70,6 @@ def plot( ax, signals, names=None, t_final=None ):
   ax.set_xlabel('Time (s)')
   ax.set_yticks( np.r_[0.5:i] )
   ax.set_yticklabels(labels)
-  pylab.setp(ax.get_xticklabels(), fontsize=8)
-  pylab.setp(ax.get_yticklabels(), fontsize=8)
   ax.grid(True)
   return (t_final, ax.get_ylim()), group_lines
 

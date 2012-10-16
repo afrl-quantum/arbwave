@@ -13,6 +13,7 @@ from ..helpers import GTVC
 from ...packing import hpack, vpack, Args as PArgs
 from ...storage.gtk_tools import get_file, NoFileError
 from ....tools.gui_callbacks import do_gui_operation
+from ...plotter import common as plot_common
 
 ui_info = \
 """<ui>

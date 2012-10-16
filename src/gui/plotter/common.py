@@ -2,8 +2,19 @@
 """
 Utilities for plotting analog signals
 """
+import matplotlib
 import numpy as np
 import copy
+
+font = {
+#  'family' : 'monospace',
+#  'weight' : 'extrabold',
+  'size'   : 8,
+}
+
+matplotlib.rc('font', **font)
+#matplotlib.rcParams.update({'font.size': 8})
+
 
 def get_linestyle( group_number ):
   linestyles = [
