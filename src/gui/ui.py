@@ -21,6 +21,7 @@ from ..processor import Processor
 from ..processor import default
 from .. import backend
 from .. import version
+from .. import options
 
 
 
@@ -113,7 +114,7 @@ def show_data_viewer(parent):
 
 
 class ArbWave(gtk.Window):
-  TITLE = 'Arbitrary Waveform Generator'
+  TITLE = {False:'',True:'(Sim) '}[options.simulated] + 'Arbitrary Waveform Generator'
   ALL_ITEMS = -1
 
   def __init__(self, parent=None):
