@@ -221,16 +221,16 @@ class Pulse:
 
 class PulseTrain:
   """
-  Generate a pulse over the duration of a waveform element.
+  Generate a train of pulses over the duration of a waveform element.
   """
   def __init__(self, n, duty=0.5, high=True,low=False, dt=None):
     """
-    Usage:  pulse(n, duty=0.5, high=True, low=False, dt=None)
+    Usage:  pulses(n, duty=0.5, high=True, low=False, dt=None)
 
     n     : Number of evenly spaced pulses to generate.
     duty  : Duty cycle (only used if dt is not set) [Default 0.5].
-    high  : The value to generate for the pulse [Default:  True].
-    low   : The value to return to after the pulse [Default:  False].
+    high  : The value to generate for each pulses [Default:  True].
+    low   : The value to return to after each pulse [Default:  False].
     dt    : On width of a single pulse in the pulse train
             [Default:  not set].
    """
