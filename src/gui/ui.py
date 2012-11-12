@@ -120,7 +120,6 @@ class ArbWave(gtk.Window):
   def __init__(self, parent=None):
     #create the toplevel window
     gtk.Window.__init__(self)
-    self.set_title( self.TITLE )
     try:
       self.set_screen(parent.get_screen())
     except AttributeError:
@@ -136,6 +135,7 @@ class ArbWave(gtk.Window):
     self.connect('key-press-event', self.do_keypress)
     self.next_untested_undo = 0 # index of the last undo item that successfully
                                 # updated hardware and plots
+    self.saved = True # Whether the config file loaded has been saved
 
 
     # LOAD THE STORAGE
@@ -264,6 +264,8 @@ class ArbWave(gtk.Window):
 
     # ensure that the default_script is executed for default the global env
     self.processor.exec_script( default_script )
+    self.saved = True
+    self.set_full_title()
 
 
   def update_runnables(self, runnables):
@@ -414,7 +416,7 @@ class ArbWave(gtk.Window):
 
     # Finish off with creating references to each of the actual actions
     self.actions = {
-      'New'       : lambda a: self.clearvars(),
+      'New'       : lambda a: self.clearvars(do_update=True),
       'Open'      : ( storage.gtk_tools.gtk_open_handler, self, default.get_globals() ),
       'Save'      : ( storage.gtk_tools.gtk_save_handler, self ),
       'SaveAs'    : ( storage.gtk_tools.gtk_save_handler, self, True),
@@ -525,7 +527,7 @@ class ArbWave(gtk.Window):
     self.unpause()
     self.update(self.ALL_ITEMS)
 
-  def clearvars(self):
+  def clearvars(self, do_update=False):
     # suspend all updates
     self.pause()
 
@@ -537,17 +539,29 @@ class ArbWave(gtk.Window):
     self.clocks.clear()
     self.devcfg.clear()
     self.set_config_file('')
+    self.saved = True
     self.runnable_settings.clear()
 
-    # re-enable updates and directly call for an update
+    # re-enable updates
     self.unpause()
-    self.update(self.ALL_ITEMS)
+    # directly call for an update (?)
+    if do_update:
+      self.update(self.ALL_ITEMS)
+
+
+  def set_file_saved(self, yes=True):
+    self.saved = yes
+    self.set_full_title()
 
 
   def set_config_file(self,f):
     self.config_file = f
-    self.set_title( self.TITLE + ':  ' + f )
     default.registered_globals['__file__'] = f
+    self.set_full_title()
+
+  def set_full_title(self):
+    star = {True:'', False:'*'}[self.saved]
+    self.set_title( self.TITLE + ':  ' + self.config_file + star )
 
 
   def get_config_file(self):
@@ -613,6 +627,8 @@ class ArbWave(gtk.Window):
   def add_undo(self, undo_item ):
     self.undo.append( undo_item )
     self.redo = list()  # remove all current undo items
+    self.saved = False # mark the config file as not having been saved
+    self.set_full_title()
 
   def do_keypress(self, widget, event):
     """Implement keypress handlers on the main window"""

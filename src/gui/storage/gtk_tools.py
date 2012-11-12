@@ -55,8 +55,10 @@ def gtk_open_handler(action, stor, globals=globals(), **locals):
     return # this happens when get_file returns None
   V = readvars( F, globals, **locals )
   F.close()
+  stor.clearvars()
   stor.set_config_file( config_file )
   stor.setvars( V )
+  stor.set_file_saved()
 
 def gtk_save_handler(action, stor, force_new=False):
   try:
@@ -70,5 +72,6 @@ def gtk_save_handler(action, stor, force_new=False):
   except NoFileError:
     return # this happens when get_file returns None
   writevars( F, stor.getvars() )
+  stor.set_file_saved()
   F.close()
 
