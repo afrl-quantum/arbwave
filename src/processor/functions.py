@@ -223,17 +223,19 @@ class PulseTrain:
   """
   Generate a pulse over the duration of a waveform element.
   """
-  def __init__(self, n, dt=None, high=True,low=False):
+  def __init__(self, n, duty=0.5, high=True,low=False, dt=None):
     """
-    Usage:  pulse(n, dt=None, high=True, low=False)
+    Usage:  pulse(n, duty=0.5, high=True, low=False, dt=None)
 
     n     : Number of evenly spaced pulses to generate.
-    dt    : On width of a single pulse in the pulse train
-            [Default:  duration/n - dt_clk].
+    duty  : Duty cycle (only used if dt is not set) [Default 0.5].
     high  : The value to generate for the pulse [Default:  True].
     low   : The value to return to after the pulse [Default:  False].
+    dt    : On width of a single pulse in the pulse train
+            [Default:  not set].
    """
     self.n          = n
+    self.duty       = duty
     self.dt_on      = dt
     self.high       = high
     self.low        = low
@@ -251,7 +253,14 @@ class PulseTrain:
     self.pulse_period = duration / self.n
     max_dt_on = self.pulse_period - min_period
     if self.dt_on is None:
-      self.dt_on = max_dt_on
+      # use duty cycle by default
+      if self.duty is None or self.duty < 0 or self.duty > 1:
+        raise RuntimeError('pulses:  duty cycle _must_ be between 0 and 1')
+
+      if self.duty == 0:
+        self.dt_on = min_period
+      else:
+        self.dt_on = max_dt_on * self.duty
     elif self.dt_on > max_dt_on:
       raise RuntimeError(
         'pulses:  cannot make pulse train where dt > duration/n-dt_clk'
@@ -266,7 +275,7 @@ class PulseTrain:
       L.append( (t + self.dt_on, self.dt_off, self.low) )
       t += self.pulse_period
 
-    if self._from == self.high:
+    if self._from is not None and self._from == self.high:
       # we only really need to add the first transition to go high if the
       # channel was not already high
       L.pop(0)
