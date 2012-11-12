@@ -238,15 +238,16 @@ class Executor:
       if p['isglobal'] and not re.search('["\'\[]', p['name']):
         exec 'global ' + p['name']
 
-      x[i] = eval( p['min'], self.Globals, Locals )
-      while dir_cmp(eval(p['step'], self.Globals, Locals),
-                    x[i],eval(p['max'], self.Globals, Locals)):
+      x[i] = eval( p['min'],  self.Globals, Locals )
+      step = eval( p['step'], self.Globals, Locals )
+      while dir_cmp(step, x[i],eval(p['max'], self.Globals, Locals)):
         if p['isglobal']:
           exec '{n} = {xi}'.format(n=p['name'], xi=M(x[i])) in self.Globals
         else:
           Locals[ p['name'] ] = x[i]
         self._loop_nexti(x,i+1,pi,Locals)
-        x[i] += eval(p['step'], self.Globals, Locals)
+        step = eval(p['step'], self.Globals, Locals)
+        x[i] += step
     else:
       self._loop_nexti(x,i,pi,Locals)
 
