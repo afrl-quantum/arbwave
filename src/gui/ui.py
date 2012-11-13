@@ -86,6 +86,10 @@ import arbwave
 class SimpleRun(arbwave.Runnable):
 	def run(self):
 		arbwave.update()
+		# if possible, the run function should return a value indicative of the
+		# performance of the particular run.  Below is just a "random" example.
+		import random
+		return random.randint(0,100)
 
 arbwave.add_runnable( 'Simple', SimpleRun() )
 """
