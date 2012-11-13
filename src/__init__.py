@@ -6,6 +6,7 @@ Arbitrary waveform generator for digital and analog signals.
 import os, argparse, gtk, gobject, time, sys, logging, threading
 import version
 import options
+from tools.gui_callbacks import do_gui_operation
 
 log_levels = {
   'ALL'   : 0,
@@ -46,12 +47,15 @@ def main():
   prog = gui.ArbWave()
   if args.filename:
     assert os.path.isfile( args.filename ), 'expected configuration filename'
+    def load_file():
+      try:
+        gui.storage.load_file( args.filename, prog, get_globals() )
+      except Exception, e:
+        do_gui_operation( prog.notify.show, str(e) )
+
     # This has to be done in a separate thread so that all gui notifications are
     # handled in the gui
-    t = threading.Thread(
-      target=gui.storage.load_file,
-      kwargs=dict( filename=args.filename, stor=prog, globals=get_globals() )
-    )
+    t = threading.Thread( target=load_file )
     t.daemon = True # exit if the main thread has exited
     t.start()
 

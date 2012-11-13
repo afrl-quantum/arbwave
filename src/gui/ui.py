@@ -414,10 +414,14 @@ class ArbWave(gtk.Window):
     action_group.add_toggle_actions(toggle_entries)
     self.run_action = action_group.get_action('Run')
 
+    def show_exception( action, fun, *args, **kwargs ):
+      try: fun( action, *args, **kwargs )
+      except Exception, e: self.notify.show( str(e) )
+
     # Finish off with creating references to each of the actual actions
     self.actions = {
       'New'       : lambda a: self.clearvars(do_update=True),
-      'Open'      : ( storage.gtk_tools.gtk_open_handler, self, default.get_globals() ),
+      'Open'      : ( show_exception, storage.gtk_tools.gtk_open_handler, self, default.get_globals() ),
       'Save'      : ( storage.gtk_tools.gtk_save_handler, self ),
       'SaveAs'    : ( storage.gtk_tools.gtk_save_handler, self, True),
       'Quit'      : lambda a: self.destroy(),
