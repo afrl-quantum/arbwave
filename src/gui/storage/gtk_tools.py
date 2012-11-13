@@ -47,18 +47,23 @@ def get_file(doopen=True, filters=[('*.py', 'Python Files')]):
   return filename
 
 
+def load_file( filename, stor, globals=globals(), **locals ):
+  F = open( filename )
+  V = readvars( F, globals, **locals )
+  F.close()
+  stor.clearvars()
+  stor.set_config_file( filename )
+  stor.setvars( V )
+  stor.set_file_saved()
+
+
 def gtk_open_handler(action, stor, globals=globals(), **locals):
   try:
     config_file = get_file()
     F = open( config_file )
+    load_file( config_file, stor, globals, **locals )
   except NoFileError:
     return # this happens when get_file returns None
-  V = readvars( F, globals, **locals )
-  F.close()
-  stor.clearvars()
-  stor.set_config_file( config_file )
-  stor.setvars( V )
-  stor.set_file_saved()
 
 def gtk_save_handler(action, stor, force_new=False):
   try:

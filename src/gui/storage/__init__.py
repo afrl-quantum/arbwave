@@ -4,6 +4,8 @@
 import gtk_tools
 import var_tools
 
+from gtk_tools import load_file
+
 
 if __name__ == '__main__':
   vdict = {
