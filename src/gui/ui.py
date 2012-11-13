@@ -488,18 +488,23 @@ class ArbWave(gtk.Window):
 
   def setvars(self, vardict):
     # first check the version of the configuration file
-    if 'version' not in vardict or not version.supported( vardict['version'] ):
-      v = vardict.get('version','UNKNOWN')
+    v = vardict.get('version','UNKNOWN')
+    conversions = version.conversion_path( v )
+    if not conversions:
       self.notify.show(
         '<span color="red"><b>Error</b>:  \n' \
-        '   Config file version:'        '\n' \
+        '   No upgrade path for:'        '\n' \
+        '   Config file version'         '\n' \
         '     <span color="blue">{}</span>\n' \
-        '   older than'                  '\n' \
+        '   to current version'          '\n' \
         '     <span color="blue">{}</span>\n' \
         '   Cannot load!'                '\n' \
         '</span>'                        '\n' \
-        .format(v, version.last_key_version()) )
+        .format(v, version.get_file_version()) )
       raise RuntimeError('Loading unsupported config file version')
+
+    for c in conversions:
+      vardict = c( vardict )
 
     self.clearundo()
 

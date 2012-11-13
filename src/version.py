@@ -3,9 +3,40 @@
 
 from subprocess import Popen, PIPE
 from os import path
+from bisect import bisect_left
+from tools import compatibility
 
 VERSION_FILE = path.join( path.dirname(__file__), 'VERSION' )
-LAST_KEY_VERSION = 'arbwave-0.1.2'
+DEFAULT_PREFIX = 'arbwave'
+
+# The file versions are major points in the development history where file
+# compatibilty was broken.  Of necessity, only complete version tags should be
+# inserted here.  In other words, each version that introduces a backwards
+# compatibility issue should be properly tagged and inserted in this list.
+file_versions = [
+  '0.0.0',
+  '0.1.0',
+  '0.1.1',
+  '0.1.1-15-last-compatibility',
+  '0.1.2',
+  #'0.1.3',
+]
+
+
+def version_tuple( v ):
+  try:
+    vs = v.split('-')
+    t = tuple( int(i) for i in vs[0].split('.') )
+    if len(vs) > 1:
+      t += ( int(vs[1]), )
+    return t
+  except:
+    return (-1,-1,-1,v)
+
+# sort the file versions by numeric order
+tuple_to_ver = lambda t : '.'.join( str(ti) for ti in t )
+file_versions.sort( key=version_tuple )
+
 
 def git_version():
   try:
@@ -13,7 +44,7 @@ def git_version():
     out,err = p.communicate()
     return out.strip(), True
   except:
-    return LAST_KEY_VERSION, False
+    return DEFAULT_PREFIX + '-' + file_versions[-1], False
 
 def version():
   gv, failover = git_version()
@@ -22,37 +53,39 @@ def version():
     gv = f.readline()
     f.close()
   if not gv:
-    gv = LAST_KEY_VERSION
+    return file_versions[-1]
   return gv[ (gv.find('-')+1):]
-
-
-def last_key_version():
-  V0 = LAST_KEY_VERSION
-  return V0[ (V0.find('-')+1): ]
 
 
 def prefix():
   return git_version()[0].split('-')[0]
 
 
-def split_version( v ):
-  vs = v.split('-')
-  t = tuple( int(i) for i in vs[0].split('.') )
-  if len(vs) > 1:
-    t += ( int(vs[1]), )
-  return t
+def get_file_version( test_version=None ):
+  """
+  Return the file version that the test version implements.
+  """
+  if test_version is None:
+    test_version = version()
+
+  if test_version in file_versions:
+    return test_version
+
+  file_version_tuples = list( version_tuple(v) for v in file_versions )
+  file_version_tuples.insert( 0, (0,0,0) )
+  iloc = bisect_left(file_version_tuples, version_tuple(test_version))
+  return tuple_to_ver(file_version_tuples[ max(iloc - 1, 0) ])
+
+
+def conversion_path( test_version ):
+  return compatibility.conversion_path(
+    get_file_version(test_version),
+    get_file_version()
+  )
+
 
 def supported( test_version ):
-  v  = split_version( test_version )
-  v0 = split_version( last_key_version() ) # drop prefix
-  if v0 == v:
-    return True
-  for i in xrange( min(len(v0), len(v)) ):
-    if v0[i] < v[i]:
-      return True
-  if len(v0) < len(v) and v0 == v[:len(v0)]:
-    return True
-  return False
+  return bool( conversion_path(test_version) )
 
 
 if __name__ == '__main__':
