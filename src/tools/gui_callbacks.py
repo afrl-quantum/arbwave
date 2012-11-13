@@ -16,3 +16,11 @@ def do_gui_operation(fun, *args, **kwargs):
       gtk.threads_leave()
 
   gobject.idle_add(idle_fun)
+
+
+def do_later(time, fun, *args, **kwargs):
+  def idle_fun():
+    fun(*args, **kwargs)
+    return False
+
+  gobject.timeout_add(time,idle_fun)
