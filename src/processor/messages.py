@@ -51,7 +51,8 @@ class Show:
   def __call__(self, msg, type, buttons):
     d = gtk.MessageDialog( main_window,
       gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-      type_map[type], buttons_map[buttons], msg )
+      type_map[type], buttons_map[buttons] )
+    d.set_markup( msg )
     try:
       self.retval = response_map.get(d.run(), None)
       self.retval_valid = True
@@ -64,16 +65,17 @@ class Show:
     return self.retval
 
 
-def info(msg, type='info', buttons='ok-cancel'):
+def info(msg, type='info', buttons='ok-cancel', ignore_result=False):
   s = Show()
   do_gui_operation(s, msg, type, buttons)
-  return s.result()
+  if not ignore_result:
+    return s.result()
 
-def warn(msg, buttons='ok-cancel'):
-  return info(msg, 'warn', buttons)
+def warn(msg, buttons='ok-cancel', **kwargs):
+  return info(msg, 'warn', buttons, **kwargs)
 
-def error(msg, buttons='ok-cancel'):
-  return info(msg, 'error', buttons)
+def error(msg, buttons='ok-cancel', **kwargs):
+  return info(msg, 'error', buttons, **kwargs)
 
-def ask(msg, buttons='yes-no'):
-  return info(msg, 'ask', buttons)
+def ask(msg, buttons='yes-no', **kwargs):
+  return info(msg, 'ask', buttons, **kwargs)
