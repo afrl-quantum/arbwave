@@ -19,20 +19,16 @@ from spreadsheet import keys
 
 class Parameters(gtk.ListStore):
   NAME    = 0
-  MIN     = 1
-  MAX     = 2
-  STEP    = 3
-  ISGLOBAL= 4
-  ENABLE  = 5
+  ITERABLE= 1
+  ISGLOBAL= 2
+  ENABLE  = 3
 
-  DEFAULT = ('', '0', '10', '1', False, True)
+  DEFAULT = ('i', 'range(0,10,2)', False, True)
 
   def __init__(self):
     gtk.ListStore.__init__(self,
       str, #name
-      str, #min
-      str, #max
-      str, #step
+      str, #iterable
       bool,#global
       bool,#enable
     )
@@ -68,7 +64,7 @@ class LoopView(gtk.Dialog):
     if 'parameters' in settings:
       for p in settings['parameters']:
         self.params.append(
-          (p['name'], p['min'], p['max'], p['step'], p['isglobal'], p['enable'])
+          (p['name'], p['iterable'], p['isglobal'], p['enable'])
         )
     else:
       self.params.append( Parameters.DEFAULT )
@@ -81,39 +77,29 @@ class LoopView(gtk.Dialog):
     V.connect('key-press-event', self.view_keypress_cb)
     R = {
       'name'    : gtk.CellRendererText(),
-      'min'     : gtk.CellRendererText(),
-      'max'     : gtk.CellRendererText(),
-      'step'    : gtk.CellRendererText(),
+      'iterable': gtk.CellRendererText(),
       'isglobal': gtk.CellRendererToggle(),
       'enable'  : gtk.CellRendererToggle(),
     }
     R['name'].set_property( 'editable', True )
     R['name'].connect('edited', helpers.set_item, self.params, Parameters.NAME)
-    R['min'].set_property( 'editable', True )
-    R['min'].connect( 'edited', helpers.set_item, self.params, Parameters.MIN )
-    R['max'].set_property( 'editable', True )
-    R['max'].connect( 'edited', helpers.set_item, self.params, Parameters.MAX )
-    R['step'].set_property( 'editable', True )
-    R['step'].connect('edited', helpers.set_item, self.params, Parameters.STEP)
+    R['iterable'].set_property( 'editable', True )
+    R['iterable'].connect( 'edited', helpers.set_item, self.params, Parameters.ITERABLE)
     R['isglobal'].set_property( 'activatable', True )
     R['isglobal'].connect('toggled', helpers.toggle_item, self.params, Parameters.ISGLOBAL)
     R['enable'].set_property( 'activatable', True )
     R['enable'].connect('toggled', helpers.toggle_item, self.params, Parameters.ENABLE)
 
     C = {
-      'name' : GTVC('Variable', R['name'], text=Parameters.NAME),
-      'min' : GTVC('Min', R['min'], text=Parameters.MIN),
-      'max' : GTVC('Max', R['max'], text=Parameters.MAX),
-      'step' : GTVC('Step Size', R['step'], text=Parameters.STEP),
-      'isglobal' : GTVC('Global', R['isglobal']),
-      'enable' : GTVC('Enable', R['enable']),
+      'name'    : GTVC('Variable', R['name'], text=Parameters.NAME),
+      'iterable': GTVC('Iterable', R['iterable'], text=Parameters.ITERABLE),
+      'isglobal': GTVC('Global', R['isglobal']),
+      'enable'  : GTVC('Enable', R['enable']),
     }
     C['isglobal'].add_attribute(R['isglobal'], 'active', Parameters.ISGLOBAL)
     C['enable'].add_attribute(R['enable'], 'active', Parameters.ENABLE)
     V.append_column( C['name'] )
-    V.append_column( C['min'] )
-    V.append_column( C['max'] )
-    V.append_column( C['step'] )
+    V.append_column( C['iterable'] )
     V.append_column( C['isglobal'] )
     V.append_column( C['enable'] )
 
@@ -184,9 +170,7 @@ class Executor:
     for p in loop.params:
       self.parameters.append(
         { 'name'      : p[loop.params.NAME],
-          'min'       : p[loop.params.MIN],
-          'max'       : p[loop.params.MAX],
-          'step'      : p[loop.params.STEP],
+          'iterable'  : p[loop.params.ITERABLE],
           'isglobal'  : p[loop.params.ISGLOBAL],
           'enable'    : p[loop.params.ENABLE],
         }
@@ -238,16 +222,14 @@ class Executor:
       if p['isglobal'] and not re.search('["\'\[]', p['name']):
         exec 'global ' + p['name']
 
-      x[i] = eval( p['min'],  self.Globals, Locals )
-      step = eval( p['step'], self.Globals, Locals )
-      while dir_cmp(step, x[i],eval(p['max'], self.Globals, Locals)):
+      iterable = eval( p['iterable'], self.Globals, Locals )
+      for xi in iterable:
+        x[i] = xi
         if p['isglobal']:
           exec '{n} = {xi}'.format(n=p['name'], xi=M(x[i])) in self.Globals
         else:
           Locals[ p['name'] ] = x[i]
         self._loop_nexti(x,i+1,pi,Locals)
-        step = eval(p['step'], self.Globals, Locals)
-        x[i] += step
     else:
       self._loop_nexti(x,i,pi,Locals)
 
@@ -266,13 +248,6 @@ class Executor:
     else:
       result = list(x) + L( self.runnable.run() )
       self.show.add( *M(result) )
-
-
-def dir_cmp(step, x, max_x):
-  if np.signbit(float(step)):
-    return x > max_x
-  else:
-    return x < max_x
 
 
 

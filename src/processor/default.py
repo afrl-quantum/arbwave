@@ -3,11 +3,13 @@
 Default environment settings.
 """
 
+import numpy as np
 from ..tools.float_range import float_range
 import functions
 
 registered_globals = {
   'float_range' : float_range,
+  'arange' : np.arange,
   'inf' : float('inf'),
   'nan' : float('nan'),
 }

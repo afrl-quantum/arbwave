@@ -19,7 +19,7 @@ file_versions = [
   '0.1.1',
   '0.1.1-15-last-compatibility',
   '0.1.2',
-  #'0.1.3',
+  '0.1.3',
 ]
 
 
@@ -54,7 +54,7 @@ def version():
     f.close()
   if not gv:
     return file_versions[-1]
-  return gv[ (gv.find('-')+1):]
+  return gv[ (gv.find('-')+1): ]
 
 
 def prefix():
