@@ -37,7 +37,7 @@ def main():
   gobject.threads_init()
 
   if sys.platform == 'win32':
-    gtk.timeout_add(400, sleeper)
+    gobject.timeout_add(400, sleeper)
 
 
   # we have to do these imports _after_ the options. module is modified
