@@ -2,7 +2,8 @@
 
 PROGNAME = 'Arbitrary Wavform Generator'
 AUTHORS = [
-  'Spencer E. Olson',
+  'Spencer E. Olson (Air Force Research Laboratory)',
+  'Brian Kasch (Space Dynamics Laboratory)',
 ]
 
 import gtk
@@ -16,10 +17,12 @@ def show():
   dialog.set_license(
     'Arbitrary Waveform Generator:\n'
     '  Timing and control program for data acquisition\n'
-    '   - Co-authored by Air Force Research Laboraory\n'
-    '     (U.S. Government)\n'
     '\n'
-    'This software is released under the GPL v3 license'
+    'This software is released under the GPL v3 license\n'
+    '\n'
+    ' Public Domain Contributions 2012 United States Government '
+    ' as represented by the U.S. Air Force Research Laboratory.\n'
+    ' Portions copyright Copyright (C) 2012 Space Dynamics Laboratory\n'
   )
   dialog.set_wrap_license(80)
   dialog.set_copyright("\302\251 Cold Atom Navigation Laboratory")
