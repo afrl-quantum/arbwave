@@ -6,6 +6,8 @@ var0 = 0.4
 var1 = 30
 var2 = dict( a = 100, b = 2000 )
 
+nan = float('nan')
+
 class func:
   def __init__(self, avg=False, Nextra=8):
     self.avg = avg
