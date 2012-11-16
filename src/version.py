@@ -39,7 +39,7 @@ tuple_to_ver = lambda t : '.'.join( str(ti) for ti in t )
 file_versions.sort( key=version_tuple )
 
 
-def git_version():
+def _read_git_version():
   try:
     p = Popen(['git', 'describe'], stdout=PIPE)
     out,err = p.communicate()
@@ -47,8 +47,12 @@ def git_version():
   except:
     return DEFAULT_PREFIX + '-' + file_versions[-1], False
 
-def version():
-  gv, failover = git_version()
+GIT_VERSION = _read_git_version()
+def git_version():
+  return GIT_VERSION
+
+def _read_version():
+  gv, failover = _read_git_version()
   if failover and path.isfile(VERSION_FILE):
     f = open( VERSION_FILE )
     gv = f.readline()
@@ -57,6 +61,10 @@ def version():
     return file_versions[-1]
   return gv[ (gv.find('-')+1): ]
 
+
+VERSION = _read_version()
+def version():
+  return VERSION
 
 def prefix():
   return git_version()[0].split('-')[0]
