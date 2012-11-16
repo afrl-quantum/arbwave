@@ -20,6 +20,7 @@ file_versions = [
   '0.1.1-15-last-compatibility',
   '0.1.2',
   '0.1.3',
+  '0.1.4',
 ]
 
 

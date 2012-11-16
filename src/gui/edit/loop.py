@@ -17,7 +17,9 @@ from helpers import GTVC
 from optimize.show import Show
 from spreadsheet import keys
 
-class Parameters(gtk.ListStore):
+nan = float('nan')
+
+class Parameters(gtk.TreeStore):
   NAME    = 0
   ITERABLE= 1
   ISGLOBAL= 2
@@ -26,12 +28,42 @@ class Parameters(gtk.ListStore):
   DEFAULT = ('i', 'range(0,10,2)', False, True)
 
   def __init__(self):
-    gtk.ListStore.__init__(self,
+    gtk.TreeStore.__init__(self,
       str, #name
       str, #iterable
       bool,#global
       bool,#enable
     )
+
+  def list_recursive(self, iter):
+    L = list()
+    for i in iter:
+      F = dict()
+      F['name']     = i[ Parameters.NAME ]
+      F['iterable'] = i[ Parameters.ITERABLE ]
+      F['isglobal'] = i[ Parameters.ISGLOBAL ]
+      F['enable']   = i[ Parameters.ENABLE ]
+
+      if self.iter_has_child( i.iter ):
+        F['children'] = self.list_recursive( i.iterchildren() )
+      L.append( F )
+    return L
+
+  def list(self):
+    return self.list_recursive( iter(self) )
+
+  def representation(self):
+    return self.list()
+
+  def load_recursive(self, L, parent=None):
+    for i in L:
+      me=self.append(parent,(i['name'],i['iterable'],i['isglobal'],i['enable']))
+      if 'children' in i:
+        self.load_recursive( i['children'], me )
+
+  def load(self,L):
+    self.clear()
+    self.load_recursive(L)
 
 
 
@@ -62,12 +94,9 @@ class LoopView(gtk.Dialog):
 
     self.params = Parameters()
     if 'parameters' in settings:
-      for p in settings['parameters']:
-        self.params.append(
-          (p['name'], p['iterable'], p['isglobal'], p['enable'])
-        )
+      self.params.load( settings['parameters'] )
     else:
-      self.params.append( Parameters.DEFAULT )
+      self.params.append( None, Parameters.DEFAULT )
 
     V = self.view = gtk.TreeView( self.params )
     V.set_reorderable(True)
@@ -121,9 +150,10 @@ class LoopView(gtk.Dialog):
       if rows:
         rows = [ model.get_iter(p)  for p in rows ]
         for row in rows:
-          model.insert_before( row, Parameters.DEFAULT )
+          p = model[row].parent and model[row].parent.iter
+          model.insert_before( p, row, Parameters.DEFAULT )
       else:
-        model.append( Parameters.DEFAULT )
+        model.append( None, Parameters.DEFAULT )
       return True
     elif event.keyval == keys.DEL:
       model, rows = self.view.get_selection().get_selected_rows()
@@ -166,20 +196,19 @@ class Executor:
     finally:
       loop.hide()
 
-    self.parameters = list()
-    for p in loop.params:
-      self.parameters.append(
-        { 'name'      : p[loop.params.NAME],
-          'iterable'  : p[loop.params.ITERABLE],
-          'isglobal'  : p[loop.params.ISGLOBAL],
-          'enable'    : p[loop.params.ENABLE],
-        }
-      )
+    self.parameters = loop.params.representation()
+    V = self.get_columns( self.parameters )
+    self.variables = dict()
+    for i in xrange(len(V)):
+      if V[i][0] in self.variables: continue # don't overwrite
+      self.variables[ V[i][0] ] = { 'order':i, 'value':nan, 'isglobal':V[i][1] }
+    # now get sorted unique list of variables
+    V = self.variables.items()
+    V.sort( key = lambda v: v[1]['order'] )
 
     self.show = Show(
-      columns=(  [ i['name']  for i in self.parameters if i['enable'] ]
-               + ['Merit']
-               + self.runnable.extra_data_labels() ),
+      columns=([ vi[0] for vi in V] \
+              + ['Merit'] + self.runnable.extra_data_labels()),
       title='Loop Parameters/Results',
       parent=parent, globals=Globals,
     )
@@ -204,36 +233,45 @@ class Executor:
       def onstop(OSelf):
         self.runnable.onstop()
       def run(OSelf):
-        self._loop_func()
+        self._for_loop_main()
 
     if self.cancelled: return Cancelled()
     else:              return ORun()
 
 
-  def _loop_func(self):
+  def _for_loop_main(self):
     self.show.show()
-    x = [ 0 for p in self.parameters  if p['enable'] ]
     Locals = dict()
-    self._loop_i( x, 0, 0, Locals )
+    for f in self.parameters:
+      if f['enable']:
+        self._for_loop(f, Locals)
 
-  def _loop_i(self, x, i, pi, Locals):
-    p = self.parameters[pi]
-    if p['enable']:
-      if p['isglobal'] and not re.search('["\'\[]', p['name']):
-        exec 'global ' + p['name']
+  def _for_loop(self, p, Locals):
+    assert p['enable'], 'for loop should be enabled here!'
+    if p['isglobal'] and not re.search('["\'\[]', p['name']):
+      exec 'global ' + p['name']
 
-      iterable = eval( p['iterable'], self.Globals, Locals )
-      for xi in iterable:
-        x[i] = xi
-        if p['isglobal']:
-          exec '{n} = {xi}'.format(n=p['name'], xi=M(x[i])) in self.Globals
-        else:
-          Locals[ p['name'] ] = x[i]
-        self._loop_nexti(x,i+1,pi,Locals)
-    else:
-      self._loop_nexti(x,i,pi,Locals)
+    iterable = eval( p['iterable'], self.Globals, Locals )
+    for xi in iterable:
+      if p['isglobal']:
+        exec '{n} = {xi}'.format(n=p['name'], xi=M(xi)) in self.Globals
+      else:
+        Locals[ p['name'] ] = xi
+        self.variables[ p['name'] ]['value'] = xi # global values reread below
 
-  def _loop_nexti(self, x, i, pi, Locals):
+      if 'children' in p:
+        for child in p['children']:
+          if child['enable']:
+            self._for_loop(child, Locals)
+      else:
+        self._do_run()
+
+      # this variable is now out of scope...!
+      if not p['isglobal']:
+        Locals.pop( p['name'] )
+        self.variables[ p['name'] ]['value'] = nan
+
+  def _do_run(self):
     def L(r):
       # need better test like "if iterable"
       if r is None:
@@ -243,12 +281,27 @@ class Executor:
       else:
         return [r]
 
-    if pi < (len(self.parameters)-1):
-      self._loop_i(x, i, pi+1, Locals)
-    else:
-      result = list(x) + L( self.runnable.run() )
-      self.show.add( *M(result) )
+    # We update the globals here to make sure they are all set correctly,
+    # regardless of whether we are currently in a loop that changes them.
+    for vi in self.variables.items():
+      if vi[1]['isglobal']: vi[1]['value'] = eval(vi[0], self.Globals)
+    results = self.variables.values()
+    results.sort( key = lambda v : v['order'] )
+    results = [ v['value'] for v in results ] + L( self.runnable.run() )
+    self.show.add( *M(results) )
 
+
+  def get_columns(self, parameters):
+    """
+    Returns a list of (column names, isglobal) for each parameter in order of
+    operation of the for loops.
+    """
+    L = list()
+    for p in parameters:
+      if not p['enable']: continue
+      L.append( (p['name'], p['isglobal']) )
+      L += self.get_columns( p.get('children', list()) )
+    return L
 
 
 main_settings = dict()
@@ -256,7 +309,7 @@ main_settings = dict()
 def main():
   import traceback, pprint
   from optimize import test
-  e = Make('func', main_settings)( test.func(), globals() )
+  e = Make(None, 'func', main_settings)( test.func(), test.get_globals() )
 
   print 'e: ', e
   return e

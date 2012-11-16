@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import gtk, gobject
+import logging
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -8,6 +9,8 @@ from matplotlib.backends.backend_gtkagg import \
   FigureCanvasGTKAgg as FigCanvas
 from matplotlib.backends.backend_gtkagg import \
   NavigationToolbar2GTKAgg as NavigationToolbar
+
+from matplotlib.mlab import find
 
 from ..helpers import GTVC
 from ...packing import hpack, vpack, Args as PArgs
@@ -245,7 +248,8 @@ class Show(gtk.Dialog):
         data.view(','.join(['f8']*data.shape[1])).sort(order='f'+str(xi),axis=0)
       self.axes.clear()
 
-      stats = ComputeStats(data[:,xi], data[:,yi])
+      good = find( np.isfinite(data[:,xi]) )
+      stats = ComputeStats(data[good,xi], data[good,yi])
       i = -1
       for l,cb in self.line_selection.items():
         i += 1
@@ -258,7 +262,8 @@ class Show(gtk.Dialog):
       self.axes.set_xlabel(x_label)
       self.axes.set_ylabel(y_label)
       self.canvas.draw()
-    except: pass
+    except Exception, e:
+      logging.debug( 'dataviewer: %s', e )
     return True
 
 
