@@ -37,7 +37,6 @@ class Device(Base):
       vp.Config('out', []),
       board=board_number,
     )
-    self.clocks_changed = False
     self.clocks = None
     self.signals = None
     self.routes = 0x0
@@ -88,7 +87,6 @@ class Device(Base):
 
   def set_clocks(self, clocks):
     if self.clocks != clocks:
-      self.clocks_changed = True
       self.clocks = clocks
 
       C = self.board.configs

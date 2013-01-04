@@ -1,5 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import sys
+
 from physical import unit
 from .....tools.float_range import float_range
 from ....channels import Timing as Base
@@ -13,6 +15,9 @@ class Timing(Base):
     """
     return True
 
+  def _divider(self):
+    return self.device().clocks[ str(self) ]['divider']['value']
+
   def get_min_period(self):
     """
     Returns the minimum timing period (period between two rising edges of this
@@ -22,7 +27,17 @@ class Timing(Base):
     # DIO64 output channels.  A device using this channel as an aperiodic clock
     # will need to see a rising edge and falling edge, the pair of which
     # constitutes one clock pulse.
-    return 2 * unit.s / self.device().board.configs['out']['scan_rate']
+    return 2 * self._divider() * unit.s \
+             / self.device().board.configs['out']['scan_rate']
+
+  def get_config_template(self):
+    return {
+      'divider' : {
+        'value' : 1,
+        'type'  : int,
+        'range' : xrange(1, sys.maxint),
+      }
+    }
 
 
 class InternalTiming(Base):
