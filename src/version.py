@@ -6,7 +6,8 @@ from os import path
 from bisect import bisect_left
 from tools import compatibility
 
-VERSION_FILE = path.join( path.dirname(__file__), 'VERSION' )
+THIS_DIR = path.dirname(__file__)
+VERSION_FILE = path.join( THIS_DIR, 'VERSION' )
 DEFAULT_PREFIX = 'arbwave'
 
 # The file versions are major points in the development history where file
@@ -42,7 +43,11 @@ file_versions.sort( key=version_tuple )
 
 def _read_git_version():
   try:
-    p = Popen(['git', 'describe'], stdout=PIPE)
+    if path.isdir('.git'):
+      args = {}
+    else:
+      args = {'cwd' : THIS_DIR }
+    p = Popen(['git', 'describe'], stdout=PIPE, **args)
     out,err = p.communicate()
     return out.strip(), True
   except:
