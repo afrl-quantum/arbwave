@@ -157,12 +157,17 @@ class Device(Base):
             transitions[ t[0] ] = dict()
           transitions[ t[0] ][line] = t[1]
 
+    def divider(clock):
+      return self.clocks[ '{n}/{c}'.format(n=self,c=clock) ]['divider']['value']
+
     # second, add transtions for channels being used as aperiod clocks
     for line in clock_transitions:
       if 'Internal' in line:
         continue
+      half_period = 0.5 * divider(line) * scan_clock_period
+
       for t_rise in clock_transitions[line]:
-        t_fall = t_rise + scan_clock_period
+        t_fall = t_rise + half_period
         if t_rise not in transitions:
           transitions[ t_rise ] = dict()
         if t_fall not in transitions:
@@ -172,19 +177,23 @@ class Device(Base):
         # finish the clock pulse by lowering it to logic zero
         transitions[ t_fall ][line] = False
 
-    if continuous:
-      # Add the last "transition" which is really just a final duration
-      transitions[ t_max ] = None
-    else:
+    if not continuous:
       t_rise = t_max
-      t_fall = t_rise + scan_clock_period
-      t_max  = t_fall + scan_clock_period
       transitions[ t_rise ] = \
         { line:True  for line in end_clocks if 'Internal' not in line }
-      transitions[ t_fall ] = \
-        { line:False for line in end_clocks if 'Internal' not in line }
-      # fake transition to ensure viepoint respects our last fall transition
-      transitions[ t_max ] = None
+      for line in end_clocks:
+        if 'Internal' in line:  continue
+
+        # make sure that the last pulse for each line is large enough
+        t_fall = t_rise + ( 0.5 * divider(line)*scan_clock_period )
+        t_max  = max( t_max, t_fall + scan_clock_period )
+        if t_fall not in transitions:
+          transitions[ t_fall ] = dict()
+        transitions[ t_fall ][line] = False
+
+
+    # Add the last "transition" which is really just a final duration
+    transitions[ t_max ] = None
 
     self.t_max = t_max # save for self.wait()
 
