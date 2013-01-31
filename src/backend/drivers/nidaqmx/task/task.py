@@ -222,13 +222,17 @@ class Task(Base):
 
     # for now, if a channel does not have any data for t=0, we'll issue
     # an error and set the empty channel value at t=0 to zero.
-    def zero_if_none(v):
+    def zero_if_none(v, channel):
       if v is None:
-        warn('NIDAQmx: missing starting value for channel--using 0')
+        warn('NIDAQmx: missing starting value for channel (%s%d)--using 0',
+             str(self), channel)
         return 0
       else:
         return v
-    scans[ transitions[0] ] = [ zero_if_none(v) for v in scans[transitions[0]] ]
+    S0 = scans[ transitions[0] ]
+    scans[ transitions[0] ] = [
+      zero_if_none(v,i) for v,i in zip( S0, xrange(len(S0)) )
+    ]
     last = scans[ transitions[0] ]
     t_last = -10*min_dt
     for t in transitions:
