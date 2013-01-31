@@ -160,11 +160,16 @@ class Device(Base):
     def divider(clock):
       return self.clocks[ '{n}/{c}'.format(n=self,c=clock) ]['divider']['value']
 
+    def mk_half_period(line):
+      # the extra .0001 is to ensure we don't have rounding error back to the
+      # previous timestep
+      return 0.5001 * divider(line) * scan_clock_period
+
     # second, add transtions for channels being used as aperiod clocks
     for line in clock_transitions:
       if 'Internal' in line:
         continue
-      half_period = 0.5 * divider(line) * scan_clock_period
+      half_period = mk_half_period(line)
 
       for t_rise in clock_transitions[line]:
         t_fall = t_rise + half_period
@@ -185,7 +190,7 @@ class Device(Base):
         if 'Internal' in line:  continue
 
         # make sure that the last pulse for each line is large enough
-        t_fall = t_rise + ( 0.5 * divider(line)*scan_clock_period )
+        t_fall = t_rise + mk_half_period(line)
         t_max  = max( t_max, t_fall + scan_clock_period )
         if t_fall not in transitions:
           transitions[ t_fall ] = dict()
