@@ -8,6 +8,7 @@ from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
 from physical import unit
 import nidaqmx
+import numpy as np
 
 
 class Task(Base):
@@ -100,7 +101,7 @@ class Task(Base):
     if not self.channels:
       return
     debug( 'creating task:  %s', self.name )
-    self.task = self.task_class(self.name)
+    self.task = self.task_class(self.name.replace('/','-'))
     self.use_case = None
     self.add_channels()
 
@@ -141,7 +142,7 @@ class Task(Base):
       'NIDAQmx.set_output: mismatched channels'
     debug( 'writing static data for channels: %s', chlist )
     if rootlog.getEffectiveLevel() <= (DEBUG-1):
-      log(DEBUG-1, '%s', [ data[c]  for c in chlist ])
+      log(DEBUG-1, '%s', [ float(data[c])  for c in chlist ])
     self.task.write( [ data[c]  for c in chlist ] )
     debug( 'starting task: %s', self.task )
     self.task.start()
@@ -286,7 +287,11 @@ class Task(Base):
     debug( 'writing waveform data for channels: %s', chlist )
     debug( 'NIDAQmx len(transitions/in) = %s, len(scans/out) = %s',
            len(transitions), len(scans) )
-    log(DEBUG-1, 'NIDAQmx task.write(%s, False, group_by_scan_number)', scans)
+    if rootlog.getEffectiveLevel() <= (DEBUG-1):
+      log(DEBUG-1, 'NIDAQmx task.write(<data>, False, group_by_scan_number)' )
+      log(DEBUG-1, '<data>:' )
+      for scan in scans:
+        log(DEBUG-1, '          %s', np.array(scan).astype(float).tolist())
     self.task.write( scans, auto_start=False, layout='group_by_scan_number' )
     self.t_max = t_max
 
