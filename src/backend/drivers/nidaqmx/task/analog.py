@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+from logging import log, debug, info, warn, error, critical, DEBUG
 from .....tools.float_range import float_range
 from task import Task as Base
 import nidaqmx
@@ -21,6 +22,7 @@ class Analog(Base):
       else:
         # use the default range values
         mn, mx = dflt_mn, dflt_mx
+      debug( 'creating analog output NIDAQmx channel: %s', c[0] )
       self.task.create_voltage_channel(
         c[0].partition('/')[-1], # cut off the prefix
         min_val=mn, max_val=mx )

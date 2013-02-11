@@ -307,7 +307,7 @@ class NiDAQmx:
 
 
   def DAQmxWaitUntilTaskDone(self, task, timeout):
-    log(DEBUG-1, 'DAQmxWaitUntilTaskDone(%s,%f)', task, timeout)
+    log(DEBUG-1, 'DAQmxWaitUntilTaskDone(%s,%f)', task, timeout.value)
     return 0
 
 

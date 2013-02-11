@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import copy
-from logging import error, warn, debug, log, DEBUG, INFO
+from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 from .. import routes
 from ....device import Device as Base
 from .....tools.signal_graphs import nearest_terminal
@@ -32,8 +32,8 @@ class Task(Base):
     self.sources_to_native = dict()
 
     # make sure the strip off the leading 'ni' but leave the '/'
-    clk = str(self)[len(self.prefix()):] + '/SampleClock'
-    trg = str(self)[len(self.prefix()):] + '/StartTrigger'
+    clk = self.name[len(self.prefix()):] + '/SampleClock'
+    trg = self.name[len(self.prefix()):] + '/StartTrigger'
 
     for i in routes.signal_route_map.items():
       add = False
@@ -55,6 +55,7 @@ class Task(Base):
 
   def clear(self):
     if self.task:
+      debug( 'clearing NIDAQmx task %s', self.task )
       del self.task
       self.task = None
       self.t_max = 0.0
@@ -66,6 +67,7 @@ class Task(Base):
     """
     # populate the task with output channels and accumulate the data
     for c in self.channels:
+      warn( 'creating unknown NIDAQmx task/channel: %s/%s', self.task, c )
       self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
 
@@ -97,7 +99,8 @@ class Task(Base):
     self.clear()
     if not self.channels:
       return
-    self.task = self.task_class()
+    debug( 'creating task:  %s', self.name )
+    self.task = self.task_class(self.name)
     self.use_case = None
     self.add_channels()
 
@@ -120,11 +123,13 @@ class Task(Base):
     """
     if self.use_case in [ None, Task.STATIC ]:
       if self.use_case is not None:
+        debug( 'stopping task: %s', self.task )
         self.task.stop()
     else:
       self._rebuild_task()
     self.use_case = Task.STATIC
 
+    debug( 'configuring task for static output: %s', self.task )
     self.task.set_sample_timing( timing_type='on_demand',
                                  mode='finite',
                                  samples_per_channel=1 )
@@ -134,7 +139,11 @@ class Task(Base):
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist) == set( data.keys() ), \
       'NIDAQmx.set_output: mismatched channels'
+    debug( 'writing static data for channels: %s', chlist )
+    if rootlog.getEffectiveLevel() <= (DEBUG-1):
+      log(DEBUG-1, '%s', [ data[c]  for c in chlist ])
     self.task.write( [ data[c]  for c in chlist ] )
+    debug( 'starting task: %s', self.task )
     self.task.start()
 
 
@@ -157,6 +166,7 @@ class Task(Base):
     """
     if self.use_case in [None, Task.WAVEFORM_SINGLE, Task.WAVEFORM_CONTINUOUS]:
       if self.use_case is not None:
+        debug( 'stopping task: %s', self.task )
         self.task.stop()
     else:
       self._rebuild_task()
@@ -180,6 +190,20 @@ class Task(Base):
     max_clock_rate = self.task.get_sample_clock_max_rate()
     min_dt = self.get_min_period().coeff
 
+    debug( 'configuring task timing for waveform output: %s', self.task )
+    if rootlog.getEffectiveLevel() <= (DEBUG-1):
+      log(DEBUG-1,'self.task.configure_timing_sample_clock('
+        'source'           '=%s,'
+        'rate'             '=%s Hz,'
+        'active_edge'      '=%s,'
+        'sample_mode'      '=%s,'
+        'samples_per_channel=%s)',
+        self.clock_terminal,
+        max_clock_rate,
+        self.config['clock-settings']['edge']['value'],
+        mode,
+        len(transitions),
+      )
     self.task.configure_timing_sample_clock(
       source              = self.clock_terminal,
       rate                = max_clock_rate, # Hz
@@ -188,10 +212,18 @@ class Task(Base):
       samples_per_channel = len(transitions) )
     # 2.  Triggering
     if self.config['trigger']['enable']['value']:
+      debug( 'configuring task trigger for waveform output: %s', self.task )
+      if rootlog.getEffectiveLevel() <= (DEBUG-1):
+        log(DEBUG-1, 'self.task.configure_trigger_digital_edge_start('
+          'source=%s,edge=%s)',
+          self.config['trigger']['source']['value'],
+          self.config['trigger']['edge']['value'],
+        )
       self.task.configure_trigger_digital_edge_start(
         source=self.config['trigger']['source']['value'],
         edge=self.config['trigger']['edge']['value'] )
     else:
+      debug('disabling trigger start for task: %s', self.task)
       self.task.configure_trigger_disable_start()
     # 3.  Data write
     # 3a.  Get data array
@@ -224,8 +256,8 @@ class Task(Base):
     # an error and set the empty channel value at t=0 to zero.
     def zero_if_none(v, channel):
       if v is None:
-        warn('NIDAQmx: missing starting value for channel (%s%d)--using 0',
-             str(self), channel)
+        warn('NIDAQmx: missing starting value for channel (%s)--using 0',
+             chlist[channel])
         return 0
       else:
         return v
@@ -251,6 +283,7 @@ class Task(Base):
     scans = [ scans[t]  for t in transitions ]
 
     # 3b.  Send data to hardware
+    debug( 'writing waveform data for channels: %s', chlist )
     debug( 'NIDAQmx len(transitions/in) = %s, len(scans/out) = %s',
            len(transitions), len(scans) )
     log(DEBUG-1, 'NIDAQmx task.write(%s, False, group_by_scan_number)', scans)
