@@ -43,15 +43,15 @@ routing_bits = {
 
 available_routes = {
   # set_attr('port-routing', 0x1) if A/13 is input...
-  'TRIG/0' : {
+  'TRIG/1' : {
     'destinations' : ['A/13', 'External/'],
     'invertible'   : False,
-  }, # TRIG/0 could be either PXI or RTSI
+  }, # TRIG/1 could be either PXI or RTSI
   # set_attr('port-routing', 0x8) if A/13 is output...
   'A/13' : {
-    'destinations' : ['TRIG/0', 'External/'],
+    'destinations' : ['TRIG/1', 'External/'],
     'invertible'   : False,
-  }, # TRIG/0 could be either PXI or RTSI
+  }, # TRIG/1 could be either PXI or RTSI
 
   # set_attr('port-routing', 0x2) if A/14 is input
   'TRIG/5' : {
