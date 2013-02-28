@@ -89,7 +89,8 @@ class Processor:
         # timing channels.
         sp, graph = shortest_paths( signals[0], *clocks[0] )
 
-        if max([ len(i) for i in graph.node_incidence.values() ]) > 1:
+        num_node_incidences = [ len(i) for i in graph.node_incidence.values() ]
+        if num_node_incidences and max(num_node_incidences) > 1:
           raise RuntimeError('Double driving a terminal/cable is not allowed!')
 
         engine.send.to_driver.config(
