@@ -25,17 +25,20 @@ def mkxy( L, Vi ):
   return x, y
 
 
-def plot( ax, signals, names=None, t_final=None ):
+def plot( ax, signals, name_map=None, t_final=None ):
   if t_final is None:
     #start by finding the maximum time
     t_final = get_t_final( signals )
     t_final *= 1.001
 
   channels = signals.items()
-  channels.sort( key = lambda v: v[0] ) # reverse lexical sort
+  if name_map:
+    channels.sort( key = lambda v: -name_map[v[0]]['order'] )
+  else:
+    channels.sort( key = lambda v: v[0] ) # reverse lexical sort
 
-  if names:
-    get_label = lambda n : names[n]
+  if name_map:
+    get_label = lambda n : name_map[n]['name']
   else:
     get_label = lambda n : n
 
