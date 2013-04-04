@@ -78,7 +78,8 @@ def load_all():
   prfx = prefix()
   for d in system.devices:
     product = d.get_product_type()
-    for sources in routes.available[product]:
+    logging.debug( 'setting up NIDAQmx routes for device: %s', d )
+    for sources in routes.available.get(product,[]):
       dest = list()
       ni_dest = list()
       for dest_i in routes.available[product][sources]:
@@ -95,16 +96,19 @@ def load_all():
           channels.Backplane( src[i],
                               destinations=dest,
                               invertible = True ) )
+        logging.log(logging.DEBUG-1,
+          'appending NIDAQmx routes for device: %s: %s --> %s', d, src[i], dest
+        )
 
 
-    if d.get_analog_output_sample_clock_supported():
-      t = task.Analog('{}/{}'.format(prfx,d))
-      available = [ channels.Analog('{}/{}'.format(prfx,ao), t)
-                    for ao in d.get_analog_output_channels()
-                  ]
-      if available:
-        tasks[ str(t) ] = t
-        analogs += available
+    t = task.Analog('{}/{}'.format(prfx,d))
+    available = [ channels.Analog('{}/{}'.format(prfx,ao), t)
+                  for ao in d.get_analog_output_channels()
+                    if d.get_analog_output_sample_clock_supported()
+                ]
+    if available:
+      tasks[ str(t) ] = t
+      analogs += available
 
 
     t = task.Digital('{}/{}'.format(prfx,d))
@@ -121,8 +125,8 @@ def load_all():
     available = [ channels.Timing('{}/{}'.format(prfx,co), t)
                   for co in d.get_counter_output_channels() ]
     if available:
-      counters += available
       tasks[ str(t) ] = t
+      counters += available
 
 
 load_all()

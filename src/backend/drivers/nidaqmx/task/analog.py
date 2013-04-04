@@ -22,7 +22,7 @@ class Analog(Base):
       else:
         # use the default range values
         mn, mx = dflt_mn, dflt_mx
-      debug( 'creating analog output NIDAQmx channel: %s', c[0] )
+      debug( 'nidaqmx: creating analog output NIDAQmx channel: %s', c[0] )
       self.task.create_voltage_channel(
         c[0].partition('/')[-1], # cut off the prefix
         min_val=mn, max_val=mx )
