@@ -203,6 +203,7 @@ class Show(gtk.Dialog):
 
   def add(self, *stuff):
     def do_append():
+      if not self.is_drawable(): return
       self.params.append( stuff )
       self.new_data = True
     do_gui_operation( do_append )
