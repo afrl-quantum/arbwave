@@ -4,7 +4,7 @@ import gtk
 from math import log10
 import spreadsheet
 import helpers
-from helpers import GTVC
+from helpers import GTVC, GCRT
 
 def get_leaf_node( D, path ):
   if len(path) > 1:
@@ -185,9 +185,9 @@ class Generic:
       V.connect('drag-motion', drag_motion)
 
     R = {
-      'label'     : gtk.CellRendererText(),
+      'label'     : GCRT(),
       'val:bool'  : gtk.CellRendererToggle(),
-      'val:text'  : gtk.CellRendererText(),
+      'val:text'  : GCRT(),
       'val:int'   : gtk.CellRendererSpin(),
       'val:float' : gtk.CellRendererSpin(),
       'cmb:text'  : gtk.CellRendererCombo(),

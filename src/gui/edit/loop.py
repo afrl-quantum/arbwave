@@ -12,7 +12,7 @@ import physical
 from ...tools.print_units import M
 
 import helpers
-from helpers import GTVC
+from helpers import GTVC, GCRT
 
 from optimize.show import Show
 from spreadsheet import keys
@@ -105,8 +105,8 @@ class LoopView(gtk.Dialog):
     V.connect('drag-motion', drag_motion)
     V.connect('key-press-event', self.view_keypress_cb)
     R = {
-      'name'    : gtk.CellRendererText(),
-      'iterable': gtk.CellRendererText(),
+      'name'    : GCRT(),
+      'iterable': GCRT(),
       'isglobal': gtk.CellRendererToggle(),
       'enable'  : gtk.CellRendererToggle(),
     }

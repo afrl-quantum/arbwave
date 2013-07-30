@@ -67,8 +67,8 @@ class Editor(gtk.Dialog):
       lambda: self.set_pause(True), lambda: self.set_pause(False) )
 
     self.renderers = R = {
-      'x' : gtk.CellRendererText(),
-      'y' : gtk.CellRendererText(),
+      'x' : GCRT(),
+      'y' : GCRT(),
     }
 
     R['x'].set_property( 'editable', True )

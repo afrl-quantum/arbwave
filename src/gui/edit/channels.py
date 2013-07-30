@@ -149,9 +149,9 @@ class Channels:
     V.connect('key-press-event', clear_selection)
 
     R = {
-      'label'   : gtk.CellRendererText(),
+      'label'   : GCRT(),
       'device'  : gtk.CellRendererCombo(),
-      'value'   : gtk.CellRendererText(),
+      'value'   : GCRT(),
       'enable'  : gtk.CellRendererToggle(),
     }
 

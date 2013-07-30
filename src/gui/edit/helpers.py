@@ -5,7 +5,14 @@ import gtk
 def GTVC(*args,**kwargs):
   c = gtk.TreeViewColumn(*args,**kwargs)
   c.set_property('resizable', True)
+  c.set_alignment(0.5)
   return c
+
+
+def GCRT(xalign=0.5,  yalign=0.5):
+  r = gtk.CellRendererText()
+  r.set_alignment(xalign, yalign)
+  return r
 
 
 class Undo:
