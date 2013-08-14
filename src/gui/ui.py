@@ -100,12 +100,15 @@ def notify_position(w):
   return ( int(pos[0] + sz[0]*.5), pos[1] + sz[1] )
 
 
-def finished(*args, **kwargs):
+def finished(ui, *args, **kwargs):
   """
   Finish everything:  close drivers, close windows...
   """
   backend.unload_all()
   gtk.main_quit()
+  print 'trying to del the ui: ', ui
+  ui.__del__() # not sure why "del ui" below is not working!
+  del ui
 
 
 def show_data_viewer(parent):
@@ -270,6 +273,13 @@ class ArbWave(gtk.Window):
     self.processor.exec_script( default_script )
     self.saved = True
     self.set_full_title()
+
+
+  def __del__(self):
+    # explicitly delete the processor
+    print 'trying to del the proc.'
+    self.processor.__del__() # not sure why "del ui" below is not working!
+    del self.processor
 
 
   def update_runnables(self, runnables):
