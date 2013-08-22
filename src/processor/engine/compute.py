@@ -122,7 +122,7 @@ def evalIfNeeded( s, G, L=dict() ):
 
 
 class WaveformEvalulator:
-  def __init__(self,devcfg, clocks, channels):
+  def __init__(self,devcfg, clocks, channels, globals):
     # currently configured...
     self.devcfg = devcfg
     self.clocks = clocks
@@ -140,6 +140,53 @@ class WaveformEvalulator:
     self.t_max = 0.0*unit.s
     self.eval_cache = dict()
 
+    # initialize the channel info (min period, ...):
+    min_periods = dict()
+    for chname, chan in self.channels.items():
+      ci = self.channel_info[chname]
+      # drop the "Analog/" "Digital/" prefix to lookup actual device
+      chan_dev = self.do_ao_channels[ chan['device'].partition('/')[-1] ]
+
+      # set type and clock
+      ci['type'] = chan_dev.type()
+      try:
+        clk = self.devcfg[ str(chan_dev.device()) ]['clock']['value']
+      except KeyError:
+        raise UserWarning( str(chan_dev.device()) + ': Device not configured' )
+      assert clk in self.clocks, \
+             str(chan_dev.device()) + ': device clock not selected'
+      ci['clock'] = clk
+
+      if clk not in self.transitions:
+        self.transitions[ clk ] = list()
+        self.explicit_timing[ clk ] = False
+
+      # determine if the channel needs explicit timing (in case its clock
+      # source is not aperiodic)
+      self.explicit_timing[clk] |= chan_dev.explicit_timing()
+
+      # sets ci['units'], ci['scaling'], etc
+      # units and scaling only get to refer to globals
+      set_units_and_scaling(chname, ci, chan, globals)
+
+      # in this loop, we first need to determine the largest period required by
+      # all devices that share each clock.  In a subsequent loop below, we'll
+      # assign this found maximum period required to each of the devices that
+      # use a particular clock.
+      # project device min_period to the nearest next later clock pulse
+      clock_period = self.timing_channels[ clk ] .get_min_period()
+      min_periods[ clk ] = max(
+        min_periods.get(clk, clock_period),
+        ceil( chan_dev.get_min_period() / clock_period ) * clock_period,
+      )
+
+      # check whether channel requires end-clock pulse for non-continuous mode
+      if chan_dev.finite_mode_requires_end_clock():
+        self.finite_mode_end_clocks_required.add( ci['clock'] )
+
+    # now we assign the required period to each device that uses each clock
+    for ci in self.channel_info.values():
+      ci['min_period'] = min_periods[ ci['clock'] ]
 
 
   def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict()):
@@ -208,44 +255,13 @@ class WaveformEvalulator:
     if t_locals:
       self.t_max = max( self.t_max, *t_locals.values() )
 
+
   def element(self, e, globals, locals):
     chname = e['channel']
     ci = self.channel_info[chname]
-    if not ci['type']:
-      chan = self.channels[chname]
-      ci['type'] = determine_channel_type(chname, chan['device'])
-
-      # set ci['clock'] too
-      # drop the "Analog/" "Digital/" prefix
-      chan_dev = self.do_ao_channels[ chan['device'][(len(ci['type'])+1):] ]
-      clk = self.devcfg[ str(chan_dev.device()) ]['clock']['value']
-      assert clk in self.clocks, 'Chosen device clock not configured'
-      ci['clock'] = self.timing_channels[ clk ]
-
-      if clk not in self.transitions:
-        self.transitions[ clk ] = list()
-        self.explicit_timing[ clk ] = False
-
-      # determine if the channel needs explicit timing (in case its clock
-      # source is not aperiodic)
-      self.explicit_timing[clk] |= chan_dev.explicit_timing()
-
-      # sets ci['units'], ci['scaling'], etc
-      # units and scaling only get to refer to globals
-      set_units_and_scaling(chname, ci, chan, globals)
-
-      # project device min_period to the nearest next later clock pulse
-      clock_period = ci['clock'].get_min_period()
-      ci['min_period'] = max(
-        clock_period,
-        ceil( chan_dev.get_min_period() / clock_period ) * clock_period )
-
-      # check whether channel requires end-clock pulse for non-continuous mode
-      if chan_dev.finite_mode_requires_end_clock():
-        self.finite_mode_end_clocks_required.add( str( ci['clock'] ) )
 
     # get a ref to the list of transitions for the associated clock generator
-    trans = self.transitions[ str( ci['clock'] ) ]
+    trans = self.transitions[ ci['clock'] ]
 
     # provide access to this channels minimum clock period
     locals['dt_clk'] = ci['min_period']
@@ -268,7 +284,7 @@ class WaveformEvalulator:
     value = evalIfNeeded( e['value'], globals, locals )
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
-      insert_value(t, dt, value, ci['min_period'], chname, ci, trans, e['path'])
+      insert_value(t, dt, value,  ci['min_period'],chname,ci,trans,e['path'])
       ci['last'] = value
     else:
       value.set_vars( ci['last'], t, dt, ci['min_period'] )
@@ -279,6 +295,7 @@ class WaveformEvalulator:
     locals.pop('dt_clk')
     # we need to return the end time of this waveform element
     return t + dt
+
 
   def finish(self):
     # ensure that we have a unique set of transitions
@@ -351,7 +368,7 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals ):
     1.  Determine all times that must make a voltage transition on some channel.
     2.  Generate a voltage sample for each transition that must occur.
   """
-  wve = WaveformEvalulator(devcfg, clocks, channels)
+  wve = WaveformEvalulator(devcfg, clocks, channels, globals=globals)
   wve.group( waveforms, globals=globals )
   return wve.finish()
 
@@ -401,15 +418,6 @@ def make_channel_info(channels):
 
 
 
-def determine_channel_type(chname, dev):
-  if   dev.startswith('Analog/'):
-    return 'analog'
-  elif dev.startswith('Digital/'):
-    return 'digital'
-  raise RuntimeError(chname+':  Cannot determine type of channel ')
-
-
-
 def check_final_units( value, chname, ci ):
   if   ci['type'] is 'analog':
     unit.V.unitsMatch( value, 'analog channels expect units=V' )
@@ -456,8 +464,13 @@ def static( devcfg, channels, globals ):
     if not dev:
       continue
 
+    do_ao_channels = backend.get_analog_channels()
+    do_ao_channels.update( backend.get_digital_channels() )
+    # drop the "Analog/" "Digital/" prefix to lookup actual device
+    chan_dev = do_ao_channels[ chan['device'].partition('/')[-1] ]
+
     # we do most of the same basic things as for waveforms without transitions
-    ci['type'] = determine_channel_type(chname, dev)
+    ci['type'] = chan_dev.type()
     set_units_and_scaling(chname, ci, chan, globals)
     value = evalIfNeeded( chan['value'], globals )
     value = apply_scaling(value, chname, ci)

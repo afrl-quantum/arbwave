@@ -262,23 +262,33 @@ class Task(Base):
         return 0
       else:
         return v
+
     S0 = scans[ transitions[0] ]
-    scans[ transitions[0] ] = [
-      zero_if_none(v,i) for v,i in zip( S0, xrange(len(S0)) )
-    ]
-    last = scans[ transitions[0] ]
+    if S0 is None:
+      # must be sharing a clock with another card.  init all channels to zero
+      last = scans[ transitions[0] ] = [0] * n_channels
+    else:
+      scans[ transitions[0] ] = [
+        zero_if_none(v,i) for v,i in zip( S0, xrange(len(S0)) )
+      ]
+      last = scans[ transitions[0] ]
+
     t_last = -10*min_dt
     for t in transitions:
       if cmpeps(t - t_last, min_dt, 7) < 0: # Brian's favorite number is 7 between 1 and 10
-        raise RuntimeError('Samples too small for NIDAQmx at t={tl}->{t}: {dt}<{m}' \
+        raise RuntimeError(self.name+': Samples too small for NIDAQmx at t={tl}->{t}: {dt}<{m}' \
           .format(tl=t_last,t=t, dt=t-t_last, m=min_dt))
       t_last = t
 
       t_array = scans[t]
-      for i in xrange( n_channels ):
-        if t_array[i] is None:
-          t_array[i] = last[i]
-      last = t_array
+      if t_array is None:
+        # must be sharing a clock with another card.  keep last values
+        scans[t] = last
+      else:
+        for i in xrange( n_channels ):
+          if t_array[i] is None:
+            t_array[i] = last[i]
+        last = t_array
 
     # now, we finally build the actual data to send to the hardware
     scans = [ scans[t]  for t in transitions ]

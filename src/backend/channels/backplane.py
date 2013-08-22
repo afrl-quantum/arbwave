@@ -4,6 +4,7 @@ from base import Base
 
 class Backplane(Base):
   """Base Backplane channel class"""
+  _type = 'backplane'
   def __init__(self,src, destinations=list(), invertible=False, **kwargs):
     Base.__init__(self,src,**kwargs)
     self.src  = src

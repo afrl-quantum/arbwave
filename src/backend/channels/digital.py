@@ -4,4 +4,4 @@ from base import Base
 
 class Digital(Base):
   """Base Digital channel class"""
-  pass
+  _type = 'digital'

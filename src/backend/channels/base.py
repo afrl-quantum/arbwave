@@ -34,3 +34,11 @@ class Base:
 
   def finite_mode_requires_end_clock(self):
     return self._finite_end_clock
+
+  def type(self):
+    return self._type
+
+  def fullname(self):
+    # we capitalize the first letter!
+    T = self.type()
+    return '{}{}/{}'.format( T[0].upper(), T[1:], self.name )

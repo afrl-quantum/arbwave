@@ -4,4 +4,4 @@ from base import Base
 
 class Analog(Base):
   """Base Analog channel class"""
-  pass
+  _type = 'analog'

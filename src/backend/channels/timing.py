@@ -4,6 +4,7 @@ from base import Base
 
 class Timing(Base):
   """Base Timing channel class"""
+  _type = 'timing'
 
   def is_aperiodic(self):
     """
