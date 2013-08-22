@@ -140,9 +140,9 @@ class Waveforms:
 
     R = {
       'channel' : gtk.CellRendererCombo(),
-      'time'    : gtk.CellRendererText(),
-      'duration': gtk.CellRendererText(),
-      'value'   : gtk.CellRendererText(),
+      'time'    : GCRT(),
+      'duration': GCRT(),
+      'value'   : GCRT(),
       'enable'  : gtk.CellRendererToggle(),
     }
 

@@ -56,7 +56,7 @@ class Task(Base):
 
   def clear(self):
     if self.task:
-      debug( 'clearing NIDAQmx task %s', self.task )
+      debug( 'nidaqmx: clearing NIDAQmx task %s', self.task )
       del self.task
       self.task = None
       self.t_max = 0.0
@@ -100,7 +100,7 @@ class Task(Base):
     self.clear()
     if not self.channels:
       return
-    debug( 'creating task:  %s', self.name )
+    debug( 'nidaqmx: creating task:  %s', self.name )
     self.task = self.task_class(self.name.replace('/','-'))
     self.use_case = None
     self.add_channels()
@@ -124,13 +124,13 @@ class Task(Base):
     """
     if self.use_case in [ None, Task.STATIC ]:
       if self.use_case is not None:
-        debug( 'stopping task: %s', self.task )
+        debug( 'nidaqmx: stopping task: %s', self.task )
         self.task.stop()
     else:
       self._rebuild_task()
     self.use_case = Task.STATIC
 
-    debug( 'configuring task for static output: %s', self.task )
+    debug( 'nidaqmx: configuring task for static output: %s', self.task )
     self.task.set_sample_timing( timing_type='on_demand',
                                  mode='finite',
                                  samples_per_channel=1 )
@@ -140,11 +140,11 @@ class Task(Base):
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist) == set( data.keys() ), \
       'NIDAQmx.set_output: mismatched channels'
-    debug( 'writing static data for channels: %s', chlist )
+    debug( 'nidaqmx: writing static data for channels: %s', chlist )
     if rootlog.getEffectiveLevel() <= (DEBUG-1):
       log(DEBUG-1, '%s', [ float(data[c])  for c in chlist ])
     self.task.write( [ data[c]  for c in chlist ] )
-    debug( 'starting task: %s', self.task )
+    debug( 'nidaqmx: starting task: %s', self.task )
     self.task.start()
 
 
@@ -167,7 +167,7 @@ class Task(Base):
     """
     if self.use_case in [None, Task.WAVEFORM_SINGLE, Task.WAVEFORM_CONTINUOUS]:
       if self.use_case is not None:
-        debug( 'stopping task: %s', self.task )
+        debug( 'nidaqmx: stopping task: %s', self.task )
         self.task.stop()
     else:
       self._rebuild_task()
@@ -191,7 +191,7 @@ class Task(Base):
     max_clock_rate = self.task.get_sample_clock_max_rate()
     min_dt = self.get_min_period().coeff
 
-    debug( 'configuring task timing for waveform output: %s', self.task )
+    debug( 'nidaqmx: configuring task timing for waveform output: %s', self.task )
     if rootlog.getEffectiveLevel() <= (DEBUG-1):
       log(DEBUG-1,'self.task.configure_timing_sample_clock('
         'source'           '=%s,'
@@ -213,7 +213,7 @@ class Task(Base):
       samples_per_channel = len(transitions) )
     # 2.  Triggering
     if self.config['trigger']['enable']['value']:
-      debug( 'configuring task trigger for waveform output: %s', self.task )
+      debug( 'nidaqmx: configuring task trigger for waveform output: %s', self.task )
       if rootlog.getEffectiveLevel() <= (DEBUG-1):
         log(DEBUG-1, 'self.task.configure_trigger_digital_edge_start('
           'source=%s,edge=%s)',
@@ -224,7 +224,7 @@ class Task(Base):
         source=self.config['trigger']['source']['value'],
         edge=self.config['trigger']['edge']['value'] )
     else:
-      debug('disabling trigger start for task: %s', self.task)
+      debug('nidaqmx: disabling trigger start for task: %s', self.task)
       self.task.configure_trigger_disable_start()
     # 3.  Data write
     # 3a.  Get data array
@@ -284,8 +284,8 @@ class Task(Base):
     scans = [ scans[t]  for t in transitions ]
 
     # 3b.  Send data to hardware
-    debug( 'writing waveform data for channels: %s', chlist )
-    debug( 'NIDAQmx len(transitions/in) = %s, len(scans/out) = %s',
+    debug( 'nidaqmx: writing waveform data for channels: %s', chlist )
+    debug( 'nidaqmx: NIDAQmx len(transitions/in) = %s, len(scans/out) = %s',
            len(transitions), len(scans) )
     if rootlog.getEffectiveLevel() <= (DEBUG-1):
       log(DEBUG-1, 'NIDAQmx task.write(<data>, False, group_by_scan_number)' )

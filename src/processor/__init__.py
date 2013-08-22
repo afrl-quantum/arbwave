@@ -40,6 +40,11 @@ class Processor:
     self.end_condition = threading.Condition( self.lock )
 
 
+  def __del__(self):
+    try: exec '__del__()' in self.Globals
+    except: pass
+
+
   def get_globals(self):
     return self.Globals
 

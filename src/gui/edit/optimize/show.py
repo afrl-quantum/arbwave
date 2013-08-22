@@ -12,7 +12,7 @@ from matplotlib.backends.backend_gtkagg import \
 
 from matplotlib.mlab import find
 
-from ..helpers import GTVC
+from ..helpers import GTVC, GCRT
 from ...packing import hpack, vpack, Args as PArgs
 from ...storage.gtk_tools import get_file, NoFileError
 from ....tools.gui_callbacks import do_gui_operation
@@ -198,11 +198,12 @@ class Show(gtk.Dialog):
     self.params = gtk.ListStore( *([str]*(len(columns))) )
     self.view.set_model( self.params )
     for i in xrange(len(columns)):
-      self.view.append_column(GTVC(columns[i], gtk.CellRendererText(), text=i))
+      self.view.append_column(GTVC(columns[i], GCRT(), text=i))
 
 
   def add(self, *stuff):
     def do_append():
+      if not self.is_drawable(): return
       self.params.append( stuff )
       self.new_data = True
     do_gui_operation( do_append )

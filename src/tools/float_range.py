@@ -61,6 +61,16 @@ class float_range(object):
     return iter()
 
 
+def xarange(i, f=None, step=1):
+  """Something akin to xrange, except that for floats and syntax of arange"""
+  if f is None:
+    f = i
+    i = 0
+  while i < f:
+    yield i
+    i += step
+
+
 if __name__ == '__main__':
   fr = float_range(0.1,5.1)
   assert min(fr) == 0.1, 'Min(float_range) failed'

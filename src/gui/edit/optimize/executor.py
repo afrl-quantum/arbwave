@@ -14,7 +14,7 @@ from ... import stores
 from ...packing import *
 from .. import generic
 from .. import helpers
-from ..helpers import GTVC
+from ..helpers import GTVC, GCRT
 from ..spreadsheet import keys
 
 from show import Show
@@ -186,11 +186,11 @@ class OptimView(gtk.Dialog):
     V.connect('drag-motion', drag_motion)
     V.connect('key-press-event', self.view_keypress_cb, V, Parameters.DEFAULT)
     R = {
-      'name'  : gtk.CellRendererText(),
-      'value' : gtk.CellRendererText(),
-      'min'   : gtk.CellRendererText(),
-      'max'   : gtk.CellRendererText(),
-      'scale' : gtk.CellRendererText(),
+      'name'  : GCRT(),
+      'value' : GCRT(),
+      'min'   : GCRT(),
+      'max'   : GCRT(),
+      'scale' : GCRT(),
       'enable'  : gtk.CellRendererToggle(),
     }
     R['name'].set_property( 'editable', True )
@@ -241,7 +241,7 @@ class OptimView(gtk.Dialog):
     V.connect('drag-motion', drag_motion, self.window)
     V.connect('key-press-event', self.view_keypress_cb, V, Constraints.DEFAULT)
     R = {
-      'constraint' : gtk.CellRendererText(),
+      'constraint' : GCRT(),
       'enable'  : gtk.CellRendererToggle(),
     }
     R['constraint'].set_property( 'editable', True )
