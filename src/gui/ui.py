@@ -4,6 +4,7 @@ Arbitrary waveform generator for digital and analog signals.
 '''
 
 import gtk, gobject
+import logging
 
 import sys
 import traceback
@@ -106,7 +107,7 @@ def finished(ui, *args, **kwargs):
   """
   backend.unload_all()
   gtk.main_quit()
-  print 'trying to del the ui: ', ui
+  logging.debug( 'trying to del the ui: %s', repr(ui) )
   ui.__del__() # not sure why "del ui" below is not working!
   del ui
 
@@ -185,7 +186,7 @@ class ArbWave(gtk.Window):
     try:
       mergeid = merge.add_ui_from_string(ui_info)
     except gobject.GError, msg:
-      print 'building menus failed: {msg}'.format(msg=msg)
+      logging.critical( 'building menus failed: %s', str(msg) )
 
     chlabel = gtk.Label('Channels')
     chlabel.set_property('angle', 90)
@@ -277,7 +278,7 @@ class ArbWave(gtk.Window):
 
   def __del__(self):
     # explicitly delete the processor
-    print 'trying to del the proc.'
+    logging.debug( 'trying to del the proc.' )
     self.processor.__del__() # not sure why "del ui" below is not working!
     del self.processor
 
