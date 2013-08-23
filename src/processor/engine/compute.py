@@ -110,7 +110,10 @@ def set_units_and_scaling(chname, ci, chan, globals):
 
 def evalIfNeeded( s, G, L=dict() ):
   if type(s) is str:
-    return eval( s, G, L )
+    try:
+      return eval( s, G, L )
+    except Exception, e:
+      raise RuntimeError('Could not evaluate python text: "{}"\n{}'.format(s,e))
   else:
     return s
 
