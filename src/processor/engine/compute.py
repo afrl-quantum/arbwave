@@ -10,6 +10,7 @@ from ...tools.cmp import cmpeps
 import physical
 from physical import unit
 from math import ceil
+from ...tools.scaling import calculate as calculate_scaling
 
 class OverlapError(Exception):
   pass
@@ -63,14 +64,8 @@ class ClampedInterp1d:
 
 def make_univariate_spline(scaling,order=1,smooth=0, globals=globals()):
   # we have to first evaluate everything, build an array, and sort
-  L = dict()
-  for x,y in scaling:
-    if x and y:
-      yval = eval(y,globals)
-      assert 'units' not in dir(yval), 'expected unitless scaler'
-      L[eval(x,globals)] = yval
+  L = calculate_scaling(scaling, globals).items()
   # make sure that the order of data is correct
-  L = L.items()
   L.sort(key=lambda v: v[0]) # sort by x
   L = np.array(L)
   mn, mx   = L[0,0], L[-1,0]

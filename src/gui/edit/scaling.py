@@ -282,14 +282,8 @@ class Editor(gtk.Dialog):
 
     self.units.activate()
 
-    D = dict()
-    for x,y in self.chan[self.channels.SCALING]:
-      if x and y:
-        yval = eval(y,self.get_globals())
-        assert 'units' not in dir(yval), 'expected unitless scaler'
-        D[eval(x,self.get_globals())] = yval
+    D = calculate(self.chan[self.channels.SCALING], self.get_globals()).items()
     # make sure that the order of data is correct
-    D = D.items()
     D.sort(key=lambda v: v[0]) # sort by x
     D = np.array(D)
 
@@ -342,6 +336,33 @@ class ListUndo:
     else:             self.delete()
 
 
+
+def calculate( scaling, globals ):
+  D = dict()
+  for x,y in scaling:
+    if x and y:
+      yval = eval(y,globals)
+      xval = eval(x,globals)
+
+      try: # assume iterable first
+        assert len(xval) == len(yval), \
+          'Sequence entries X and Y must have same length'
+        XVALS = xval
+        YVALS = yval
+      except TypeError: #make these into an array
+        XVALS = [xval]
+        YVALS = [yval]
+
+      for xi, yi in zip( XVALS, YVALS ):
+        assert 'units' not in dir(xi), \
+          'expected unitless scaler in voltage entries'
+        assert 'units' not in dir(yi), \
+          'expected unitless scaler in output entries'
+        D[xi] = yi
+  return D
+
+
+
 def edit(channels, title='Edit Scaling', parent=None, globals=globals()):
   ed = Editor( channels=channels,
                title=title, parent=parent,
@@ -355,10 +376,22 @@ def edit(channels, title='Edit Scaling', parent=None, globals=globals()):
 
 def main(argv):
   Global_script = \
-  "import physical\n" \
-  "from physical import unit\n" \
-  "from physical.unit import *\n" \
-  "from physical.constant import *\n"
+"""
+import physical
+from physical import unit
+from physical.unit import *
+from physical.constant import *
+import numpy as np
+
+data = np.array([
+  [0, 0],
+  [1, 1.1],
+  [2, 1.2],
+  [3, 1.3],
+  [4, 1.4],
+])
+"""
+
   Globals = dict()
   exec Global_script in Globals
 

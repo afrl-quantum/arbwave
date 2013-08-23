@@ -11,6 +11,7 @@ import default
 import messages as msg
 from ..tools.path import collect_prefix
 from ..tools.signal_graphs import shortest_paths
+from ..tools.scaling import calculate as calculate_scaling
 
 def get_range( scaling, globals, **kwargs ):
   """
@@ -21,7 +22,7 @@ def get_range( scaling, globals, **kwargs ):
   if not scaling:
     return None
   # note:  we ignore lines with either empty x _OR_ y values
-  vals = [ eval(si[0], globals)  for si in scaling if si[0] and si[1] ]
+  vals = calculate_scaling(scaling, globals).keys()
   return dict(min=min(vals), max=max(vals), **kwargs)
 
 
