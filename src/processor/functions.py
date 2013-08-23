@@ -36,6 +36,9 @@ class step_iter:
 ###################
 
 
+def getcoeff( val ):
+  try: return val.coeff
+  except: return val
 
 class SinPulse:
   """
@@ -85,7 +88,7 @@ class SinPulse:
     if self.average is None:
       self.average = _from
     elif _from is not None \
-         and abs(self.average - _from).coeff <= 10*machine_arch.eps:
+         and getcoeff(abs(self.average - _from)) <= 10*machine_arch.eps:
       # the user specified the value that the channel is already at
       self.skip_first = True
     self.t = t
@@ -158,7 +161,7 @@ class Ramp:
     if self._from is None:
       self._from = _from
     elif _from is not None \
-         and abs(self._from - _from).coeff <= 10*machine_arch.eps:
+         and getcoeff(abs(self._from - _from)) <= 10*machine_arch.eps:
       self.skip_first = True
     self.t = t
     self.min_period = min_period
