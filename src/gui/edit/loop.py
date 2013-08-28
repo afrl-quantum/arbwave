@@ -14,7 +14,7 @@ from ...tools.print_units import M
 import helpers
 from helpers import GTVC, GCRT
 
-from optimize.show import Show
+import optimize.show as viewers
 from spreadsheet import keys
 
 nan = float('nan')
@@ -206,7 +206,7 @@ class Executor:
     V = self.variables.items()
     V.sort( key = lambda v: v[1]['order'] )
 
-    self.show = Show(
+    self.show = viewers.db.get(
       columns=([ vi[0] for vi in V] \
               + ['Merit'] + self.runnable.extra_data_labels()),
       title='Loop Parameters/Results',

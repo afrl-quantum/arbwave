@@ -142,6 +142,8 @@ class Show(gtk.Dialog):
     self.x_selection, self.custom_x = mk_xy_combo(True)
     self.y_selection, self.custom_y = mk_xy_combo(False)
     set_predef( self.x_selection, self.custom_x, True)
+    self.reuse = gtk.CheckButton('Re-use')
+    self.reuse.set_active(True)
     self.line_style = gtk.Entry()
     self.line_style.set_text( self.DEFAULT_LINE_STYLE )
     self.line_style.connect('activate', self.update_plot)
@@ -156,13 +158,15 @@ class Show(gtk.Dialog):
     self.line_selection = { l:mkCheckBox(l)  for l in ComputeStats.types }
 
     col_sel_box = hpack(
-        vpack(
-          hpack(PArgs(gtk.Label('X'),False,False,0), self.x_selection),
-          self.custom_x ),
-        vpack(
-          hpack(PArgs(gtk.Label('Y'),False,False,0), self.y_selection),
-          self.custom_y ),
-        PArgs(gtk.Label('Style'),False,False,0), self.line_style,
+      vpack(
+        hpack(PArgs(gtk.Label('X'),False,False,0), self.x_selection),
+        self.custom_x ),
+      vpack(
+        hpack(PArgs(gtk.Label('Y'),False,False,0), self.y_selection),
+        self.custom_y ),
+      vpack(
+        self.reuse,
+        hpack(PArgs(gtk.Label('Style'),False,False,0), self.line_style) ),
     )
     col_sel_box.show_all()
     self.vbox.pack_start( col_sel_box, False, False, 0 )
@@ -413,6 +417,28 @@ class Show(gtk.Dialog):
     F.write( Show.COLPREFIX + '\t'.join([i for i in Y(self.columns)]) + '\n' )
     np.savetxt( F, self.get_all_data() )
     F.close()
+
+
+class ViewerDB:
+  def __init__(self):
+    self.db = dict()
+
+  def get(self, columns, title=None, parent=None, globals=globals()):
+    key = ( tuple(columns), title, parent, id(globals) )
+    if key in self.db:
+      s = self.db[key]
+      if s.is_drawable() and s.reuse.get_active():
+        return s
+      else:
+        s.reuse.set_active(False)
+        s.reuse.set_sensitive(False)
+        self.db.pop(key)
+
+    s = Show(columns=columns, title=title, parent=parent, globals=globals)
+    self.db[key] = s
+    return s
+
+db = ViewerDB()
 
 
 def init_plot(win):
