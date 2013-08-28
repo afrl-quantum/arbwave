@@ -1,7 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import traceback
 import gtk, gobject
-import logging
+import logging, re
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -110,16 +111,37 @@ class Show(gtk.Dialog):
       print 'building menus failed: {msg}'.format(msg=msg)
     self.vbox.pack_start( merge.get_widget('/MenuBar'), False, False, 0 )
 
-    def mk_simple_combo(text_column=0,model=None):
+    def set_predef(combo, entry, is_xaxis):
+      i = combo.get_active()
+      if i >= 1:
+        data_text = 'data[:,{}]'.format(i-1)
+        entry.set_text(data_text)
+      else:
+        data_text = entry.get_text()
+        if is_xaxis and data_text == '':
+          data_text = 'xrange( len( y_data ) )'
+          entry.set_text(data_text)
+      self.update_plot()
+
+    def set_custom(entry, combo, is_xaxis):
+      combo.set_active(0)
+      if is_xaxis and entry.get_text() == '':
+        entry.set_text( 'xrange( len( y_data ) )' )
+      self.update_plot()
+
+    def mk_xy_combo(is_xaxis, text_column=0,model=None):
       combo = gtk.ComboBox(model)
       cell = gtk.CellRendererText()
       combo.pack_start(cell, True)
       combo.add_attribute(cell, 'text', text_column)
-      combo.connect('changed', self.update_plot)
-      return combo
+      e = gtk.Entry()
+      combo.connect('changed', set_predef, e, is_xaxis)
+      e.connect('activate', set_custom, combo, is_xaxis)
+      return combo, e
 
-    self.x_selection = mk_simple_combo()
-    self.y_selection = mk_simple_combo()
+    self.x_selection, self.custom_x = mk_xy_combo(True)
+    self.y_selection, self.custom_y = mk_xy_combo(False)
+    set_predef( self.x_selection, self.custom_x, True)
     self.line_style = gtk.Entry()
     self.line_style.set_text( self.DEFAULT_LINE_STYLE )
     self.line_style.connect('activate', self.update_plot)
@@ -134,8 +156,12 @@ class Show(gtk.Dialog):
     self.line_selection = { l:mkCheckBox(l)  for l in ComputeStats.types }
 
     col_sel_box = hpack(
-        PArgs(gtk.Label('X'),False,False,0), self.x_selection,
-        PArgs(gtk.Label('Y'),False,False,0), self.y_selection,
+        vpack(
+          hpack(PArgs(gtk.Label('X'),False,False,0), self.x_selection),
+          self.custom_x ),
+        vpack(
+          hpack(PArgs(gtk.Label('Y'),False,False,0), self.y_selection),
+          self.custom_y ),
         PArgs(gtk.Label('Style'),False,False,0), self.line_style,
     )
     col_sel_box.show_all()
@@ -219,38 +245,48 @@ class Show(gtk.Dialog):
     try:
       self.new_data = False
 
-      def get_col( combo ):
+      def get_col( combo, entry ):
         i = combo.get_active()
+        data_text = entry.get_text()
         if i >= 1:
-          return i-1, self.columns[i][0]
+          return data_text, self.columns[i][0]
         else:
-          return -1, ''
+          label = entry.get_text()
+          pat = 'data\s*\[\s*:\s*,\s*{}\s*]'
+          for i in re.findall(pat.format('([0-9]*)'), label):
+            label = re.sub(pat.format(i), self.columns[int(i)+1][0], label)
+          # now we'll attempt to clean up the label a bit
+          return data_text, label
 
-      xi, x_label = get_col( self.x_selection )
-      yi, y_label = get_col( self.y_selection )
+      xtxt, x_label = get_col( self.x_selection, self.custom_x )
+      ytxt, y_label = get_col( self.y_selection, self.custom_y )
       line_style = self.line_style.get_text()
       if not line_style:
         line_style = self.DEFAULT_LINE_STYLE
       line_style = [ i.strip() for i in line_style.split(',') ]
 
-      if yi == -1:
+      if ytxt == '':
         self.axes.clear()
         self.canvas.draw()
         return True # nothing to plot, clear plot and return
 
       data = self.get_all_data()
+      if len(data) == 0:
+        return True
+
+      L = dict( data=data )
+      y_data = eval( ytxt, self.Globals, L )
+      L['y_data'] = y_data
+      data = zip( eval( xtxt, self.Globals, L ), y_data )
       # reorder the data with respect to x-axis
-      if data.shape[1] == 1 or xi == -1:
-        # we'll just prepend an index column
-        data = np.append(np.transpose([xrange(0,data.shape[0])]), data, axis=1)
-        xi = 0
-        yi += 1
-      else:
-        data.view(','.join(['f8']*data.shape[1])).sort(order='f'+str(xi),axis=0)
+      data.sort( key = lambda i : i[0] )
+      x_data = np.array([ i[0] for i in data ])
+      y_data = np.array([ i[1] for i in data ])
+
       self.axes.clear()
 
-      good = find( np.isfinite(data[:,xi]) )
-      stats = ComputeStats(data[good,xi], data[good,yi])
+      good = np.argwhere( np.isfinite(y_data) )
+      stats = ComputeStats(x_data[good].flatten(), y_data[good].flatten())
       i = -1
       for l,cb in self.line_selection.items():
         i += 1
@@ -264,6 +300,7 @@ class Show(gtk.Dialog):
       self.axes.set_ylabel(y_label)
       self.canvas.draw()
     except Exception, e:
+      traceback.print_exc()
       logging.debug( 'dataviewer: %s', e )
     return True
 
