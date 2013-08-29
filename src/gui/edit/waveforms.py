@@ -220,7 +220,7 @@ class Waveforms:
     self.eval_cache = dict()
 
 
-  def add_waveform_select_menu(self, popup, on_row):
+  def add_waveform_select_menu(self, popup, not_group):
     WF_LABEL = 'Waveforms'
     # clean up from last time if necessary
     if popup.get_children()[-1].get_label() == WF_LABEL:
@@ -268,7 +268,7 @@ class Waveforms:
     popup.append( gtk.SeparatorMenuItem() )
     popup.append( gtk.SeparatorMenuItem() )
     popup.append( wm )
-    if on_row:
+    if not_group:
       popup.show_all()
     else:
       for c in popup.get_children()[:-1]:

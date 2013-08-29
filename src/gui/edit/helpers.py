@@ -163,11 +163,13 @@ def popup_button_press_handler( treeview, event, do_popup, ui_manager, popup,
     if always_show or pthinfo:
       show = always_show
 
+      row_popup = False
       if pthinfo:
         path, col, cellx, celly = pthinfo
         model = treeview.get_model()
 
-        if do_popup( model, path ):
+        row_popup = do_popup( model, path )
+        if row_popup:
           show = True
           treeview.grab_focus()
           treeview.set_cursor( path, col, 0)
@@ -183,6 +185,6 @@ def popup_button_press_handler( treeview, event, do_popup, ui_manager, popup,
 
       if show:
         if callable(modify_popup):
-          modify_popup(popup, pthinfo is not None)
+          modify_popup(popup, row_popup)
         popup.popup( None, None, None, event.button, time )
     return True
