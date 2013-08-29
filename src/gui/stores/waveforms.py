@@ -31,6 +31,16 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
     TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
+  def __del__(self):
+    TreeModelDispatcher.__del__(self)
+
+
+  def __str__(self):
+    return 'Waveform/' + str(id(self))
+
+  def __repr__(self):
+    return str(self)
+
   def list_recursive(self, iter, store_path):
     L = list()
     for i in iter:

@@ -38,6 +38,8 @@ def set_item( cell, path, new_item, model, ITEM, add_undo=None,
       duplicate names before allowing the edit.
   """
   new_item = type(new_item)
+  if callable(model): # allow for a callback to be used to get model
+    model = model()
   if unique:
     i = model.get_iter_first()
     for i in iter(model):
@@ -59,6 +61,8 @@ def toggle_item( cell, path, model, ITEM, add_undo=None ):
   """
   Sets the toggled state on the toggle button to true or false.
   """
+  if callable(model): # allow for a callback to be used to get model
+    model = model()
   if add_undo is not None:
     add_undo( Undo(model[path][ITEM], not model[path][ITEM], model, path, ITEM) )
   model[path][ITEM] ^= True
@@ -148,28 +152,37 @@ def prep_combobox_for_tree(cbox,select_intermediate=False):
 
 popup_handlers = dict()
 
-def popup_button_press_handler(treeview, event, doedit, ui_manager, popup, actions):
+def popup_button_press_handler( treeview, event, do_popup, ui_manager, popup,
+                                actions, modify_popup=None, always_show=False):
   global popup_handlers
   if event.button == 3:
     x = int(event.x)
     y = int(event.y)
     time = event.time
     pthinfo = treeview.get_path_at_pos(x, y)
-    if pthinfo is not None:
-      path, col, cellx, celly = pthinfo
-      model = treeview.get_model()
-      if doedit( model, path ):
-        treeview.grab_focus()
-        treeview.set_cursor( path, col, 0)
+    if always_show or pthinfo:
+      show = always_show
 
-        for a in actions:
-          act = ui_manager.get_action(a[0])
-          if a[0] in popup_handlers and popup_handlers[a[0]]:
-            act.disconnect( popup_handlers[a[0]] )
-          if a[1] == toggle_item:
-            act.set_active( model[path][a[2]] )
-          popup_handlers[a[0]] = \
-            act.connect('activate', a[1], path, model, *a[2:])
+      if pthinfo:
+        path, col, cellx, celly = pthinfo
+        model = treeview.get_model()
 
+        if do_popup( model, path ):
+          show = True
+          treeview.grab_focus()
+          treeview.set_cursor( path, col, 0)
+
+          for a in actions:
+            act = ui_manager.get_action(a[0])
+            if a[0] in popup_handlers and popup_handlers[a[0]]:
+              act.disconnect( popup_handlers[a[0]] )
+            if a[1] == toggle_item:
+              act.set_active( model[path][a[2]] )
+            popup_handlers[a[0]] = \
+              act.connect('activate', a[1], path, model, *a[2:])
+
+      if show:
+        if callable(modify_popup):
+          modify_popup(popup, pthinfo is not None)
         popup.popup( None, None, None, event.button, time )
     return True

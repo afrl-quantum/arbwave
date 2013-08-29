@@ -1,9 +1,12 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, gobject
+import gtk, gobject, logging
 
 from helpers import *
 from script import edit as do_script_edit
 import threading
+import waveformsset
+
+from ...tools.gui_callbacks import do_gui_operation
 
 ui_info = \
 """<ui>
@@ -52,6 +55,7 @@ def mkUIManager():
   return merge
 
 def is_group( model, path ):
+  # the '| 0x2' is so that we can get the waveform selector shown in any case
   return model.iter_has_child( model.get_iter(path) )
 
 def load_channels_combobox( cell, editable, path, model, channels ):
@@ -59,6 +63,8 @@ def load_channels_combobox( cell, editable, path, model, channels ):
   editable.set_property("model", chls)
   chls.append(('',)) # add a blank line to allow selection of 'empty' channel
 
+  if callable(model): # allow for a callback to be used to get model
+    model = model()
   # ensure that group-level items edit text and do not use drop down
   if not( is_group(model, path) and type(editable.child) is gtk.Entry ):
     editable.child.set_property('editable', False)
@@ -67,6 +73,8 @@ def load_channels_combobox( cell, editable, path, model, channels ):
 
 def allow_value_edit( cell, editable, path, model ):
   """Ensure that group-level items cannot edit value"""
+  if callable(model): # allow for a callback to be used to get model
+    model = model()
   assert type(editable) is gtk.Entry, 'value type is not gtk.Entry(?)!'
   if is_group( model, path ):
     editable.set_property('editable', False)
@@ -83,10 +91,12 @@ def drag_motion(w, ctx, x, y, time, parent):
   if mask & gtk.gdk.CONTROL_MASK:
     ctx.drag_status( gtk.gdk.ACTION_COPY, time )
 
-def end_drag(w, ctx, parent, waveforms):
+def end_drag(w, ctx, parent, wf):
   # unpause updates and force an update based on waveform changes
+  if callable(wf):
+    wf = wf()
   parent.unpause()
-  parent.update(waveforms)
+  parent.update(wf)
 
 
 def gather_paths(channels, wvfms, i):
@@ -128,12 +138,15 @@ class Waveforms:
   def __init__(self, waveforms, channels, parent, add_undo=None):
     self.add_undo = add_undo
     self.waveforms = waveforms
+    self.waveforms.connect_wf_change( self.set_waveform )
     self.parent = parent
 
-    V = self.view = gtk.TreeView( waveforms )
+    waveform = self.get_waveform()
+
+    V = self.view = gtk.TreeView( waveform )
     V.set_reorderable(True)
     V.connect('drag-begin', begin_drag, parent)
-    V.connect('drag-end', end_drag, parent, waveforms)
+    V.connect('drag-end', end_drag, parent, self.get_waveform)
     V.connect('drag-motion', drag_motion, parent)
     V.get_selection().connect('changed',highlight,self.parent.plotter,channels)
     V.connect('key-press-event', clear_selection)
@@ -150,36 +163,36 @@ class Waveforms:
     R['channel'].set_property('text-column', 0)
     R['channel'].set_property('has-entry', True)
     R['channel'].connect( 'edited', set_item,
-                          waveforms, waveforms.CHANNEL, self.add_undo )
+                          self.get_waveform, waveform.CHANNEL, self.add_undo )
     R['channel'].connect( 'editing-started', load_channels_combobox,
-                          waveforms, channels )
+                          self.get_waveform, channels )
 
     R['time'].set_property( 'editable', True )
     R['time'].connect( 'edited', set_item,
-                       waveforms, waveforms.TIME, self.add_undo )
+                       self.get_waveform, waveform.TIME, self.add_undo )
 
     R['duration'].set_property( 'editable', True )
     R['duration'].connect( 'edited', set_item,
-                           waveforms, waveforms.DURATION, self.add_undo )
+                           self.get_waveform, waveform.DURATION, self.add_undo )
 
     R['value'].set_property( 'editable', True )
     R['value'].connect( 'edited', set_item,
-                        waveforms, waveforms.VALUE, self.add_undo )
-    R['value'].connect( 'editing-started', allow_value_edit, waveforms )
+                        self.get_waveform, waveform.VALUE, self.add_undo )
+    R['value'].connect( 'editing-started', allow_value_edit, self.get_waveform)
 
     R['enable'].set_property( 'activatable', True )
     R['enable'].connect( 'toggled', toggle_item,
-                         waveforms, waveforms.ENABLE, self.add_undo )
+                         self.get_waveform, waveform.ENABLE, self.add_undo )
 
     C = {
-      'channel' : GTVC( 'Channel', R['channel'], text=waveforms.CHANNEL ),
-      'time'    : GTVC( 'Time',    R['time'],    text=waveforms.TIME ),
-      'duration': GTVC( 'Duration',R['duration'],text=waveforms.DURATION ),
-      'value'   : GTVC( 'Value',   R['value'],   text=waveforms.VALUE ),
+      'channel' : GTVC( 'Channel', R['channel'], text=waveform.CHANNEL ),
+      'time'    : GTVC( 'Time',    R['time'],    text=waveform.TIME ),
+      'duration': GTVC( 'Duration',R['duration'],text=waveform.DURATION ),
+      'value'   : GTVC( 'Value',   R['value'],   text=waveform.VALUE ),
       'enable'  : GTVC( 'Enabled', R['enable'] ),
     }
 
-    C['enable'].add_attribute( R['enable'], 'active', waveforms.ENABLE )
+    C['enable'].add_attribute( R['enable'], 'active', waveform.ENABLE )
 
     V.set_property( 'hover_selection', True )
     V.set_property( 'has_tooltip', True )
@@ -197,12 +210,99 @@ class Waveforms:
       is_group,
       ui_manager,
       ui_manager.get_widget('/WFG:Edit'),
-      [('/WFG:Edit/WFG:Async', toggle_item,  waveforms.ASYNC,  self.add_undo),
-       ('/WFG:Edit/WFG:Script', edit_script, waveforms.SCRIPT, self.add_undo)],
+      [('/WFG:Edit/WFG:Async', toggle_item,  waveform.ASYNC,  self.add_undo),
+       ('/WFG:Edit/WFG:Script', edit_script, waveform.SCRIPT, self.add_undo)],
+      self.add_waveform_select_menu,
+      True,
     )
 
     self.eval_cache_lock = threading.Lock()
     self.eval_cache = dict()
+
+
+  def add_waveform_select_menu(self, popup, on_row):
+    WF_LABEL = 'Waveforms'
+    # clean up from last time if necessary
+    if popup.get_children()[-1].get_label() == WF_LABEL:
+      m = popup.get_children()[-1]
+      sep0 = popup.get_children()[-2]
+      sep1 = popup.get_children()[-3]
+      popup.remove(m)
+      popup.remove(sep0)
+      popup.remove(sep1)
+      sub = m.get_submenu()
+      for c in sub.get_children():
+        sub.remove( c )
+        del c
+      m.remove_submenu()
+      del sub, m, sep0, sep1
+
+    header = gtk.MenuItem('Select Waveform:')
+    header.set_sensitive(False)
+
+    submenu = gtk.Menu()
+    submenu.append(header)
+    submenu.append( gtk.SeparatorMenuItem() )
+
+    # now add all the known waveforms
+    r = None
+    curr = self.waveforms.get_current()
+    for l in self.waveforms.wf_dict().keys():
+      r = gtk.RadioMenuItem(group=r, label=l)
+      if l == curr:
+        r.activate()
+      r.connect('toggled', self.select_waveform)
+      submenu.append( r )
+
+    # now add pointer to editor
+    submenu.append( gtk.SeparatorMenuItem() )
+    submenu.append( gtk.SeparatorMenuItem() )
+    me = gtk.MenuItem('Edit')
+    me.connect('activate', self.edit_waveform_list)
+    submenu.append( me )
+
+    # add to main menu
+    wm = gtk.MenuItem(WF_LABEL)
+    wm.set_submenu(submenu)
+    wm.show_all()
+    popup.append( gtk.SeparatorMenuItem() )
+    popup.append( gtk.SeparatorMenuItem() )
+    popup.append( wm )
+    if on_row:
+      popup.show_all()
+    else:
+      for c in popup.get_children()[:-1]:
+        c.hide()
+
+
+  def select_waveform(self, item):
+    wf = item.get_label()
+    self.parent.pause()
+    if wf != self.waveforms.get_current():
+      self.waveforms.set_current(wf)
+      # re-enable updates and directly call for an update
+      self.parent.unpause()
+      self.parent.update(self.get_waveform())
+    self.parent.unpause()
+
+
+  def edit_waveform_list(self,*args):
+    D = waveformsset.Dialog(self.waveforms, parent=self.parent)
+    D.show()
+
+
+  def get_waveform(self):
+    return self.waveforms.get_wf()
+
+
+  def set_waveform(self, label):
+    WFD = self.waveforms.wf_dict()
+    assert label in WFD, 'Cannot select unknown waveform!'
+    def set():
+      logging.debug('reset waveform_editor.view.model..........')
+      self.view.set_model( WFD[label] )
+      logging.debug('reset waveform_editor.view.model finished.')
+    do_gui_operation( set )
 
 
   def set_eval_cache(self, cache):
@@ -221,12 +321,12 @@ class Waveforms:
 
   def query_tooltip(self, widget, x, y, keyboard_tip, tooltip):
     try:
-      waveforms, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
+      waveform, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
       markup = ''
       sep = ''
-      script, async = waveforms.get(iter, waveforms.SCRIPT, waveforms.ASYNC)
+      script, async = waveform.get(iter, waveform.SCRIPT, waveform.ASYNC)
 
-      if is_group( waveforms, path ): # group-only information
+      if is_group( waveform, path ): # group-only information
         if async is not None:
           desc = {
             True : 'will <u><b>not</b></u>',
@@ -267,29 +367,31 @@ class Waveforms:
 
   def insert_waveform(self):
     self.parent.pause()
+    waveform = self.get_waveform()
     i = self.view.get_selection().get_selected()[1]
     if not i: # append new element to last group
-      n = self.waveforms.append( None, self.waveforms.default_element )
+      n = waveform.append( None, waveform.default_element )
     else: # insert into group before selected item
-      iter = self.waveforms[i].iter
-      p = self.waveforms[i].parent
+      iter = waveform[i].iter
+      p = waveform[i].parent
       if p: pi = p.iter
       else: pi = None
-      n = self.waveforms.insert_before(pi, iter, self.waveforms.default_element)
-    self.view.expand_to_path( self.waveforms[n].path )
+      n = waveform.insert_before(pi, iter, waveform.default_element)
+    self.view.expand_to_path( waveform[n].path )
 
-    self.add_undo( TreeUndo(n, self.waveforms, self.view) )
+    self.add_undo( TreeUndo(n, waveform, self.view) )
     self.parent.unpause()
-    self.parent.update(self.waveforms)
+    self.parent.update(waveform)
 
 
 
   def delete_row(self):
+    waveform = self.get_waveform()
     i = self.view.get_selection().get_selected()[1]
     if i:
-      n = self.waveforms.iter_next( i )
-      self.add_undo( TreeUndo(i, self.waveforms, self.view, deletion=True) )
-      self.waveforms.remove( i )
+      n = waveform.iter_next( i )
+      self.add_undo( TreeUndo(i, waveform, self.view, deletion=True) )
+      waveform.remove( i )
       if n:
         self.view.get_selection().select_iter( n )
 

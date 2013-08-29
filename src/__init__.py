@@ -49,7 +49,9 @@ def main():
     assert os.path.isfile( args.filename ), 'expected configuration filename'
     def load_file():
       try:
+        logging.debug('Trying to load config file at startup...')
         gui.storage.load_file( args.filename, prog, get_globals() )
+        logging.debug('Loaded config file at startup.')
       except Exception, e:
         do_gui_operation( prog.notify.show, str(e) )
 

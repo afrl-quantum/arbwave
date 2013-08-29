@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import gtk
-import os, sys, traceback
+import os, sys, traceback, logging
 
 from var_tools import *
 
@@ -87,14 +87,20 @@ class LoadException(Exception):
 def load_file( filename, stor, globals=globals(), **locals ):
   F = open( filename )
   try:
+    logging.debug('interpreting python in config file %s...', filename)
     V = readvars( F, globals, **locals )
+    logging.debug('finished interpreting python in config file %s.', filename)
   except:
     raise LoadException( *sys.exc_info() )
   finally:
     F.close()
+  logging.debug('stor.clearvars()...')
   stor.clearvars()
+  logging.debug('stor.clearvars() finished.')
   stor.set_config_file( filename )
+  logging.debug('stor.setvars()...')
   stor.setvars( V )
+  logging.debug('stor.setvars() finished.')
   stor.set_file_saved()
 
 

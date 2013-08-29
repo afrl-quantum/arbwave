@@ -9,7 +9,7 @@ def fixargs( args ):
   except:
     return [args]
 
-class TreeModelDispatcher:
+class TreeModelDispatcher(object):
   """
   Simple signal aggregation for any changes to a single 'changed' signal.
   """
@@ -19,6 +19,7 @@ class TreeModelDispatcher:
                 row_deleted=None,
                 row_inserted=None,
                 rows_reordered=None ):
+    self.cb = list()
     self.Model = Model
     if changed:
       self.connect( 'changed', *fixargs(changed) )
@@ -31,6 +32,10 @@ class TreeModelDispatcher:
     if rows_reordered:
       self.connect( 'rows-reordered', *fixargs(rows_reordered) )
 
+  def __del__(self):
+    for cb in self.cb:
+      self.Model.disconnect(cb)
+
   def connect(self, signal, callback, *args, **kwargs):
     if signal == 'changed':
       for i in [
@@ -39,9 +44,11 @@ class TreeModelDispatcher:
         ('row-inserted',   self.row_inserted_cb  ),
         ('rows-reordered', self.rows_reordered_cb),
       ]:
-        self.Model.connect(self, i[0],i[1], callback, *args, **kwargs )
+        self.cb.append(
+          self.Model.connect(self, i[0],i[1], callback, *args, **kwargs ) )
     else:
-      self.Model.connect(self, signal, callback, *args, **kwargs)
+      self.cb.append(
+        self.Model.connect(self, signal, callback, *args, **kwargs) )
 
   def row_changed_cb(self, model, path, iter,
                   callback, *args, **kwargs):

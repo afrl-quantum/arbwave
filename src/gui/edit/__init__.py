@@ -2,4 +2,5 @@
 import signals, script, helpers
 from channels import Channels
 from waveforms import Waveforms
+import waveformsset
 from generic import Generic

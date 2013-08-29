@@ -141,6 +141,9 @@ class WaveformEvalulator:
     # initialize the channel info (min period, ...):
     min_periods = dict()
     for chname, chan in self.channels.items():
+      if not ( chname and chan['enable'] ):
+        continue
+
       ci = self.channel_info[chname]
       # drop the "Analog/" "Digital/" prefix to lookup actual device
       chan_dev = self.do_ao_channels[ chan['device'].partition('/')[-1] ]
@@ -183,8 +186,14 @@ class WaveformEvalulator:
         self.finite_mode_end_clocks_required.add( ci['clock'] )
 
     # now we assign the required period to each device that uses each clock
-    for ci in self.channel_info.values():
+    rem_list = list()
+    for chname, ci in self.channel_info.items():
+      if ci['clock'] is None:
+        rem_list.append( chname )
+        continue
       ci['min_period'] = min_periods[ ci['clock'] ]
+    for i in rem_list:
+      self.channel_info.pop(i)
 
 
   def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict()):

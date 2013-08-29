@@ -73,6 +73,7 @@ ui_info = \
   <toolbar  name='WaveformToolBar'>
     <toolitem action='WF:Add'/>
     <toolitem action='WF:Delete'/>
+    <toolitem action='WF:Select'/>
   </toolbar>
 </ui>'''
 
@@ -145,6 +146,8 @@ class ArbWave(gtk.Window):
                                 # updated hardware and plots
     self.saved = True # Whether the config file loaded has been saved
 
+    # simple variable to ensure that our signal handlers do not contest
+    self.allow_updates = False
 
     # LOAD THE STORAGE
     self.set_config_file('')
@@ -163,7 +166,7 @@ class ArbWave(gtk.Window):
       row_inserted=(self.channels_row_inserted),
       rows_reordered=(self.channels_rows_reordered),
     )
-    self.waveforms = stores.Waveforms( changed=self.update )
+    self.waveforms = stores.WaveformsSet( changed=self.update )
     self.signals = stores.Signals( changed=self.update )
     self.devcfg  = stores.Generic( changed=self.update )
     self.clocks  = stores.Generic( changed=self.update )
@@ -172,11 +175,11 @@ class ArbWave(gtk.Window):
       processor=self.processor,
       parent=self,
       add_undo=self.add_undo )
-    self.waveform_editor = \
-      edit.Waveforms(self.waveforms, self.channels, self, self.add_undo)
-    # simple variable to ensure that our signal handlers do not contest
-    self.allow_updates = True
+    self.waveform_editor = edit.Waveforms(
+      self.waveforms,
+      self.channels, self, self.add_undo )
 
+    self.allow_updates = True
 
     #  ###### SET UP THE PANEL #######
     merge = gtk.UIManager()
@@ -227,6 +230,9 @@ class ArbWave(gtk.Window):
         PArgs( vpack(wtools, PArgs(wlabel,False)), False),
         wew,
       )
+    )
+    self.waveforms.connect_wf_change(
+      lambda wf: wlabel.set_text('Waveforms ({})'.format(wf))
     )
 
 
@@ -412,6 +418,10 @@ class ArbWave(gtk.Window):
         None, None,                                # label, accelerator
         'Delete current waveform element',         # tooltip
         self.activate_action ),
+      ( 'WF:Select', gtk.STOCK_INDEX,              # name, stock id
+        None, None,                                # label, accelerator
+        'Select entire waveform from list',        # tooltip
+        self.activate_action ),
     )
 
     # GtkToggleActionEntry
@@ -451,9 +461,15 @@ class ArbWave(gtk.Window):
       'CH:Delete' : lambda a: self.channel_editor.delete_row(),
       'WF:Add'    : lambda a: self.waveform_editor.insert_waveform(),
       'WF:Delete' : lambda a: self.waveform_editor.delete_row(),
+      'WF:Select' : self.select_waveform,
     }
 
     return action_group
+
+
+  def select_waveform(self, action):
+    D = edit.waveformsset.Dialog( self.waveforms, parent=self, dialog=True )
+    D.show()
 
   def show_stopped(self):
     if self.run_action.get_property('stock-id') != gtk.STOCK_MEDIA_PLAY:
@@ -527,25 +543,39 @@ class ArbWave(gtk.Window):
     self.pause()
 
     if 'channels' in vardict:
+      logging.debug('channels.load(...)..........')
       self.channels.load( vardict['channels'] )
+      logging.debug('channels.load(...) finished.')
 
     if 'waveforms' in vardict:
+      logging.debug('waveforms.load(...)..........')
       self.waveforms.load( vardict['waveforms'] )
+      logging.debug('waveforms.load(...) finished.')
 
     if 'signals' in vardict:
+      logging.debug('signals.load(...)..........')
       self.signals.load( vardict['signals'] )
+      logging.debug('signals.load(...) finished.')
 
     if 'global_script' in vardict:
+      logging.debug('globals_script.load(...)..........')
       self.script.load( vardict['global_script'] )
+      logging.debug('globals_script.load(...) finished.')
 
     if 'clocks' in vardict:
+      logging.debug('clocks.load(...)..........')
       self.clocks.load( vardict['clocks'] )
+      logging.debug('clocks.load(...) finished.')
 
     if 'devices' in vardict:
+      logging.debug('devices.load(...)..........')
       self.devcfg.load( vardict['devices'] )
+      logging.debug('devices.load(...) finished.')
 
     if 'runnable_settings' in vardict:
+      logging.debug('runnable_settings.load(...)..........')
       self.runnable_settings = vardict['runnable_settings']
+      logging.debug('runnable_settings.load(...) finished.')
 
     # re-enable updates and directly call for an update
     self.unpause()
@@ -555,15 +585,23 @@ class ArbWave(gtk.Window):
     # suspend all updates
     self.pause()
 
+    logging.debug('clearundo....')
     self.clearundo()
+    logging.debug('channels.clear()....')
     self.channels.clear()
+    logging.debug('waveforms.clear()....')
     self.waveforms.clear()
+    logging.debug('signals.clear()....')
     self.signals.clear()
+    logging.debug('script.set_text(default_script)....')
     self.script.set_text(default_script)
+    logging.debug('clocks.clear()....')
     self.clocks.clear()
+    logging.debug('devcfg.clear()....')
     self.devcfg.clear()
     self.set_config_file('')
     self.saved = True
+    logging.debug('runnable_settings.clear()....')
     self.runnable_settings.clear()
 
     # re-enable updates
@@ -609,7 +647,7 @@ class ArbWave(gtk.Window):
     try:
       if item not in [
         self.ALL_ITEMS, None, self.devcfg, self.clocks, self.signals,
-        self.channels, self.waveforms, self.script,
+        self.channels, self.waveform_editor.get_waveform(), self.script,
       ]:
         raise TypeError('Unknown item sent to update()')
 
@@ -618,8 +656,8 @@ class ArbWave(gtk.Window):
         ( self.clocks.representation(),    item in [ self.ALL_ITEMS, self.clocks] ),
         ( self.signals.representation(),   item in [ self.ALL_ITEMS, self.signals] ),
         ( self.channels.representation(),  item in [ self.ALL_ITEMS, self.channels] ),
-        ( self.waveforms.representation(store_path=True),
-                                           item in [ self.ALL_ITEMS, self.waveforms] ),
+        ( self.waveform_editor.get_waveform().representation(store_path=True),
+                                           item in [ self.ALL_ITEMS, self.waveform_editor.get_waveform()] ),
         ( self.script.representation(),    item in [ self.ALL_ITEMS, self.script] ),
         toggle_run=toggle_run,
       )
