@@ -13,7 +13,7 @@ from matplotlib.backends.backend_gtkagg import \
 
 from matplotlib.mlab import find
 
-from ..helpers import GTVC, GCRT
+from ..helpers import GTVC, GCRT, toggle_item
 from ...packing import hpack, vpack, Args as PArgs
 from ...storage.gtk_tools import get_file, NoFileError
 from ....tools.gui_callbacks import do_gui_operation
@@ -86,6 +86,7 @@ class Show(gtk.Dialog):
     ('*',     'All files (*)'),
   ]
   COLPREFIX = '#Columns: '
+  ENABLED  = '<Enabled>'
   DEFAULT_LINE_STYLE = 'o, ro--, kD'
 
   def __init__(self, columns, title='Optimization Parameters/Results',
@@ -225,16 +226,27 @@ class Show(gtk.Dialog):
     self.x_selection.set_model( self.columns )
     self.y_selection.set_model( self.columns )
 
-    self.params = gtk.ListStore( *([str]*(len(columns))) )
+    self.params = gtk.ListStore( bool, *([str]*(len(columns))) )
     self.view.set_model( self.params )
+
+    def TI( c, p, m, i ):
+      toggle_item( c, p, m, i )
+      self.update_plot()
+
+    r_enable = gtk.CellRendererToggle()
+    r_enable.set_property( 'activatable', True )
+    r_enable.connect( 'toggled', TI, self.params, 0 )
+    c_enable = GTVC( 'Enable', r_enable )
+    c_enable.add_attribute( r_enable, 'active', 0 )
+    self.view.append_column( c_enable )
     for i in xrange(len(columns)):
-      self.view.append_column(GTVC(columns[i], GCRT(), text=i))
+      self.view.append_column(GTVC(columns[i], GCRT(), text=i+1))
 
 
   def add(self, *stuff):
     def do_append():
       if not self.is_drawable(): return
-      self.params.append( stuff )
+      self.params.append( (True,) + stuff )
       self.new_data = True
     do_gui_operation( do_append )
 
@@ -309,19 +321,32 @@ class Show(gtk.Dialog):
     return True
 
 
-  def get_all_data(self):
-    return np.array([
-      [ eval(i,self.Globals) for i in row ] for row in self.params
-    ]).astype(float)
+  def get_all_data(self, include_disabled=False):
+    if include_disabled:
+      return np.array([
+        [ eval(str(i),self.Globals) for i in row ] for row in self.params
+      ]).astype(float)
+    else:
+      return np.array([
+        [ eval(row[i],self.Globals) for i in xrange(1,len(row)) ]
+        for row in self.params if row[0]
+      ]).astype(float)
 
 
-  def set_all_data(self, data):
+  def set_all_data(self, data, has_enabled=False):
     self.params.clear()
-    if len(data) > 0 and len(data[0]) != (len(self.columns)-1):
-      raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
-                          .format(n=(len(self.columns)-1)) )
-    for i in data:
-      self.params.append( i )
+    if has_enabled:
+      if len(data) > 0 and len(data[0]) != (len(self.columns)):
+        raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
+                            .format(n=(len(self.columns))) )
+      for i in data:
+        self.params.append( i )
+    else:
+      if len(data) > 0 and len(data[0]) != (len(self.columns)-1):
+        raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
+                            .format(n=(len(self.columns)-1)) )
+      for i in data:
+        self.params.append( np.append([True] + i) )
     self.new_data = True
 
 
@@ -386,13 +411,18 @@ class Show(gtk.Dialog):
       return # this happens when get_file returns None
 
     firstline = F.readline()
+    has_enabled = False
     if firstline.startswith(Show.COLPREFIX):
-      self.set_columns( firstline[len(Show.COLPREFIX):].split('\t') )
+      cols = firstline[len(Show.COLPREFIX):].split('\t')
+      if cols[0].strip() == Show.ENABLED:
+        cols.pop(0)
+        has_enabled = True
+      self.set_columns( cols )
     F.seek(0)
 
     try:
       data = np.loadtxt(F)
-      self.set_all_data( data )
+      self.set_all_data( data, has_enabled )
     finally:
       F.close()
     self.filename = config_file
@@ -414,8 +444,9 @@ class Show(gtk.Dialog):
       for i in xrange(start,len(m)):
         yield m[i][0]
 
-    F.write( Show.COLPREFIX + '\t'.join([i for i in Y(self.columns)]) + '\n' )
-    np.savetxt( F, self.get_all_data() )
+    F.write( Show.COLPREFIX + Show.ENABLED + '\t' + \
+             '\t'.join([i for i in Y(self.columns)]) + '\n' )
+    np.savetxt( F, self.get_all_data(True) )
     F.close()
 
 
