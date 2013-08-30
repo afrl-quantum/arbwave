@@ -44,6 +44,7 @@ class SinPulse:
   """
   Generate a sinusoidal pulse over the duration of a waveform element.
   """
+  name = 'sinpulse'
   default_steps_per_cycle = 20
   def __init__(self, A, F, average=None, phase_shift=0., steps_per_cycle=None):
     """
@@ -70,6 +71,11 @@ class SinPulse:
     self.t = None
     self.duration = None
     self.tf_safe = None
+
+  def __repr__(self):
+    return '{}({}, {}, {}, {}, {})' \
+      .format(self.name, self.A, self.F, self.average, self.phase_shift,
+              self.steps_per_cycle)
 
   def __call__(self, t):
     """
@@ -122,6 +128,7 @@ class Ramp:
   """
   Ramp from initial value to final value with a given exponent.
   """
+  name = 'ramp'
   default_steps = 20
   def __init__(self, to, exponent=1.0, steps=None, _from=None,dt=None):
     """
@@ -147,6 +154,10 @@ class Ramp:
     self.t = None
     self.duration = None
     self.tf_safe = None
+
+  def __repr__(self):
+    return '{}({}, {}, {}, {}, {})' \
+      .format(self.name, self.to, self.exponent, self.steps, self._from, self.dt)
 
   def __call__(self, t):
     """
@@ -191,12 +202,18 @@ class Pulse:
   """
   Generate a pulse over the duration of a waveform element.
   """
-  def __init__(self, high=True,low=False):
+  name = 'pulse'
+  def __init__(self, high=True,low=None):
     """
-    Usage:  pulse(high=True, low=False)
+    Usage:  pulse(high=True, low=None)
 
     high  : The value to generate for the pulse.
-    low   : The value to return to after the pulse
+    low   : The value to return to after the pulse.
+            If low is not set (left as None) it will be set differently for
+            analog and digital channels.  If the high is a boolean value, low
+            will be set to its logical complement.  Otherwise, if low is not
+            set, it will be set to whatever the channel is at prior to this
+            pulse.
    """
     self.high = high
     self.low = low
@@ -205,8 +222,16 @@ class Pulse:
     self.duration = None
     self.min_period = None
 
+  def __repr__(self):
+    return '{}({}, {})'.format(self.name, self.high, self.low)
+
   def set_vars(self, _from, t, duration, min_period):
     self._from = _from
+    if self.low is None:
+      if type(self.high) is bool:
+        self.low = not self.high
+      else:
+        self.low = _from
     self.t = t
     self.min_period = min_period
     self.duration = duration - self.min_period
@@ -226,14 +251,20 @@ class PulseTrain:
   """
   Generate a train of pulses over the duration of a waveform element.
   """
-  def __init__(self, n, duty=0.5, high=True,low=False, dt=None):
+  name = 'pulses'
+  def __init__(self, n, duty=0.5, high=True, low=None, dt=None):
     """
     Usage:  pulses(n, duty=0.5, high=True, low=False, dt=None)
 
     n     : Number of evenly spaced pulses to generate.
     duty  : Duty cycle (only used if dt is not set) [Default 0.5].
     high  : The value to generate for each pulses [Default:  True].
-    low   : The value to return to after each pulse [Default:  False].
+    low   : The value to return to after the pulse.
+            If low is not set (left as None) it will be set differently for
+            analog and digital channels.  If the high is a boolean value, low
+            will be set to its logical complement.  Otherwise, if low is not
+            set, it will be set to whatever the channel is at prior to this
+            pulse.
     dt    : On width of a single pulse in the pulse train
             [Default:  not set].
    """
@@ -247,8 +278,17 @@ class PulseTrain:
     self.duration   = None
     self.min_period = None
 
+  def __repr__(self):
+    return '{}({}, {}, {}, {}, {})' \
+      .format(self.name, self.n, self.duty, self.high, self.low, self.dt)
+
   def set_vars(self, _from, t, duration, min_period):
     self._from = _from
+    if self.low is None:
+      if type(self.high) is bool:
+        self.low = not self.high
+      else:
+        self.low = _from
     self.t = t
     self.min_period = min_period
     self.duration = duration - self.min_period
@@ -286,8 +326,8 @@ class PulseTrain:
     return iter(L)
 
 registered = {
-  'sinpulse' : SinPulse,
-  'ramp'    : Ramp,
-  'pulse'   : Pulse,
-  'pulses'  : PulseTrain,
+  SinPulse.name   : SinPulse,
+  Ramp.name       : Ramp,
+  Pulse.name      : Pulse,
+  PulseTrain.name : PulseTrain,
 }

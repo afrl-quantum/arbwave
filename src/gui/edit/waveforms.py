@@ -351,9 +351,12 @@ class Waveforms:
         tf = C['t'] + C['dt']
         tf.fmt = C['t'].fmt = C['dt'].fmt = '{coeff} {units}'
         markup += sep + \
-          '<b>time:</b>\n' + \
+          '<b>time:</b>\n' \
           '  {t} -&gt; {tf}  (dt = {dt})' \
           .format(tf=tf, **C)
+        if 'val' in C:
+          markup += '\n<b>value:</b>  {}' \
+            .format( C['val'].replace('<', '&lt;').replace('>', '&gt;') )
         sep = '\n'
 
       tooltip.set_markup( markup )

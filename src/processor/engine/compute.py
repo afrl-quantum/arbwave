@@ -229,7 +229,7 @@ class WaveformEvalulator:
         else:
           gi_dt = evalIfNeeded( gi['duration'], globals, L )
           unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
-        self.eval_cache[ gi['path'] ] = {'t':gi_t, 'dt':gi_dt}
+        self.eval_cache[ gi['path'] ] = dict(t=gi_t, dt=gi_dt)
 
         # 3.  recurse
         self.group( gi['elements'], gi_t, gi_dt, globals, L )
@@ -283,12 +283,15 @@ class WaveformEvalulator:
       dt = evalIfNeeded( e['duration'], globals, locals )
       unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
     assert dt > 0*unit.s, e['channel'] + ': waveform element duration MUSt be > 0!'
-    self.eval_cache[ e['path'] ] = {'t':t, 'dt':dt}
 
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
     locals['dt'] = dt
     value = evalIfNeeded( e['value'], globals, locals )
+
+    # cache for presentation to user
+    self.eval_cache[ e['path'] ] = dict(t=t, dt=dt, val=repr(value))
+
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
       insert_value(t, dt, value,  ci['min_period'],chname,ci,trans,e['path'])
