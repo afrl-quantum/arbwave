@@ -88,7 +88,7 @@ class LoopView(gtk.Dialog):
 
     gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
 
-    self.set_default_size(550, 600)
+    self.set_default_size(750, 600)
     self.set_border_width(10)
 
 
