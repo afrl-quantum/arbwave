@@ -88,7 +88,7 @@ class NiDAQmx:
 
 
   def DAQmxGetSysDevNames(self,buf_ref,bufsize):
-    buf_ref._obj.value = 'Dev1'[:bufsize]
+    buf_ref._obj.value = 'Dev1, Dev2, Dev3'[:bufsize]
     return 0
 
 
@@ -146,18 +146,19 @@ class NiDAQmx:
 
 
   def DAQmxGetDevAOPhysicalChans(self, dev, buf_ref, bufsize):
-    chans = ','.join( [ 'Dev1/ao'+str(i) for i in xrange(32) ] )
+    chans = ','.join([ '{}/ao{}'.format(dev,i) for i in xrange(32) ])
     buf_ref._obj.value = chans[:bufsize]
     return 0
 
 
   def DAQmxGetDevDOLines(self, dev, buf_ref, bufsize):
-    buf_ref._obj.value = 'Dev1/port0/line0,Dev1/port0/line1,Dev1/port0/line2'[:bufsize]
+    chans = ','.join([ '{}/port0/line{}'.format(dev,i) for i in xrange(8) ])
+    buf_ref._obj.value = chans[:bufsize]
     return 0
 
 
   def DAQmxGetDevCOPhysicalChans(self, dev, buf_ref, bufsize):
-    buf_ref._obj.value = 'Dev1/ctr0,Dev1/ctr1'[:bufsize]
+    buf_ref._obj.value = '{0}/ctr0,{0}/ctr1'.format(dev)[:bufsize]
     return 0
 
 
@@ -278,7 +279,9 @@ class NiDAQmx:
 
   def DAQmxGetSampClkMaxRate(self, task, retval_ref):
     # we'll return the value for the PCI-6723
-    retval_ref._obj.value = 800e3
+    #retval_ref._obj.value = 800e3
+    # what the heck. let's return a larger value!
+    retval_ref._obj.value = 2e6
     return 0
 
 
