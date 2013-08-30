@@ -236,7 +236,7 @@ class Show(gtk.Dialog):
     r_enable = gtk.CellRendererToggle()
     r_enable.set_property( 'activatable', True )
     r_enable.connect( 'toggled', TI, self.params, 0 )
-    c_enable = GTVC( 'Enable', r_enable )
+    c_enable = GTVC( '?', r_enable )
     c_enable.add_attribute( r_enable, 'active', 0 )
     self.view.append_column( c_enable )
     for i in xrange(len(columns)):
