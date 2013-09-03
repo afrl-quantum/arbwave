@@ -1,12 +1,49 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk
+import gtk, sys
 from helpers import *
 from spreadsheet import keys
 
-def drag_motion(w, ctx, x, y, time):
-  mask = w.window.get_pointer()[2]
-  if mask & gtk.gdk.CONTROL_MASK:
-    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+class Dragger(object):
+  def __init__(self, V):
+    self.drop_started = False
+    V.connect('drag-motion', self.drag_motion)
+    V.connect('drag-data-received', self.drag_data_received)
+    V.connect('drag-drop', self.drag_drop)
+    V.connect('drag-begin', self.drag_begin)
+    V.connect('drag-end', self.drag_end)
+    self.model = None
+
+  def drag_motion(self, w, ctx, x, y, time):
+    mask = w.window.get_pointer()[2]
+    if mask & gtk.gdk.CONTROL_MASK:
+      ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+
+  def drag_data_received(self, w, ctx, x, y, seldata, info, time):
+    if self.drop_started and ctx.action & gtk.gdk.ACTION_COPY:
+      model, path = seldata.tree_get_row_drag_data()
+      new_label = model[ path ][model.LABEL] + '-copy-'
+      all_labels = [ l[model.LABEL] for l in model ]
+      for i in xrange(sys.maxint):
+        if new_label + str(i) not in all_labels:
+          break
+      # now make a new row that gets moved
+      # FIXME
+      model.append(
+        (new_label + str(i), model[path][model.WAVEFORMS].copy()) )
+      seldata.tree_set_row_drag_data(model, model[-1].path)
+      self.model = model
+      return False
+
+  def drag_begin(self, w, ctx):
+    self.drop_started = False
+
+  def drag_drop(self, w,ctx,x,y,time):
+    self.drop_started = True
+
+  def drag_end(self, w, ctx):
+    if ctx.action & gtk.gdk.ACTION_COPY:
+      # clean  up!
+      del self.model[-1]
 
 class Editor(object):
   def __init__(self, waveforms_set, add_undo=None):
@@ -16,7 +53,7 @@ class Editor(object):
 
     V = self.view = gtk.TreeView( ws )
     V.set_reorderable(True)
-    V.connect('drag-motion', drag_motion)
+    self.drag_response = Dragger( V )
     V.connect('key-press-event', self.view_keypress_cb)
     R = {
       'label'   : GCRT(),

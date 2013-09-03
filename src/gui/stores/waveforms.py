@@ -28,11 +28,18 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
       bool, # async
     )
 
+    self.kwargs = kwargs
     TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
   def __del__(self):
     TreeModelDispatcher.__del__(self)
+
+
+  def copy(self):
+    new = Waveforms( **self.kwargs )
+    new.load( self.representation() )
+    return new
 
 
   def __str__(self):
