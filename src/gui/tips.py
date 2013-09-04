@@ -6,9 +6,18 @@ from ..processor.engine import Arbwave
 
 
 def show_generators(parent):
-  dialog = gtk.MessageDialog(
+  dialog = gtk.Dialog( 'Value Generators',
     parent, gtk.DIALOG_DESTROY_WITH_PARENT,
-    gtk.MESSAGE_INFO, gtk.BUTTONS_CLOSE )
+    (gtk.STOCK_CLOSE, gtk.RESPONSE_OK) )
+
+  L = gtk.Label()
+  scroll = gtk.ScrolledWindow()
+  scroll.set_size_request(550,400)
+  scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+
+  scroll.add_with_viewport( L )
+  dialog.vbox.pack_start( scroll )
+  dialog.show_all()
 
   td = pydoc.TextDoc()
 
@@ -19,7 +28,7 @@ def show_generators(parent):
       .format(f=f[0],doc=s[ (s.find('method')+6): ] ))
 
   text = '\n'.join(text)
-  dialog.set_markup( text )
+  L.set_markup( text )
 
   # Close dialog on user response
   dialog.connect ("response", lambda d, r: d.destroy())
@@ -27,9 +36,18 @@ def show_generators(parent):
 
 
 def show_arbwavefunctions(parent):
-  dialog = gtk.MessageDialog(
+  dialog = gtk.Dialog( 'Arbwave functions',
     parent, gtk.DIALOG_DESTROY_WITH_PARENT,
-    gtk.MESSAGE_INFO, gtk.BUTTONS_CLOSE )
+    (gtk.STOCK_CLOSE, gtk.RESPONSE_OK) )
+
+  L = gtk.Label()
+  scroll = gtk.ScrolledWindow()
+  scroll.set_size_request(550,400)
+  scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+
+  scroll.add_with_viewport( L )
+  dialog.vbox.pack_start( scroll )
+  dialog.show_all()
 
   td = pydoc.TextDoc()
 
@@ -51,7 +69,7 @@ def show_arbwavefunctions(parent):
     )
 
   text = '\n'.join(text)
-  dialog.set_markup( text )
+  L.set_markup( text )
 
   # Close dialog on user response
   dialog.connect ("response", lambda d, r: d.destroy())
