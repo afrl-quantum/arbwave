@@ -10,9 +10,10 @@ import functions
 registered_globals = {
   'float_range' : float_range,
   'xarange' : xarange,
-  'arange' : np.arange,
-  'inf' : float('inf'),
-  'nan' : float('nan'),
+  'arange'  : np.arange,
+  'r_'      : np.r_,
+  'inf'     : float('inf'),
+  'nan'     : float('nan'),
 }
 
 registered_globals.update( functions.registered )
