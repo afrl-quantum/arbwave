@@ -7,8 +7,10 @@ As an example, the Ramp class is used in a way to allow the user to specify
 of 0.5 over the duration of the waveform element.
 """
 
+from scipy.interpolate import interp1d
 import numpy as np
 import math
+import physical
 machine_arch = np.MachAr()
 
 class step_iter:
@@ -39,6 +41,11 @@ class step_iter:
 def getcoeff( val ):
   try: return val.coeff
   except: return val
+
+def getunity( val ):
+  try: return physical.Quantity(1,val.units)
+  except: return 1.0
+
 
 class SinPulse:
   """
@@ -325,9 +332,81 @@ class PulseTrain:
 
     return iter(L)
 
+
+class Interpolate:
+  """
+  Interpolate through values of a data table specified by x and y values.  x
+  represents time and y is the value at a specific time.
+  """
+  name = 'interp'
+  default_steps = 20
+  def __init__(self, x, y, steps=None, dt=None):
+    """
+    Usage:  interp(x, y, steps=20, dt=None)
+
+    x       : time in arbitrary units.  Time will be normalized to 0-1 where
+              time=1 corresponds to the maximum value in x.
+    y       : y values to use in interpolation
+    steps   : number of steps to take (Default: 20)
+    dt      : the timestep to increment (Default: duration/steps)
+
+    Only one of dt or steps can be used.
+   """
+    self.interp = interp1d( x / float(max(x) - min(x)) - min(x), y )
+    self.unity = getunity( y[0] )
+    if steps > 0:
+      self.steps = steps
+    else:
+      self.steps = Interpolate.default_steps
+    self.skip_first = False
+    self.dt = dt
+    self.t = None
+    self.duration = None
+    self.tf_safe = None
+
+  def __repr__(self):
+    return '{}(<x>, <y>, {}, {})' \
+      .format(self.name, self.steps, self.dt)
+
+  def __call__(self, t):
+    """
+    Return the value of the interpolator at normalized relative time t.
+
+    t : normalized relative time, from 0.0 to 1.0
+    """
+    return self.interp( min(1.0, (t - self.t) / self.duration) ) * self.unity
+
+  def set_vars(self, _from, t, duration, min_period):
+    if _from is not None and \
+      getcoeff(abs(self.interp(0.)*self.unity - _from)) <= 10*machine_arch.eps:
+      self.skip_first = True
+    self.t = t
+    self.min_period = min_period
+
+    # it is important to make sure that the final value is given at
+    # dt-self.min_period.  This allows for the following clock pulse to be used by
+    # the next waveform element.
+    self.duration = duration - self.min_period
+    if not self.dt:
+      self.dt = self.duration / float(self.steps)
+
+    # tf safe is the comparison that is used to tell whether time-stepping
+    # should cease.  We add one half a min_period to avoid precision
+    # error-prone comparisons.
+    self.tf_safe = self.t+self.duration + 0.5*min_period
+
+  def __iter__(self):
+    if self.skip_first:
+      ti = self.t + self.dt
+    else:
+      ti = self.t
+    return step_iter(ti, self.tf_safe, self.dt, self.min_period, self)
+
+
 registered = {
   SinPulse.name   : SinPulse,
   Ramp.name       : Ramp,
   Pulse.name      : Pulse,
   PulseTrain.name : PulseTrain,
+  Interpolate.name: Interpolate,
 }
