@@ -232,7 +232,9 @@ class ArbWave(gtk.Window):
       )
     )
     self.waveforms.connect_wf_change(
-      lambda wf: wlabel.set_text('Waveforms ({})'.format(wf))
+      lambda wf: wlabel.set_markup(
+        'Waveforms (<b><span color="green">{}</span></b>)'.format(wf)
+      )
     )
 
 
