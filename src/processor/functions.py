@@ -287,7 +287,7 @@ class PulseTrain:
 
   def __repr__(self):
     return '{}({}, {}, {}, {}, {})' \
-      .format(self.name, self.n, self.duty, self.high, self.low, self.dt)
+      .format(self.name, self.n, self.duty, self.high, self.low, self.dt_on)
 
   def set_vars(self, _from, t, duration, min_period):
     self._from = _from
