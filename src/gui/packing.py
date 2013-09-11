@@ -5,6 +5,7 @@ import gtk
 default_boxpack = {
   'spacing' : 1,
   'border'  : 2,
+  'show_all': False,
 }
 class Args:
   def __init__(self,*args,**kwargs):
@@ -21,6 +22,8 @@ def hpack(*items, **kwargs):
       hbox.pack_start(*i.args, **i.kwargs)
     else:
       hbox.pack_start(i)
+  if args['show_all']:
+    hbox.show_all()
   return hbox
 
 

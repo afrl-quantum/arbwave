@@ -17,6 +17,7 @@ from plotter import Plotter
 from packing import Args as PArgs, hpack, vpack, VBox
 import storage
 from notification import Notification
+import embedded
 
 from ..processor import Processor
 from ..processor import default
@@ -239,14 +240,35 @@ class ArbWave(gtk.Window):
 
 
     self.plotter.canvas.set_size_request( 800, 200 )
-    #self.canvas_scroll = gtk.HScale()
 
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )
-    bottom = VBox()
-    bottom.pack_start( self.plotter.canvas )
-    #bottom.pack_start( self.canvas_scroll, False, False )
+    self.shell = embedded.Shell_Gui(
+      ui=self,
+      get_globals=self.processor.get_globals,
+      reset = self.processor.reset,
+    )
+    self.processor.connect_listener( self.shell.update_globals )
+    self.shell_notebook = gtk.Notebook()
+    self.shell_notebook.set_tab_border(0)
+    self.shell_notebook.append_page( self.shell.gui, gtk.Label('Shell') )
+    self.shell_notebook.set_tab_reorderable( self.shell.gui, True )
+
+    def tab_tear( notebook, page, x, y ):
+      notebook.remove_page( notebook.page_num(page) )
+      if hasattr(page, 'orig_parent'):
+        w = page.orig_parent
+      else:
+        w = gtk.Window()
+      w.add( page )
+      w.show()
+
+    self.shell_notebook.connect('create-window', tab_tear)
+
+    bottom = gtk.HPaned()
+    bottom.pack1( self.shell_notebook )
+    bottom.pack2( self.plotter.canvas )
 
     body = gtk.VPaned()
     body.pack1( top, True )
@@ -344,7 +366,7 @@ class ArbWave(gtk.Window):
       ( 'ViewMenu', None, '_View' ),               # name, stock id, label
       ( 'HelpMenu', None, '_Help' ),               # name, stock id, label
       ( 'New', gtk.STOCK_NEW,                      # name, stock id
-        '_New', '<control>N',                      # label, accelerator
+        '_New', '<shift><control>N',               # label, accelerator
         'Create a new file',                       # tooltip
         self.activate_action ),
       ( 'Open', gtk.STOCK_OPEN,                    # name, stock id
@@ -388,7 +410,7 @@ class ArbWave(gtk.Window):
         'View saved text data...',# tooltip
         self.activate_action ),
       ( 'About', None,                             # name, stock id
-        '_About', '<control>A',                    # label, accelerator
+        '_About', '<shift><control>A',             # label, accelerator
         'About',                                   # tooltip
         self.activate_action ),
       ( 'VGens', None,                             # name, stock id
@@ -449,11 +471,11 @@ class ArbWave(gtk.Window):
     self.actions = {
       'New'       : lambda a: self.clearvars(do_update=True),
       'Open'      : ( show_exception, storage.gtk_tools.gtk_open_handler, self, default.get_globals() ),
-      'Save'      : ( storage.gtk_tools.gtk_save_handler, self ),
-      'SaveAs'    : ( storage.gtk_tools.gtk_save_handler, self, True),
+      'Save'      : lambda a: self.save(),
+      'SaveAs'    : lambda a: self.save(True),
       'Quit'      : lambda a: self.destroy(),
       'Configure' : lambda a: configure.show(self, self),
-      'Script'    : lambda a: self.script.edit(),
+      'Script'    : lambda a: self.script.edit(notebook=self.shell_notebook),
       'Run'       : lambda a: self.update(toggle_run=True),
       'ViewData'  : lambda a: show_data_viewer(self),
       'About'     : lambda a: about.show(),
@@ -468,6 +490,8 @@ class ArbWave(gtk.Window):
 
     return action_group
 
+  def save(self, *args):
+    storage.gtk_tools.gtk_save_handler(None, self, *args)
 
   def select_waveform(self, action):
     D = edit.waveformsset.Dialog( self.waveforms, parent=self, dialog=True )

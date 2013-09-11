@@ -6,8 +6,11 @@ import sys
 
 import gtk
 
+from ..packing import Args as PArgs, hpack, vpack, VBox
+
 class Editor(gtk.Dialog):
-  def __init__(self, title='Edit Script', parent=None, target=None, modal=False):
+  def __init__( self, title='Edit Script', parent=None, target=None,
+                modal=False, notebook = None):
     actions = [
       gtk.STOCK_SAVE,   gtk.RESPONSE_OK,
       gtk.STOCK_APPLY,  gtk.RESPONSE_APPLY,
@@ -20,6 +23,7 @@ class Editor(gtk.Dialog):
       actions.pop(2)
 
     gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+    self.notebook = notebook
 
     # MECHANICS
     self.unset_changes()
@@ -68,9 +72,34 @@ class Editor(gtk.Dialog):
     self.connect('response', self.respond)
   
     self.update_statusbar()
-  
-    self.show_all()
 
+    self.present()
+
+  def _present_prep(self):
+    if self.notebook and self.notebook.page_num(self.vbox) < 0:
+      self.vbox.orig_parent = self
+      if self.vbox in self.get_children():
+        self.remove( self.vbox )
+      button = gtk.Button('x')
+      button.set_focus_on_click(False)
+      button.connect('clicked', self.respond, gtk.RESPONSE_CANCEL)
+      self.notebook.append_page(
+        self.vbox,
+        hpack(gtk.Label(self.title), button, show_all=True)
+      )
+      self.notebook.set_tab_reorderable(self.vbox, True)
+      self.notebook.set_tab_detachable(self.vbox, True)
+
+    self.vbox.show_all()
+
+
+  def present(self):
+    self._present_prep()
+    if self.notebook:
+      self.vbox.show()
+      self.notebook.set_page( self.notebook.page_num(self.vbox) )
+    else:
+      gtk.Dialog.present(self)
 
 
   def update_statusbar(self, other=''):
@@ -134,6 +163,8 @@ class Editor(gtk.Dialog):
         return
 
     if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL] and self.target:
+      # hide both to account for either notebook or dialog view
+      self.vbox.hide()
       self.hide()
       self.set_text( self.target.get_text() )
 

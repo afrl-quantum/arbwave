@@ -29,6 +29,7 @@ def get_range( scaling, globals, **kwargs ):
 class Processor:
   def __init__(self, ui):
     self.ui = ui
+    self.script = ''
     self.Globals = default.get_globals()
     self.engine = engine.Arbwave(self,ui)
     sys.modules['arbwave'] = self.engine # fake arbwave module
@@ -39,15 +40,26 @@ class Processor:
 
     self.lock = threading.Lock()
     self.end_condition = threading.Condition( self.lock )
+    self.script_listeners = list()
 
 
   def __del__(self):
     try: exec '__del__()' in self.Globals
     except: pass
 
+  def connect_listener(self, functor):
+    self.script_listeners.append( functor )
+
 
   def get_globals(self):
     return self.Globals
+
+
+  def reset(self):
+    """
+    Run the same script again.
+    """
+    self.exec_script( self.script )
 
 
   def exec_script(self, script):
@@ -56,7 +68,11 @@ class Processor:
     self.engine.clear_runnables()
     self.Globals = default.get_globals() # reset the global environment
     exec script in self.Globals
-    self.ui.update_runnables( self.engine.runnables.keys() )
+    self.script = script
+    if script:
+      self.ui.update_runnables( self.engine.runnables.keys() )
+    for l in self.script_listeners:
+      l(self.Globals)
 
 
   def update(self,devcfg,clocks,signals,channels,waveforms,script,toggle_run):
