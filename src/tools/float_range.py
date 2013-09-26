@@ -1,4 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
+import numpy as np
 
 class float_range(object):
   def __init__(self, mn, mx, include_beginning=True, include_end=False):
@@ -66,7 +67,7 @@ def xarange(i, f=None, step=1):
   if f is None:
     f = i
     i = 0
-  while i < f:
+  while np.sign(step)*i < np.sign(step)*f:
     yield i
     i += step
 
