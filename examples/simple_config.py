@@ -1,200 +1,37 @@
 channels = \
-{'Camera Trigger': {'device': 'Digital/fake/viewpoint/port0/line1',
+{'Camera Trigger': {'device': 'Digital/vp/Dev0/A/0',
                     'enable': True,
-                    'order': 8,
+                    'interp_order': 0,
+                    'interp_smoothing': 0.0,
+                    'order': 0,
                     'scaling': [],
-                    'units': '',
-                    'interp_order' : 1,
-                    'interp_smoothing' : 0.0,
-                    'value': 'On'},
- 'MOT Detuning': {'device': 'Analog/fake/ni/dev0/ao0',
-                  'enable': True,
-                  'order': 0,
-                  'scaling': [('0', '-10'),
-                              ('1.22', '0'),
-                              ('2', '3'),
-                              ('10', '30')],
-                  'units': 'MHz',
-                  'interp_order' : 1,
-                  'interp_smoothing' : 0.0,
-                  'value': '15*MHz'},
- 'MOT Power': {'device': 'Analog/fake/ni/dev0/ao1',
-               'enable': True,
-               'order': 1,
-               'scaling': [('0', '0'), ('1', '20')],
-               'units': 'mW',
-               'interp_order' : 1,
-               'interp_smoothing' : 0.0,
-               'value': '100*mW'},
- 'MOT Shutter': {'device': 'Digital/fake/viewpoint/port0/line2',
-                 'enable': True,
-                 'order': 2,
-                 'scaling': [],
-                 'units': '',
-                 'interp_order' : 1,
-                 'interp_smoothing' : 0.0,
-                 'value': 'On'},
- 'Probe Power': {'device': 'Digital/fake/viewpoint/port0/line0',
-                 'enable': True,
-                 'order': 7,
-                 'scaling': [],
-                 'units': '',
-                 'interp_order' : 1,
-                 'interp_smoothing' : 0.0,
-                 'value': 'Off'},
- 'U Wire': {'device': 'Analog/fake/ni/dev0/ao5',
-            'enable': True,
-            'order': 6,
-            'scaling': [('0', '0'), ('1', '20')],
-            'units': 'A',
-            'interp_order' : 1,
-            'interp_smoothing' : 0.0,
-            'value': '22*A'},
- 'X Bias': {'device': 'Analog/fake/ni/dev0/ao2',
-            'enable': True,
-            'order': 3,
-            'scaling': [('-1', '-.2'), ('0', '0'), ('1', '.2')],
-            'units': 'G',
-            'interp_order' : 1,
-            'interp_smoothing' : 0.0,
-            'value': '12*G'},
- 'Y Bias': {'device': 'Analog/fake/ni/dev0/ao3',
-            'enable': True,
-            'order': 4,
-            'scaling': [('-1', '.2'), ('0.05', '0'), ('1', '-.3')],
-            'units': 'G',
-            'interp_order' : 1,
-            'interp_smoothing' : 0.0,
-            'value': '.5*G'},
- 'Z Bias': {'device': 'Analog/fake/ni/dev0/ao4',
-            'enable': True,
-            'order': 5,
-            'scaling': [('-1', '.4'), ('-.05', '0'), ('1', '-.3')],
-            'units': 'G',
-            'interp_order' : 1,
-            'interp_smoothing' : 0.0,
-            'value': '.4*G'}}
+                    'units': None,
+                    'value': 'False'},
+ 'ao0': {'device': 'Analog/ni/Dev1/ao0',
+         'enable': True,
+         'interp_order': 1,
+         'interp_smoothing': 0.0,
+         'order': 1,
+         'scaling': [('0', '0'), ('10', '10')],
+         'units': 'V',
+         'value': '10*V'}}
 
 waveforms = \
-[{'asynchronous': False,
-  'duration': '500*ms',
-  'elements': [{'channel': 'MOT Shutter',
-                'duration': '',
-                'enable': True,
-                'time': 't-100*ms',
-                'value': 'On'},
-               {'channel': 'MOT Detuning',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '5*MHz'},
-               {'channel': 'MOT Power',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '10*mW'},
-               {'channel': 'X Bias',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '2*G'},
-               {'channel': 'Y Bias',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '.2*G'},
-               {'channel': 'Z Bias',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '.19*G'},
-               {'channel': 'U Wire',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '8*A'}],
-  'enable': True,
-  'group-label': 'MOT Loading',
-  'script': '',
-  'time': 't'},
- {'asynchronous': False,
-  'duration': '30*ms,ms',
-  'elements': [{'channel': 'MOT Detuning',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': 'ramp(10*MHz,2)'},
-               {'channel': 'MOT Power',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': 'ramp(0*mW,.5)'},
-               {'channel': 'MOT Shutter',
-                'duration': '',
-                'enable': True,
-                'time': 't+dt',
-                'value': 'Off'},
-               {'channel': 'U Wire',
-                'duration': 'dt-ms,ddt',
-                'enable': True,
-                'time': 't',
-                'value': 'ramp(10*A,1)'},
-               {'channel': 'U Wire',
-                'duration': 'ms',
-                'enable': True,
-                'time': 't',
-                'value': '0*A'}],
-  'enable': True,
-  'group-label': 'CMOT',
-  'script': '',
-  'time': 't'},
- {'asynchronous': True,
-  'duration': '100*us',
-  'elements': [{'channel': 'Probe Power',
-                'duration': 'dt/2',
-                'enable': True,
-                'time': 't',
-                'value': 'On'},
-               {'channel': 'Camera Trigger',
-                'duration': 'dt/2',
-                'enable': True,
-                'time': 't',
-                'value': 'On'},
-               {'channel': 'Probe Power',
-                'duration': 'dt/2',
-                'enable': True,
-                'time': 't',
-                'value': 'Off'},
-               {'channel': 'Camera Trigger',
-                'duration': 'dt/2',
-                'enable': True,
-                'time': 't',
-                'value': 'Off'}],
-  'enable': True,
-  'group-label': 'Imaging',
-  'script': '',
-  'time': 't'},
- {'asynchronous': False,
-  'duration': '3000*ms',
-  'elements': [{'channel': 'MOT Detuning',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '5*MHz'},
-               {'channel': 'MOT Power',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '10*mW'},
-               {'channel': 'U Wire',
-                'duration': '',
-                'enable': True,
-                'time': 't',
-                'value': '0*A'}],
-  'enable': True,
-  'group-label': 'MOT Nap',
-  'script': '',
-  'time': 't+100*ms'}]
+{'current_waveform': 'Default',
+ 'waveforms': {'Default': [{'channel': 'Camera Trigger',
+                            'duration': '10*ms',
+                            'enable': True,
+                            'time': 't+10*ms',
+                            'value': 'pulse()'},
+                           {'channel': 'ao0',
+                            'duration': '10*ms',
+                            'enable': True,
+                            'time': 't+10*ms',
+                            'value': '2*V'}]}}
+
+clocks = \
+{'vp/Dev0/A/13': {'divider': {'type': int, 'value': 1}},
+ 'vp/Dev0/Internal_XO': {'scan_rate': {'type': float, 'value': 20000000.0}}}
 
 global_script = \
 """# This script sets global variables and/or functions.
@@ -202,41 +39,54 @@ global_script = \
 from physical.unit import *
 from physical.constant import *
 from physical import unit
-Off = False
-On = True
+import arbwave
 
-shutter = dict()
-shutter['MOT/On'] = 4*ms
+class SimpleRun(arbwave.Runnable):
+	def run(self):
+		arbwave.update()
+		# if possible, the run function should return a value indicative of the
+		# performance of the particular run.  Below is just a "random" example.
+		import random
+		return random.randint(0,100)
 
-print 'updating global environment...'
-some_variable = pi * ( 10*cm )**2.0
-other_variable = 1
-
-def onstart():
-	'''Called when 'play' button is clicked'''
-	print 'starting!!!!'
-
-def onstop():
-	'''Called when 'stop' button is clicked.'''
-	print 'stopping!!!!'
-
-import arbwave, time
-def loop_control(*args, **kwargs):
-	global some_variable, other_variable
-	for i in [1,2,3]:
-		some_variable += mm**2.0
-		for j in [1,2,3]:
-			other_variable +=2
-			arbwave.update()
-			time.sleep(2)
-
-arbwave.connect( 'start', onstart )
-arbwave.connect( 'stop', onstop )
-arbwave.set_loop_control( loop_control )
+arbwave.add_runnable( 'Simple', SimpleRun() )
 """
 
+version = \
+'0.1.6-15-g5d09805'
+
 signals = \
-{'ni/Dev1/10MHz' : {'dest':'TRIG/0', 'invert':False},
- 'ni/Dev1/PFI0'  : {'dest':'TRIG/0', 'invert':False},
- 'ni/Dev1/PFI0'  : {'dest':'External/01', 'invert':False},
-}
+{('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}
+
+runnable_settings = \
+{}
+
+devices = \
+{'ni/Dev1/ao': {'clock': {'type': str, 'value': 'vp/Dev0/A/13'},
+                'clock-settings': {'edge': {'type': str, 'value': 'rising'},
+                                   'mode': {'type': str,
+                                            'value': 'continuous'}},
+                'default-voltage-range': {'maximum': {'type': float,
+                                                      'value': 10.0},
+                                          'minimum': {'type': float,
+                                                      'value': -10.0}},
+                'trigger': {'edge': {'type': str, 'value': 'rising'},
+                            'enable': {'type': bool, 'value': False},
+                            'source': {'type': str, 'value': ''}},
+                'use-only-onboard-memory': {'type': bool, 'value': True}},
+ 'vp/Dev0': {'clock': {'type': str, 'value': 'vp/Dev0/Internal_XO'},
+             'in': {'daq_clock_modulo': {'type': int, 'value': 0},
+                    'divider': {'type': int, 'value': 0},
+                    'stop': {'type': int, 'value': 0},
+                    'stop_edge': {'type': int, 'value': 0},
+                    'trig_edge': {'type': int, 'value': 0},
+                    'trig_source': {'type': int, 'value': 0},
+                    'trig_type': {'type': int, 'value': 4}},
+             'out': {'daq_clock_modulo': {'type': int, 'value': 0},
+                     'divider': {'type': int, 'value': 0},
+                     'stop': {'type': int, 'value': 0},
+                     'stop_edge': {'type': int, 'value': 0},
+                     'trig_edge': {'type': int, 'value': 0},
+                     'trig_source': {'type': int, 'value': 0},
+                     'trig_type': {'type': int, 'value': 4}}}}
+
