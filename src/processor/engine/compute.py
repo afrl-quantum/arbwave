@@ -222,6 +222,7 @@ class WaveformEvalulator:
         # 2.  establish local start time and durations...
         gi_t = evalIfNeeded( gi['time'], globals, L )
         unit.s.unitsMatch(gi_t, gi['group-label']+'(t):  expected dimensions of time')
+        assert gi_t >= 0*unit.s,gi['group-label']+'(t): MUSt be >= 0!'
 
         # sub-group dt defaults to this groups dt
         if not gi['duration']:
@@ -229,6 +230,7 @@ class WaveformEvalulator:
         else:
           gi_dt = evalIfNeeded( gi['duration'], globals, L )
           unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
+        assert gi_dt > 0*unit.s,  gi['group-label']+'(dt): MUSt be > 0!'
         self.eval_cache[ gi['path'] ] = dict(t=gi_t, dt=gi_dt)
 
         # 3.  recurse
@@ -276,13 +278,14 @@ class WaveformEvalulator:
     # establish local start time / duration for the element
     t = evalIfNeeded( e['time'], globals, locals )
     unit.s.unitsMatch(t, e['channel']+'(t): expected dimensions of time')
+    assert t >= 0*unit.s,e['channel']+'(t): MUSt be >= 0!'
 
     if not e['duration']:
       dt = locals['dt']
     else:
       dt = evalIfNeeded( e['duration'], globals, locals )
       unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
-    assert dt > 0*unit.s, e['channel'] + ': waveform element duration MUSt be > 0!'
+    assert dt > 0*unit.s,   e['channel']+'(dt): MUSt be > 0!'
 
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
