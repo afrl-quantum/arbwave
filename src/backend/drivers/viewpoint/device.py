@@ -200,7 +200,16 @@ class Device(Base):
     self.t_max = t_last / scan_rate # save for self.wait()
 
     C['out']['repetitions'] = {True:0, False:1}[continuous]
-    C['out']['number_transitions'] = len(transitions)
+    # VIEWPOINT FIXME:  They need to fix their bug!
+    # This is what it should be if viewpoint fixed it:
+    #C['out']['number_transitions'] = len(transitions)
+    if len(transitions) > 507:
+      C['out']['number_transitions'] = 0
+      warn('Using VIEWPOINT-bug work around ( number transitions [%d] > 507 )',
+           len(transitions))
+    else:
+      C['out']['number_transitions'] = len(transitions)
+    #END VIEWPOINT BUG WORKAROUND
 
     debug( 'dio64: out-config: %s', C['out'] )
 
