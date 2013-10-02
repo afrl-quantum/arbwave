@@ -118,7 +118,8 @@ class Arbwave:
                          self.signals,
                          self.channels,
                          self.waveforms,
-                         globals=self._globals_source.get_globals() )
+                         globals=self._globals_source.get_globals(),
+                         continuous=continuous )
 
     self.ui.waveform_editor.set_eval_cache( eval_cache )
     send.to_plotter( self.ui.plotter, analog, digital, self.channels, t_max )

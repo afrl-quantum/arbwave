@@ -2,7 +2,8 @@
 
 from scipy.interpolate import UnivariateSpline, interp1d
 import numpy as np
-import bisect
+import bisect, sys
+from logging import log, info, debug, warn, critical, DEBUG
 
 from ... import backend
 from .. import functions
@@ -120,11 +121,12 @@ def evalIfNeeded( s, G, L=dict() ):
 
 
 class WaveformEvalulator:
-  def __init__(self,devcfg, clocks, channels, globals):
+  def __init__(self,devcfg, clocks, channels, globals, continuous):
     # currently configured...
     self.devcfg = devcfg
     self.clocks = clocks
     self.channels = channels
+    self.continuous = continuous
 
     # all the currently known possible channels
     self.timing_channels = backend.get_timing_channels()
@@ -315,20 +317,11 @@ class WaveformEvalulator:
 
 
   def finish(self):
-    # ensure that we have a unique set of transitions
-    for i in self.transitions:
-      # by definition, we need to be sure to have a t=0 transition
-      self.transitions[i].append( 0.0 )
-
-      if self.timing_channels[i].is_aperiodic() or not self.explicit_timing[i]:
-        self.transitions[i] = set( self.transitions[i] )
-      else:
-        dt = self.timing_channels[i].get_min_period()/unit.s
-        self.transitions[i] = np.arange( 0.0, max(self.transitions[i])+dt, dt )
-
+    debug('initial t_max: %s', self.t_max)
     # the return values are initially empty
     retvals = {'analog':dict(), 'digital':dict()}
 
+    t_max = self.t_max
     for chname, ci in self.channel_info.items():
       if not ( ci['type'] and ci['elements'] ):
         continue # not a group or valid element
@@ -340,17 +333,33 @@ class WaveformEvalulator:
         raise RuntimeError("type of channel '"+chname+"' reset?!")
 
       elems = ci['elements']
+      trans = self.transitions[ ci['clock'] ]
       if elems[0].ti > 0:
         # first element of this channel is at t > 0 so we insert a
         # t=0 value that lasts for at least t_clk time
         insert_value( 0.0*unit.s, ci['min_period'], ci['init'],
-                      ci['min_period'], chname, ci,
-                      list(), # dummy list
-                      't=0' )
+                      ci['min_period'], chname, ci, trans, (-1,) )
+      if not self.continuous:
+        insert_value( self.t_max, ci['min_period'], ci['init'],
+                      ci['min_period'], chname, ci, trans, (sys.maxint,) )
+        t_max = max( t_max, t_max + ci['min_period'] )
 
       if prfx not in D:
         D[ prfx ] = dict()
       D[ prfx ][ dev ] = to_plottable( elems )
+
+    self.t_max = t_max
+    debug('final t_max: %s', self.t_max)
+    print 'digital: ', retvals['digital']
+    print 'analog: ', retvals['analog']
+
+    # ensure that we have a unique set of transitions
+    for i in self.transitions:
+      if self.timing_channels[i].is_aperiodic() or not self.explicit_timing[i]:
+        self.transitions[i] = set( self.transitions[i] )
+      else:
+        dt = self.timing_channels[i].get_min_period()/unit.s
+        self.transitions[i] = np.arange( 0.0, max(self.transitions[i])+dt, dt )
 
     return retvals['analog'], retvals['digital'], self.transitions, \
            self.t_max.coeff, self.finite_mode_end_clocks_required, \
@@ -384,7 +393,8 @@ def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
   trans.append( ti.coeff )
 
 
-def waveforms( devcfg, clocks, signals, channels, waveforms, globals ):
+def waveforms( devcfg, clocks, signals, channels, waveforms, globals,
+               continuous=True ):
   """
   Take the configuration as provided by the user and generate a set of waveforms
   that can then be sent to the plotter and/or a hardware driver for output.
@@ -393,7 +403,8 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals ):
     1.  Determine all times that must make a voltage transition on some channel.
     2.  Generate a voltage sample for each transition that must occur.
   """
-  wve = WaveformEvalulator(devcfg, clocks, channels, globals=globals)
+  wve = WaveformEvalulator(devcfg, clocks, channels, globals=globals,
+                           continuous=continuous)
   wve.group( waveforms, globals=globals )
   return wve.finish()
 
