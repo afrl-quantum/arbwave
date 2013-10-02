@@ -350,8 +350,6 @@ class WaveformEvalulator:
 
     self.t_max = t_max
     debug('final t_max: %s', self.t_max)
-    print 'digital: ', retvals['digital']
-    print 'analog: ', retvals['analog']
 
     # ensure that we have a unique set of transitions
     for i in self.transitions:
