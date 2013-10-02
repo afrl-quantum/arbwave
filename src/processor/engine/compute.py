@@ -169,6 +169,10 @@ class WaveformEvalulator:
       # sets ci['units'], ci['scaling'], etc
       # units and scaling only get to refer to globals
       set_units_and_scaling(chname, ci, chan, globals)
+      init = evalIfNeeded( chan['value'], globals )
+      init = apply_scaling(init, chname, ci)
+      check_final_units( init, chname, ci )
+      ci['init'] = init
 
       # in this loop, we first need to determine the largest period required by
       # all devices that share each clock.  In a subsequent loop below, we'll
@@ -313,6 +317,9 @@ class WaveformEvalulator:
   def finish(self):
     # ensure that we have a unique set of transitions
     for i in self.transitions:
+      # by definition, we need to be sure to have a t=0 transition
+      self.transitions[i].append( 0.0 )
+
       if self.timing_channels[i].is_aperiodic() or not self.explicit_timing[i]:
         self.transitions[i] = set( self.transitions[i] )
       else:
@@ -320,28 +327,33 @@ class WaveformEvalulator:
         self.transitions[i] = np.arange( 0.0, max(self.transitions[i])+dt, dt )
 
     # the return values are initially empty
-    analog = dict()
-    digital = dict()
+    retvals = {'analog':dict(), 'digital':dict()}
 
-    for ci in self.channel_info.items():
-      if not ( ci[1]['type'] and ci[1]['elements'] ):
+    for chname, ci in self.channel_info.items():
+      if not ( ci['type'] and ci['elements'] ):
         continue # not a group or valid element
 
-      prfx, dev = prefix(self.channels[ ci[0] ]['device'])
+      prfx, dev = prefix(self.channels[ chname ]['device'])
 
-      if   ci[1]['type'] is 'analog':
-        if prfx not in analog:
-          analog[ prfx ] = dict()
-        analog[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
-      elif ci[1]['type'] is 'digital':
-        if prfx not in digital:
-          digital[ prfx ] = dict()
-        digital[ prfx ][ dev ] = to_plottable( ci[1]['elements'] )
-      else:
-        raise RuntimeError("type of channel '"+ci[0]+"' reset?!")
+      D = retvals.get( ci['type'], None )
+      if D is None:
+        raise RuntimeError("type of channel '"+chname+"' reset?!")
 
-    return analog, digital, self.transitions, self.t_max.coeff, \
-           self.finite_mode_end_clocks_required, \
+      elems = ci['elements']
+      if elems[0].ti > 0:
+        # first element of this channel is at t > 0 so we insert a
+        # t=0 value that lasts for at least t_clk time
+        insert_value( 0.0*unit.s, ci['min_period'], ci['init'],
+                      ci['min_period'], chname, ci,
+                      list(), # dummy list
+                      't=0' )
+
+      if prfx not in D:
+        D[ prfx ] = dict()
+      D[ prfx ][ dev ] = to_plottable( elems )
+
+    return retvals['analog'], retvals['digital'], self.transitions, \
+           self.t_max.coeff, self.finite_mode_end_clocks_required, \
            self.eval_cache
 
 
@@ -420,6 +432,7 @@ def make_channel_info(channels):
   for c in channels:
     D[c] = {
       'type':None,
+      'init':None,
       'elements': list(),
       'scaling' : None,
       'units'   : None,
