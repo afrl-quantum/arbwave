@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import threading
+import threading, logging
 from pygraph.algorithms.sorting import topological_sorting
 from ...tools.gui_callbacks import do_gui_operation
 from ... import backend
@@ -48,6 +48,7 @@ class ToDriver:
     print 'trying to update the hardware to static output!!!!'
     for D in backend.drivers:
       backend.drivers[D].set_static(analog.get(D,{}), digital.get(D,{}))
+    logging.debug('updated hardware to static output')
 
 
   def waveform(self, analog, digital, transitions, t_max, end_clocks, continuous):
@@ -59,6 +60,7 @@ class ToDriver:
       backend.drivers[D].set_waveforms(analog.get(D,{}), digital.get(D,{}),
                                        transitions, t_max, end_clocks,
                                        continuous)
+    logging.debug('send waveform to hardware')
 
 
   def start(self, devcfg, clocks, signals):
@@ -68,6 +70,7 @@ class ToDriver:
     Device inter-dependencies are used to start devices in order of
     most-dependent to least-dependent.
     """
+    logging.info( 'sending go signal to all hardware for waveform output' )
     # 1.  Create a graph of signals and clocks; map 'name' to dev
     graph = signal_graphs.build_graph( signals, *clocks )
     to_dev = { d[0]:d[1]  for d in backend.get_devices().items() }
@@ -117,6 +120,7 @@ class ToDriver:
 
     for d in self.sorted_device_list:
       d.start()
+    logging.info( 'sent go signal all hardware for waveform output' )
 
 
   def wait(self):
@@ -141,8 +145,10 @@ class ToDriver:
     Device inter-dependencies are used to stop devices in order of
     least-dependent to most-dependent (opposite of how they are started).
     """
+    logging.info( 'sending stop signal to all hardware for waveform output' )
     for i in xrange(len(self.sorted_device_list)-1,-1,-1):
       self.sorted_device_list[i].stop()
+    logging.info( 'sent stop signal to all hardware for waveform output' )
 
 
   def config(self, config, channels, shortest_paths):
