@@ -171,10 +171,7 @@ class WaveformEvalulator:
       # sets ci['units'], ci['scaling'], etc
       # units and scaling only get to refer to globals
       set_units_and_scaling(chname, ci, chan, globals)
-      init = evalIfNeeded( chan['value'], globals )
-      init = apply_scaling(init, chname, ci)
-      check_final_units( init, chname, ci )
-      ci['init'] = init
+      ci['init'] = evalIfNeeded( chan['value'], globals )
 
       # in this loop, we first need to determine the largest period required by
       # all devices that share each clock.  In a subsequent loop below, we'll
