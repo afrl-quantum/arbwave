@@ -233,7 +233,7 @@ class WaveformEvalulator:
         else:
           gi_dt = evalIfNeeded( gi['duration'], globals, L )
           unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
-        assert gi_dt > 0*unit.s,  gi['group-label']+'(dt): MUSt be > 0!'
+        assert gi_dt >= 0*unit.s,  gi['group-label']+'(dt): MUST be >= 0!'
         self.eval_cache[ gi['path'] ] = dict(t=gi_t, dt=gi_dt)
 
         # 3.  recurse
