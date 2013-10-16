@@ -361,7 +361,7 @@ class Interpolate:
 
     Only one of dt or steps can be used.
    """
-    self.interp = interp1d( x / float(max(x) - min(x)) - min(x), y )
+    self.interp = interp1d( (x - min(x)) / float(max(x) - min(x)), y )
     self.unity = getunity( y[0] )
     if steps > 0:
       self.steps = steps
