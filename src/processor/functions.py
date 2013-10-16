@@ -12,6 +12,7 @@ import numpy as np
 import math
 import physical
 machine_arch = np.MachAr()
+from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 
 class step_iter:
   def __init__(self, ti, tf, dt, min_period, fun):
@@ -176,6 +177,7 @@ class Ramp:
     return self._from - t_norm**self.exponent * (self._from - self.to)
 
   def set_vars(self, _from, t, duration, min_period):
+    debug('%s.set_vars(%s,%s,%s,%s)', self, _from, t, duration, min_period)
     if self._from is None:
       self._from = _from
     elif _from is not None \
@@ -233,6 +235,7 @@ class Pulse:
     return '{}({}, {})'.format(self.name, self.high, self.low)
 
   def set_vars(self, _from, t, duration, min_period):
+    debug('%s.set_vars(%s,%s,%s,%s)', self, _from, t, duration, min_period)
     self._from = _from
     if self.low is None:
       if type(self.high) is bool:
@@ -251,7 +254,13 @@ class Pulse:
       L.append( (self.t, self.duration, self.high) )
 
     # add the transition to the low value
-    L.append( (self.t + self.duration, self.min_period, self.low) )
+    # take care to avoid machine precision problems by moving the start time
+    # ahead a tiny bit.
+    L.append((
+      (self.t + self.duration)*(1+machine_arch.eps),
+      self.min_period*(1-machine_arch.eps),
+      self.low
+    ))
     return iter(L)
 
 class PulseTrain:
