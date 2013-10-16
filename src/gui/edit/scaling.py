@@ -337,12 +337,22 @@ class ListUndo:
 
 
 
+def evalIfNeeded( s, G, L=dict() ):
+  if type(s) is str:
+    try:
+      return eval( s, G, L )
+    except Exception, e:
+      raise RuntimeError('Could not evaluate python text: "{}"\n{}'.format(s,e))
+  else:
+    return s
+
+
 def calculate( scaling, globals ):
   D = dict()
   for x,y in scaling:
     if x and y:
-      yval = eval(y,globals)
-      xval = eval(x,globals)
+      yval = evalIfNeeded(y,globals)
+      xval = evalIfNeeded(x,globals)
 
       try: # assume iterable first
         assert len(xval) == len(yval), \

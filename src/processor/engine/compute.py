@@ -12,8 +12,10 @@ import physical
 from physical import unit
 from math import ceil
 from ...tools.scaling import calculate as calculate_scaling
+from ...tools.eval import evalIfNeeded
 
 machine_arch = np.MachAr()
+
 
 class OverlapError(Exception):
   pass
@@ -103,7 +105,7 @@ def make_univariate_spline(scaling,order=1,smooth=0, globals=globals()):
 def set_units_and_scaling(chname, ci, chan, globals):
   if not ci['units']:
     if chan['units']:
-      ci['units'] = eval(chan['units'], globals)
+      ci['units'] = evalIfNeeded(chan['units'], globals)
     elif ci['type'] is 'analog':
       ci['units'] = unit.V
 
@@ -119,17 +121,6 @@ def set_units_and_scaling(chname, ci, chan, globals):
       chan['interp_smoothing'],
       globals=globals,
     )
-
-
-
-def evalIfNeeded( s, G, L=dict() ):
-  if type(s) is str:
-    try:
-      return eval( s, G, L )
-    except Exception, e:
-      raise RuntimeError('Could not evaluate python text: "{}"\n{}'.format(s,e))
-  else:
-    return s
 
 
 
