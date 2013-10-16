@@ -1,3 +1,4 @@
+# vim: et:ts=2:sw=2:tw=80:nowrap
 #
 #       Py_Shell.py : inserts the python prompt in a gtk interface
 #
@@ -7,6 +8,11 @@ import __builtin__
 
 
 import gtk, gobject, pango, glib
+import types, pydoc
+
+textDoc = pydoc.TextDoc()
+# no special bolding!
+textDoc.bold = types.MethodType(lambda self,txt:txt, textDoc)
 
 PS1=">>> "
 PS2="... "
@@ -262,6 +268,7 @@ class Shell_Gui:
     self.remote_get_globals = get_globals
     self.remote_reset = reset
     self.ui = ui
+    self._create_shell_cmds()
     self.banner=banner
     box=gtk.HBox()
     box.set_homogeneous(False)
@@ -518,34 +525,74 @@ class Shell_Gui:
     dlg.hide()
     self._reset(ans == 2)
 
+  def _create_shell_cmds(self):
+    def reset( hard=True, cmdline=True ):
+      """Rerun global script and clear terminal"""
+      self.reset(hard, cmdline)
+
+    def clear():
+      """clear terminal output"""
+      self.reset( hard=False, cmdline=True )
+
+    def history():
+      """show/clear(ie. history().clear()"""
+      return self.history
+
+    def store(**kargs):
+      """
+      store an item(s) in the shell_locals module
+      This enables an item to be stored across terminal resets
+      Usage : store(name0=value0, name1=value1, ...)
+      """
+      self.locals.update( **kwargs )
+
+    def shell_help(*args, **kwargs):
+      """help(object) for help about object"""
+      if not (args or kwargs):
+        fundoc = '\n'.join([ textDoc.docroutine(f) for f in self.shell_cmds ])
+        print (
+          '  ArbWave Shell Help: \n'
+          '  Some useful ArbWave commands: \n'
+          'quit()\n'
+          '  quit arbwave!\n\n'
+        ) + fundoc
+        return
+      help(*args, **kwargs)
+    shell_help.func_name = 'help'
+
+    self.shell_cmds = [ reset, clear, history, store, shell_help ]
+
+    if self.ui:
+      def save():
+        """
+        Save the configuration file.
+        """
+        self.ui.save()
+
+      def saveas(target, keep=True):
+        """
+        target : target filename to save to
+        keep   : whether to keep the current config filename after saving
+                 [Default True]
+        """
+        old = self.ui.config_file
+        self.ui.config_file = target
+        try:
+          self.ui.save()
+        finally:
+          self.ui.config_file = old
+
+      self.shell_cmds += [ save, saveas ]
+
+
   def get_globals(self, G=None):
     if G is None:
       G = self.remote_get_globals()
     G.update(
+      { f.func_name:f for f in self.shell_cmds },
       self=self,
-      reset = lambda : self.reset( hard=True,  cmdline=True),
-      clear = lambda : self.reset( hard=False, cmdline=True ),
-      history = lambda : self.history,
-      store = lambda **kwargs : self.locals.update( **kwargs ),
-      help  = lambda obj : help(obj),
       **self.locals
     )
-    if self.ui:
-      G['save'] = self.ui.save
-      G['saveas'] = lambda : self.ui.save(True)
-    G['reset'  ].func_name = 'reset'
-    G['reset'  ].func_doc  = 'Reset terminal'
-    G['clear'  ].func_name = 'clear'
-    G['clear'  ].func_doc  = 'clear terminal output'
-    G['history'].func_name = 'history'
-    G['history'].func_doc  = 'show/clear(ie. history().clear()'
-    G['store'  ].func_name = 'store'
-    G['store'  ].func_doc  = \
-      'store an item(s) in the shell_locals module\n' \
-      'This enables an item to be stored across terminal resets\n' \
-      'Usage : store(name0=value0, name1=value1, ...)' 
-    G['help'   ].func_name = 'help'
-    G['help'   ].func_doc  = 'help(object) for help about object'
     return G
 
 
