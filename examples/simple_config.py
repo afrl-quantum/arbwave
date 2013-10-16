@@ -14,7 +14,15 @@ channels = \
          'order': 1,
          'scaling': [('0', '0'), ('10', '10')],
          'units': 'V',
-         'value': '10*V'}}
+         'value': '10*V'},
+ 'ao1': {'device': 'Analog/ni/Dev1/ao1',
+         'enable': True,
+         'interp_order': 1,
+         'interp_smoothing': 0.0,
+         'order': 2,
+         'scaling': [('0', '0'), ('-10', '10')],
+         'units': 'V',
+         'value': '5*V'}}
 
 waveforms = \
 {'current_waveform': 'Default',
@@ -53,7 +61,7 @@ arbwave.add_runnable( 'Simple', SimpleRun() )
 """
 
 version = \
-'0.1.6-15-g5d09805'
+'0.1.6-26-g1ed36fb'
 
 signals = \
 {('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}

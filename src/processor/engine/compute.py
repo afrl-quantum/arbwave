@@ -343,8 +343,8 @@ class WaveformEvalulator:
 
     t_max = self.t_max
     for chname, ci in self.channel_info.items():
-      if not ( ci['type'] and ci['elements'] ):
-        continue # not a group or valid element
+      if not ci['type']:
+        continue # not enabled
 
       prfx, dev = prefix(self.channels[ chname ]['device'])
 
@@ -354,7 +354,7 @@ class WaveformEvalulator:
 
       elems = ci['elements']
       trans = self.transitions[ ci['clock'] ]
-      if elems[0].ti > 0:
+      if len(elems) == 0 or elems[0].ti > 0:
         # first element of this channel is at t > 0 so we insert a
         # t=0 value that lasts for at least t_clk time
         insert_value( 0.0*unit.s, ci['min_period'], ci['init'],
