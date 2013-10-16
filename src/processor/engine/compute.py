@@ -3,7 +3,7 @@
 from scipy.interpolate import UnivariateSpline, interp1d
 import numpy as np
 import bisect, sys
-from logging import log, info, debug, warn, critical, DEBUG
+from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 
 from ... import backend
 from .. import functions
@@ -13,6 +13,8 @@ from physical import unit
 from math import ceil
 from ...tools.scaling import calculate as calculate_scaling
 
+machine_arch = np.MachAr()
+
 class OverlapError(Exception):
   pass
 
@@ -21,11 +23,13 @@ class UniqueElement:
   This element representation only allows waveform elements that do _not_
   overlap.
   """
-  def __init__(self, ti, tf, value, group):
+  def __init__(self, ti, tf, value, chname, group, group_name):
     self.ti = ti
     self.tf = tf
     self.value = value
+    self.chname = chname
     self.group = group
+    self.group_name = group_name
   def __cmp__(self, other):
     if self.ti < other.ti and cmpeps(self.tf, other.ti) <=0:
       return -1
@@ -34,11 +38,20 @@ class UniqueElement:
     #elif cmpeps(self.ti, other.ti)==0 and cmpeps(self.dt, other.dt)==0:
     #  return 0
     else:
-      raise OverlapError('overlapping waveform elements [' \
-                         + str(self) + ',' + str(other) + ']!')
+      raise OverlapError(
+        'overlapping waveform elements [\n'
+        '  {self}\n'
+        '  {other}\n'
+        ']!'
+        .format( self=self, other=other )
+      )
 
   def __repr__(self):
-    return '(ti={ti},tf={tf},{v})'.format(ti=self.ti,tf=self.tf,v=self.value)
+    return '{G}/{C}{group}:(ti={ti},tf={tf},{v})' \
+      .format(
+        G=self.group_name, C=self.chname, group=self.group,
+        ti=self.ti,tf=self.tf,v=self.value,
+      )
 
 
 class ClampedInterp1d:
@@ -140,6 +153,7 @@ class WaveformEvalulator:
     self.t_max = 0.0*unit.s
     self.eval_cache = dict()
 
+    debug('compute.waveforms:  initializing channel_info...')
     # initialize the channel info (min period, ...):
     min_periods = dict()
     for chname, chan in self.channels.items():
@@ -188,6 +202,7 @@ class WaveformEvalulator:
       if chan_dev.finite_mode_requires_end_clock():
         self.finite_mode_end_clocks_required.add( ci['clock'] )
 
+    debug('compute.waveforms: assigning limiting min_period for each channel...')
     # now we assign the required period to each device that uses each clock
     rem_list = list()
     for chname, ci in self.channel_info.items():
@@ -199,8 +214,9 @@ class WaveformEvalulator:
       self.channel_info.pop(i)
 
 
-  def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict()):
-
+  def group(self, group, t=0*unit.s, dt=0*unit.s, globals=None, locals=dict(),
+            name='root'):
+    log(DEBUG-1, 'compute.waveforms:  enter group %s', name)
     # natural time for all elements immediately in this group
     t_locals = dict()
     # t is used for calculating natural time 't' for sub-groups
@@ -237,7 +253,7 @@ class WaveformEvalulator:
         self.eval_cache[ gi['path'] ] = dict(t=gi_t, dt=gi_dt)
 
         # 3.  recurse
-        self.group( gi['elements'], gi_t, gi_dt, globals, L )
+        self.group( gi['elements'], gi_t, gi_dt, globals, L, gi['group-label'] )
 
         # 4.  increment natural time for siblings
         if not gi['asynchronous']:
@@ -262,14 +278,17 @@ class WaveformEvalulator:
 
         t_locals.setdefault(chname, t_start)
         locals['t'] = t_locals[ chname ]
-        t_locals[ chname ] = self.element( gi, globals, locals )
+        t_locals[ chname ] = self.element( name, gi, globals, locals )
 
     if t_locals:
       self.t_max = max( self.t_max, *t_locals.values() )
 
+    log(DEBUG-1, 'compute.waveforms:  leave group %s', name)
 
-  def element(self, e, globals, locals):
+
+  def element(self, parent, e, globals, locals):
     chname = e['channel']
+    log(DEBUG-1, 'compute.waveforms:  enter element %s', chname)
     ci = self.channel_info[chname]
 
     # get a ref to the list of transitions for the associated clock generator
@@ -300,15 +319,19 @@ class WaveformEvalulator:
 
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
-      insert_value(t, dt, value,  ci['min_period'],chname,ci,trans,e['path'])
+      insert_value(t, dt, value,  ci['min_period'],chname,ci,trans,
+                   e['path'],parent)
       ci['last'] = value
     else:
       value.set_vars( ci['last'], t, dt, ci['min_period'] )
       for t_j, dt_j, v_j in value:
-        insert_value(t_j,dt_j,v_j,ci['min_period'],chname,ci,trans,e['path'])
+        insert_value(t_j,dt_j,v_j,ci['min_period'],chname,ci,trans,
+                     e['path'],parent)
         ci['last'] = v_j
 
     locals.pop('dt_clk')
+    
+    log(DEBUG-1, 'compute.waveforms:  leave element %s', chname)
     # we need to return the end time of this waveform element
     return t + dt
 
@@ -335,10 +358,12 @@ class WaveformEvalulator:
         # first element of this channel is at t > 0 so we insert a
         # t=0 value that lasts for at least t_clk time
         insert_value( 0.0*unit.s, ci['min_period'], ci['init'],
-                      ci['min_period'], chname, ci, trans, (-1,) )
+                      ci['min_period'], chname, ci, trans,
+                      (-1,), 'root' )
       if not self.continuous:
         insert_value( self.t_max, ci['min_period'], ci['init'],
-                      ci['min_period'], chname, ci, trans, (sys.maxint,) )
+                      ci['min_period'], chname, ci, trans,
+                      (sys.maxint,), 'root' )
         t_max = max( t_max, t_max + ci['min_period'] )
 
       if prfx not in D:
@@ -361,16 +386,18 @@ class WaveformEvalulator:
            self.eval_cache
 
 
-def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
+def insert_value( t, dt, v, min_period, chname, ci, trans, group, group_name ):
   # t and dt must be aligned to the nearest clock pulse
   ti = round( t / min_period )
-  tf = round( (t+dt) / min_period )
+  tf = round( ((t+dt) / min_period) * (1 + machine_arch.eps) )
 
   # one more check to be sure that dt was big enough
   # we do this comparison with integer values of clocks
   assert ti < tf, \
-    chname + ':  transition width too small at t={t},dt={dt}, or ti={ti}, tf={tf}' \
-      .format(t=t, dt=dt, ti=ti, tf=tf)
+    '{G}/{C}{group}:  transition width too small at \n' \
+      '\t\tt={t},dt={dt}, or ti={ti}, tf={tf} \n' \
+      '\t\tmin_period={min_period}' \
+      .format( G=group_name, C=chname, **locals() )
 
   # convert back to real time
   ti = min_period * ti
@@ -380,11 +407,18 @@ def insert_value( t, dt, v, min_period, chname, ci, trans, group ):
   v = apply_scaling(v, chname, ci)
   check_final_units(v, chname, ci)
 
-  try:
-    bisect.insort_right(
-      ci['elements'], UniqueElement(ti.coeff, tf.coeff, v, group) )
-  except OverlapError, e:
-    raise OverlapError( '{c}: {e}'.format(c=chname,e=e) )
+  if rootlog.getEffectiveLevel() <= (DEBUG-1):
+    u = UniqueElement(ti.coeff, tf.coeff, v, chname, group, group_name)
+    log(DEBUG-1, 'inserting transition:\n'
+                 '%s\n'
+                 'raw values:\n'
+                 't,dt,v,min_period = %.12g,%.12g,%g,%.12g',
+                 repr(u), t.coeff, dt.coeff, v, min_period.coeff )
+
+  bisect.insort_right(
+    ci['elements'],
+    UniqueElement(ti.coeff, tf.coeff, v, chname, group, group_name),
+  )
   trans.append( ti.coeff )
 
 
@@ -400,7 +434,9 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals,
   """
   wve = WaveformEvalulator(devcfg, clocks, channels, globals=globals,
                            continuous=continuous)
+  debug('compute.waveforms: beginning group recursion...')
   wve.group( waveforms, globals=globals )
+  debug('finalizing compute.waveforms')
   return wve.finish()
 
 
