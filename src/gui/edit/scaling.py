@@ -251,6 +251,7 @@ class Editor(gtk.Dialog):
     # INTERP_SMOOTHING defaults to zero already
 
     self.units.set_text( chan[self.channels.UNITS] )
+    self.units.activate()
     self.offset.set_text( chan[self.channels.OFFSET] or '' )
     self.order.set_value( chan[self.channels.INTERP_ORDER] )
     self.smoothing.set_value( chan[self.channels.INTERP_SMOOTHING] )
