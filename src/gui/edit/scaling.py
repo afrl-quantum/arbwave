@@ -398,7 +398,7 @@ def calculate( scaling, units, offset, globals, return_range=False ):
           'expected unitless scaler in voltage entries'
         assert 'units' not in dir(yi), \
           'expected unitless scaler in output entries'
-        D[xi] = float(yi + offset)
+        D[xi] = float(yi - offset)
 
   if return_range:
     XVALS = D.keys()
