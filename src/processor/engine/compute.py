@@ -78,12 +78,10 @@ class ClampedInterp1d:
       return self.pointwise(xs)
 
 
-def make_univariate_spline(scaling,order=1,smooth=0, globals=globals()):
+def make_univariate_spline(scaling,units,offset,order=1,smooth=0,
+                           globals=globals()):
   # we have to first evaluate everything, build an array, and sort
-  L = calculate_scaling(scaling, globals).items()
-  # make sure that the order of data is correct
-  L.sort(key=lambda v: v[0]) # sort by x
-  L = np.array(L)
+  L = calculate_scaling(scaling, units, offset, globals)
   mn, mx   = L[0,0], L[-1,0]
 
   # to make things more natural for the user, we'll first generate a higher
@@ -117,6 +115,8 @@ def set_units_and_scaling(chname, ci, chan, globals):
       chname+': expected interpolation smoothing >=0 for scaling'
     ci['scaling'] = make_univariate_spline(
       chan['scaling'],
+      ci['units'],
+      chan['offset'],
       chan['interp_order'],
       chan['interp_smoothing'],
       globals=globals,

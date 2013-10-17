@@ -13,7 +13,7 @@ from ..tools.path import collect_prefix
 from ..tools.signal_graphs import shortest_paths
 from ..tools.scaling import calculate as calculate_scaling
 
-def get_range( scaling, globals, **kwargs ):
+def get_range( scaling, units, offset, globals, **kwargs ):
   """
   Get the minimum and maximum values of a given channels scaling.  Some devices
   can use this to provide more firm limits on channel outputs.  NIDAQmx does
@@ -22,8 +22,8 @@ def get_range( scaling, globals, **kwargs ):
   if not scaling:
     return None
   # note:  we ignore lines with either empty x _OR_ y values
-  vals = calculate_scaling(scaling, globals).keys()
-  return dict(min=min(vals), max=max(vals), **kwargs)
+  mn, mx = calculate_scaling(scaling, units, offset, globals, return_range=True)
+  return dict(min=mn, max=mx, **kwargs)
 
 
 class Processor:
@@ -118,7 +118,8 @@ class Processor:
         engine.send.to_driver.config(
           collect_prefix(devcfg[0]),
           collect_prefix(
-            {c['device'] : get_range(c['scaling'],self.Globals,order=c['order'])
+            {c['device'] : get_range(c['scaling'],c['units'],c['offset'],
+                                     self.Globals,order=c['order'])
               for  c in channels[0].values()
                 if c['enable']
             },

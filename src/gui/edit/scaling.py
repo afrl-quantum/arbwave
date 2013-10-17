@@ -117,18 +117,33 @@ class Editor(gtk.Dialog):
 
     self.units = gtk.Entry()
     def update_units_label(entry):
-      # just a simple test to see if the units evaluate
-      eval(self.units.get_text(), self.get_globals())
-
-      C['y'].set_title( 'Output ({})'.format(entry.get_text()))
-      self.axes.set_ylabel('Output ({})'.format(self.units.get_text()))
-      self.canvas.draw()
       T = self.units.get_text()
+      # just a simple test to see if the units evaluate
+      eval(T, self.get_globals())
+
+      C['y'].set_title( 'Output ({})'.format(T) )
+      self.axes.set_ylabel( 'Output ({})'.format(T) )
+      self.canvas.draw()
       if self.chan and self.chan[self.channels.UNITS] != T:
         self.chan[self.channels.UNITS] = T
+        self.update_plot()
 
     self.units.connect('activate', update_units_label)
     self.units.set_text('V')
+
+    self.offset = gtk.Entry()
+    def update_offset(entry):
+      T = self.offset.get_text()
+      # just a simple test to see if the units evaluate
+      if not T:
+        T = None
+      elif T.partition('#')[0].strip():
+        eval(T, self.get_globals())
+
+      if self.chan and self.chan[self.channels.OFFSET] != T:
+        self.chan[self.channels.OFFSET] = T
+        self.update_plot()
+    self.offset.connect('activate', update_offset)
 
 
     self.order = gtk.SpinButton()
@@ -166,9 +181,14 @@ class Editor(gtk.Dialog):
     pbox.pack_start( gtk.Label('Smoothing:' ) )
     pbox.pack_start( self.smoothing )
 
+    obox = gtk.HBox()
+    obox.pack_start( gtk.Label('Output Offset (with units):') )
+    obox.pack_start( self.offset )
+
     bottom = gtk.VBox()
     bottom.pack_start(ubox, False, False)
     bottom.pack_start(pbox, False, False)
+    bottom.pack_start(obox, False, False)
     bottom.pack_start(sw)
 
     body = gtk.VPaned()
@@ -231,6 +251,7 @@ class Editor(gtk.Dialog):
     # INTERP_SMOOTHING defaults to zero already
 
     self.units.set_text( chan[self.channels.UNITS] )
+    self.offset.set_text( chan[self.channels.OFFSET] or '' )
     self.order.set_value( chan[self.channels.INTERP_ORDER] )
     self.smoothing.set_value( chan[self.channels.INTERP_SMOOTHING] )
     store = chan[self.channels.SCALING]
@@ -280,12 +301,10 @@ class Editor(gtk.Dialog):
     if self.pause_update:
       return
 
-    self.units.activate()
-
-    D = calculate(self.chan[self.channels.SCALING], self.get_globals()).items()
-    # make sure that the order of data is correct
-    D.sort(key=lambda v: v[0]) # sort by x
-    D = np.array(D)
+    D = calculate(self.chan[self.channels.SCALING],
+                  self.chan[self.channels.UNITS],
+                  self.chan[self.channels.OFFSET],
+                  self.get_globals()               )
 
     if len(D):
       if len(D) > 1:
@@ -347,7 +366,18 @@ def evalIfNeeded( s, G, L=dict() ):
     return s
 
 
-def calculate( scaling, globals ):
+def calculate( scaling, units, offset, globals, return_range=False ):
+  U = evalIfNeeded(units, globals)
+  if offset is not None:
+    offset = offset.partition('#')[0].strip()
+  if offset:
+    offset = evalIfNeeded(offset, globals)
+    # ensure proper units
+    U.unitsMatch( offset, 'Scaling offset must have proper units' )
+    offset /= U
+  else:
+    offset = 0
+
   D = dict()
   for x,y in scaling:
     if x and y:
@@ -368,7 +398,16 @@ def calculate( scaling, globals ):
           'expected unitless scaler in voltage entries'
         assert 'units' not in dir(yi), \
           'expected unitless scaler in output entries'
-        D[xi] = yi
+        D[xi] = float(yi + offset)
+
+  if return_range:
+    XVALS = D.keys()
+    return min(XVALS), max(XVALS)
+
+  # make sure that the order of data is correct
+  D = D.items()
+  D.sort(key=lambda v: v[0]) # sort by x
+  D = np.array(D)
   return D
 
 
@@ -411,13 +450,16 @@ data = np.array([
     SCALING          = 2
     INTERP_ORDER     = 3
     INTERP_SMOOTHING = 4
-    DEVICE           = 5
+    OFFSET           = 5
+    DEVICE           = 6
     def __init__(self):
-      gtk.ListStore.__init__(self, str, str, gtk.ListStore, int, float, str)
+      gtk.ListStore.__init__(self,
+        str, str, gtk.ListStore, int, float, str, str
+      )
 
   channels = Channels()
-  channels.append(( 'MOT Detuning', 'MHz', gtk.ListStore(str,str), 1, 0, 'Analog' ))
-  channels.append(( 'MOT Power', 'mW', gtk.ListStore(str,str), 1, 0, 'Analog' ))
+  channels.append(( 'MOT Detuning', 'MHz', gtk.ListStore(str,str), 1, 0, '', 'Analog' ))
+  channels.append(( 'MOT Power', 'mW', gtk.ListStore(str,str), 1, 0, '10*mW', 'Analog' ))
   edit(channels, globals=Globals)
 
 if __name__ == '__main__':

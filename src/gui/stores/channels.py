@@ -41,6 +41,7 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
   ENABLE  =5
   INTERP_ORDER =6
   INTERP_SMOOTHING =7
+  OFFSET  =8
 
   def __init__(self, **kwargs):
     gtk.ListStore.__init__(self,
@@ -52,6 +53,7 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
       bool, # enable
       int,  # interpolation order
       float,# interpolation smoothing parameter
+      str,  # offset in correct units
     )
     self._scaling_callbacks = dict()
 
@@ -73,6 +75,7 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
         'enable'  : i[Channels.ENABLE],
         'interp_order' : i[Channels.INTERP_ORDER],
         'interp_smoothing' : i[Channels.INTERP_SMOOTHING],
+        'offset'  : i[Channels.OFFSET],
         'order'   : order,
       }
       if i[Channels.SCALING]:
@@ -101,6 +104,7 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
         i[1]['enable'],
         i[1]['interp_order'],
         i[1]['interp_smoothing'],
+        i[1]['offset'],
       ])
 
   def representation(self):
