@@ -3,6 +3,7 @@ channels = \
                     'enable': True,
                     'interp_order': 0,
                     'interp_smoothing': 0.0,
+                    'offset': None,
                     'order': 0,
                     'scaling': [],
                     'units': None,
@@ -11,6 +12,7 @@ channels = \
          'enable': True,
          'interp_order': 1,
          'interp_smoothing': 0.0,
+         'offset': None,
          'order': 1,
          'scaling': [('0', '0'), ('10', '10')],
          'units': 'V',
@@ -19,6 +21,7 @@ channels = \
          'enable': True,
          'interp_order': 1,
          'interp_smoothing': 0.0,
+         'offset': None,
          'order': 2,
          'scaling': [('0', '0'), ('-10', '10')],
          'units': 'V',
@@ -61,7 +64,7 @@ arbwave.add_runnable( 'Simple', SimpleRun() )
 """
 
 version = \
-'0.1.6-26-g1ed36fb'
+'0.1.7'
 
 signals = \
 {('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}
