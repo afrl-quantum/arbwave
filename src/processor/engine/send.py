@@ -16,17 +16,20 @@ def plot_stuff( plotter, analog, digital, names, t_max ):
   if analog or digital:
     plotter.finish(t_final=t_max)
 
-def to_plotter( plotter, analog, digital, channels, t_max ):
+def to_plotter( plotter, analog, digital, clocks, channels, t_max ):
   # we need a map from device-name to (channel name,order)
   names = dict()
   for c in channels.items():
     dev = c[1]['device']
+    if not dev:
+      continue
+
+    # the partition is to get rid of the 'Analog/' or 'Digital/' prefix
+    dev = dev.partition('/')[2]
     if dev and c[1]['enable']:
       if dev in names:
         raise NameError('Device channels can only be used once')
-      # the partition is to get rid of the 'Analog/' or 'Digital/' prefix
-      names[ c[1]['device'].partition('/')[2] ] = \
-        dict(name=c[0],order=c[1]['order'])
+      names[ dev ] = dict( name=c[0], order=c[1]['order'], dt_clk=clocks[dev] )
 
 
   # take components of device-categorized dictionaries to

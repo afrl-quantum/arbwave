@@ -179,7 +179,9 @@ class Task(Base):
     if not self.clock_terminal:
       raise UserWarning('cannot start waveform without a output clock defined')
 
-    transitions = list(clock_transitions[ self.config['clock']['value'] ])
+    my_clock = clock_transitions[ self.config['clock']['value'] ]
+    dt_clk = my_clock['dt']
+    transitions = list( my_clock['transitions'] )
     transitions.sort()
 
     # 1.  Sample clock
@@ -273,13 +275,19 @@ class Task(Base):
       ]
       last = scans[ transitions[0] ]
 
-    t_last = -10*min_dt
-    for t in transitions:
-      if cmpeps(t - t_last, min_dt, 7) < 0: # Brian's favorite number is 7 between 1 and 10
-        raise RuntimeError(self.name+': Samples too small for NIDAQmx at t={tl}->{t}: {dt}<{m}' \
-          .format(tl=t_last,t=t, dt=t-t_last, m=min_dt))
-      t_last = t
+    diff_transitions = np.diff( transitions )
+    min_transition = np.argmin( diff_transitions )
+    if diff_transitions[min_transition] < round(min_dt/dt_clk):
+      raise RuntimeError(
+        '{name}: Samples too small for NIDAQmx at t={tl}->{t}: {dt}<({m}/{clk})'
+        .format(name=self.name,
+                tl=transitions[min_transition],
+                t=transitions[min_transition+1],
+                dt=diff_transitions[min_transition],
+                m=min_dt, clk=dt_clk)
+      )
 
+    for t in transitions:
       t_array = scans[t]
       if t_array is None:
         # must be sharing a clock with another card.  keep last values

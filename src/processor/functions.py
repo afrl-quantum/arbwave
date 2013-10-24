@@ -15,11 +15,10 @@ machine_arch = np.MachAr()
 from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 
 class step_iter:
-  def __init__(self, ti, tf, dt, min_period, fun):
+  def __init__(self, ti, tf, dt, fun):
     self.t = ti
     self.tf = tf
     self.dt = dt
-    self.min_period = min_period
     self.fun = fun
   def __iter__(self):
     return self
@@ -29,11 +28,12 @@ class step_iter:
     t = self.t
 
     self.t += self.dt
+    v = self.fun(t)
     if self.t >= self.tf:
       # last one
-      return t, self.min_period, self.fun(t)
+      return t,       1, v
     else:
-      return t, self.dt, self.fun(t)
+      return t, self.dt, v
 
 
 ###################
@@ -76,9 +76,9 @@ class SinPulse:
       self.steps_per_cycle = self.default_steps_per_cycle
     self.skip_first = average is None
     self.dt = None
+    self.dt_clk = None
     self.t = None
     self.duration = None
-    self.tf_safe = None
 
   def __repr__(self):
     return '{}({}, {}, {}, {}, {})' \
@@ -91,14 +91,18 @@ class SinPulse:
 
     t_rel : relative time from beginning of sinpulse
     """
-    if t > (self.tf_safe - self.dt):
+    t_rel = (t - self.t)
+    if t_rel >= self.duration:
       return self.average
 
-    t_rel = (t - self.t)
+    t_rel *= self.dt_clk
     return self.average + self.A * math.sin(self.phase_shift + 2*np.pi * self.F * t_rel)
 
 
-  def set_vars(self, _from, t, duration, min_period):
+  def set_vars(self, _from, t, duration, dt_clk):
+    """
+      t and duration are integer time in units of dt_clk
+    """
     if self.average is None:
       self.average = _from
     elif _from is not None \
@@ -106,17 +110,18 @@ class SinPulse:
       # the user specified the value that the channel is already at
       self.skip_first = True
     self.t = t
-    self.min_period = min_period
+    self.dt_clk = dt_clk
 
     # it is important to make sure that the final value is given at
-    # dt-self.min_period.  This allows for the following clock pulse to be used by
+    # dt-self.dt_clk.  This allows for the following clock pulse to be used by
     # the next waveform element.
-    self.duration = duration - self.min_period
-    self.dt = 1. / (self.F * self.steps_per_cycle)
-    # tf safe is the comparison that is used to tell whether time-stepping
-    # should cease.  We add one half a min_period to avoid precision
-    # error-prone comparisons.
-    self.tf_safe = self.t+self.duration + 0.5*min_period
+    self.duration = duration - 1
+    self.dt = int(round( 1. / (self.F * self.steps_per_cycle) / dt_clk ))
+
+    if self.dt > self.duration:
+      raise RuntimeError( 'sinpulse:  requested stepsize too large' )
+    if self.dt < 1:
+      raise RuntimeError( 'sinpulse:  requested #steps too large' )
 
   def __iter__(self):
     # Note that the first data point (i.e. t=0) is implicitly given by _from
@@ -125,7 +130,7 @@ class SinPulse:
       ti = self.t + self.dt
     else:
       ti = self.t
-    return step_iter(ti, self.tf_safe, self.dt, self.min_period, self)
+    return step_iter(ti, self.t+self.duration, self.dt, self)
 
 
 
@@ -158,14 +163,15 @@ class Ramp:
       self.steps = Ramp.default_steps
     self._from = _from
     self.skip_first = _from is None
-    self.dt = dt
+    self.dt_input = dt
+    self.dt = None
     self.t = None
     self.duration = None
-    self.tf_safe = None
 
   def __repr__(self):
     return '{}({}, {}, {}, {}, {})' \
-      .format(self.name, self.to, self.exponent, self.steps, self._from, self.dt)
+      .format(self.name, self.to, self.exponent,
+              self.steps, self._from, self.dt_input)
 
   def __call__(self, t):
     """
@@ -173,30 +179,34 @@ class Ramp:
 
     t : normalized relative time, from 0.0 to 1.0
     """
-    t_norm = (t - self.t) / self.duration
+    t_norm = (t - self.t) / float(self.duration)
     return self._from - t_norm**self.exponent * (self._from - self.to)
 
-  def set_vars(self, _from, t, duration, min_period):
-    debug('%s.set_vars(%s,%s,%s,%s)', self, _from, t, duration, min_period)
+  def set_vars(self, _from, t, duration, dt_clk):
+    """
+      t and duration are integer time in units of dt_clk
+    """
     if self._from is None:
       self._from = _from
     elif _from is not None \
          and getcoeff(abs(self._from - _from)) <= 10*machine_arch.eps:
       self.skip_first = True
     self.t = t
-    self.min_period = min_period
 
     # it is important to make sure that the final value is given at
-    # dt-self.min_period.  This allows for the following clock pulse to be used by
+    # dt-dt_clk.  This allows for the following clock pulse to be used by
     # the next waveform element.
-    self.duration = duration - self.min_period
-    if not self.dt:
-      self.dt = self.duration / float(self.steps)
+    self.duration = duration - 1
+    if self.dt_input:
+      self.dt = int( round(self.dt_input/dt_clk) )
+    else:
+      self.dt = int(self.duration / self.steps)
 
-    # tf safe is the comparison that is used to tell whether time-stepping
-    # should cease.  We add one half a min_period to avoid precision
-    # error-prone comparisons.
-    self.tf_safe = self.t+self.duration + 0.5*min_period
+    if self.dt > self.duration:
+      raise RuntimeError( 'ramp:  requested stepsize too large' )
+    if self.dt < 1:
+      raise RuntimeError( 'ramp:  requested #steps too large' )
+
 
   def __iter__(self):
     # Note that the first data point (i.e. t=0) is implicitly given by _from
@@ -205,7 +215,9 @@ class Ramp:
       ti = self.t + self.dt
     else:
       ti = self.t
-    return step_iter(ti, self.tf_safe, self.dt, self.min_period, self)
+    return step_iter(ti, self.t+self.duration, self.dt, self)
+
+
 
 class Pulse:
   """
@@ -224,18 +236,19 @@ class Pulse:
             set, it will be set to whatever the channel is at prior to this
             pulse.
    """
-    self.high = high
-    self.low = low
-    self._from = None
-    self.t = None
+    self.high     = high
+    self.low      = low
+    self._from    = None
+    self.t        = None
     self.duration = None
-    self.min_period = None
 
   def __repr__(self):
     return '{}({}, {})'.format(self.name, self.high, self.low)
 
-  def set_vars(self, _from, t, duration, min_period):
-    debug('%s.set_vars(%s,%s,%s,%s)', self, _from, t, duration, min_period)
+  def set_vars(self, _from, t, duration, dt_clk):
+    """
+      t and duration are integer time in units of dt_clk
+    """
     self._from = _from
     if self.low is None:
       if type(self.high) is bool:
@@ -243,8 +256,7 @@ class Pulse:
       else:
         self.low = _from
     self.t = t
-    self.min_period = min_period
-    self.duration = duration - self.min_period
+    self.duration = duration - 1
 
   def __iter__(self):
     L = list()
@@ -256,11 +268,7 @@ class Pulse:
     # add the transition to the low value
     # take care to avoid machine precision problems by moving the start time
     # ahead a tiny bit.
-    L.append((
-      (self.t + self.duration)*(1+machine_arch.eps),
-      self.min_period*(1-machine_arch.eps),
-      self.low
-    ))
+    L.append( (self.t + self.duration, 1, self.low) )
     return iter(L)
 
 class PulseTrain:
@@ -284,21 +292,23 @@ class PulseTrain:
     dt    : On width of a single pulse in the pulse train
             [Default:  not set].
    """
-    self.n          = n
-    self.duty       = duty
-    self.dt_on      = dt
-    self.high       = high
-    self.low        = low
-    self._from      = None
-    self.t          = None
-    self.duration   = None
-    self.min_period = None
+    self.n        = n
+    self.duty     = duty
+    self.dt_on    = dt
+    self.high     = high
+    self.low      = low
+    self._from    = None
+    self.t        = None
+    self.duration = None
 
   def __repr__(self):
     return '{}({}, {}, {}, {}, {})' \
       .format(self.name, self.n, self.duty, self.high, self.low, self.dt_on)
 
-  def set_vars(self, _from, t, duration, min_period):
+  def set_vars(self, _from, t, duration, dt_clk):
+    """
+      t and duration are integer time in units of dt_clk
+    """
     self._from = _from
     if self.low is None:
       if type(self.high) is bool:
@@ -306,32 +316,33 @@ class PulseTrain:
       else:
         self.low = _from
     self.t = t
-    self.min_period = min_period
-    self.duration = duration - self.min_period
+    duration = duration - 1
 
-    self.pulse_period = duration / self.n
-    max_dt_on = self.pulse_period - min_period
+    self.pulse_period = int(duration / self.n)
+    max_dt_on = self.pulse_period - 1
     if self.dt_on is None:
       # use duty cycle by default
       if self.duty is None or self.duty < 0 or self.duty > 1:
         raise RuntimeError('pulses:  duty cycle _must_ be between 0 and 1')
 
       if self.duty == 0:
-        self.dt_on = min_period
+        self.dt_on = 1
       else:
-        self.dt_on = max_dt_on * self.duty
-    elif self.dt_on > max_dt_on:
-      raise RuntimeError(
-        'pulses:  cannot make pulse train where dt > duration/n-dt_clk'
-      )
+        self.dt_on = int( round(max_dt_on * self.duty) )
+    else:
+      self.dt_on = int(round( self.dt_on / dt_clk ))
+      if self.dt_on > max_dt_on:
+        raise RuntimeError(
+          'pulses:  cannot make pulse train where dt > duration/n-dt_clk'
+        )
     self.dt_off = self.pulse_period - self.dt_on
 
   def __iter__(self):
     L = list()
     t = self.t
     for i in xrange(self.n):
-      L.append( (t, self.dt_on, self.high) )
-      L.append( (t + self.dt_on, self.dt_off, self.low) )
+      L.append( (t,               self.dt_on, self.high) )
+      L.append( (t + self.dt_on, self.dt_off,  self.low) )
       t += self.pulse_period
 
     if self._from is not None and self._from == self.high:
@@ -368,14 +379,14 @@ class Interpolate:
     else:
       self.steps = Interpolate.default_steps
     self.skip_first = False
-    self.dt = dt
+    self.dt_input = dt
+    self.dt = None
     self.t = None
     self.duration = None
     self.tf_safe = None
 
   def __repr__(self):
-    return '{}(<x>, <y>, {}, {})' \
-      .format(self.name, self.steps, self.dt)
+    return '{}(<x>, <y>, {}, {})'.format(self.name, self.steps, self.dt_input)
 
   def __call__(self, t):
     """
@@ -383,33 +394,39 @@ class Interpolate:
 
     t : normalized relative time, from 0.0 to 1.0
     """
-    return self.interp( min(1.0, (t - self.t) / self.duration) ) * self.unity
+    t_norm = (t - self.t) / float(self.duration)
+    return self.interp( min(1.0, t_norm) ) * self.unity
 
-  def set_vars(self, _from, t, duration, min_period):
+  def set_vars(self, _from, t, duration, dt_clk):
+    """
+      t and duration are integer time in units of dt_clk
+    """
     if _from is not None and \
       getcoeff(abs(self.interp(0.)*self.unity - _from)) <= 10*machine_arch.eps:
       self.skip_first = True
     self.t = t
-    self.min_period = min_period
 
     # it is important to make sure that the final value is given at
-    # dt-self.min_period.  This allows for the following clock pulse to be used by
+    # dt-self.dt_clk.  This allows for the following clock pulse to be used by
     # the next waveform element.
-    self.duration = duration - self.min_period
-    if not self.dt:
-      self.dt = self.duration / float(self.steps)
+    self.duration = duration - 1
+    if self.dt_input:
+      self.dt = int( round(self.dt_input/dt_clk) )
+    else:
+      self.dt = int(self.duration / self.steps)
 
-    # tf safe is the comparison that is used to tell whether time-stepping
-    # should cease.  We add one half a min_period to avoid precision
-    # error-prone comparisons.
-    self.tf_safe = self.t+self.duration + 0.5*min_period
+    if self.dt > self.duration:
+      raise RuntimeError( 'interp:  requested stepsize too large' )
+    if self.dt < 1:
+      raise RuntimeError( 'interp:  requested #steps too large' )
+
 
   def __iter__(self):
     if self.skip_first:
       ti = self.t + self.dt
     else:
       ti = self.t
-    return step_iter(ti, self.tf_safe, self.dt, self.min_period, self)
+    return step_iter(ti, self.t+self.duration, self.dt, self)
 
 
 registered = {

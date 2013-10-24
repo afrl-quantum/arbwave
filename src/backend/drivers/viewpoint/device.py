@@ -131,7 +131,7 @@ class Device(Base):
     """
     Set the waveform on the DIO64 device.
       waveforms : see gui/plotter/digital.py for format
-      clock_transitions :  dictionary of clocks to transitions
+      clock_transitions :  dictionary of clocks to dict(ignore,transitions)
       t_max : maximum time of waveforms
       end_clocks : set of clocks for this device that will need to provide an
         extra clock pulse at t = t_max IN CONTINUOUS MODE ONLY.  This is based
@@ -146,7 +146,7 @@ class Device(Base):
     C = self.board.configs
     old_config = deepcopy(C)
 
-    scan_clock_period = 1. / C['out']['scan_rate']
+    scan_rate = C['out']['scan_rate']
 
     transitions = dict()
     # first add the waveform transitions
@@ -158,20 +158,17 @@ class Device(Base):
           transitions[ t[0] ][line] = t[1]
 
     def divider(clock):
+      # remember that scan_rate is max rate of DIO64 channels.  An aperiodic
+      # clock derived from the DIO64 can only run as fast as .5*scan_rate.
       return self.clocks[ '{n}/{c}'.format(n=self,c=clock) ]['divider']['value']
-
-    def mk_half_period(line):
-      # the extra .0001 is to ensure we don't have rounding error back to the
-      # previous timestep
-      return 0.5001 * divider(line) * scan_clock_period
 
     # second, add transtions for channels being used as aperiod clocks
     for line in clock_transitions:
       if 'Internal' in line:
         continue
-      half_period = mk_half_period(line)
+      half_period = divider(line)
 
-      for t_rise in clock_transitions[line]:
+      for t_rise in clock_transitions[line]['transitions']:
         t_fall = t_rise + half_period
         if t_rise not in transitions:
           transitions[ t_rise ] = dict()
@@ -182,25 +179,26 @@ class Device(Base):
         # finish the clock pulse by lowering it to logic zero
         transitions[ t_fall ][line] = False
 
+    t_last = int(round( t_max * scan_rate ))
     if not continuous:
-      t_rise = t_max
+      t_rise = t_last
       transitions[ t_rise ] = \
         { line:True  for line in end_clocks if 'Internal' not in line }
       for line in end_clocks:
         if 'Internal' in line:  continue
 
         # make sure that the last pulse for each line is large enough
-        t_fall = t_rise + mk_half_period(line)
-        t_max  = max( t_max, t_fall + scan_clock_period )
+        t_fall = t_rise + divider(line)
+        t_last  = max( t_last, t_fall + 1 )
         if t_fall not in transitions:
           transitions[ t_fall ] = dict()
         transitions[ t_fall ][line] = False
 
 
     # Add the last "transition" which is really just a final duration
-    transitions[ t_max ] = None
+    transitions[ t_last ] = None
 
-    self.t_max = t_max # save for self.wait()
+    self.t_max = t_last / scan_rate # save for self.wait()
 
     C['out']['repetitions'] = {True:0, False:1}[continuous]
     C['out']['number_transitions'] = len(transitions)
@@ -222,7 +220,7 @@ class Device(Base):
     if scans.value < len(transitions):
       raise NotImplementedError(
         'viewpoint scans < len(transitions); configure failed?')
-    self.board.write(transitions, stat)
+    self.board.write(transitions, stat, integer_time=True)
     self.board.set_output(
       { c:False for c in clock_transitions if 'Internal' not in c },
       self.board.out_state )

@@ -15,9 +15,9 @@ fc=get_face_color
 ls=get_linestyle
 
 
-def mkbbars( L, dt ):
+def mkbbars( L, dt, xscale ):
   # only pick out the true value transitions
-  return [ (L[i][0], dt[i])   for i in xrange(len(L))  if L[i][1] ]
+  return [ (L[i][0]*xscale, dt[i]*xscale)   for i in xrange(len(L)) if L[i][1] ]
 
 
 class BBWrapper:
@@ -42,13 +42,12 @@ def plot( ax, signals, name_map=None, t_final=None ):
   channels = signals.items()
   if name_map:
     channels.sort( key = lambda v: -name_map[v[0]]['order'] )
+    get_label = lambda n : name_map[n]['name']
+    get_scale = lambda n : float(name_map[n]['dt_clk']) #strip units
   else:
     channels.sort( key = lambda v:v[0] ) # reverse lexical sort
-
-  if name_map:
-    get_label = lambda n : name_map[n]['name']
-  else:
     get_label = lambda n : n
+    get_scale = lambda n : 1.0 # scaled by unity
 
   cconv = ColorConverter()
 
@@ -58,7 +57,8 @@ def plot( ax, signals, name_map=None, t_final=None ):
   group_lines = dict()
   for c in channels:
     labels.append( get_label( c[0] ) )
-    dt = mkdt( c[1], t_final )
+    xscale = get_scale( c[0] )
+    dt = mkdt( c[1], t_final / xscale )
 
     groups = c[1].items()
     groups.sort( key = lambda v : v[0] )
@@ -66,7 +66,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
       group_lines[(g[0],c[0])] = \
         BBWrapper(
           ax.broken_barh(
-            mkbbars( g[1], dt[ g[0] ] ), (i,1),
+            mkbbars( g[1], dt[ g[0] ], xscale ), (i,1),
             facecolors=cconv.to_rgba(fc(i)), linewidth=2 ) )
     i += 1
 

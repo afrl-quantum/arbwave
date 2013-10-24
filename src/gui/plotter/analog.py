@@ -34,13 +34,12 @@ def plot( ax, signals, name_map=None, t_final=None ):
   channels = signals.items()
   if name_map:
     channels.sort( key = lambda v: -name_map[v[0]]['order'] )
+    get_label = lambda n : name_map[n]['name']
+    get_scale = lambda n : float(name_map[n]['dt_clk']) #strip units
   else:
     channels.sort( key = lambda v: v[0] ) # reverse lexical sort
-
-  if name_map:
-    get_label = lambda n : name_map[n]['name']
-  else:
     get_label = lambda n : n
+    get_scale = lambda n : 1.0 # scaled by unity
 
   cconv = ColorConverter()
 
@@ -52,6 +51,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
   ylim = None
   for c in channels:
     labels.append( get_label( c[0] ) )
+    xscale = get_scale( c[0] )
 
     x = list()
     y = list()
@@ -63,18 +63,21 @@ def plot( ax, signals, name_map=None, t_final=None ):
       gcolor = list( cconv.to_rgba( fc(i) ) )
       gcolor[3] = 0.0 # hide group lines
       if x:
-        group_lines[(g[0],c[0])] = ax.plot([x[-1]]+xg, [y[-1]]+yg, color=gcolor, linewidth=2 )[0]
+        group_lines[(g[0],c[0])] = \
+          ax.plot( xscale * np.array([x[-1]]+xg),
+                   [y[-1]]+yg, color=gcolor, linewidth=2 )[0]
       else:
-        group_lines[(g[0],c[0])] = ax.plot(xg, yg, color=gcolor, linewidth=2)[0]
+        group_lines[(g[0],c[0])] = \
+          ax.plot( xscale * np.array(xg), yg, color=gcolor, linewidth=2)[0]
       Vi = yg[-1]
       x += xg
       y += yg
       #s = max(1, int(.05 * len(xg)))
-      #ax.plot( np.array(xg)[::s], np.array(yg)[::s], get_marker(g[0]), color=fc(i) )
+      #ax.plot( xscale*np.array(xg)[::s], np.array(yg)[::s], get_marker(g[0]), color=fc(i) )
     # By definition, each final transition is supposed to be honored as a fixed
     # value.  This final data point just ensures that this hold is plotted for
     # each channel until all channels have finished.
-    x.append( t_final )
+    x.append( t_final / xscale )
     y.append( y[-1] )
 
     if ylim:
@@ -82,7 +85,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
     else:
       ylim = min(y), max(y)
 
-    lines[c[0]] = ax.plot( x, y, color=fc(i), linewidth=2 )[0]
+    lines[c[0]] = ax.plot( xscale*np.array(x), y, color=fc(i), linewidth=2 )[0]
     i += 1
 
   #ax.set_xlabel('Time (s)')
