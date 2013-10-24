@@ -157,18 +157,17 @@ class Device(Base):
             transitions[ t[0] ] = dict()
           transitions[ t[0] ][line] = t[1]
 
-    def divider(clock):
-      # remember that scan_rate is max rate of DIO64 channels.  An aperiodic
-      # clock derived from the DIO64 can only run as fast as .5*scan_rate.
-      return self.clocks[ '{n}/{c}'.format(n=self,c=clock) ]['divider']['value']
-
     # second, add transtions for channels being used as aperiod clocks
     for line in clock_transitions:
       if 'Internal' in line:
         continue
-      half_period = divider(line)
 
+      # as in processor/engine/compute, dt_clk already should be an integer
+      # multiple of 1/scan_rate (where multiple is >= 2)
+      period = int(round( clock_transitions[line]['dt'] * scan_rate ))
+      half_period = period/2
       for t_rise in clock_transitions[line]['transitions']:
+        t_rise *= period # rescale t_rise from dt_clk units to 1/scan_rate units
         t_fall = t_rise + half_period
         if t_rise not in transitions:
           transitions[ t_rise ] = dict()
@@ -188,7 +187,7 @@ class Device(Base):
         if 'Internal' in line:  continue
 
         # make sure that the last pulse for each line is large enough
-        t_fall = t_rise + divider(line)
+        t_fall = t_rise + int(round(clock_transitions[line]['dt'] *scan_rate))/2
         t_last  = max( t_last, t_fall + 1 )
         if t_fall not in transitions:
           transitions[ t_fall ] = dict()

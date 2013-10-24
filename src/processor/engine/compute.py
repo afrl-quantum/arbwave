@@ -152,7 +152,7 @@ class WaveformEvalulator:
 
     debug('compute.waveforms:  initializing channel_info...')
     # initialize the channel info (min period, ...):
-    min_periods = dict()
+    self.min_periods = dict()
     for chname, chan in self.channels.items():
       if not ( chname and chan['enable'] ):
         continue
@@ -190,8 +190,8 @@ class WaveformEvalulator:
       # use a particular clock.
       # project device min_period to the nearest next later clock pulse
       clock_period = self.timing_channels[ clk ] .get_min_period()
-      min_periods[ clk ] = max(
-        min_periods.get(clk, clock_period),
+      self.min_periods[ clk ] = max(
+        self.min_periods.get(clk, clock_period),
         ceil( chan_dev.get_min_period() / clock_period ) * clock_period,
       )
 
@@ -206,7 +206,7 @@ class WaveformEvalulator:
       if ci['clock'] is None:
         rem_list.append( chname )
         continue
-      ci['min_period'] = min_periods[ ci['clock'] ]
+      ci['min_period'] = self.min_periods[ ci['clock'] ]
     for i in rem_list:
       self.channel_info.pop(i)
 
@@ -313,8 +313,12 @@ class WaveformEvalulator:
     value = evalIfNeeded( e['value'], globals, locals )
 
     # t and dt must be aligned to the nearest clock pulse
-    ti  = int( round( t / dt_clk ) )
-    dti = int( round( dt/ dt_clk ) )
+    ti  = int( round(       t  / dt_clk ) )
+    # create dt to help ensure that it does not overlap with next t
+    dti = int( round( (t + dt) / dt_clk ) ) - ti
+
+    log(DEBUG-2, 'compute.waveforms(%s): t=%s, dt=%s, actual: t=%s, dt=%s',
+        chname, t, dt, ti*dt_clk, dti*dt_clk )
 
     # cache for presentation to user--use integer*dt_clk for accuracy of info
     self.eval_cache[ e['path'] ] = \
@@ -385,7 +389,7 @@ class WaveformEvalulator:
         self.transitions[i] = xrange( 0, max(self.transitions[i]) + 1 )
 
       clock_transitions[i] = dict(
-        dt = self.timing_channels[i].get_min_period(),
+        dt = self.min_periods[i],
         transitions = self.transitions[i],
       )
 
