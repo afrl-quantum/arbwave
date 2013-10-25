@@ -55,18 +55,19 @@ class Processor:
     return self.Globals
 
 
-  def reset(self):
+  def reset(self, **kwargs):
     """
     Run the same script again.
     """
-    self.exec_script( self.script )
+    self.exec_script( self.script, kwargs=kwargs )
 
 
-  def exec_script(self, script):
-    try: exec '__del__()' in self.Globals
+  def exec_script(self, script, kwargs=dict()):
+    try: self.Globals['__del__'](**kwargs)
     except: pass
     self.engine.clear_runnables()
     self.Globals = default.get_globals() # reset the global environment
+    self.Globals['kwargs'].update( kwargs )
     exec script in self.Globals
     self.script = script
     if script:

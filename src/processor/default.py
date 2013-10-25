@@ -14,6 +14,7 @@ registered_globals = {
   'r_'      : np.r_,
   'inf'     : float('inf'),
   'nan'     : float('nan'),
+  'kwargs'  : dict(),
 }
 
 registered_globals.update( functions.registered )

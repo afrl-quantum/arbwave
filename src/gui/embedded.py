@@ -263,7 +263,7 @@ class Shell_Gui:
                 label_text=FRAME_LABEL,
                 with_window=False,
                 get_globals = lambda : dict(),
-                reset = lambda : None,
+                reset = lambda **kw: None,
                 ui = None ):
     self.remote_get_globals = get_globals
     self.remote_reset = reset
@@ -326,7 +326,7 @@ class Shell_Gui:
         self.__dict__ = L
     self.locals = dict()
     sys.modules['shell_locals'] = Locals(self.locals)
-    self._reset(hard=True)
+    self._reset(hard=2)
     
     #add buttons
     b_box=gtk.Toolbar()
@@ -513,7 +513,7 @@ class Shell_Gui:
     #add text
     text="You have two options:\n"
     text+="   -clear only the output window\n"
-    text+="   -reset the shell\n"
+    text+="   -reset the shell (also rerun global script)\n"
     text+="\n What do you want to do?"
     label=gtk.Label(text)
     hbox.pack_start(label)
@@ -523,12 +523,18 @@ class Shell_Gui:
     
     ans=dlg.run()
     dlg.hide()
-    self._reset(ans == 2)
+    if ans in [1,2]:
+      self._reset(ans == 2, cmdline=True, from_gui=True)
 
   def _create_shell_cmds(self):
-    def reset( hard=True, cmdline=True ):
-      """Rerun global script and clear terminal"""
-      self.reset(hard, cmdline)
+    def reset( **kwargs ):
+      """
+      Rerun global script.
+
+      Each of the keyword arguments will be passed into the global script in the
+      global variable 'kwargs' (a python dictionary).
+      """
+      self.reset(True, False, kwargs=kwargs)
 
     def clear():
       """clear terminal output"""
@@ -602,20 +608,14 @@ class Shell_Gui:
     self.completer    = Completer(self.core.locals)
 
 
-  def reset(self, hard, cmdline=False, history=False):
-    glib.idle_add( self._reset, hard, cmdline, history )
+  def reset(self, hard, cmdline=False, history=False, kwargs=dict()):
+    glib.idle_add( self._reset, hard, cmdline, history, False, kwargs )
 
-  def _reset(self, hard, cmdline=False, history=False):
+  def _reset(self, hard, cmdline=False, history=False, from_gui=False,
+             kwargs=dict()):
     if hard:
-      self.remote_reset()
-
-      if cmdline:
-        self.buffer.set_text(self.banner)
-      else:
-        self.buffer.set_text(self.banner+PS1)
-      start,end=self.buffer.get_bounds()
-      self.buffer.apply_tag_by_name("output",start,end)
-      self.buffer.apply_tag_by_name("no_edit",start,end)
+      if int(hard) == 1:
+        self.remote_reset(**kwargs)
       #creates the console
       self.core=code.InteractiveConsole()
       if history:
@@ -626,14 +626,16 @@ class Shell_Gui:
       if self.popup:
         self.popup.hide()
       self.popup = None
-    else:
-      if cmdline:
-        self.buffer.set_text(self.banner)
-      else:
+
+    if cmdline:
+      if from_gui:
         self.buffer.set_text(self.banner+PS1)
+      else:
+        self.buffer.set_text(self.banner)
       start,end=self.buffer.get_bounds()
       self.buffer.apply_tag_by_name("output",start,end)
       self.buffer.apply_tag_by_name("no_edit",start,end)
+
     self.view.grab_focus()
 
 
