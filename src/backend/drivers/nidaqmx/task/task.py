@@ -275,17 +275,19 @@ class Task(Base):
       ]
       last = scans[ transitions[0] ]
 
-    diff_transitions = np.diff( transitions )
-    min_transition = np.argmin( diff_transitions )
-    if diff_transitions[min_transition] < round(min_dt/dt_clk):
-      raise RuntimeError(
-        '{name}: Samples too small for NIDAQmx at t={tl}->{t}: {dt}<({m}/{clk})'
-        .format(name=self.name,
-                tl=transitions[min_transition],
-                t=transitions[min_transition+1],
-                dt=diff_transitions[min_transition],
-                m=min_dt, clk=dt_clk)
-      )
+    if len(transitions) > 1:
+      # NI seems to have problems with only one transition any way, but...
+      diff_transitions = np.diff( transitions )
+      min_transition = np.argmin( diff_transitions )
+      if diff_transitions[min_transition] < round(min_dt/dt_clk):
+        raise RuntimeError(
+          '{name}: Samples too small for NIDAQmx at t={tl}->{t}: {dt}<({m}/{clk})'
+          .format(name=self.name,
+                  tl=transitions[min_transition],
+                  t=transitions[min_transition+1],
+                  dt=diff_transitions[min_transition],
+                  m=min_dt, clk=dt_clk)
+        )
 
     for t in transitions:
       t_array = scans[t]
