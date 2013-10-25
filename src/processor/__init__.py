@@ -67,7 +67,8 @@ class Processor:
     except: pass
     self.engine.clear_runnables()
     self.Globals = default.get_globals() # reset the global environment
-    self.Globals['kwargs'].update( kwargs )
+    # ensure that the kwargs is not using the original dictionary
+    self.Globals['kwargs'] = dict(self.Globals['kwargs'], **kwargs )
     exec script in self.Globals
     self.script = script
     if script:

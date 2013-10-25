@@ -324,8 +324,18 @@ class Shell_Gui:
     class Locals(object):
       def __init__(self, L):
         self.__dict__ = L
+    class ShellModule(object):
+      def __init__(self,N,K,L):
+        self.variables = Locals(L)
+        self.kwargs = Locals(K)
+        # fake module trickery
+        sys.modules[N] = self
+        sys.modules[N+'.variables'] = self.variables
+        sys.modules[N+'.kwargs'] = self.kwargs
+
+    self.kwargs = dict() # storage for persistent kwargs to reset(**)
     self.locals = dict()
-    sys.modules['shell_locals'] = Locals(self.locals)
+    self.shell_store = ShellModule('shell_store', self.kwargs, self.locals)
     self._reset(hard=2)
     
     #add buttons
@@ -544,13 +554,32 @@ class Shell_Gui:
       """show/clear(ie. history().clear()"""
       return self.history
 
-    def store(**kargs):
+    def store(**kwargs):
       """
-      store an item(s) in the shell_locals module
-      This enables an item to be stored across terminal resets
+      store an item(s) in the shell_store.variables module.
+      This enables an item to be stored across terminal resets.
+      Items stored in the shell_store module will be reloaded into the global
+      environment after reset.
       Usage : store(name0=value0, name1=value1, ...)
+
+      Direct access to these stored variables (e.g. to delete) can by done by:
+      import shell_store.variables
+      del shell_store.variables.name0
       """
       self.locals.update( **kwargs )
+
+    def store_kwargs(**kwargs):
+      """
+      store a default keyword argument to the reset function in the shell_store
+      module.  These items will automatically be added to reset(**kwargs) if not
+      already specified explicity to reset(**kwargs).
+      Usage : store(name0=value0, name1=value1, ...)
+
+      Direct access to these stored variables (e.g. to delete) can by done by:
+      import shell_store
+      del shell_store.kwargs.name0
+      """
+      self.kwargs.update( **kwargs )
 
     def shell_help(*args, **kwargs):
       """help(object) for help about object"""
@@ -566,7 +595,7 @@ class Shell_Gui:
       help(*args, **kwargs)
     shell_help.func_name = 'help'
 
-    self.shell_cmds = [ reset, clear, history, store, shell_help ]
+    self.shell_cmds = [ reset, clear, history, store, store_kwargs, shell_help ]
 
     if self.ui:
       def save():
@@ -615,7 +644,7 @@ class Shell_Gui:
              kwargs=dict()):
     if hard:
       if int(hard) == 1:
-        self.remote_reset(**kwargs)
+        self.remote_reset( **dict(self.kwargs, **kwargs) )
       #creates the console
       self.core=code.InteractiveConsole()
       if history:
