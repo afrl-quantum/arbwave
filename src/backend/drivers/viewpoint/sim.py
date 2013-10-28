@@ -80,7 +80,8 @@ class DIO64:
     debug('DIO64_GetAttr(%d, %s(%d), %s)', board, attrId, aid, value_out)
 
     if aid in self.attributes:
-      return self.attributes[aid]
+      value_out._obj.value = self.attributes[aid]
+      return
 
     valid_vals = vp.attributes.values[aid][0]
     if valid_vals is None:
@@ -92,7 +93,7 @@ class DIO64:
       else:
         retval = v_type( random.randint(0, sys.maxint) )
     else:
-      retval = random.sample( valid_vals, 1 )
+      retval = random.sample( valid_vals, 1 )[0]
 
     value_out._obj.value = retval
     self.attributes[aid] = retval
