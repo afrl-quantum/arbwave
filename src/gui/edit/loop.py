@@ -248,7 +248,7 @@ class Executor:
 
   def _for_loop(self, p, Locals):
     assert p['enable'], 'for loop should be enabled here!'
-    if p['isglobal'] and not re.search('["\'\[]', p['name']):
+    if p['isglobal'] and not re.search('["\'\[(\.]', p['name']):
       exec 'global ' + p['name']
 
     iterable = eval( p['iterable'], self.Globals, Locals )
