@@ -26,13 +26,19 @@ def get_range( scaling, units, offset, globals, **kwargs ):
   return dict(min=mn, max=mx, **kwargs)
 
 
+class ModuleLike(object):
+  def __init__(self, D):
+    self.__dict__ = D
+
 class Processor:
   def __init__(self, ui):
     self.ui = ui
     self.script = ''
     self.Globals = default.get_globals()
     self.engine = engine.Arbwave(self,ui)
+    self.engine.defaults = ModuleLike( default.registered_globals )
     sys.modules['arbwave'] = self.engine # fake arbwave module
+    sys.modules['arbwave.defaults'] = self.engine.defaults
     sys.modules['msg'] = msg
     msg.set_main_window( ui )
     self.running = None
