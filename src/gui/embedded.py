@@ -258,6 +258,12 @@ class PopUp:
     buffer.insert(iter,name)
 
 
+class NameDict(dict):
+  def __init__(self, *a, **kw):
+    dict.__init__(self,*a,**kw)
+    self.__dict__ = self
+
+
 class Shell_Gui:
   def __init__( self,banner=BANNER,
                 label_text=FRAME_LABEL,
@@ -321,21 +327,18 @@ class Shell_Gui:
     #create null history
     self.history      = [" "]
     self.history_pos  = 0
-    class Locals(object):
-      def __init__(self, L):
-        self.__dict__ = L
-    class ShellModule(object):
-      def __init__(self,N,K,L):
-        self.variables = Locals(L)
-        self.kwargs = Locals(K)
-        # fake module trickery
-        sys.modules[N] = self
-        sys.modules[N+'.variables'] = self.variables
-        sys.modules[N+'.kwargs'] = self.kwargs
 
-    self.kwargs = dict() # storage for persistent kwargs to reset(**)
-    self.locals = dict()
-    self.shell_store = ShellModule('shell_store', self.kwargs, self.locals)
+    self.kwargs = NameDict() # storage for persistent kwargs to reset(**)
+    self.locals = NameDict()
+    self.shell_store = NameDict(
+      kwargs=self.kwargs,
+      variables=self.locals,
+    )
+    # fake module trickery
+    sys.modules['shell_store']            = self.shell_store
+    sys.modules['shell_store.variables']  = self.shell_store.variables
+    sys.modules['shell_store.kwargs']     = self.shell_store.kwargs
+
     self._reset(hard=2)
     
     #add buttons
