@@ -238,7 +238,9 @@ class WaveformEvalulator:
         # 2.  establish local start time and durations...
         gi_t = evalIfNeeded( gi['time'], globals, L )
         unit.s.unitsMatch(gi_t, gi['group-label']+'(t):  expected dimensions of time')
-        assert gi_t >= 0*unit.s,gi['group-label']+'(t): MUSt be >= 0!'
+        assert gi_t >= 0*unit.s, \
+          '{G}/{path} (t): MUSt be >= 0!' \
+          .format( G=gi['group-label'], path=gi['path'] )
 
         # sub-group dt defaults to this groups dt
         if not gi['duration']:
@@ -246,7 +248,9 @@ class WaveformEvalulator:
         else:
           gi_dt = evalIfNeeded( gi['duration'], globals, L )
           unit.s.unitsMatch(gi_dt,gi['group-label']+'(dt): expected dimensions of time')
-        assert gi_dt >= 0*unit.s,  gi['group-label']+'(dt): MUST be >= 0!'
+        assert gi_dt >= 0*unit.s, \
+          '{G}/{path} (dt): MUST be >= 0!' \
+          .format( G=gi['group-label'], path=gi['path'] )
         self.eval_cache[ gi['path'] ] = dict(t=gi_t, dt=gi_dt)
 
         # 3.  recurse
@@ -285,7 +289,8 @@ class WaveformEvalulator:
 
   def element(self, parent, e, globals, locals):
     chname = e['channel']
-    log(DEBUG-1, 'compute.waveforms:  enter element %s', chname)
+    err_prefix = '{G}/{C}{P}'.format( G=parent, C=chname, P=e['path'] )
+    log(DEBUG-1, 'compute.waveforms:  enter element %s', err_prefix)
     ci = self.channel_info[chname]
 
     # get a ref to the list of transitions for the associated clock generator
@@ -297,15 +302,15 @@ class WaveformEvalulator:
 
     # establish local start time / duration for the element
     t = evalIfNeeded( e['time'], globals, locals )
-    unit.s.unitsMatch(t, e['channel']+'(t): expected dimensions of time')
-    assert t >= 0*unit.s,e['channel']+'(t): MUSt be >= 0!'
+    unit.s.unitsMatch(t, err_prefix+' (t): expected dimensions of time')
+    assert t >= 0*unit.s, err_prefix + ' (t): MUSt be >= 0!'
 
     if not e['duration']:
       dt = locals['dt']
     else:
       dt = evalIfNeeded( e['duration'], globals, locals )
-      unit.s.unitsMatch(dt, e['channel']+'(dt): expected dimensions of time')
-    assert dt > 0*unit.s,   e['channel']+'(dt): MUSt be > 0!'
+      unit.s.unitsMatch(dt, err_prefix+' (dt): expected dimensions of time')
+    assert dt > 0*unit.s,   err_prefix+' (dt): MUSt be > 0!'
 
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
@@ -318,7 +323,7 @@ class WaveformEvalulator:
     dti = int( round( (t + dt) / dt_clk ) ) - ti
 
     log(DEBUG-2, 'compute.waveforms(%s): t=%s, dt=%s, actual: t=%s, dt=%s',
-        chname, t, dt, ti*dt_clk, dti*dt_clk )
+        err_prefix, t, dt, ti*dt_clk, dti*dt_clk )
 
     # cache for presentation to user--use integer*dt_clk for accuracy of info
     self.eval_cache[ e['path'] ] = \
@@ -337,7 +342,7 @@ class WaveformEvalulator:
 
     locals.pop('dt_clk')
     
-    log(DEBUG-1, 'compute.waveforms:  leave element %s', chname)
+    log(DEBUG-1, 'compute.waveforms:  leave element %s', err_prefix)
     # we need to return the end time of this waveform element
     return t + dt
 
