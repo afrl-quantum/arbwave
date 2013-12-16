@@ -34,12 +34,12 @@ ui_info = \
 
 
 class ComputeStats:
-  types = ['raw', 'average', 'error']
+  types = ['raw', 'average', 'error', 'errorOfMean']
 
   def __init__(self, X, Y):
     self.X = X
     self.Y = Y
-    self.x, self.y0, self.y2 = list(), list(), list()
+    self.x, self.y0, self.y2, self.N = list(), list(), list(), list()
     if len(X)==0 or len(X) != len(Y):
       return
     N = 0.0
@@ -51,6 +51,7 @@ class ComputeStats:
         self.x.append( xi )
         self.y0.append( y0/N )
         self.y2.append( y2/N )
+        self.N.append( N )
         N = 0.0
         xi = X[I]
         y0 = y2 = 0.0
@@ -62,6 +63,7 @@ class ComputeStats:
     self.x.append( xi )
     self.y0.append( y0 / N )
     self.y2.append( y2 / N )
+    self.N.append( N )
 
   def raw(self,ax,lt):
     ax.plot(self.X,self.Y,lt)
@@ -69,7 +71,14 @@ class ComputeStats:
   def error(self,ax,lt):
     y0 = np.array(self.y0)
     y2 = np.array(self.y2)
-    ax.errorbar( self.x, y0, yerr=((y2 - y0**2)**0.5), fmt=lt )
+    ax.errorbar( self.x, y0, yerr=(y2 - y0**2)**0.5, fmt=lt )
+
+  def errorOfMean(self,ax,lt):
+    y0 = np.array(self.y0)
+    y2 = np.array(self.y2)
+    N  = np.array(self.N)
+    # for the error we are using standard deviation of the mean
+    ax.errorbar( self.x, y0, yerr=((y2 - y0**2) / N)**0.5, fmt=lt )
 
   def average(self,ax,lt):
     ax.plot(self.x,self.y0,lt)
