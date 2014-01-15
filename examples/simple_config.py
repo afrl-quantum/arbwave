@@ -38,7 +38,12 @@ waveforms = \
                             'duration': '10*ms',
                             'enable': True,
                             'time': 't+10*ms',
-                            'value': '2*V'}]}}
+                            'value': '2*V'},
+                           {'channel': 'ao0',
+                            'duration': '10*ms',
+                            'enable': True,
+                            'time': 't+10*ms',
+                            'value': 'ramp(_from=0*V,to=10*V,duration=10*ms)'}]}}
 
 clocks = \
 {'vp/Dev0/A/13': {'divider': {'type': int, 'value': 1}},
@@ -64,7 +69,7 @@ arbwave.add_runnable( 'Simple', SimpleRun() )
 """
 
 version = \
-'0.1.7'
+'0.1.7-15-g73de591'
 
 signals = \
 {('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}

@@ -325,10 +325,6 @@ class WaveformEvalulator:
     log(DEBUG-2, 'compute.waveforms(%s): t=%s, dt=%s, actual: t=%s, dt=%s',
         err_prefix, t, dt, ti*dt_clk, dti*dt_clk )
 
-    # cache for presentation to user--use integer*dt_clk for accuracy of info
-    self.eval_cache[ e['path'] ] = \
-      dict( t=ti*dt_clk, dt=dti*dt_clk, val=repr(value) )
-
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
       insert_value(ti, dti, value, dt_clk, chname, ci, trans, e['path'], parent)
@@ -336,9 +332,15 @@ class WaveformEvalulator:
     else:
       debug('%s.set_vars(%s,%s,%s,%s)', value, ci['last'], ti, dti, dt_clk)
       value.set_vars( ci['last'], ti, dti, dt_clk )
-      for ti, dti, v in value:
-        insert_value(ti, dti, v, dt_clk, chname, ci, trans, e['path'], parent)
+      for tij, dtij, v in value:
+        insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
         ci['last'] = v
+
+    # cache for presentation to user--use integer*dt_clk for accuracy of info
+    # do this _after_ inserting value so that functional forms can respond to
+    # values as given by <function>.set_vars(...)
+    self.eval_cache[ e['path'] ] = \
+      dict( t=ti*dt_clk, dt=dti*dt_clk, val=repr(value) )
 
     locals.pop('dt_clk')
     
