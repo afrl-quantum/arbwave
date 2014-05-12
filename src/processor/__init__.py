@@ -65,7 +65,15 @@ class Processor:
     """
     Run the same script again.
     """
-    self.exec_script( self.script, kwargs=kwargs )
+    self.update(
+      ( self.engine.devcfg,   False ),
+      ( self.engine.clocks,   False ),
+      ( self.engine.signals,  False ),
+      ( self.engine.channels, False ),
+      ( self.engine.waveforms,False ),
+      ( self.script,          True, kwargs ),
+      toggle_run=False,
+    )
 
 
   def exec_script(self, script, kwargs=dict()):
@@ -96,7 +104,10 @@ class Processor:
 
       # First:  update the global script environment
       if script[1]:
-        self.exec_script( script[0] )
+        kw = dict()
+        if len(script) == 3:
+          kw = script[2]
+        self.exec_script( script[0], kwargs=kw )
 
       # set engine inputs
       self.engine.devcfg    = devcfg[0]
