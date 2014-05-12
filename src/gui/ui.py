@@ -118,7 +118,8 @@ def show_data_viewer(parent):
   s = edit.optimize.show.Show(
     columns=['Undefined'],
     title='Data Viewer',
-    parent=parent
+    parent=parent,
+    globals=parent.processor.get_globals(),
   )
   s.show()
 
