@@ -110,8 +110,10 @@ def set_units_and_scaling(chname, ci, chan, globals):
   if not ci['units']:
     if chan['units']:
       ci['units'] = evalIfNeeded(chan['units'], globals)
+      ci['units_str'] = str( chan['units'] )
     elif ci['type'] is 'analog':
       ci['units'] = unit.V
+      ci['units_str'] = 'V'
 
   if (not ci['scaling']) and chan['scaling']:
     assert ci['units'], chname+': dimensions required for scaling'
@@ -332,6 +334,10 @@ class WaveformEvalulator:
     else:
       debug('%s.set_vars(%s,%s,%s,%s)', value, ci['last'], ti, dti, dt_clk)
       value.set_vars( ci['last'], ti, dti, dt_clk )
+      if hasattr( value, 'set_units' ):
+        # allow value generator to show a more reasonable string repr in
+        # eval_cache
+        value.set_units( ci['units'], ci['units_str'] )
       for tij, dtij, v in value:
         insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
         ci['last'] = v
@@ -474,6 +480,7 @@ def make_channel_info(channels):
       'elements': list(),
       'scaling' : None,
       'units'   : None,
+      'units_str' : None,
       'last' : None,
       'clock' : None,
       'min_period' : None,
