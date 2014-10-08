@@ -25,7 +25,7 @@ We just love to cite \citet{Rambo:1989}.
   \textbf{\large Manufacturer} &
   \textbf{\large Model} &
   \textbf{\large Description} &
-  \textbf{\large Support} \\
+  \textbf{\large Supported Driver} \\
   \hline
   \hline
 }
@@ -36,7 +36,7 @@ We just love to cite \citet{Rambo:1989}.
   \textbf{\large Manufacturer} &
   \textbf{\large Model} &
   \textbf{\large Description} &
-  \textbf{\large Support} \\
+  \textbf{\large Supported Driver} \\
   \hline
   \hline
 }
@@ -50,9 +50,11 @@ We just love to cite \citet{Rambo:1989}.
 %
 %
 \begin{supertabular}{|l|c|l|r|}
-  NI & PCI-6733 & 16-bit Analog output, 8-channel & Yes \\
-  NI & PCI-6729 & 8-bit Analog output, 32-channel & Yes \\
-  Viewpoint & DIO-64 & Digital input/output, 64-channel & Yes \\
+  NI & PCI-6733 & 16-bit Analog output, 8-channel & NiDAQmx \\
+     &          &                                 & comedi (in progress) \\
+  NI & PCI-6729 & 8-bit Analog output, 32-channel & NiDAQmx \\
+     &          &                                 & comedi (in progress) \\
+  Viewpoint & DIO-64 & Digital input/output, 64-channel & DIO64 \\
   UEI & ? & ? & No (future?) \\
   ? & ? & FPGA & No (future?) \\
   ? & ? & Microcontroller & No (future?) \\

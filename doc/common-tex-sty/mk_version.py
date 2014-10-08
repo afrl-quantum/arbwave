@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from subprocess import Popen, PIPE
-import os
+from os import path
 
-DIR=os.path.dirname(__file__)
+COMMON_DIR=path.dirname(__file__)
+MANDIR = path.join( COMMON_DIR, path.pardir, 'manual' )
 
 def get_version():
   try:
@@ -17,7 +18,7 @@ def get_version():
 
 def get_man_version():
   try:
-    git = Popen(['git','log','--format=%ci','-1',DIR],stdout=PIPE)
+    git = Popen(['git','log','--format=%ci','-1',MANDIR],stdout=PIPE)
     mandate = git.communicate()[0].split()[0]
     return mandate
   except:
@@ -27,7 +28,7 @@ def write_latex(fname='arbwave-version.sty'):
   version, revdate = get_version()
   mandate = get_man_version()
 
-  f = open( os.path.join(DIR, fname), 'w' )
+  f = open( path.join(COMMON_DIR, fname), 'w' )
   f.write(
     '\\edef\\revision{{{version}}}\n'   \
     '\\edef\\revdate{{{revdate}}}\n'    \
