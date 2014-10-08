@@ -9,7 +9,6 @@
 %\usepackage{amsfonts}
 \usepackage{amsxtra}           % Use various AMS packages
  % BEGIN --added-- by JMM from PHB template
-%\usepackage{srcltx}           % enable reverse lookup with dvi previewer;
 \usepackage{xspace}            % useful for \newcommand abbreviations; adds space only if necessary;
 \usepackage{dcolumn}           % allows lining up numbers at decimal points in arrays;
 \usepackage{ifthen}            % allows for conditional formatting; used in "comm"[ent] command.
@@ -37,13 +36,7 @@
                                % LOA, ...
 \usepackage{symb}        % get some simple symb shortcuts
 
-\newboolean{DVIoutput}
-\input{DVIoutput}
-\ifthenelse{\boolean{DVIoutput}}{%
 \usepackage[pdfpagelabels=true,pagebackref=true]{hyperref}
-}{%
-\usepackage[pdfpagelabels=true,pagebackref=true,dvipdfm]{hyperref}
-}
 \hypersetup{
     naturalnames=true,
     colorlinks=true,

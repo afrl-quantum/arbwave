@@ -7,51 +7,24 @@ TEXINPUTS=$(STY):$(STY)/gloss:
 PAPER=manual
 
 LATEX=latex
-
-DVIPDF=dvipdfm -p letter
-
-#DVIPDF=dvipdf -dSAFER -sPAPERSIZE=letter
-#   -dPDFSETTINGS=/printer -dCompatibilityLevel=1.3 \
-#   -dMaxSubsetPct=100 -dSubsetFonts=true -dEmbedAllFonts=true
+PDFLATEX=pdflatex
 
 MKINDEX=makeindex
 
 BSTINPUTS=":../common-tex-sty/gloss:./common-tex-sty"
 
-all: pdfall
+all: $(PAPER).pdf
 
-pdfall:
-	make DVIOUT=false dviall
-	make pdf
+%.dvi: %.tex repeat ../common-tex-sty/arbwave-version.sty
+	(export TEXINPUTS=$(TEXINPUTS) && $(LATEX) $<)
 
-ifeq ($(DVIOUT),)
-    DVIOUT=true
-endif
+%.pdf: %.tex repeat ../common-tex-sty/arbwave-version.sty
+	(export TEXINPUTS=$(TEXINPUTS) && $(PDFLATEX) $<)
 
-.PHONY: DVIoutput.tex
-DVIoutput.tex:
-	@echo "\setboolean{DVIoutput}{$(DVIOUT)}" > $@
+.PHONY : repeat
 
-.PHONY: ../common-tex-sty/arbwave-version.sty
-../common-tex-sty/arbwave-version.sty:
+../common-tex-sty/arbwave-version.sty: repeat
 	../common-tex-sty/mk_version.py
-
-dviall: DVIoutput.tex ../common-tex-sty/arbwave-version.sty
-	make dvi
-	make biball
-	make dvi
-	make dvi
-	make index
-	make dvi
-
-dvi $(PAPER)-dvi:
-	(export TEXINPUTS=$(TEXINPUTS) && $(LATEX) $(PAPER))
-
-pdf:$(PAPER).dvi
-	$(DVIPDF) $(PAPER)
-
-$(PAPER).ps:  $(PAPER).dvi
-	dvips -Ppdf -G0 $(PAPER)
 
 distribution: all clean
 
@@ -112,8 +85,7 @@ LATEX_GARBAGE=$(PAPER).blg $(PAPER).end $(PAPER).bbl $(PAPER).lof \
               $(PAPER).aux  $(PAPER).dvi  $(PAPER).log  $(PAPER).toc \
               $(PAPER).sym.aux $(PAPER).sym.blg $(PAPER).sym.bbl \
               $(PAPER).idx $(PAPER).ilg $(PAPER).ind $(PAPER).loa \
-              $(PAPER).lot $(PAPER).out $(PAPER).brf \
-              DVIoutput.tex
+              $(PAPER).lot $(PAPER).out $(PAPER).brf
 
 clean:
 	$(RM) $(LATEX_GARBAGE)

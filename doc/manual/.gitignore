@@ -13,5 +13,6 @@
 *.lot
 *.out
 *.brf
-DVIoutput.tex
+*.swp
 manual.pdf
+*-eps-converted-to.pdf
