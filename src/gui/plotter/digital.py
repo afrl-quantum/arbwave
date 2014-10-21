@@ -20,7 +20,7 @@ def mkbbars( L, dt, xscale ):
   return [ (L[i][0]*xscale, dt[i]*xscale)   for i in xrange(len(L)) if L[i][1] ]
 
 
-class BBWrapper:
+class BBWrapper(object):
   def __init__(self, bb):
     self.bb = bb
   def get_color(self, *args, **kwargs):
@@ -89,49 +89,45 @@ def plot( ax, signals, name_map=None, t_final=None ):
 #    ...
 #  }
 #
-# Which pieces of the 3-tuple (start-time, number-samples, value) is
-# needed/ignored really depends on what is using this information.  For
-# plotting as well as hardware output with an Viewpoint DIO-64 cards, the
-# number-samples component will be ignored.  For digital output on cards like
-# National Instruments digital output card 6533(?), start-time will be ignored.
+# The start-time is normally in integer number of clock cycles
 example_signals = {
   'CH0' : {
-    0 : [(0,True), (100,False), (110,True), (120,False)],
-    2 : [(130,True), (200,False)],
-    3 : [(220,True)],
+    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
+    2 : [(1300,True), (2000,False)],
+    3 : [(2200,True)],
   },
   'CH1' : {
-    0 : [(0,True), (50,False), (80,True), (100,False)],
-    2 : [(200,True), (210,False)],
-    3 : [(215,True), (220,False)],
+    0 : [(0,True), (500,False), (800,True), (1000,False)],
+    2 : [(2000,True), (2100,False)],
+    3 : [(2150,True), (2200,False)],
   },
   'CH2' : {
-    0 : [(0,True), (50,False), (80,True), (100,False)],
-    2 : [(200,True), (210,False)],
+    0 : [(0,True), (500,False), (800,True), (1000,False)],
+    2 : [(2000,True), (2100,False)],
   },
   'CH3' : {
-    0 : [(10,True), (40,False), (90,True), (100,False)],
-    2 : [(200,True), (210,False)],
+    0 : [(100,True), (400,False), (900,True), (1000,False)],
+    2 : [(2000,True), (2100,False)],
   },
   'CH4' : {
-    0 : [(20,True), (60,False), (90,True), (110,False)],
-    2 : [(200,True), (210,False)],
+    0 : [(200,True), (600,False), (900,True), (1100,False)],
+    2 : [(2000,True), (2100,False)],
   },
   'CH5' : {
-    0 : [(0,True), (50,False), (80,True), (100,False)],
-    2 : [(200,True), (210,False)],
+    0 : [(0,True), (500,False), (800,True), (1000,False)],
+    2 : [(2000,True), (2100,False)],
   },
   'CH6' : {
-    0 : [(0,True), (100,False), (110,True), (120,False)],
-    2 : [(130,True), (200,False)],
+    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
+    2 : [(1300,True), (2000,False)],
   },
   'CH7' : {
-    0 : [(0,True), (100,False), (110,True), (120,False)],
-    2 : [(130,True), (200,False)],
+    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
+    2 : [(1300,True), (2000,False)],
   },
   'CH8' : {
-    0 : [(0,True), (100,False), (110,True), (120,False)],
-    2 : [(130,True), (200,False)],
+    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
+    2 : [(1300,True), (2000,False)],
   },
 }
 

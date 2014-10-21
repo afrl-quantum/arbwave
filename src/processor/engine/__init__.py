@@ -178,6 +178,32 @@ class Arbwave:
     send.to_plotter( self.ui.plotter, analog, digital, dev_clocks, self.channels, t_max )
 
 
+  def save_gnuplot(self, filename=None, fmt=None):
+    """
+    Process inputs to send to a file in gnuplot type format.
+      Arguments:
+        filename : either a filehandle of an open file or a name of a file to
+                   write to
+        fmt      : filename format to use for creating files specific to each
+                   clock (if filename is specified and not fmt, then everything
+                   is saved in the same file)
+    """
+    assert not (filename is not None == fmt is not None), \
+      'must specify either filename or fmt, _not_ both'
+
+    analog, digital, transitions, dev_clocks, t_max, end_clocks, eval_cache = \
+      compute.waveforms( self.devcfg,
+                         self.clocks,
+                         self.signals,
+                         self.channels,
+                         self.waveforms,
+                         globals=self._globals_source.get_globals() )
+
+    self.ui.waveform_editor.set_eval_cache( eval_cache )
+    send.to_file( analog, digital, transitions, dev_clocks, self.channels,
+                  filename, fmt )
+
+
   def request_stop(self, request=STOP, restart=False):
     self.stop_request = request
     if restart:

@@ -4,7 +4,7 @@ from plotter_toolbar import NavigationToolbar
 import digital, analog
 import common
 
-class Highlighter:
+class Highlighter(object):
   def __init__(self, line):
     self.line = line
     self.color = line.get_color()
@@ -23,7 +23,7 @@ class Highlighter:
     self.line.set_linewidth( self.linewidth )
 
 
-class Plotter:
+class Plotter(object):
   def __init__(self,win):
     self.axes, self.fig, self.canvas = gui.init_plot()
     self.toolbar = NavigationToolbar(
@@ -54,15 +54,19 @@ class Plotter:
     self.canvas.draw()
 
 
-  def start(self):
+  def start(self, names=None, t_final=0.0):
     if self.xview is not None:
       self.xview = self.axes['analog'].get_xlim()
       self.yview['analog'] = self.axes['analog'].get_ylim()
       self.yview['digital'] = self.axes['digital'].get_ylim()
     self.ranges = dict( analog=(0,0), digital=(0,0) )
+    self.lines = dict()
     self.group_lines = dict()
+    self.names = names
+    self.t_final = t_final
 
-  def finish(self, t_final=0.0):
+  def finish(self, t_final=None):
+    if t_final is not None: self.t_final=t_final
     self.xlim = self.axes['analog'].get_xlim()
     if self.xview is None:
       self.xview = self.axes['analog'].get_xlim()
@@ -72,23 +76,27 @@ class Plotter:
       self.axes['analog'].set_xlim(  self.xview )
       self.axes['analog'].set_ylim(  self.yview['analog'] )
       self.axes['digital'].set_ylim( self.yview['digital'] )
-    self.update_t_axes(max_x=t_final)
+    self.update_t_axes(max_x=self.t_final)
     self.canvas.draw()
 
-  def plot_analog(self, signals, *args, **kwargs ):
-    self.ranges['analog'], lines, group_lines \
-      = analog.plot( self.axes['analog'], signals, *args, **kwargs )
-    # purge all old analog lines
-    self.lines = { l[0]:l[1]  for l in self.lines.items()  if l[0].startswith('Analog/') }
+  def plot_analog(self, signals, names=None, t_final=None, *args, **kwargs ):
+    if names is not None:   self.names = names
+    if t_final is not None: self.t_final=t_final
+    self.ranges['analog'], lines, group_lines = analog.plot(
+      self.axes['analog'], signals, self.names, self.t_final, *args, **kwargs
+    )
     for l in lines.items():
       # we add the analog prefix back on for ease later
-      self.lines['Analog/' + l[0]] = Highlighter( l[1] )
+      self.lines[ l[0] ] = Highlighter( l[1] )
     self.group_lines.update(
       {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
 
-  def plot_digital(self, signals, *args, **kwargs ):
-    self.ranges['digital'], group_lines \
-      = digital.plot( self.axes['digital'], signals, *args, **kwargs )
+  def plot_digital(self, signals, names=None, t_final=None, *args, **kwargs ):
+    if names is not None:   self.names = names
+    if t_final is not None: self.t_final=t_final
+    self.ranges['digital'], group_lines = digital.plot(
+      self.axes['digital'], signals, self.names, self.t_final, *args, **kwargs
+    )
     self.group_lines.update(
       {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
 

@@ -5,42 +5,28 @@ from pygraph.algorithms.sorting import topological_sorting
 from ...tools.gui_callbacks import do_gui_operation
 from ... import backend
 from ...tools import signal_graphs
+from ...tools import signals
 
 def plot_stuff( plotter, analog, digital, names, t_max ):
   if analog or digital:
-    plotter.start()
+    plotter.start( names, t_max )
   if analog:
-    plotter.plot_analog( analog, names, t_max )
+    plotter.plot_analog( analog )
   if digital:
-    plotter.plot_digital( digital, names, t_max )
+    plotter.plot_digital( digital )
   if analog or digital:
-    plotter.finish(t_final=t_max)
+    plotter.finish()
 
 def to_plotter( plotter, analog, digital, clocks, channels, t_max ):
-  # we need a map from device-name to (channel name,order)
-  names = dict()
-  for c in channels.items():
-    dev = c[1]['device']
-    if not dev:
-      continue
-
-    # the partition is to get rid of the 'Analog/' or 'Digital/' prefix
-    dev = dev.partition('/')[2]
-    if dev and c[1]['enable']:
-      if dev in names:
-        raise NameError('Device channels can only be used once')
-      names[ dev ] = dict( name=c[0], order=c[1]['order'], dt_clk=clocks[dev] )
-
-
+  names = signals.create_channel_name_map( channels, clocks )
   # take components of device-categorized dictionaries to
-  a = dict()
-  for D in analog.values():
-    a.update(D)
-  d = dict()
-  for D in digital.values():
-    d.update(D)
-
+  a = signals.merge_signals_sets( [analog] )
+  d = signals.merge_signals_sets( [digital] )
   do_gui_operation( plot_stuff, plotter, a, d, names, t_max )
+
+def to_file( analog, digital, transitions, clocks, channels, filename=None, fmt=None ):
+  S = signals.merge_signals_sets( [analog, digital] )
+  S.to_arrays( transitions, clocks, channels ).save( filename, fmt=fmt )
 
 class ToDriver:
   def __init__(self):

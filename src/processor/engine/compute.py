@@ -382,7 +382,7 @@ class WaveformEvalulator:
       if prfx not in D:
         D[ prfx ] = dict()
       D[ prfx ][ dev ] = to_plottable( elems )
-      clocks[ dev ] = dt_clk
+      clocks[ dev ] = (ci['clock'], dt_clk)
 
     self.t_max = t_max
     debug('final t_max: %s', self.t_max)
