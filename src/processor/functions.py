@@ -44,6 +44,19 @@ class step_iter:
 
 
 ###################
+class ScaledFunction(object):
+  def __init__(self):
+    self.units = None
+    self.units_str = None
+  def set_units(self, units, units_str):
+    self.units = units
+    self.units_str = units_str
+  def ufmt(self, value):
+    try:
+      if self.units and self.units_str:
+        return '{}*{}'.format(value / self.units, self.units_str)
+    except: pass
+    return value
 
 
 def getcoeff( val ):
@@ -55,7 +68,7 @@ def getunity( val ):
   except: return 1.0
 
 
-class SinPulse:
+class SinPulse(ScaledFunction):
   """
   Generate a sinusoidal pulse over the duration of a waveform element.
   """
@@ -73,6 +86,7 @@ class SinPulse:
 
     Only one of dt or steps can be used.
    """
+    ScaledFunction.__init__(self)
     self.F = F
     self.A = A
     self.average = average
@@ -89,8 +103,8 @@ class SinPulse:
 
   def __repr__(self):
     return '{}({}, {}, {}, {}, {})' \
-      .format(self.name, self.A, self.F, self.average, self.phase_shift,
-              self.steps_per_cycle)
+      .format(self.name, self.ufmt(self.A), self.F, self.ufmt(self.average),
+              self.phase_shift, self.steps_per_cycle)
 
   def __call__(self, t):
     """
@@ -104,7 +118,6 @@ class SinPulse:
 
     t_rel *= self.dt_clk
     return self.average + self.A * math.sin(self.phase_shift + 2*np.pi * self.F * t_rel)
-
 
   def set_vars(self, _from, t, duration, dt_clk):
     """
@@ -144,7 +157,7 @@ class SinPulse:
 ###################
 
 
-class Ramp:
+class Ramp(ScaledFunction):
   """
   Ramp from initial value to final value with a given exponent.
   """
@@ -169,6 +182,7 @@ class Ramp:
 
     Only one of dt or steps can be used.
    """
+    ScaledFunction.__init__(self)
     self.to = to
     self.exponent = exponent
     if steps > 0:
@@ -185,8 +199,8 @@ class Ramp:
 
   def __repr__(self):
     return '{}({}, {}, {}, {}, {}, {})' \
-      .format(self.name, self.to, self.exponent,
-              self.steps, self._from, self.dt_input, self.tf)
+      .format(self.name, self.ufmt(self.to), self.exponent,
+              self.steps, self.ufmt(self._from), self.dt_input, self.tf)
 
   def __call__(self, t):
     """
@@ -246,7 +260,7 @@ class Ramp:
 
 
 
-class Pulse:
+class Pulse(ScaledFunction):
   """
   Generate a pulse over the duration of a waveform element.
   """
@@ -263,6 +277,7 @@ class Pulse:
             set, it will be set to whatever the channel is at prior to this
             pulse.
    """
+    ScaledFunction.__init__(self)
     self.high     = high
     self.low      = low
     self._from    = None
@@ -270,7 +285,9 @@ class Pulse:
     self.duration = None
 
   def __repr__(self):
-    return '{}({}, {})'.format(self.name, self.high, self.low)
+    return '{}({}, {})'.format(
+      self.name, self.ufmt(self.high), self.ufmt(self.low)
+    )
 
   def set_vars(self, _from, t, duration, dt_clk):
     """
@@ -298,7 +315,7 @@ class Pulse:
     L.append( (self.t + self.duration, 1, self.low) )
     return iter(L)
 
-class PulseTrain:
+class PulseTrain(ScaledFunction):
   """
   Generate a train of pulses over the duration of a waveform element.
   """
@@ -319,6 +336,7 @@ class PulseTrain:
     dt    : On width of a single pulse in the pulse train
             [Default:  not set].
    """
+    ScaledFunction.__init__(self)
     self.n        = n
     self.duty     = duty
     self.dt_on    = dt
@@ -330,7 +348,8 @@ class PulseTrain:
 
   def __repr__(self):
     return '{}({}, {}, {}, {}, {})' \
-      .format(self.name, self.n, self.duty, self.high, self.low, self.dt_on)
+      .format(self.name, self.n, self.duty,
+              self.ufmt(self.high), self.ufmt(self.low), self.dt_on)
 
   def set_vars(self, _from, t, duration, dt_clk):
     """
