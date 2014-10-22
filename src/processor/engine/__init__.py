@@ -187,6 +187,8 @@ class Arbwave:
         fmt      : filename format to use for creating files specific to each
                    clock (if filename is specified and not fmt, then everything
                    is saved in the same file)
+                   Example:  file-{}.txt
+                    {} will be replaced with the clock name
     """
     assert not (filename is not None == fmt is not None), \
       'must specify either filename or fmt, _not_ both'
