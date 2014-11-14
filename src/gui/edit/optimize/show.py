@@ -154,6 +154,9 @@ class Show(gtk.Dialog):
     set_predef( self.x_selection, self.custom_x, True)
     self.reuse = gtk.CheckButton('Re-use')
     self.reuse.set_active(True)
+    self.autosave = gtk.CheckButton('Autosave')
+    self.autosave.set_active(True)
+    self.autosave.set_sensitive(False)
     self.line_style = gtk.Entry()
     self.line_style.set_text( self.DEFAULT_LINE_STYLE )
     self.line_style.connect('activate', self.update_plot)
@@ -175,7 +178,7 @@ class Show(gtk.Dialog):
         hpack(PArgs(gtk.Label('Y'),False,False,0), self.y_selection),
         self.custom_y ),
       vpack(
-        self.reuse,
+        hpack(self.reuse, self.autosave),
         hpack(PArgs(gtk.Label('Style'),False,False,0), self.line_style) ),
     )
     col_sel_box.show_all()
@@ -254,8 +257,10 @@ class Show(gtk.Dialog):
 
   def add(self, *stuff):
     def do_append():
-      if not self.is_drawable(): return
       self.params.append( (True,) + stuff )
+      if self.autosave.get_sensitive() and self.autosave.get_active():
+        self.gtk_save_handler()
+      if not self.is_drawable(): return
       self.new_data = True
     do_gui_operation( do_append )
 
@@ -412,7 +417,7 @@ class Show(gtk.Dialog):
       A(action)
 
 
-  def gtk_open_handler(self, action):
+  def gtk_open_handler(self, action=None):
     try:
       config_file = get_file(filters=Show.FILTERS)
       F = open( config_file )
@@ -435,8 +440,9 @@ class Show(gtk.Dialog):
     finally:
       F.close()
     self.filename = config_file
+    self.autosave.set_sensitive(False)
 
-  def gtk_save_handler(self, action, force_new=False):
+  def gtk_save_handler(self, action=None, force_new=False):
     try:
       config_file = self.filename
       if (not force_new) and config_file:
@@ -457,6 +463,7 @@ class Show(gtk.Dialog):
              '\t'.join([i for i in Y(self.columns)]) + '\n' )
     np.savetxt( F, self.get_all_data(True) )
     F.close()
+    self.autosave.set_sensitive(True)
 
 
 class ViewerDB:
