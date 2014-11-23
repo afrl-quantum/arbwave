@@ -12,8 +12,9 @@ and 1.  In this example, it is also clear that each device driver must define
 its own unique root path identifier, i.e. 'ni' for National Instruments, 'vp'
 for Viewpoint, 'uei' for United Electronic Industries, and so forth.
 Currently assigned prefixes:
-  ni : National Instruments
-  vp : Viewpoint
+  ni     : National Instruments
+  vp     : Viewpoint
+  comedi : Comedi
 
 
 Common paths should use the same name regardless of which device they are on.

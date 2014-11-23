@@ -4,10 +4,15 @@ Backend drivers.
 Subdirectories of this part of the arbwave package should ONLY contain drivers.
 """
 
-import os, logging, traceback
+import os, traceback, logging
+from logging import debug, DEBUG
 from ... import options
 
-drivers   = dict() # mapping "prefix" to driver module
+class Drivers(dict):
+  def __init__(self):
+    dict.__init__(self)
+    self.__dict__ = self
+drivers   = Drivers() # mapping "prefix" to driver module
 
 
 def get_devices():
@@ -48,7 +53,7 @@ def get_routeable_backplane_signals():
 def unload_all():
   while drivers:
     name, d = drivers.popitem()
-    logging.debug( 'closing driver: %s', name )
+    debug( 'closing driver: %s', name )
     try:
       d.close()
     except:
@@ -72,6 +77,7 @@ def initialize_device_drivers():
             'Cannot load driver in simulated mode: ' + m.prefix()
           )
 
+        m.init()
         drivers[m.prefix()] = m
         # first test to see if these functions succeed...
         dv = m.get_devices()
@@ -82,6 +88,8 @@ def initialize_device_drivers():
 
       except Exception, e:
         print "could not import backend '" + D + "'"
-        print e
+        if logging.root.getEffectiveLevel() <= (DEBUG-1):
+          debug( e )
+          debug( traceback.format_exc() )
 
 initialize_device_drivers()

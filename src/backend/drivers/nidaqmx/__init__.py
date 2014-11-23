@@ -40,66 +40,20 @@ routed_signals = dict()
 
 
 
-def format_terminals(d, dest):
-  prfx = prefix()
-  # for some terminals, we must use a non ni-formatted path to work with
-  # the other devices.  An example is 'TRIG/0'.
-  # Furthermore, we are required to indicate which terminals can be
-  # connected to external cables/busses
-  if type(dest) in [ tuple, list ]:
-    # we are given both native and recognizable terminal formats
-    D  = expand_braces(dest[0])
-    if dest[1]:
-      ND = expand_braces('{p}/{d}/{T}'.format(p=prfx,d=d,T=dest[1]))
-      assert len(D) == len(ND), \
-        'NIDAQmx: {d} has mismatch terminals to native terminals: {s}' \
-        .format(d=d,s=repr(dest))
-    else:
-      ND = [None] # must be something like an 'External/' connection
-  else:
-    # only native terminal formats
-    D = expand_braces('{p}/{d}/{T}'.format(p=prfx,d=d,T=dest))
-    ND = D
-  return D, ND
+def init():
+  if nidaqmx.libnidaqmx.libnidaqmx is None:
+    print 'found 0 NI DAQmx boards'
+    return
 
-
-def strip_prefix( s ):
-  if s:
-    # strip off the 'ni' part but leave the leading '/' since terminals appear
-    # to require the leading '/'
-    return s[len(prefix()):]
-  return s
-
-
-def load_all():
   global tasks, analogs, lines, counters, signals
   system = nidaqmx.System()
   print 'found {i} NI DAQmx boards'.format(i=len(system.devices))
   prfx = prefix()
+  rl = routes.RouteLoader(prfx)
   for d in system.devices:
     product = d.get_product_type()
     logging.debug( 'setting up NIDAQmx routes for device: %s', d )
-    for sources in routes.available.get(product,[]):
-      dest = list()
-      ni_dest = list()
-      for dest_i in routes.available[product][sources]:
-        D, ND = format_terminals(d, dest_i)
-        dest        += D
-        ni_dest += ND
-      src, ni_src = format_terminals(d, sources)
-      for i in xrange( len(src) ):
-        for j in xrange( len(dest) ):
-          routes.signal_route_map[ (src[i], dest[j]) ] = \
-            ( strip_prefix(ni_src[i]), strip_prefix(ni_dest[j]) )
-
-        signals.append(
-          channels.Backplane( src[i],
-                              destinations=dest,
-                              invertible = True ) )
-        logging.log(logging.DEBUG-1,
-          'appending NIDAQmx routes for device: %s: %s --> %s', d, src[i], dest
-        )
-
+    rl(d, product)
 
     t = task.Analog('{}/{}'.format(prfx,d))
     available = [ channels.Analog('{}/{}'.format(prfx,ao), t)
@@ -128,8 +82,12 @@ def load_all():
       tasks[ str(t) ] = t
       counters += available
 
+  for src, dest in routes.aggregate_map.items():
+    logging.log(logging.DEBUG-1,
+      'creating NIDAQmx backplane channel: %s --> %s', src, dest
+    )
+    signals.append(channels.Backplane(src,destinations=dest,invertible=True))
 
-load_all()
 
 def get_devices():
   """

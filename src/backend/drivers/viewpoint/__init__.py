@@ -32,7 +32,7 @@ if is_simulated():
 # mapping from board index to device
 devices = dict()
 
-def load_boards():
+def init():
   global devices
   print 'probing for first {l} viewpoint boards...' \
     .format( l=len(boards_to_probe) )
@@ -44,8 +44,6 @@ def load_boards():
     devices[str(d)] = d
   print 'found {i} viewpoint boards'.format(i=len(devices))
 
-
-load_boards()
 
 def get_devices():
   return devices.values()

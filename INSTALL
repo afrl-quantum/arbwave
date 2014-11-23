@@ -41,6 +41,7 @@ Supported Hardware:
   Supported:
     Viewpoint
     National Instruments NI-DAQmx
+    Comedi
 
   Future support:
     UEI?
