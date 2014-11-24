@@ -37,9 +37,8 @@ def get_useful_subdevices(route_loader, device, typ,
     if c.comedi_get_cmd_src_mask(device.fd, index, cmd) < 0:
       # we only will look at those subdevs that can have asynchronous use
       continue
-    if not reduce( lambda x,y: x|y, [
-             getattr(cmd,ri) & (c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT)
-             for n, r in restrictions.items() ]):
+    if not reduce( lambda x,y: x|y,
+                   [ getattr(cmd,n) & r for n,r in restrictions.items() ]):
       # we only return unrestricted devs
       continue
     route_loader.add_subdev_routes( index, typ )
@@ -51,7 +50,6 @@ class Device(object):
   def __init__(self, prefix, device):
     self.prefix = prefix
     self.device = device
-    print 'trying to open with', c.comedi_open
     self.fd     = c.comedi_open(self.device)
     rl = routes.getRouteLoader(self.driver) ( self )
     gus = get_useful_subdevices
