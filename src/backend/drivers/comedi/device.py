@@ -24,7 +24,7 @@ klasses = {
   c.COMEDI_SUBD_COUNTER : subdevice.Timing,
 }
 
-def get_useful_subdevices(route_loader, device, typ, prefix,
+def get_useful_subdevices(route_loader, device, typ,
                           restrictions=dict(
                             start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,
                           ),
@@ -48,15 +48,16 @@ def get_useful_subdevices(route_loader, device, typ, prefix,
   return [ klass( name_uses_subdev=(len(L)>1), *li) for li in L ]
 
 class Device(object):
-  def __init__(self, rl, prefix, device):
+  def __init__(self, prefix, device):
     self.prefix = prefix
     self.device = device
+    print 'trying to open with', c.comedi_open
     self.fd     = c.comedi_open(self.device)
     rl = routes.getRouteLoader(self.driver) ( self )
     gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
-    self.dio_subdevices     = gus(rl, slef, c.COMEDI_SUBD_DIO)
+    self.dio_subdevices     = gus(rl, self, c.COMEDI_SUBD_DIO)
     self.counter_subdevices = gus(rl, self, c.COMEDI_SUBD_COUNTER)
 
     self.subdevices       = { str(ao):ao for ao in self.ao_subdevices }

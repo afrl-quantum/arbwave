@@ -18,9 +18,14 @@ def is_simulated():
   return options.simulated
 
 
+glob_comedi_devices = lambda : glob.glob('/dev/comedi*')
+
 # hook the simulated library if needed
 if is_simulated():
   import sim # rehook comedi lib so that hardware is simulated.
+  sim.inject_sim_lib()
+  glob_comedi_devices = lambda : ['/dev/comedi0']
+
 
 from device import Device
 
@@ -35,7 +40,7 @@ routed_signals = dict()
 
 def init():
   global subdevices
-  for df in glob.glob('/dev/comedi*'):
+  for df in glob_comedi_devices():
     m = re.match('/dev/comedi([0-9]+)$', df)
     if not m: continue # don't match subdevices
     try:
@@ -102,11 +107,11 @@ def set_static(analog, digital):
   D = collect_prefix(digital, 0, 2, 2)
   A = collect_prefix(analog, 0, 2, 2)
 
-  for dev in D.items():
-    subdevices[ dev[0]+'/do' ].set_output( dev[1] )
+  for dev, data in D.items():
+    subdevices[ dev+'/do' ].set_output( data )
 
-  for dev in A.items():
-    subdevices[ dev[0]+'/ao' ].set_output( dev[1] )
+  for dev, data in A.items():
+    subdevices[ dev+'/ao' ].set_output( data )
 
 
 def set_waveforms(analog, digital, transitions, t_max, end_clocks, continuous):
