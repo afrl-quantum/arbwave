@@ -171,11 +171,11 @@ def set_static(analog, digital):
   D = collect_prefix(digital, 0, 2)
   A = collect_prefix(analog, 0, 2)
 
-  for dev in D.items():
-    tasks[ dev[0]+'/do' ].set_output( dev[1] )
+  for dev, data in D.items():
+    tasks[ dev+'/do' ].set_output( data )
 
   for dev in A.items():
-    tasks[ dev[0]+'/ao' ].set_output( dev[1] )
+    tasks[ dev+'/ao' ].set_output( data )
 
 
 def set_waveforms(analog, digital, transitions, t_max, end_clocks, continuous):
