@@ -63,12 +63,15 @@ class PXI_6733(SimDevice):
     ),
   }
 
+class PXI_6723(PXI_6733):
+  pass
+
 
 class ComediSim(object):
   def __init__(self):
     self.devices = {
       0 : PXI_6733(),
-      #1 : PCI_6723(),
+      1 : PXI_6723(),
     }
 
   def comedi_open(self, filename):
