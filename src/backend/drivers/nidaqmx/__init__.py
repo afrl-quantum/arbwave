@@ -39,6 +39,9 @@ signals   = list()
 routed_signals = dict()
 
 
+def nidaqmx_loaded():
+  return False if nidaqmx.libnidaqmx.libnidaqmx is None else True
+
 
 def format_terminals(d, dest):
   prfx = prefix()
@@ -72,6 +75,10 @@ def strip_prefix( s ):
 
 
 def load_all():
+  if not nidaqmx_loaded():
+    print 'found 0 NI DAQmx boards'
+    return
+
   global tasks, analogs, lines, counters, signals
   system = nidaqmx.System()
   print 'found {i} NI DAQmx boards'.format(i=len(system.devices))
@@ -260,6 +267,7 @@ def close():
     system.tristate_terminal(d) # an attempt to protect the dest terminal
 
   # finish off by reseting the devices that were used
+  if not nidaqmx_loaded(): return
   for d in system.devices:
     if str(d) in devices:
       d.reset()
