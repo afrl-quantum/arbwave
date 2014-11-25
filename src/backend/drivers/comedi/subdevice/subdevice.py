@@ -2,7 +2,6 @@
 
 import copy
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
-from .. import routes
 from ....device import Device as Base
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
@@ -15,12 +14,17 @@ class Subdevice(Base):
   STATIC              = 0
   WAVEFORM_SINGLE     = 1
   WAVEFORM_CONTINUOUS = 2
+  subdev_type         = None  # changed by inheriting device types
 
-  def __init__(self, device, subdevice, name_uses_subdev=False):
-    name = '{}/{}'.format(device, subdevice)
+  def __init__(self, route_loader, device, subdevice, name_uses_subdev=False):
+    if name_uses_subdev: devname = '{}{}'.format(self.subdev_type, subdevice)
+    else:                devname = self.subdev_type
+    name = '{}/{}'.format(device, devname)
     Base.__init__(self, name=name)
+    self.base_name = devname
     self.device = device
     self.subdevice = subdevice
+    debug( 'loading comedi subdevice %s', self )
 
     self.task = None
     self.channels = dict()
@@ -30,24 +34,15 @@ class Subdevice(Base):
     self.t_max = 0.0
 
     # first find the possible trigger and clock sources
-    self.trig_sources = list()
-    self.clock_sources = list()
-    self.sources_to_native = dict()
-
-    # make sure the strip off the leading 'ni' but leave the '/'
-    clk = self.name[len(self.prefix()):] + '/SampleClock'
-    trg = self.name[len(self.prefix()):] + '/StartTrigger'
-
-    for i in routes.signal_route_map.items():
-      add = False
-      if clk == i[1][1]:
-        self.clock_sources.append( i[0][0] )
-        add = True
-      elif trg == i[1][1]:
-        self.trig_sources.append( i[0][0] )
-        add = True
-      if add:
-        self.sources_to_native[ i[0][0] ] = i[1][0]
+    clk = self.name + '/SampleClock'
+    trg = self.name + '/StartTrigger'
+    if clk not in route_loader.source_map:
+      error("Not clocks found for clock-able device '%s'", self)
+    if trg not in route_loader.source_map:
+      error("Not triggers found for triggerable device '%s'", self)
+    self.clock_sources = route_loader.source_map[clk]
+    self.trig_sources  = route_loader.source_map[trg]
+    self.sources_to_native = dict() # not sure if we need this
 
     self.config = self.get_config_template()
 
@@ -65,6 +60,10 @@ class Subdevice(Base):
   @property
   def fd(self):
     return self.device.fd
+
+  @property
+  def prefix(self):
+    return self.device.prefix
 
   @property
   def flags(self):
@@ -182,7 +181,7 @@ class Subdevice(Base):
                                  samples_per_channel=1 )
     self.task.configure_trigger_disable_start()
     # get the data
-    px = self.prefix()
+    px = self.prefix
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist) == set( data.keys() ), \
       'NIDAQmx.set_output: mismatched channels'
@@ -281,7 +280,7 @@ class Subdevice(Base):
     # probably need to do some rounding to the nearest clock pulse to ensure
     # that we only have pulses matched to the correct transition
 
-    px = self.prefix()
+    px = self.prefix
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist).issuperset( waveforms.keys() ), \
       'NIDAQmx.set_output: mismatched channels'

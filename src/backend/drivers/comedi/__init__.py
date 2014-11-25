@@ -30,7 +30,7 @@ if is_simulated():
 from device import Device
 
 # mapping from board index to device
-devices     = list()
+devices     = dict()
 subdevices  = dict()
 analogs     = list()
 lines       = list()
@@ -39,17 +39,17 @@ signals     = list()
 routed_signals = dict()
 
 def init():
-  global subdevices
+  global devices, subdevices, analogs, lines, counters, signals
   for df in glob_comedi_devices():
-    m = re.match('/dev/comedi([0-9]+)$', df)
-    if not m: continue # don't match subdevices
+    if Device.parse_dev( df ) is None:
+      continue # don't match subdevices
     try:
       d = Device( prefix(), df )
     except Exception, e:
       print e
       print 'Could not open comedi device: ', df
       continue
-    devices.append( d )
+    devices[ str(d) ] = d
     subdevices.update( d.subdevices )
     analogs += [ ao for sub in d.ao_subdevices for ao in sub.channels ]
     lines   += [ do for sub in d.do_subdevices for do in sub.channels ]

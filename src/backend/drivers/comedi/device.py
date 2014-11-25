@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import logging
+import logging, re
 from logging import log, debug, DEBUG
 import comedi as c
 
@@ -36,21 +36,35 @@ def get_useful_subdevices(route_loader, device, typ,
   for index in subdev_iterator(device.fd, typ):
     if c.comedi_get_cmd_src_mask(device.fd, index, cmd) < 0:
       # we only will look at those subdevs that can have asynchronous use
+      log(DEBUG-1, 'ignoring subdev without async mode: %s/%d', device, index)
       continue
     if not reduce( lambda x,y: x|y,
                    [ getattr(cmd,n) & r for n,r in restrictions.items() ]):
       # we only return unrestricted devs
+      debug( 'ignoring restricted subdev: %s/%s(%d)',
+             device, klass.subdev_type, index )
+      if logging.root.getEffectiveLevel() <= (DEBUG-1):
+        log(DEBUG-1, 'cmd restrictions: %s', restrictions)
+        log(DEBUG-1, 'cmd capabilities: %s',
+                     { n:getattr(cmd,n) for n in restrictions })
       continue
-    route_loader.add_subdev_routes( index, typ )
     L.append( (device, index) )
-  del cmd
-  return [ klass( name_uses_subdev=(len(L)>1), *li) for li in L ]
+  #del cmd # Syntax error to delete this!?!
+  return [ klass( route_loader, name_uses_subdev=(len(L)>1), *li) for li in L ]
 
 class Device(object):
+  @staticmethod
+  def parse_dev(dev):
+    m = re.match('/dev/comedi(?P<device>[0-9]+)$', dev)
+    return None if not m else m.group('device')
+
   def __init__(self, prefix, device):
     self.prefix = prefix
-    self.device = device
-    self.fd     = c.comedi_open(self.device)
+    self.dev    = device
+    self.fd     = c.comedi_open(self.dev)
+    if self.fd is None:
+      raise NameError('could not open comedi device: ' + self.dev)
+    self.device = 'Dev'+self.parse_dev(device)
     rl = routes.getRouteLoader(self.driver) ( self )
     gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
@@ -62,10 +76,6 @@ class Device(object):
     self.subdevices.update( { str(do):do for do in self.do_subdevices } )
     self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
 
-    log(DEBUG-1,          
-      'creating NIDAQmx backplane channel: (%s --> %s)',
-      rl.aggregate_map.iteritems()
-    )
     self.signals = [
       channels.Backplane(src,destinations=dest,invertible=True)
       for src,dest in rl.aggregate_map.iteritems()
