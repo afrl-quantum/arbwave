@@ -50,7 +50,11 @@ def get_useful_subdevices(route_loader, device, typ,
       continue
     L.append( (device, index) )
   #del cmd # Syntax error to delete this!?!
-  return [ klass( route_loader, name_uses_subdev=(len(L)>1), *li) for li in L ]
+  subdevs = list()
+  for li in L:
+    try: subdevs.append(klass( route_loader, name_uses_subdev=(len(L)>1), *li))
+    except: pass
+  return subdevs
 
 class Device(object):
   @staticmethod

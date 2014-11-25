@@ -37,9 +37,11 @@ class Subdevice(Base):
     clk = self.name + '/SampleClock'
     trg = self.name + '/StartTrigger'
     if clk not in route_loader.source_map:
-      error("Not clocks found for clock-able device '%s'", self)
+      error("No clocks found for clock-able device '%s' (%s)",
+            self, self.device.board)
     if trg not in route_loader.source_map:
-      error("Not triggers found for triggerable device '%s'", self)
+      error("No triggers found for triggerable device '%s' (%s)",
+            self, self.device.board)
     self.clock_sources = route_loader.source_map[clk]
     self.trig_sources  = route_loader.source_map[trg]
     self.sources_to_native = dict() # not sure if we need this

@@ -17,7 +17,7 @@ class BaseRouteLoader(object):
     self.device         = device
     self.aggregate_map  = aggregate_map
     self.route_map      = route_map
-    self.source_map = dict()
+    self.source_map     = dict()
     for src,dst in route_map:
       D = self.source_map.setdefault( dst, list() )
       D.append(src)
