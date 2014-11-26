@@ -23,8 +23,8 @@ glob_comedi_devices = lambda : glob.glob('/dev/comedi*')
 # hook the simulated library if needed
 if is_simulated():
   import sim # rehook comedi lib so that hardware is simulated.
-  sim.inject_sim_lib()
-  glob_comedi_devices = lambda : ['/dev/comedi0']
+  Csim = sim.inject_sim_lib()
+  glob_comedi_devices = Csim.glob_devices
 
 
 from device import Device

@@ -6,12 +6,14 @@ Simulated low-level comedilib library.
 import comedi as c
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re
+from ....tools.expand import expand_braces
 
 def inject_sim_lib():
   C = ComediSim()
   import_funcs = [ f for f in dir(C) if f.startswith('comedi')]
   for f in import_funcs:
     setattr( c, f, getattr(C,f) )
+  return C
 
 
 class SimDevice(object):
@@ -64,7 +66,32 @@ class PXI_6733(SimDevice):
   }
 
 class PXI_6723(PXI_6733):
-  pass
+  board = 'pxi-6723'
+
+class PCI_6229(SimDevice):
+  driver = 'ni_pcimio'
+  board = 'pci-6229'
+  subdevs = {
+    1 : dict( typ=c.COMEDI_SUBD_AO, flags=34754560,
+      cmd=dict(chanlist=None,
+               chanlist_len=0,
+               convert_arg=0,
+               convert_src=2,
+               data=None,
+               data_len=0,
+               flags=64,
+               scan_begin_arg=0,
+               scan_begin_src=80,
+               scan_end_arg=0,
+               scan_end_src=32,
+               start_arg=0,
+               start_src=192,
+               stop_arg=0,
+               stop_src=33,
+               subdev=1,
+      ),
+    ),
+  }
 
 
 class ComediSim(object):
@@ -72,7 +99,12 @@ class ComediSim(object):
     self.devices = {
       0 : PXI_6733(),
       1 : PXI_6723(),
+      2 : PCI_6229(),
     }
+
+  def glob_devices(self):
+    mn,mx = min(self.devices), max(self.devices)
+    return expand_braces('/dev/comedi{{{}..{}}}'.format(mn,mx))
 
   def comedi_open(self, filename):
     debug('comedi_open(%s)', filename)
