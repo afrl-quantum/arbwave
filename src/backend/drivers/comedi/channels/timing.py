@@ -4,7 +4,7 @@ from .....tools.float_range import float_range
 from ....channels import Timing as Base
 
 class Timing(Base):
-  """Base NIDAQmx Timing channel class"""
+  """Base Comedi Timing channel class"""
   def get_config_template(self):
     return {
       'idle-state' : {

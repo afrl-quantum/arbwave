@@ -51,10 +51,10 @@ def init():
       continue
     devices[ str(d) ] = d
     subdevices.update( d.subdevices )
-    analogs += [ ao for sub in d.ao_subdevices for ao in sub.channels ]
-    lines   += [ do for sub in d.do_subdevices for do in sub.channels ]
-    lines   += [ do for sub in d.dio_subdevices for do in sub.channels ]
-    counters+= [ co for sub in d.counter_subdevices for co in sub.channels ]
+    analogs += [ ao for sub in d.ao_subdevices for ao in sub.available_channels ]
+    lines   += [ do for sub in d.do_subdevices for do in sub.available_channels ]
+    lines   += [ do for sub in d.dio_subdevices for do in sub.available_channels ]
+    counters+= [ co for sub in d.counter_subdevices for co in sub.available_channels ]
     signals += [ so for  so in d.signals ]
   print 'found {} comedi supported boards'.format(len(devices))
 

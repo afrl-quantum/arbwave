@@ -1,11 +1,11 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from timing import Timing
+from .timing      import Timing
 from ....channels import Analog as ABase
 from ....channels import Digital as DBase
 from ....channels import Backplane
 
-class NIChannel:
+class ComediChannel:
   def get_min_period(self):
     """
     Returns the minimum timing period (period between two rising edges of this
@@ -14,8 +14,15 @@ class NIChannel:
     return self.device.get_min_period()
 
 
-class Analog(NIChannel, ABase):
+class Analog(ComediChannel, ABase):
   pass
 
-class Digital(NIChannel, DBase):
+class Digital(ComediChannel, DBase):
   pass
+
+klasses = dict(
+  to = Timing,
+  ao = Analog,
+  do = Digital,
+  backplane = Backplane,
+)

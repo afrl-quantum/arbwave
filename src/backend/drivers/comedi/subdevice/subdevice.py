@@ -2,12 +2,13 @@
 
 import copy
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
-from ....device import Device as Base
-from .....tools.signal_graphs import nearest_terminal
-from .....tools.cmp import cmpeps
 from physical import unit
 import comedi as c
 import numpy as np
+from .....tools.signal_graphs import nearest_terminal
+from .....tools.cmp import cmpeps
+from ....device import Device as Base
+from .. import channels
 
 
 class Subdevice(Base):
@@ -108,6 +109,14 @@ class Subdevice(Base):
     )
     D.__dict__ = D
     return D
+
+  @property
+  def available_channels(self):
+    klass = channels.klasses[self.subdev_type]
+    return [
+      klass('{}/{}'.format(self, i), self)
+      for i in xrange(c.comedi_get_n_channels( self.fd, self.subdevice ))
+    ]
 
   def add_channels(self):
     """
