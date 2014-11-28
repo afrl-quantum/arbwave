@@ -33,8 +33,8 @@ class Task(Base):
     self.sources_to_native = dict()
 
     # make sure the strip off the leading 'ni' but leave the '/'
-    clk = self.name[len(self.prefix()):] + '/SampleClock'
-    trg = self.name[len(self.prefix()):] + '/StartTrigger'
+    clk = self.name[len(self.prefix):] + '/SampleClock'
+    trg = self.name[len(self.prefix):] + '/StartTrigger'
 
     for i in routes.signal_route_map.items():
       add = False
@@ -136,7 +136,7 @@ class Task(Base):
                                  samples_per_channel=1 )
     self.task.configure_trigger_disable_start()
     # get the data
-    px = self.prefix()
+    px = self.prefix
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist) == set( data.keys() ), \
       'NIDAQmx.set_output: mismatched channels'
@@ -235,7 +235,7 @@ class Task(Base):
     # probably need to do some rounding to the nearest clock pulse to ensure
     # that we only have pulses matched to the correct transition
 
-    px = self.prefix()
+    px = self.prefix
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist).issuperset( waveforms.keys() ), \
       'NIDAQmx.set_output: mismatched channels'

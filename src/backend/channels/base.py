@@ -16,9 +16,11 @@ class Base:
   def get_config_template(self):
     return dict()
 
+  @property
   def prefix(self):
     return self.name.partition('/')[0]
 
+  @property
   def device(self):
     return self.dev
 

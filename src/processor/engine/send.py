@@ -64,7 +64,7 @@ class ToDriver:
     graph = signal_graphs.build_graph( signals, *clocks )
     to_dev = { d[0]:d[1]  for d in backend.get_devices().items() }
 
-    to_dev.update({ clk[0]:clk[1].device()
+    to_dev.update({ clk[0]:clk[1].device
                       for clk in backend.get_timing_channels().items() })
 
 

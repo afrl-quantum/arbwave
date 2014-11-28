@@ -166,11 +166,11 @@ class WaveformEvalulator:
       # set type and clock
       ci['type'] = chan_dev.type()
       try:
-        clk = self.devcfg[ str(chan_dev.device()) ]['clock']['value']
+        clk = self.devcfg[ str(chan_dev.device) ]['clock']['value']
       except KeyError:
-        raise UserWarning( str(chan_dev.device()) + ': Device not configured' )
+        raise UserWarning( str(chan_dev.device) + ': Device not configured' )
       assert clk in self.clocks, \
-             str(chan_dev.device()) + ': device clock not selected'
+             str(chan_dev.device) + ': device clock not selected'
       ci['clock'] = clk
 
       if clk not in self.transitions:

@@ -11,6 +11,7 @@ class Device:
   def get_config_template(self):
     return dict()
 
+  @property
   def prefix(self):
     return self.name.partition('/')[0]
 

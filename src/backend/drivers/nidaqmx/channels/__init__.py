@@ -11,7 +11,7 @@ class NIChannel:
     Returns the minimum timing period (period between two rising edges of this
     clock pulse) in units of seconds.
     """
-    return self.device().get_min_period()
+    return self.device.get_min_period()
 
 
 class Analog(NIChannel, ABase):

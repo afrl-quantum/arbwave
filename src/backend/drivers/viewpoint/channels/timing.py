@@ -16,7 +16,7 @@ class Timing(Base):
     return True
 
   def _divider(self):
-    return self.device().clocks[ str(self) ]['divider']['value']
+    return self.device.clocks[ str(self) ]['divider']['value']
 
   def get_min_period(self):
     """
@@ -28,7 +28,7 @@ class Timing(Base):
     # will need to see a rising edge and falling edge, the pair of which
     # constitutes one clock pulse.
     return 2 * self._divider() * unit.s \
-             / self.device().board.configs['out']['scan_rate']
+             / self.device.board.configs['out']['scan_rate']
 
   def get_config_template(self):
     return {
@@ -48,7 +48,7 @@ class InternalTiming(Base):
     Returns the minimum timing period (period between two rising edges of this
     clock pulse) in units of seconds.
     """
-    return unit.s / self.device().board.configs['out']['scan_rate']
+    return unit.s / self.device.board.configs['out']['scan_rate']
 
   def get_config_template(self):
     # The limits on the scan_rate range are according to the manual...
