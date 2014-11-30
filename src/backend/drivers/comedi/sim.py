@@ -19,6 +19,7 @@ def inject_sim_lib():
 class SimDevice(object):
   driver  = None
   board   = None
+  subdevs = dict()
   def comedi_find_subdevice_by_type(self, typ, start_subdevice):
     if start_subdevice < 0:
       raise OverflowError('comedi_find_subdevice_by_type: start_subdevice >=0!')
@@ -33,18 +34,21 @@ class SimDevice(object):
 
   def comedi_get_cmd_src_mask(self, subdev, cmd):
     # this is at least for the analog subdev of the PXI-6733
-    for a,v in self.subdevs[subdev]['cmd'].items(): setattr( cmd, a, v )
+    for a,v in self.subdevs[subdev].get('cmd',{}).items(): setattr( cmd, a, v )
     return 0
 
   def comedi_get_subdevice_flags(self, subdev):
-    return self.subdevs[subdev]['flags']
+    return self.subdevs[subdev].get('flags',0)
+
+  def comedi_get_n_channels(self, subdev):
+    return self.subdevs[subdev].get('n_channels',0)
 
 
 class PXI_6733(SimDevice):
   driver = 'ni_pcimio'
   board = 'pxi-6733'
   subdevs = {
-    1 : dict( typ=c.COMEDI_SUBD_AO, flags=34754560,
+    1 : dict( typ=c.COMEDI_SUBD_AO, flags=34754560, n_channels=8,
       cmd=dict(chanlist=None,
                chanlist_len=0,
                convert_arg=0,
@@ -65,14 +69,18 @@ class PXI_6733(SimDevice):
     ),
   }
 
+def subdev_replace_n_channels(S, N):
+  S[1]['n_channels'] = N
+  return S
 class PXI_6723(PXI_6733):
   board = 'pxi-6723'
+  subdevs = subdev_replace_n_channels(PXI_6733.subdevs.copy(), 32)
 
 class PCI_6229(SimDevice):
   driver = 'ni_pcimio'
   board = 'pci-6229'
   subdevs = {
-    1 : dict( typ=c.COMEDI_SUBD_AO, flags=34754560,
+    1 : dict( typ=c.COMEDI_SUBD_AO, flags=34754560, n_channels=4,
       cmd=dict(chanlist=None,
                chanlist_len=0,
                convert_arg=0,
@@ -130,6 +138,11 @@ class ComediSim(object):
     debug('comedi_get_subdevice_flags(%d, %d)', fd, subdev)
     if fd not in self.devices: return -1
     return self.devices[fd].comedi_get_subdevice_flags(subdev)
+
+  def comedi_get_n_channels(self, fd, subdev):
+    debug('comedi_get_n_channels(%d, %d)', fd, subdev)
+    if fd not in self.devices: return -1
+    return self.devices[fd].comedi_get_n_channels(subdev)
 
   def comedi_get_driver_name(self, fd):
     return self.devices[fd].driver
