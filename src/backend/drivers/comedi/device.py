@@ -2,7 +2,7 @@
 
 import logging, re
 from logging import log, debug, DEBUG
-import comedi as c
+import ctypes_comedi as c
 
 from ....tools import cached
 import subdevice

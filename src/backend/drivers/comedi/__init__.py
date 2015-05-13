@@ -1,7 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import logging, re, glob
-import comedi as c
+import re, glob
+from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
+import ctypes_comedi as c
 
 from .... import options
 from ....tools.path import collect_prefix
@@ -79,11 +80,12 @@ def get_routeable_backplane_signals():
 
 
 def set_device_config( config, channels, shortest_paths, timing_channels ):
+  debug('comedi.set_device_config')
   # we need to separate channels first by device
   # (configs are already naturally separated by device)
   # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
   # channel paths
-  chans = collect_prefix(channels, 0, 2, 2)
+  chans = collect_prefix(channels, 0, 3, 3)
   for d in subdevices:
     if d in config or d in chans:
       subdevices[d].set_config( config.get(d,{}), chans.get(d,[]),
@@ -91,6 +93,7 @@ def set_device_config( config, channels, shortest_paths, timing_channels ):
 
 
 def set_clocks( clocks ):
+  debug('comedi.set_clocks')
   clocks = collect_prefix(clocks, 0, 2, 2)
   for d in subdevices:
     if d in clocks:
@@ -98,12 +101,14 @@ def set_clocks( clocks ):
 
 
 def set_signals( signals ):
+  debug('comedi.set_signals')
   signals = collect_prefix( signals, 0, 2, prefix_list=devices )
   for d in devices:
     devices[d].set_signals( signals.get(d,{}) )
 
 
 def set_static(analog, digital):
+  debug('comedi.set_static')
   D = collect_prefix(digital, 0, 2, 2)
   A = collect_prefix(analog, 0, 2, 2)
 
@@ -115,6 +120,7 @@ def set_static(analog, digital):
 
 
 def set_waveforms(analog, digital, transitions, t_max, end_clocks, continuous):
+  debug('comedi.set_waveforms')
   D = collect_prefix( digital, 0, 2, 2 )
   A = collect_prefix( analog, 0, 2, 2 )
   C = collect_prefix( transitions, 0, 2, 2)
@@ -135,5 +141,5 @@ def close():
   """
   while devices:
     devname, dev = devices.popitem()
-    logging.debug( 'closing comedi device: %s', devname )
+    debug( 'closing comedi device: %s', devname )
     del dev

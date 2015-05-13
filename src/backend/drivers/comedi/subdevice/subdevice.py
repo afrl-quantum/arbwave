@@ -3,7 +3,7 @@
 import copy
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 from physical import unit
-import comedi as c
+import ctypes_comedi as c
 import numpy as np
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
@@ -130,6 +130,7 @@ class Subdevice(Base):
 
   def set_config(self, config=None, channels=None, shortest_paths=None,
                  timing_channels=None, force=False):
+    debug('comedi[%s].set_config', self)
     if channels and self.channels != channels:
       self.channels = channels
       force = True
