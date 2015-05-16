@@ -131,3 +131,7 @@ DONE
   computed values for these text-entries need to be sent back to the gui for
   tooltip generation.
 DONE
+
+16. Fix icons in graph toolbar
+
+17. Add remote hardware layer
