@@ -35,3 +35,19 @@ routing configurations given in the program denoted by:
   ni/Dev1/PFI0  ->  External/cable0
 where the connecting cable has been given the arbitrary, but necessarily
 consistent, name of 'cable0'.
+
+
+Connections to remote devices are possible and managed by the
+Configure->Connections tab.  On this tab, a user specifies an alias for a
+connection as well as the host name for the connection.
+For all connections, nearly all paths will be prefixed by a
+representation of the remote host or device.  For example, if a remote system is
+identified by the word "pxi0", all paths from the corresponding devices of the
+remote system will be prefixed by "pxi0:".  For example, 'ni/Dev1/ao0' would become
+'pxi0:ni/Dev1/ao0'.  A user can also specify a default host.  In this case, any
+path that does not have the proper "host:" prefix will be interpreted to mean
+the default connection.  The following settings are the default configuration
+for connections:
+( prefix='local', host='localhost', default=True )
+The exception to this renaming will be any path that begins with "External" as
+these are already fairly independent of any device.

@@ -69,6 +69,21 @@ def toggle_item( cell, path, model, ITEM, add_undo=None ):
 
 
 
+def select_radio_item( cell, path, model, ITEM, add_undo=None ):
+  """
+  Sets the toggled state on the radio button to true or false.
+  """
+  if callable(model): # allow for a callback to be used to get model
+    model = model()
+  if add_undo is not None:
+    raise NotImplementedError('undo not implemented for select_radio_item')
+    #add_undo( Undo(model[path][ITEM], not model[path][ITEM], model, path, ITEM) )
+  for row in model:
+    row[ITEM] = row.path == model.get_path( model.get_iter(path) )
+
+
+
+
 def add_path_to_combobox_tree(T, p, k, M):
   """
     Add a device path to the gtk.TreeStore in T.

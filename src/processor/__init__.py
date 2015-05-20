@@ -66,6 +66,7 @@ class Processor:
     Run the same script again.
     """
     self.update(
+      ( self.engine.hosts,    False ),
       ( self.engine.devcfg,   False ),
       ( self.engine.clocks,   False ),
       ( self.engine.signals,  False ),
@@ -91,7 +92,7 @@ class Processor:
       l(self.Globals)
 
 
-  def update(self,devcfg,clocks,signals,channels,waveforms,script,toggle_run):
+  def update(self,hosts,devcfg,clocks,signals,channels,waveforms,script,toggle_run):
     """
     Updates that are driven from user-interface changes sent to the engine.
     """
@@ -110,11 +111,23 @@ class Processor:
         self.exec_script( script[0], kwargs=kw )
 
       # set engine inputs
+      self.engine.hosts     = hosts[0]
       self.engine.devcfg    = devcfg[0]
       self.engine.clocks    = clocks[0]
       self.engine.signals   = signals[0]
       self.engine.channels  = channels[0]
       self.engine.waveforms = waveforms[0]
+
+      # the very first bit of real work should be to re-init all connections
+      if hosts[1]:
+        if engine.send.to_driver.hosts( hosts[0] ):
+          # there was a fundamental change in connections.  We will try to send
+          # all pieces of the puzzle now.
+          devcfg     = ( devcfg[0]   , True )
+          clocks     = ( clocks[0]   , True )
+          signals    = ( signals[0]  , True )
+          channels   = ( channels[0] , True )
+          waveforms  = ( waveforms[0], True )
 
       if clocks[1]:
         engine.send.to_driver.clocks( collect_prefix(clocks[0]) )

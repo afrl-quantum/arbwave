@@ -150,6 +150,14 @@ class ToDriver:
                                             timing_channels )
 
 
+  def hosts(self, hosts):
+    """
+      Send host connection configuration information to drivers
+      @return whether real connections have been closed/established
+    """
+    return backend.reconnect( hosts )
+
+
   def clocks(self, config):
     """Send clock(s) configuration information to drivers"""
     for D in backend.drivers:

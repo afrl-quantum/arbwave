@@ -25,6 +25,10 @@ ui_info = \
     <toolitem action='DEV:Add'/>
     <toolitem action='DEV:Delete'/>
   </toolbar>
+  <toolbar  name='HostsToolBar'>
+    <toolitem action='BKD:Add'/>
+    <toolitem action='BKD:Delete'/>
+  </toolbar>
 </ui>'''
 
 class ConfigDialog(gtk.Dialog):
@@ -42,8 +46,10 @@ class ConfigDialog(gtk.Dialog):
     self.signal_editor = edit.signals.create(store.signals)
     self.devcfg_editor = edit.Generic(store.devcfg,
                                       range_factory=RangeFactory(store,False))
-    self.clock_editor = edit.Generic( store.clocks,
+    self.clock_editor  = edit.Generic( store.clocks,
                                       range_factory=RangeFactory(store,True))
+    self.hosts         = edit.hosts.create(store.hosts)
+
 
 
     # ###### SET UP THE PANEL ######
@@ -79,14 +85,21 @@ class ConfigDialog(gtk.Dialog):
     devbox = mkbox('Devices', '/DevToolBar', self.devcfg_editor.view )
     clkbox = mkbox('Clocks', '/ClockToolBar', self.clock_editor.view )
     sigbox = mkbox('Signal\nRoutes','/SignalToolBar',self.signal_editor['view'])
+    bkdbox = mkbox('Connections', '/HostsToolBar', self.hosts['view'] )
 
     clk_sig_pane = gtk.VPaned()
     clk_sig_pane.pack1( clkbox )
     clk_sig_pane.pack2( sigbox )
 
-    body = gtk.HPaned()
-    body.pack1( clk_sig_pane )
-    body.pack2( devbox )
+    config = gtk.HPaned()
+    config.pack1( clk_sig_pane )
+    config.pack2( devbox )
+
+    body = gtk.Notebook()
+    body.set_tab_border(0)
+    body.append_page( config, gtk.Label('Signals/Triggers/Devices') )
+    body.append_page( bkdbox, gtk.Label('Connections') )
+    body.set_tab_reorderable( config, True )
 
     self.vbox.pack_start( body )
 
@@ -134,6 +147,15 @@ class ConfigDialog(gtk.Dialog):
       ( 'DEV:Delete', gtk.STOCK_DELETE,   # name, stock id
         None, None,                       # label, accelerator
         'Delete device configuration',    # tooltip
+        self.activate_action ),
+
+      ( 'BKD:Add', gtk.STOCK_ADD,         # name, stock id
+        None, None,                       # label, accelerator
+        'Add connection to host',      # tooltip
+        self.activate_action ),
+      ( 'BKD:Delete', gtk.STOCK_DELETE,   # name, stock id
+        None, None,                       # label, accelerator
+        'Delete connection to host',   # tooltip
         self.activate_action ),
     )
   
@@ -217,6 +239,9 @@ class ConfigDialog(gtk.Dialog):
 
       'DEV:Add'    : (add_dev_config, self.store.devcfg),
       'DEV:Delete' : (delrow, self.store.devcfg, self.devcfg_editor.view,True),
+
+      'BKD:Add'    : (addrow, self.store.hosts, self.hosts['view']),
+      'BKD:Delete' : (delrow, self.store.hosts, self.hosts['view']),
     }
   
     return action_group

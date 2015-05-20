@@ -168,10 +168,11 @@ class ArbWave(gtk.Window):
       row_inserted=(self.channels_row_inserted),
       rows_reordered=(self.channels_rows_reordered),
     )
-    self.waveforms = stores.WaveformsSet( changed=self.update )
-    self.signals = stores.Signals( changed=self.update )
-    self.devcfg  = stores.Generic( changed=self.update )
-    self.clocks  = stores.Generic( changed=self.update )
+    self.waveforms  = stores.WaveformsSet( changed=self.update )
+    self.hosts      = stores.Hosts       ( changed=self.update )
+    self.signals    = stores.Signals     ( changed=self.update )
+    self.devcfg     = stores.Generic     ( changed=self.update )
+    self.clocks     = stores.Generic     ( changed=self.update )
     self.channel_editor = edit.Channels(
       channels=self.channels,
       processor=self.processor,
@@ -520,6 +521,7 @@ class ArbWave(gtk.Window):
 
   def getvars(self):
     return {
+      'hosts'     : self.hosts.representation(),
       'devices'   : self.devcfg.representation(),
       'clocks'    : self.clocks.representation(),
       'global_script': self.script.representation(),
@@ -569,6 +571,11 @@ class ArbWave(gtk.Window):
     # suspend all updates
     self.pause()
 
+    if 'hosts' in vardict:
+      logging.debug('hosts.load(...)..........')
+      self.hosts.load( vardict['hosts'] )
+      logging.debug('hosts.load(...) finished.')
+
     if 'channels' in vardict:
       logging.debug('channels.load(...)..........')
       self.channels.load( vardict['channels'] )
@@ -614,6 +621,8 @@ class ArbWave(gtk.Window):
 
     logging.debug('clearundo....')
     self.clearundo()
+    logging.debug('hosts.reset_to_default()....')
+    self.hosts.reset_to_default()
     logging.debug('channels.clear()....')
     self.channels.clear()
     logging.debug('waveforms.clear()....')
@@ -665,7 +674,7 @@ class ArbWave(gtk.Window):
     plot them and send them to the backend drivers.
 
     item : should generally be one of
-           [devcfg, clocks, signals, channels, waveforms, script]
+           [hosts, devcfg, clocks, signals, channels, waveforms, script]
     """
 
     if not self.allow_updates:
@@ -673,19 +682,21 @@ class ArbWave(gtk.Window):
 
     try:
       if item not in [
-        self.ALL_ITEMS, None, self.devcfg, self.clocks, self.signals,
-        self.channels, self.waveform_editor.get_waveform(), self.script,
+        self.ALL_ITEMS, None, self.hosts, self.devcfg, self.clocks,
+        self.signals, self.channels, self.waveform_editor.get_waveform(),
+        self.script,
       ]:
         raise TypeError('Unknown item sent to update()')
 
       self.processor.update(
-        ( self.devcfg.representation(),    item in [ self.ALL_ITEMS, self.devcfg] ),
-        ( self.clocks.representation(),    item in [ self.ALL_ITEMS, self.clocks] ),
-        ( self.signals.representation(),   item in [ self.ALL_ITEMS, self.signals] ),
-        ( self.channels.representation(),  item in [ self.ALL_ITEMS, self.channels] ),
+        ( self.hosts.representation(),    item in [ self.ALL_ITEMS, self.hosts] ),
+        ( self.devcfg.representation(),   item in [ self.ALL_ITEMS, self.devcfg] ),
+        ( self.clocks.representation(),   item in [ self.ALL_ITEMS, self.clocks] ),
+        ( self.signals.representation(),  item in [ self.ALL_ITEMS, self.signals] ),
+        ( self.channels.representation(), item in [ self.ALL_ITEMS, self.channels] ),
         ( self.waveform_editor.get_waveform().representation(store_path=True),
-                                           item in [ self.ALL_ITEMS, self.waveform_editor.get_waveform()] ),
-        ( self.script.representation(),    item in [ self.ALL_ITEMS, self.script] ),
+                                          item in [ self.ALL_ITEMS, self.waveform_editor.get_waveform()] ),
+        ( self.script.representation(),   item in [ self.ALL_ITEMS, self.script] ),
         toggle_run=toggle_run,
       )
       self.next_untested_undo = len(self.undo)

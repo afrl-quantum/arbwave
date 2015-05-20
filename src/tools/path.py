@@ -16,12 +16,10 @@ def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0,
   """
   This function serves to categorize paths by their prefix(es).
   """
-  #need postponed loading to allow backends to import this
-  if __name__ != '__main__':
-    from .. import backend
-
-
   if prefix_list is None:
+    #need postponed loading to allow backends to import this
+    if __name__ != '__main__':
+      from .. import backend
     prefix_list = backend.drivers
   retval = dict()
   for d in D.items():

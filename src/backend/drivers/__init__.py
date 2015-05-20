@@ -10,9 +10,34 @@ from ... import options
 
 class Drivers(dict):
   def __init__(self):
-    dict.__init__(self)
+    super(Drivers,self).__init__()
     self.__dict__ = self
-drivers   = Drivers() # mapping "prefix" to driver module
+class Hosts(dict):
+  def __init__(self):
+    super(Hosts,self).__init__()
+    self.default = 'local'
+    self['localhost'] = dict( prefix='local' )
+drivers   = Drivers() # mapping "prefix" to instantiated driver
+hosts     = Hosts()
+
+def reconnect( host_defs ):
+  D = host_defs.copy()
+  D.pop( '__default__' )
+  new_hosts = set( D.values() )
+  old_hosts = set( hosts.keys() )
+
+  # first close out old retired hosts
+  for h in (old_hosts - new_hosts):
+    hconn = hosts.pop(h)
+    print 'removed connection to "'+h+'": ', hconn
+
+  # now create new connection to new hosts
+  for h in (new_hosts - old_hosts):
+    print 'adding connection to', h
+    hosts[h] = 'New connection'
+
+  # hosts have been either added or removed? if so, this is a notable change
+  return new_hosts != old_hosts
 
 
 def get_devices():
