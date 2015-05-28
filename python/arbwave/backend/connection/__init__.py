@@ -69,19 +69,20 @@ class Local(Connection):
 class Service(Local, Pyro.core.ObjBase):
   def connect(self):
     super(Service,self).connect()
+    self.daemon = daemon = Pyro.core.Daemon()
     for prefix, klass in self.klasses.items():
-      self.klasses[prefix] = pyro.Wrapper(klass=klass)
+      self.klasses[prefix] = pyro.Wrapper(self.daemon, klass=klass)
 
   def serve(self):
     Pyro.core.initServer()
-    self.daemon = daemon = Pyro.core.Daemon()
-    uri = daemon.connect(self,'backend')
+    # for some reason, we need to set this local var...
+    daemon = self.daemon
+    uri = self.daemon.connect(self,'backend')
 
-    print "The daemon runs on port:",daemon.port
+    print "The daemon runs on port:",self.daemon.port
     print "The object's uri is:",uri
 
-    daemon.requestLoop()
-    self.daemon = None
+    self.daemon.requestLoop()
 
   def list(self):
     retval = list()
@@ -93,9 +94,6 @@ class Service(Local, Pyro.core.ObjBase):
 
 
 class Remote(Connection):
-  class DriverProxy(pyro.Proxy):
-    attribs=['prefix', 'description', 'has_simulated_mode', 'simulated']
-
   def __init__(self, host):
     self.host = host
     super(Remote,self).__init__()
@@ -107,7 +105,7 @@ class Remote(Connection):
   def connect(self):
     self.connection = self.get_pyro_obj('backend')
     def mk_get_pyro(self, k):
-      return lambda: Remote.DriverProxy( self.get_pyro_obj(k) )
+      return lambda: pyro.Proxy( self.get_pyro_obj(k) )
     for k in self.connection.list():
       self.klasses[k] = mk_get_pyro(self,k)
 

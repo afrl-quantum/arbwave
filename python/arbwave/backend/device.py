@@ -2,6 +2,8 @@
 
 class Device(object):
   """Base device class"""
+  _pyro_ = True # For remote connections, this class must use pyro
+
   def __init__(self, name):
     self.name = name
 

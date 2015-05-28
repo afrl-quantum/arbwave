@@ -4,6 +4,8 @@ from physical import unit
 
 class Base(object):
   """Base channel class"""
+  _pyro_ = True # For remote connections, this class must use pyro
+
   def __init__(self, name, dev=None, explicit_timing=True, finite_end_clock=True):
     self.name = name
     self.dev = dev

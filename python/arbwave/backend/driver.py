@@ -4,6 +4,8 @@ from .. import options
 
 class Driver(object):
   """Base driver class"""
+  _pyro_ = True # For remote connections, this class must use pyro
+
   prefix = 'undefined'
   description = 'No description'
   has_simulated_mode = False
