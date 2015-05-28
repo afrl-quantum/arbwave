@@ -3,7 +3,6 @@
 Set of capabilities that each driver may support.
 """
 
-from ...capabilities import *
 import channels
 
 def get_channels(devices, C, *args, **kwargs):
@@ -82,8 +81,8 @@ available_routes = {
 }
 
 def get_routeable_backplane_signals(devices):
-  retval = get_channels(devices, channels.Backplane,
-                        destinations=['External/'], invertible=False )
+  retval = get_channels( devices, channels.Backplane,
+                         destinations=['External/'], invertible=False )
 
   # now overwrite the default backplane channels with those with specifics
   for dev in devices:

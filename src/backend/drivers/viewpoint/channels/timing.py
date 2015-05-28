@@ -8,12 +8,7 @@ from ....channels import Timing as Base
 
 class Timing(Base):
   """DIO64 aperiodic/arbitrary timing channel class"""
-
-  def is_aperiodic(self):
-    """
-    Returns whether this clock represents an aperiodic signal.
-    """
-    return True
+  aperiodic = True # this clock represents an aperiodic signal.
 
   def _divider(self):
     return self.device.clocks[ str(self) ]['divider']['value']

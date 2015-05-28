@@ -135,3 +135,9 @@ DONE
 16. Fix icons in graph toolbar
 
 17. Add remote hardware layer
+
+18. make python/arbwave subdir.  mv src/* python/arbwave/; add python to run.py path and
+  do "from arbwave import main"
+  change relative imports in connection.Local from src.backend.connection to
+  arbwave.backend.connection
+  rmdir src

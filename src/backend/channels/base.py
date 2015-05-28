@@ -2,7 +2,7 @@
 
 from physical import unit
 
-class Base:
+class Base(object):
   """Base channel class"""
   def __init__(self, name, dev=None, explicit_timing=True, finite_end_clock=True):
     self.name = name
