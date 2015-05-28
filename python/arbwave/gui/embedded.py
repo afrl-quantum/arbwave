@@ -592,7 +592,7 @@ class Shell_Gui:
           '  ArbWave Shell Help: \n'
           '  Some useful ArbWave commands: \n'
           'quit()\n'
-          '  quit arbwave!\n\n'
+          '  quit Arbwave!\n\n'
         ) + fundoc
         return
       help(*args, **kwargs)

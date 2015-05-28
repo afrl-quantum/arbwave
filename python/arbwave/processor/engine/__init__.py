@@ -13,7 +13,7 @@ RESTART = 0x2
 
 class Arbwave:
   """
-  Class for creating a fake arbwave module to be accessed and used inside
+  Class for creating a fake Arbwave module to be accessed and used inside
   scripts.
   """
 
@@ -26,7 +26,7 @@ class Arbwave:
   
   def __init__(self, globals_source, ui):
     """
-    Initializes the fake arbwave module.
+    Initializes the fake Arbwave module.
     """
     self._globals_source = globals_source
     self.ui = ui
@@ -86,20 +86,20 @@ class Arbwave:
     """
     Process inputs to generate waveform output and send to
     plotter.
-      <b>stop</b>    [Default : arbwave.ANYTIME]
+      <b>stop</b>    [Default : Arbwave.ANYTIME]
         The time at which to test for stop requests during the
         update function.
         Valid values:
           None
             Do not check for stop requests during the update
             function.
-          arbwave.BEFORE
+          Arbwave.BEFORE
             Before the waveforms are computed and sent to
             hardware.
-          arbwave.AFTER
+          Arbwave.AFTER
             After the waveforms are computed and sent to
             hardware.
-          arbwave.ANYTIME
+          Arbwave.ANYTIME
             Either before or after waveforms are computed
             and sent to hardware.
       <b>wait</b>

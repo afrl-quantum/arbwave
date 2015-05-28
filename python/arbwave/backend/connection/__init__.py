@@ -4,7 +4,7 @@ Connections to all backends.  Backends can either local or remote.
 """
 
 # used to locate drivers within a relative import using import_module below
-THISPACKAGE = 'src.backend.connection'
+THISPACKAGE = 'arbwave.backend.connection'
 
 import os, traceback, logging, importlib
 from os import path

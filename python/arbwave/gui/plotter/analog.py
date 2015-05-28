@@ -98,7 +98,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
   return (t_final, ax.get_ylim()), lines, group_lines
 
 
-# This should be conformant to the output that the arbwave.Processor produces.
+# This should be conformant to the output that the arbwave.processor produces.
 #
 # in the following signals, it is expected that the last transition will be
 # honored and that generally the voltage will remain at the given level after

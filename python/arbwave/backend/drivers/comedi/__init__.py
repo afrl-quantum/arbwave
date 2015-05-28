@@ -62,7 +62,7 @@ def init():
 
 def get_devices():
   """
-  Actually, to fit into the framework here for arbwave, we return the subdevices
+  Actually, to fit into the framework here for Arbwave, we return the subdevices
   """
   return subdevices.values()
 

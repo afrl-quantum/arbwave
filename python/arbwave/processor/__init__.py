@@ -37,8 +37,8 @@ class Processor:
     self.Globals = default.get_globals()
     self.engine = engine.Arbwave(self,ui)
     self.engine.defaults = ModuleLike( default.registered_globals )
-    sys.modules['arbwave'] = self.engine # fake arbwave module
-    sys.modules['arbwave.defaults'] = self.engine.defaults
+    sys.modules['Arbwave'] = self.engine # fake Arbwave module
+    sys.modules['Arbwave.defaults'] = self.engine.defaults
     sys.modules['msg'] = msg
     msg.set_main_window( ui )
     self.running = None

@@ -84,17 +84,17 @@ default_script = """\
 from physical.unit import *
 from physical.constant import *
 from physical import unit
-import arbwave
+import Arbwave
 
-class SimpleRun(arbwave.Runnable):
+class SimpleRun(Arbwave.Runnable):
 	def run(self):
-		arbwave.update()
+		Arbwave.update()
 		# if possible, the run function should return a value indicative of the
 		# performance of the particular run.  Below is just a "random" example.
 		import random
 		return random.randint(0,100)
 
-arbwave.add_runnable( 'Simple', SimpleRun() )
+Arbwave.add_runnable( 'Simple', SimpleRun() )
 """
 
 def notify_position(w):
@@ -421,7 +421,7 @@ class ArbWave(gtk.Window):
         self.activate_action ),
       ( 'arbhelp', None,                           # name, stock id
         'Arbwave Script _Functions', '',           # label, accelerator
-        'Scripting functions of arbwave module',   # tooltip
+        'Scripting functions of Arbwave module',   # tooltip
         self.activate_action ),
 
       # CHANNEL EDITOR

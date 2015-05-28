@@ -53,15 +53,15 @@ def show_arbwavefunctions(parent):
 
   text = list()
   for f in [
-    ('arbwave.add_runnable',  Arbwave.add_runnable),
-    ('arbwave.update',        Arbwave.update),
-    ('arbwave.update_static', Arbwave.update_static),
-    ('arbwave.update_plotter',Arbwave.update_plotter),
-    ('arbwave.stop_check',    Arbwave.stop_check),
-    ('arbwave.save_gnuplot',  Arbwave.save_gnuplot),
-    ('arbwave.find',          Arbwave.find),
-    ('arbwave.find_group',    Arbwave.find_group),
-    ('arbwave.find_channel',  Arbwave.find_channel),
+    ('Arbwave.add_runnable',  Arbwave.add_runnable),
+    ('Arbwave.update',        Arbwave.update),
+    ('Arbwave.update_static', Arbwave.update_static),
+    ('Arbwave.update_plotter',Arbwave.update_plotter),
+    ('Arbwave.stop_check',    Arbwave.stop_check),
+    ('Arbwave.save_gnuplot',  Arbwave.save_gnuplot),
+    ('Arbwave.find',          Arbwave.find),
+    ('Arbwave.find_group',    Arbwave.find_group),
+    ('Arbwave.find_channel',  Arbwave.find_channel),
   ]:
     s = td.docroutine(f[1]).split('\n')
     args = s[0][ s[0].find('(') : (1 + s[0].find(')')) ]
