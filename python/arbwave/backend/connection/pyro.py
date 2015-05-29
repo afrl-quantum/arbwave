@@ -119,11 +119,17 @@ class Proxy(object):
   """
   Proxy for remote classes that are serviced from a remote Pyro daemon.
   """
-  attribs = []
+  _db = dict()
+
+  @staticmethod
+  def _clear():
+    for i in Proxy._db.keys():
+      del Proxy._db[i]
+
   def __init__(self, obj):
     super(Proxy,self).__init__()
     self.obj = obj
-    self.attribs = self.obj._attributes()
+    self._attribs = self.obj._attributes()
 
   @property
   def _callables(self):
@@ -135,15 +141,15 @@ class Proxy(object):
     return Exec(self, '__repr__')()
 
   def __getattr__(self, attr):
-    if attr in self.attribs:
+    if attr in self._attribs:
       return self._proxy_all_results( self.obj._getAttr(attr) )
     else:
       return Exec(self, attr)
 
   def __setattr__(self, attr, value):
-    if attr in ['obj', 'attribs']:
+    if attr in ['obj', '_attribs']:
       return object.__setattr__( self, attr, value )
-    elif attr in self.attribs:
+    elif attr in self._attribs:
       return self.obj._setAttr(attr, value)
     else:
       raise RuntimeError('can only set existing attributes on remote object')
@@ -170,17 +176,25 @@ class Proxy(object):
     that object.
     """
     if type(obj) == PyroResponse:
-      uri = self.obj.URI.clone()
-      uri.protocol = 'PYROLOC'
-      uri.objectID = obj.name
-      return Proxy( Pyro.core.getProxyForURI(uri) )
+      if obj.name in self._db:
+        return self._db[obj.name]
+      else:
+        uri = self.obj.URI.clone()
+        uri.protocol = 'PYROLOC'
+        uri.objectID = obj.name
+        p = Proxy( Pyro.core.getProxyForURI(uri) )
+        self._db[obj.name] = p
+        return p
     else:
       return obj
 
 
-def test_pyro(**klasses):
-  Pyro.core.initServer()
-  daemon = Pyro.core.Daemon()
-  for k, obj in klasses.items():
-    daemon.connect(obj, k)
-  daemon.requestLoop()
+class Service(object):
+  def __init__(self):
+    Pyro.core.initServer()
+    self.daemon = Pyro.core.Daemon()
+
+  def __call__(self, **klasses):
+    for k, obj in klasses.items():
+      self.daemon.connect(obj, k)
+    self.daemon.requestLoop()

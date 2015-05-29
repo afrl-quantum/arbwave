@@ -13,36 +13,16 @@ import Pyro.core
 from . import pyro
 from ... import options
 
-__all__=['Connection', 'Local', 'Service', 'Remote']
+__all__=['Local', 'Remote']
 
+PYRO_MAXCONNECTIONS = 1024
 
-class Connection(object):
+class Local(object):
   def __init__(self):
-    super(Connection,self).__init__()
+    super(Local,self).__init__()
     self.klasses  = dict()
     self.active   = dict()
-    self.connect()
 
-  def connect(self):
-    raise NotImplementedError('unknown connection must be implemented')
-
-  def __del__(self):
-    self.close()
-
-  def close(self):
-    while self.active:
-      prefix, driver = self.active.popitem()
-      debug('closing driver: %s', prefix)
-      del driver
-
-  def __iter__(self):
-    for k,D in self.klasses.items():
-      if k not in self.active: self.active[k] = D()
-      yield self.active[k]
-
-
-class Local(Connection):
-  def connect(self):
     DRIVERS = path.join( path.dirname( __file__ ), path.pardir, 'drivers' )
     for P in os.listdir(DRIVERS):
       if path.isdir( path.join(DRIVERS,P) ):
@@ -65,50 +45,43 @@ class Local(Connection):
             debug( e )
             debug( traceback.format_exc() )
 
-
-class Service(Local, Pyro.core.ObjBase):
-  def connect(self):
-    super(Service,self).connect()
-    self.daemon = daemon = Pyro.core.Daemon()
-    for prefix, klass in self.klasses.items():
-      self.klasses[prefix] = pyro.Wrapper(self.daemon, klass=klass)
-
-  def serve(self):
-    Pyro.core.initServer()
-    # for some reason, we need to set this local var...
-    daemon = self.daemon
-    uri = self.daemon.connect(self,'backend')
-
-    print "The daemon runs on port:",self.daemon.port
-    print "The object's uri is:",uri
-
-    self.daemon.requestLoop()
-
-  def list(self):
-    retval = list()
-    for D in self:
-      if D.obj.prefix not in self.daemon.getRegistered().values():
-        self.daemon.connect(D, D.obj.prefix)
-      retval.append( D.obj.prefix )
-    return retval
-
-
-class Remote(Connection):
-  def __init__(self, host):
-    self.host = host
-    super(Remote,self).__init__()
+  def __del__(self):
+    self.close()
 
   def close(self):
-    super(Remote,self).close()
-    del self.connection
+    while self.active:
+      prefix, driver = self.active.popitem()
+      debug('closing driver: %s', prefix)
+      del driver
 
-  def connect(self):
-    self.connection = self.get_pyro_obj('backend')
-    def mk_get_pyro(self, k):
-      return lambda: pyro.Proxy( self.get_pyro_obj(k) )
-    for k in self.connection.list():
-      self.klasses[k] = mk_get_pyro(self,k)
+  def __iter__(self):
+    for k,D in self.klasses.items():
+      if k not in self.active: self.active[k] = D()
+      yield self.active[k]
 
-  def get_pyro_obj(self, name):
-    return \
-      Pyro.core.getProxyForURI('PYROLOC://{}:7766/{}'.format(self.host, name))
+
+  def list(self):
+    """helper for pyro connection"""
+    return list(self)
+
+
+def serve():
+  Pyro.config.PYRO_MAXCONNECTIONS = PYRO_MAXCONNECTIONS
+  S = pyro.Service()
+  S( backend=pyro.Wrapper(S.daemon, Local()) )
+
+
+class Remote(pyro.Proxy):
+  def __init__(self, host, name='backend'):
+    p = Pyro.core.getProxyForURI('PYROLOC://{}:7766/{}'.format(host, name))
+    super(Remote,self).__init__(p)
+
+  def __del__(self):
+    # Free the remote object dictionary.
+    self._clear()
+
+  def __iter__(self):
+    return iter(self.list())
+
+  def __getitem__(self,i):
+    return self.list()[i]

@@ -32,8 +32,7 @@ def main():
 
   if args.service:
     try:
-      service = backend.connection.Service()
-      service.serve()
+      backend.connection.serve()
     except KeyboardInterrupt:
       print 'exiting'
   else:
