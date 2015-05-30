@@ -8,16 +8,14 @@ class float_range(object):
     self.include_beginning = include_beginning
     self.include_end = include_end
 
-    if   include_beginning and include_end:
-      self.__contains__ = self.__contains_ib_ie__
-    elif include_beginning and not include_end:
-      self.__contains__ = self.__contains_ib_xe__
-    elif (not include_beginning) and include_end:
-      self.__contains__ = self.__contains_xb_ie__
-    elif not (include_beginning or include_end):
-      self.__contains__ = self.__contains_xb_xe__
+
+  def __contains__(self, v):
+    if   self.include_beginning:
+      if self.include_end:  return self.__contains_ib_ie__(v)
+      else:                 return self.__contains_ib_xe__(v)
     else:
-      raise RuntimeError('should never see this case...!')
+      if self.include_end:  return self.__contains_xb_ie__(v)
+      else:                 return self.__contains_xb_xe__(v)
 
   def __str__(self):
     ib, ie = '', ''
