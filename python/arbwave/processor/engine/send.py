@@ -142,10 +142,9 @@ class ToDriver:
 
   def config(self, config, channels, shortest_paths):
     """Send device level configuration information to drivers"""
-    timing_channels = backend.get_timing_channels()
     for D,driver in backend.all_drivers.items():
       driver.set_device_config( config.get(D,{}), channels.get(D,{}),
-                                shortest_paths, timing_channels )
+                                shortest_paths )
 
 
   def hosts(self, hosts):

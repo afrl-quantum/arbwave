@@ -54,7 +54,7 @@ class Device(Base):
     self.stop()
 
 
-  def set_config(self, config, channels, shortest_paths, timing_channels):
+  def set_config(self, config, channels, shortest_paths):
     C = self.board.configs
     old_config = deepcopy(C)
     N = config.copy()

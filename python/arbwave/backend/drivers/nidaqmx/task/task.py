@@ -73,7 +73,7 @@ class Task(Base):
 
 
   def set_config(self, config=None, channels=None, shortest_paths=None,
-                 timing_channels=None, force=False):
+                 force=False):
     if channels and self.channels != channels:
       self.channels = channels
       force = True
