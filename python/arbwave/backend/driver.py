@@ -10,6 +10,17 @@ class Driver(object):
   description = 'No description'
   has_simulated_mode = False
 
+  def __init__(self, host_prefix=None):
+    if host_prefix:
+      self.prefix = self.format_prefix(host_prefix)
+
+  @classmethod
+  def format_prefix(cls, pre_prefix):
+    if pre_prefix:
+      return '{}:{}'.format(pre_prefix, cls.prefix)
+    else:
+      return cls.prefix
+
   def __del__(self):
     self.close()
 

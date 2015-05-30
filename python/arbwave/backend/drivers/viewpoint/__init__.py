@@ -13,8 +13,8 @@ class Driver(Base):
   has_simulated_mode = True
   boards_to_probe = xrange(10)
 
-  def __init__(self):
-    super(Driver,self).__init__()
+  def __init__(self, *a, **kw):
+    super(Driver,self).__init__(*a, **kw)
     # hook the simulated library if needed
     if self.simulated:
       import sim

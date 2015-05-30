@@ -35,8 +35,8 @@ class ToDriver:
   def static(self, analog, digital):
     """Send a bunch of static values to each of the drivers"""
     print 'trying to update the hardware to static output!!!!'
-    for D in backend.drivers:
-      backend.drivers[D].set_static(analog.get(D,{}), digital.get(D,{}))
+    for D,driver in backend.all_drivers.items():
+      driver.set_static(analog.get(D,{}), digital.get(D,{}))
     logging.debug('updated hardware to static output')
 
 
@@ -45,10 +45,10 @@ class ToDriver:
     if continuous:
       print 'requesting continuous regeneration...'
 
-    for D in backend.drivers:
-      backend.drivers[D].set_waveforms(analog.get(D,{}), digital.get(D,{}),
-                                       transitions, t_max, end_clocks,
-                                       continuous)
+    for D,driver in backend.all_drivers.items():
+      driver.set_waveforms(analog.get(D,{}), digital.get(D,{}),
+                           transitions, t_max, end_clocks,
+                           continuous)
     logging.debug('send waveform to hardware')
 
 
@@ -143,11 +143,9 @@ class ToDriver:
   def config(self, config, channels, shortest_paths):
     """Send device level configuration information to drivers"""
     timing_channels = backend.get_timing_channels()
-    for D in backend.drivers:
-      backend.drivers[D].set_device_config( config.get(D,{}),
-                                            channels.get(D,{}),
-                                            shortest_paths,
-                                            timing_channels )
+    for D,driver in backend.all_drivers.items():
+      driver.set_device_config( config.get(D,{}), channels.get(D,{}),
+                                shortest_paths, timing_channels )
 
 
   def hosts(self, hosts):
@@ -160,14 +158,14 @@ class ToDriver:
 
   def clocks(self, config):
     """Send clock(s) configuration information to drivers"""
-    for D in backend.drivers:
-      backend.drivers[D].set_clocks( config.get(D,{}) )
+    for D,driver in backend.all_drivers.items():
+      driver.set_clocks( config.get(D,{}) )
 
 
   def signals(self, config):
     """Send clock(s) configuration information to drivers"""
-    for D in backend.drivers:
-      backend.drivers[D].set_signals( config.get(D,{}) )
+    for D,driver in backend.all_drivers.items():
+      driver.set_signals( config.get(D,{}) )
 
 
 to_driver = ToDriver()

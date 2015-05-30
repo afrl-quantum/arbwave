@@ -7,7 +7,7 @@ if __name__ == '__main__':
   # for testing
   class FakeBackend:
     def __init__(self):
-      self.drivers = ['ni', 'vp']
+      self.all_drivers = ['ni', 'vp']
   backend = FakeBackend()
 
 
@@ -20,7 +20,7 @@ def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0,
     #need postponed loading to allow backends to import this
     if __name__ != '__main__':
       from .. import backend
-    prefix_list = backend.drivers
+    prefix_list = backend.all_drivers
   retval = dict()
   for d in D.items():
     if d[0] is None:

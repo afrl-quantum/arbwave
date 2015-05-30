@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import Pyro.core
+from logging import debug, DEBUG
 
 class PyroResponse(object):
   """
@@ -31,6 +32,13 @@ class Wrapper(Pyro.core.ObjBase):
     self.obj = obj
     self.klass = klass
     assert self.obj or self.klass, 'Specify at least one of obj or klass'
+
+  def __del__(self):
+    """
+    Clean up the wrapper and its objects.
+    """
+    # note that del is not effective if the ref count != 1
+    del self.obj
 
   def _attributes(self):
     return [
@@ -120,6 +128,7 @@ class Proxy(object):
   Proxy for remote classes that are serviced from a remote Pyro daemon.
   """
   _db = dict()
+  _local_attrib = list()
 
   @staticmethod
   def _clear():
@@ -147,7 +156,7 @@ class Proxy(object):
       return Exec(self, attr)
 
   def __setattr__(self, attr, value):
-    if attr in ['obj', '_attribs']:
+    if attr in ['obj', '_attribs'] + self._local_attrib:
       return object.__setattr__( self, attr, value )
     elif attr in self._attribs:
       return self.obj._setAttr(attr, value)
@@ -196,5 +205,6 @@ class Service(object):
 
   def __call__(self, **klasses):
     for k, obj in klasses.items():
-      self.daemon.connect(obj, k)
+      uri = self.daemon.connect(obj, k)
+      debug('connected %s to %s', obj, uri)
     self.daemon.requestLoop()

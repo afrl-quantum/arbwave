@@ -13,6 +13,7 @@ def create(hosts):
   )
   R = editor['renderers']
 
+  #FIXME:  find some way to indicate that prefix is ignored for default host
   R['prefix' ].set_property( 'editable', True )
   R['host'   ].set_property( 'editable', True )
   R['default'].set_property( 'activatable', True )

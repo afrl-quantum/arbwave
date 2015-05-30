@@ -16,8 +16,8 @@ class Driver(Base):
   description = 'NIDAQmx Driver'
   has_simulated_mode = True
 
-  def __init__(self):
-    super(Driver,self).__init__()
+  def __init__(self, *a, **kw):
+    super(Driver,self).__init__(*a, **kw)
     # hook the simulated library if needed
     if self.simulated:
       import sim
