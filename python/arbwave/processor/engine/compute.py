@@ -111,7 +111,7 @@ def set_units_and_scaling(chname, ci, chan, globals):
     if chan['units']:
       ci['units'] = evalIfNeeded(chan['units'], globals)
       ci['units_str'] = str( chan['units'] )
-    elif ci['type'] is 'analog':
+    elif ci['type'] == 'analog':
       ci['units'] = unit.V
       ci['units_str'] = 'V'
 
@@ -490,10 +490,10 @@ def make_channel_info(channels):
 
 
 def check_final_units( value, chname, ci ):
-  if   ci['type'] is 'analog':
+  if   ci['type'] == 'analog':
     unit.V.unitsMatch( value, 'analog channels expect units=V' )
     #value = float(value) # set value in SI units
-  elif ci['type'] is 'digital':
+  elif ci['type'] == 'digital':
     if type(value) not in [bool, int, float]:
       raise TypeError(
         'Found digital channel with type: {}\n' \
@@ -548,11 +548,11 @@ def static( devcfg, channels, globals ):
     check_final_units( value, chname, ci )
 
     prfx, dev = prefix(dev)
-    if   ci['type'] is 'analog':
+    if   ci['type'] == 'analog':
       if prfx not in analog:
         analog[ prfx ] = dict()
       analog[ prfx ][ dev ] = value
-    elif ci['type'] is 'digital':
+    elif ci['type'] == 'digital':
       if prfx not in digital:
         digital[ prfx ] = dict()
       digital[ prfx ][ dev ] = value
