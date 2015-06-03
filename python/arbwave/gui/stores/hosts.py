@@ -42,7 +42,8 @@ class Hosts(TreeModelDispatcher, gtk.ListStore):
 
   def load(self, D):
     self.clear()
-    default = D.get('__default__', 'local')
+    D = D.copy()
+    default = D.pop('__default__', 'local')
     for i in D.items():
       self.append([
         i[0], #prefix
