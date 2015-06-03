@@ -202,7 +202,7 @@ class Driver(Base):
     for dev, data in D.items():
       self.tasks[ dev+'/do' ].set_output( data )
 
-    for dev in A.items():
+    for dev, data in A.items():
       self.tasks[ dev+'/ao' ].set_output( data )
 
 
