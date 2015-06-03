@@ -3,7 +3,7 @@
 import copy
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 from physical import unit
-import ctypes_comedi as c
+from .. import ctypes_comedi as c
 import numpy as np
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps

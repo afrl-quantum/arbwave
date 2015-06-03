@@ -92,15 +92,27 @@ class Device(object):
     #  # for now, we only know how to deal with NI devices (that have the
     #  # backplane on subdevice 10)
     #  self.backplane_subdevice = subdevice.Backplane(self.fd,10,self.prefix)
+    # *** actually, as Ian has found, subdevice=7 is also special as it
+    # represents the PFI I/O lines.
 
   def __str__(self):
     return '{}/{}'.format(self.prefix, self.device)
 
   def __del__(self):
     # first instruct each one of the subdevs to be deleted
+    # the intent is that this will (for each subdevice):
+    #   - cancel all running jobs ( comedi_cancel )
     while self.subdevices:
       subname, subdev = self.subdevices.popitem()
       del subdev
+
+    # Set all routes to their default and configure all routable pins to
+    # COMEDI_INPUT as an attempt to protect any pins from damage
+    # Following Ian's work, this means using both "Backplane" type subdevices (7
+    # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
+    # lines.
+    # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
+
     # now close the device
     c.comedi_close(self.fd)
 

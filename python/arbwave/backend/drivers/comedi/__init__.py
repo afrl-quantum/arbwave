@@ -1,145 +1,141 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import re, glob
+import re, glob, traceback
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
-import ctypes_comedi as c
-
-from .... import options
 from ....tools.path import collect_prefix
-
-def prefix():
-  return 'comedi'
-
-
-def name():
-  return 'Comedi Driver'
-
-
-def is_simulated():
-  return options.simulated
-
-
-glob_comedi_devices = lambda : glob.glob('/dev/comedi*')
-
-# hook the simulated library if needed
-if is_simulated():
-  import sim # rehook comedi lib so that hardware is simulated.
-  Csim = sim.inject_sim_lib()
-  glob_comedi_devices = Csim.glob_devices
-
-
+from ...driver import Driver as Base
 from device import Device
 
-# mapping from board index to device
-devices     = dict()
-subdevices  = dict()
-analogs     = list()
-lines       = list()
-counters    = list()
-signals     = list()
-routed_signals = dict()
-
-def init():
-  global devices, subdevices, analogs, lines, counters, signals
-  for df in glob_comedi_devices():
-    if Device.parse_dev( df ) is None:
-      continue # don't match subdevices
-    try:
-      d = Device( prefix(), df )
-    except Exception, e:
-      print e
-      print 'Could not open comedi device: ', df
-      continue
-    devices[ str(d) ] = d
-    subdevices.update( d.subdevices )
-    analogs += [ ao for sub in d.ao_subdevices for ao in sub.available_channels ]
-    lines   += [ do for sub in d.do_subdevices for do in sub.available_channels ]
-    lines   += [ do for sub in d.dio_subdevices for do in sub.available_channels ]
-    counters+= [ co for sub in d.counter_subdevices for co in sub.available_channels ]
-    signals += [ so for  so in d.signals ]
-  print 'found {} comedi supported boards'.format(len(devices))
+import ctypes_comedi as c
 
 
-def get_devices():
-  """
-  Actually, to fit into the framework here for Arbwave, we return the subdevices
-  """
-  return subdevices.values()
+class Driver(Base):
+  prefix = 'comedi'
+  description = 'Comedi Driver'
+  has_simulated_mode = True # will not be a lie some time in the future
 
-def get_analog_channels():
-  return analogs
-
-def get_digital_channels():
-  return lines
-
-def get_timing_channels():
-  return counters
-
-def get_routeable_backplane_signals():
-  return signals
+  @staticmethod
+  def glob_comedi_devices():
+    """creates a list of all comedi devices"""
+    return glob.glob('/dev/comedi*')
 
 
-def set_device_config( config, channels, shortest_paths, timing_channels ):
-  debug('comedi.set_device_config')
-  # we need to separate channels first by device
-  # (configs are already naturally separated by device)
-  # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
-  # channel paths
-  chans = collect_prefix(channels, 0, 3, 3)
-  for d in subdevices:
-    if d in config or d in chans:
-      subdevices[d].set_config( config.get(d,{}), chans.get(d,[]),
-                                shortest_paths, timing_channels )
+  def __init__(self, *a, **kw):
+    super(Driver,self).__init__(*a, **kw)
+    # hook the simulated library if needed
+    if self.simulated:
+      import sim # rehook comedi lib so that hardware is simulated.
+      Csim = sim.inject_sim_lib()
+      self.glob_comedi_devices = Csim.glob_devices
 
 
-def set_clocks( clocks ):
-  debug('comedi.set_clocks')
-  clocks = collect_prefix(clocks, 0, 2, 2)
-  for d in subdevices:
-    if d in clocks:
-      subdevices[d].set_clocks( clocks[d] )
+    # device path --> Device instance
+    self.devices     = dict()
+    self.subdevices  = dict()
+    self.analogs     = list()
+    self.lines       = list()
+    self.counters    = list()
+    self.signals     = list()
+    self.routed_signals = dict()
+
+    for df in glob_comedi_devices():
+      if Device.parse_dev( df ) is None:
+        continue # don't match subdevices
+      try:
+        d = Device( prefix(), df )
+      except:
+        traceback.print_exc()
+        print 'Could not open comedi device: ', df
+        continue
+      self.devices[ str(d) ] = d
+      self.subdevices.update( d.subdevices )
+      self.analogs += [ ao for sub in d.ao_subdevices for ao in sub.available_channels ]
+      self.lines   += [ do for sub in d.do_subdevices for do in sub.available_channels ]
+      self.lines   += [ do for sub in d.dio_subdevices for do in sub.available_channels ]
+      self.counters+= [ co for sub in d.counter_subdevices for co in sub.available_channels ]
+      self.signals += [ so for  so in d.signals ]
+    print 'found {} comedi supported boards'.format(len(self.devices))
 
 
-def set_signals( signals ):
-  debug('comedi.set_signals')
-  signals = collect_prefix( signals, 0, 2, prefix_list=devices )
-  for d in devices:
-    devices[d].set_signals( signals.get(d,{}) )
+  def close(self):
+    """
+    Close each device.  Each device will first close each of its subdevices.
+    """
+    while self.devices:
+      devname, dev = self.devices.popitem()
+      debug( 'closing comedi device: %s', devname )
+      del dev
+
+  def get_devices(self):
+    """
+    Actually, to fit into the framework here for Arbwave, we return the subdevices
+    """
+    return self.subdevices.values()
+
+  def get_analog_channels(self):
+    return self.analogs
+
+  def get_digital_channels(self):
+    return self.lines
+
+  def get_timing_channels(self):
+    return self.counters
+
+  def get_routeable_backplane_signals(self):
+    return self.signals
 
 
-def set_static(analog, digital):
-  debug('comedi.set_static')
-  D = collect_prefix(digital, 0, 2, 2)
-  A = collect_prefix(analog, 0, 2, 2)
-
-  for dev, data in D.items():
-    subdevices[ dev+'/do' ].set_output( data )
-
-  for dev, data in A.items():
-    subdevices[ dev+'/ao' ].set_output( data )
-
-
-def set_waveforms(analog, digital, transitions, t_max, end_clocks, continuous):
-  debug('comedi.set_waveforms')
-  D = collect_prefix( digital, 0, 2, 2 )
-  A = collect_prefix( analog, 0, 2, 2 )
-  C = collect_prefix( transitions, 0, 2, 2)
-  E = collect_prefix( dict.fromkeys( end_clocks ), 0, 2, 2)
-
-  for d in subdevices:
-    if d in D or d in C:
-      subdevices[d].set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
-                                   continuous )
-  for dev in A.items():
-    subdevices[ dev[0]+'/ao' ].set_waveforms( dev[1], transitions, t_max, continuous )
+  def set_device_config( self, config, channels, shortest_paths ):
+    debug('comedi.set_device_config')
+    # we need to separate channels first by device
+    # (configs are already naturally separated by device)
+    # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
+    # channel paths
+    chans = collect_prefix(channels, 0, 3, 3)
+    for d, sdev in self.subdevices.items():
+      if d in config or d in chans:
+        sdev.set_config( config.get(d,{}), chans.get(d,[]), shortest_paths )
 
 
+  def set_clocks( self, clocks ):
+    debug('comedi.set_clocks')
+    clocks = collect_prefix(clocks, 0, 2, 2)
+    for d, sdev in self.subdevices.items():
+      if d in clocks:
+        sdev.set_clocks( clocks[d] )
 
-def close():
-  """
-  Close each device.  Each device will first close each of its subdevices.
-  """
-  while devices:
-    devname, dev = devices.popitem()
-    debug( 'closing comedi device: %s', devname )
-    del dev
+
+  def set_signals( self, signals ):
+    debug('comedi.set_signals')
+    signals = collect_prefix( signals, 0, 2, prefix_list=self.devices )
+    for d, dev in self.devices.items():
+      dev.set_signals( signals.get(d,{}) )
+
+
+  def set_static( self, analog, digital ):
+    debug('comedi.set_static')
+    D = collect_prefix(digital, 0, 2, 2)
+    A = collect_prefix(analog, 0, 2, 2)
+
+    for dev, data in D.items():
+      self.subdevices[ dev+'/do' ].set_output( data )
+
+    for dev, data in A.items():
+      self.subdevices[ dev+'/ao' ].set_output( data )
+
+
+  def set_waveforms( self, analog, digital, transitions,
+                     t_max, end_clocks, continuous ):
+    debug('comedi.set_waveforms')
+    D = collect_prefix( digital, 0, 2, 2 )
+    A = collect_prefix( analog, 0, 2, 2 )
+    C = collect_prefix( transitions, 0, 2, 2)
+    E = collect_prefix( dict.fromkeys( end_clocks ), 0, 2, 2)
+
+    for d,sdev in self.subdevices.items():
+      if d in D or d in C:
+        sdev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
+                            continuous )
+    for dev in A.items():
+      self.subdevices[ dev[0]+'/ao' ] \
+        .set_waveforms( dev[1], transitions, t_max, continuous )
