@@ -81,6 +81,8 @@ def serve():
           continue
         log(DEBUG-1, 'disconnecting %s', obj)
         self.daemon.disconnect( obj )
+      log(DEBUG-1, 'daemon connections still remaining: %s',
+          self.daemon.implementations)
       debug('close all drivers')
       self.obj.close()
 

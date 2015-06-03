@@ -11,13 +11,15 @@ class Driver(object):
   has_simulated_mode = False
 
   def __init__(self, host_prefix=None):
+    self.host_prefix = ''
     if host_prefix:
       self.prefix = self.format_prefix(host_prefix)
+      self.host_prefix = host_prefix + ':'
 
   @classmethod
-  def format_prefix(cls, pre_prefix):
-    if pre_prefix:
-      return '{}:{}'.format(pre_prefix, cls.prefix)
+  def format_prefix(cls, host_prefix):
+    if host_prefix:
+      return '{}:{}'.format(host_prefix, cls.prefix)
     else:
       return cls.prefix
 

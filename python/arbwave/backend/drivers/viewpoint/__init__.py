@@ -30,7 +30,7 @@ class Driver(Base):
       .format( l=len(self.boards_to_probe) )
     for i in self.boards_to_probe:
       try:
-        d = Device( self.prefix, i )
+        d = Device( self, i )
       except:
         break
       self.devices[str(d)] = d

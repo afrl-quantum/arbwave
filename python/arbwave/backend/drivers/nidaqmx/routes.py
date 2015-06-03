@@ -8,10 +8,6 @@ from ....tools.expand import expand_braces
 #sys.path.append('../../../tools')
 #from expand import expand_braces
 
-# map (src, destination) -> (native-src, native-destination)
-signal_route_map = dict()
-# map (src) -> [dest0, dest1, ...]
-aggregate_map = dict()
 
 T6  = 'TRIG/{0..6}'
 T7  = 'TRIG/{0..7}'
@@ -116,20 +112,23 @@ available['pxi-6723'] = available['pxi-6733']
 available['pci-6229'] = available['pci-6221']
 
 
-def format_terminals(dev, dest, prefix=''):
+def format_terminals(dev, dest, host_prefix='', prefix=''):
   # for some terminals, we must use a non ni-formatted path to work with
   # the other devices.  An example is 'TRIG/0'.
   # Furthermore, we are required to indicate which terminals can be
   # connected to external cables/busses
   if type(dest) in [ tuple, list ]:
     # we are given both native and recognizable terminal formats
-    D  = expand_braces(dest[0])
+    # this only occurs when we are describing something like TRIG/1 which needs
+    # a host prefix, or like External/ which does _not_ need host_prefix
     if dest[1]:
+      D  = expand_braces('{}{}'.format(host_prefix, dest[0]))
       ND = expand_braces('{}/{}/{}'.format(prefix,dev,dest[1]))
       assert len(D) == len(ND), \
         'NIDAQmx: {} has mismatch terminals to native terminals: {}' \
         .format(dev,repr(dest))
     else:
+      D = expand_braces(dest[0]) # should not need host_prefix
       ND = [None] # must be something like an 'External/' connection
   else:
     # only native terminal formats
@@ -145,9 +144,15 @@ def strip_prefix( s, prefix='' ):
   return s
 
 class RouteLoader(object):
-  def __init__(self, prefix=''):
+  def __init__(self, host_prefix='', prefix=''):
+    self.host_prefix = host_prefix
     self.prefix = prefix
     self.available = available
+
+    # map (src, destination) -> (native-src, native-destination)
+    self.signal_route_map = dict()
+    # map (src) -> [dest0, dest1, ...]
+    self.aggregate_map = dict()
 
 
   def mk_signal_route_map(self, device, product):
@@ -158,10 +163,11 @@ class RouteLoader(object):
       dest = list()
       ni_dest = list()
       for dest_i in self.available[product][sources]:
-        D, ND = format_terminals(device, dest_i, self.prefix)
+        D, ND = format_terminals(device, dest_i, self.host_prefix, self.prefix)
         dest        += D
         ni_dest += ND
-      src, ni_src = format_terminals(device, sources, self.prefix)
+      src, ni_src = format_terminals( device, sources,
+                                      self.host_prefix, self.prefix )
       for i in xrange( len(src) ):
         agg_map[ src[i] ] = dest
         for j in xrange( len(dest) ):
@@ -172,5 +178,5 @@ class RouteLoader(object):
 
   def __call__(self, device, product):
     agg_map, route_map = self.mk_signal_route_map(device, product)
-    aggregate_map.update( agg_map )
-    signal_route_map.update( route_map )
+    self.aggregate_map.update( agg_map )
+    self.signal_route_map.update( route_map )

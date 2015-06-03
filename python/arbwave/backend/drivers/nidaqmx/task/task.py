@@ -2,7 +2,6 @@
 
 import copy
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
-from .. import routes
 from ....device import Device as Base
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
@@ -18,7 +17,7 @@ class Task(Base):
   WAVEFORM_SINGLE     = 1
   WAVEFORM_CONTINUOUS = 2
 
-  def __init__(self, device):
+  def __init__(self, driver, device):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
     self.task = None
     self.channels = dict()
@@ -36,7 +35,7 @@ class Task(Base):
     clk = self.name[len(self.prefix):] + '/SampleClock'
     trg = self.name[len(self.prefix):] + '/StartTrigger'
 
-    for i in routes.signal_route_map.items():
+    for i in driver.rl.signal_route_map.items():
       add = False
       if clk == i[1][1]:
         self.clock_sources.append( i[0][0] )

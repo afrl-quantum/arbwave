@@ -39,13 +39,13 @@ class Driver(Base):
 
     system = nidaqmx.System()
     print 'found {i} NI DAQmx boards'.format(i=len(system.devices))
-    rl = routes.RouteLoader(self.prefix)
+    self.rl = routes.RouteLoader(self.host_prefix, self.prefix)
     for d in system.devices:
       product = d.get_product_type()
       logging.debug( 'setting up NIDAQmx routes for device: %s', d )
-      rl(d, product)
+      self.rl(d, product)
 
-      t = task.Analog('{}/{}'.format(self.prefix,d))
+      t = task.Analog(self, '{}/{}'.format(self.prefix,d))
       available = [ channels.Analog('{}/{}'.format(self.prefix,ao), t)
                     for ao in d.get_analog_output_channels()
                       if d.get_analog_output_sample_clock_supported()
@@ -55,7 +55,7 @@ class Driver(Base):
         self.analogs += available
 
 
-      t = task.Digital('{}/{}'.format(self.prefix,d))
+      t = task.Digital(self, '{}/{}'.format(self.prefix,d))
       available = [ channels.Digital('{}/{}'.format(self.prefix,do), t)
                     for do in d.get_digital_output_lines()
                       if nidaqmx.physical.get_do_sample_clock_supported(do)
@@ -65,14 +65,14 @@ class Driver(Base):
         self.lines += available
 
 
-      t = task.Timing('{}/{}'.format(self.prefix,d))
+      t = task.Timing(self, '{}/{}'.format(self.prefix,d))
       available = [ channels.Timing('{}/{}'.format(self.prefix,co), t)
                     for co in d.get_counter_output_channels() ]
       if available:
         self.tasks[ str(t) ] = t
         self.counters += available
 
-    for src, dest in routes.aggregate_map.items():
+    for src, dest in self.rl.aggregate_map.items():
       logging.log(logging.DEBUG-1,
         'creating NIDAQmx backplane channel: %s --> %s', src, dest
       )
@@ -109,7 +109,7 @@ class Driver(Base):
       if 'External/' in route[0] or 'External/' in route[1]:
         continue
 
-      s, d = routes.signal_route_map[ route ]
+      s, d = self.rl.signal_route_map[ route ]
       system.disconnect_terminals( s, d )
       system.tristate_terminal(d) # an attempt to protect the dest terminal
 
@@ -178,7 +178,7 @@ class Driver(Base):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue
 
-        s, d = routes.signal_route_map[ route ]
+        s, d = self.rl.signal_route_map[ route ]
         system.disconnect_terminals( s, d )
         system.tristate_terminal(d) # an attempt to protect the dest terminal
 
@@ -187,7 +187,7 @@ class Driver(Base):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue
 
-        s, d = routes.signal_route_map[ route ]
+        s, d = self.rl.signal_route_map[ route ]
         if s is None or d is None:
           continue # None means an external connection
         system.connect_terminals(s, d, signals[route]['invert'])

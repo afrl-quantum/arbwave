@@ -8,7 +8,7 @@ import viewpoint as vp
 from ...device import Device as Base
 from ....tools.float_range import float_range
 from ....tools.signal_graphs import nearest_terminal
-from capabilities import routing_bits
+from capabilities import get_routing_bits
 
 
 ignored_settings = {
@@ -28,8 +28,9 @@ ignored_settings = {
 
 
 class Device(Base):
-  def __init__(self, prefix, board_number):
-    Base.__init__(self, name='{}/Dev{}'.format(prefix,board_number))
+  def __init__(self, driver, board_number):
+    super(Device,self).__init__(name='{}/Dev{}'.format( driver, board_number ))
+    self.driver = driver
 
     self.board = vp.Board(
       # default to *all* inputs so that all are high-impedance
@@ -43,11 +44,12 @@ class Device(Base):
     self.t_max = 0.0
 
     self.possible_clock_sources = { # look at viewpoint library
-      '{d}/Internal_XO'.format(d=self)    : vp.CLCK_INTERNAL,
-      '{d}/PIN/20'.format(d=self)         : vp.CLCK_EXTERNAL,
-      'TRIG/0'                            : vp.CLCK_TRIG_0,
-      '{d}/Internal_OCXO'.format(d=self)  : vp.CLCK_OCXO,
+      '{d}/Internal_XO'.format(d=self)        : vp.CLCK_INTERNAL,
+      '{d}/PIN/20'.format(d=self)             : vp.CLCK_EXTERNAL,
+      '{H}TRIG/0'.format(H=driver.host_prefix): vp.CLCK_TRIG_0,
+      '{d}/Internal_OCXO'.format(d=self)      : vp.CLCK_OCXO,
     }
+    self.routing_bits = get_routing_bits(driver.host_prefix)
 
 
   def __del__(self):
@@ -111,8 +113,8 @@ class Device(Base):
           DIR = 'in'
 
         route = (src, dst, DIR)
-        if route in routing_bits:
-          routing |= routing_bits[route]
+        if route in self.routing_bits:
+          routing |= self.routing_bits[route]
       self.routes = routing
       self.board.set_property('port-routes', self.routes)
 

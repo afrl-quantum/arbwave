@@ -332,13 +332,15 @@ def get_leaf_node( D, path ):
 class RangeFactory:
   def __init__(self, store, for_clocks):
     self.store = store
-    if for_clocks:
-      self.devs = backend.get_timing_channels()
-    else:
-      self.devs = backend.get_devices()
+    self.for_clocks = for_clocks
 
   def __call__(self, path, i, model):
-    r = Range( self.devs[path[0]], path[1:] )
+    if self.for_clocks:
+      devs = backend.get_timing_channels()
+    else:
+      devs = backend.get_devices()
+
+    r = Range( devs[path[0]], path[1:] )
     if path[1] == 'clock':
       assert model[i][model.TYPE] == str, 'expected string clock type'
       print 'I am supposed to make a clock list generator'

@@ -3,7 +3,7 @@
 from .timing      import Timing
 from ....channels import Analog as ABase
 from ....channels import Digital as DBase
-from ....channels import Backplane
+from ....channels import Backplane as BBase
 
 class ComediChannel:
   def get_min_period(self):
@@ -14,11 +14,9 @@ class ComediChannel:
     return self.device.get_min_period()
 
 
-class Analog(ComediChannel, ABase):
-  pass
-
-class Digital(ComediChannel, DBase):
-  pass
+class Analog(ComediChannel, ABase): pass
+class Digital(ComediChannel, DBase): pass
+class Backplane(BBase): pass
 
 klasses = dict(
   to = Timing,
