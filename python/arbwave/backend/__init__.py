@@ -7,7 +7,6 @@ This package is also responsible for determining which hardware is available at
 the time of initialization.
 """
 
-import traceback
 from logging import debug, DEBUG
 from . import connection
 
