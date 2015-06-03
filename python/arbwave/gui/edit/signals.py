@@ -3,6 +3,7 @@ import gtk
 from helpers import *
 
 from ... import backend
+from .. import hosts_changed
 
 signal_combobox_tree = gtk.TreeStore(str,str)
 dest_combobox_tree = dict()
@@ -14,6 +15,9 @@ def build_device_combobox_tree():
   dest_to_sigs = dict()
   T = signal_combobox_tree
   T.clear()
+  dest_combobox_tree.clear()
+  dest_combobox_tree_all.clear()
+  dest_to_sig_tree.clear()
 
   routes = backend.get_routeable_backplane_signals()
   add_paths_to_combobox_tree( T, [ r.src for r in routes ] )
@@ -35,6 +39,9 @@ def build_device_combobox_tree():
     dest_to_sig_tree[dest] = T
 
   add_paths_to_combobox_tree(dest_combobox_tree_all, dest_to_sigs.keys())
+
+
+hosts_changed.callbacks.append( build_device_combobox_tree )
 
 
 

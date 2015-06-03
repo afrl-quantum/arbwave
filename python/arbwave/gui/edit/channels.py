@@ -4,6 +4,7 @@ import gtk, gobject
 from helpers import *
 import scaling
 from ... import backend
+from .. import hosts_changed
 
 ui_info = \
 """<ui>
@@ -59,6 +60,8 @@ def build_device_combobox_tree():
     T, backend.get_analog_channels(),  'Analog',  skip_CAT=0 )
   add_paths_to_combobox_tree(
     T, backend.get_digital_channels(), 'Digital', skip_CAT=0 )
+
+hosts_changed.callbacks.append( build_device_combobox_tree )
 
 
 

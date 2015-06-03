@@ -24,6 +24,7 @@ from ..processor import default
 from .. import backend
 from .. import version
 from .. import options
+from . import hosts_changed
 
 
 
@@ -711,6 +712,9 @@ class ArbWave(gtk.Window):
         .format(len(self.undo) - self.next_untested_undo,
                 str(e).replace('<', '&lt;').replace('>', '&gt;')) )
       #raise e
+    if item == self.hosts:
+      # callbacks for host changes...
+      hosts_changed.callback()
 
   def channels_row_changed(self, model, path, iter):
     self.update(model)

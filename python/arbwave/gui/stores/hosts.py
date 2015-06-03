@@ -1,7 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 import gtk
 
-from ... import backend
 from dispatcher import TreeModelDispatcher
 
 
