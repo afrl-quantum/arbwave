@@ -42,15 +42,15 @@ class Driver(Base):
 
   def close(self):
     """Close all devices and uninitialize everything"""
-    if self.simulated:
-      # restore the vp lib
-      import viewpoint as vp
-      vp.board.dio64 = vp.clib.dio64 = self._old_dio64
-
     while self.devices:
       devname, dev = self.devices.popitem()
       logging.debug( 'closing viewpoint device: %s', devname )
       del dev
+
+    if self.simulated:
+      # restore the vp lib
+      import viewpoint as vp
+      vp.board.dio64 = vp.clib.dio64 = self._old_dio64
 
   def get_devices(self):
     return self.devices.values()

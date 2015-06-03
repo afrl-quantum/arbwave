@@ -89,10 +89,6 @@ class Driver(Base):
     """
     Set all channels to a save value, close all devices, and uninitialize stuff
     """
-    if self.simulated:
-      # restore the nidaqmx lib
-      nidaqmx.libnidaqmx.libnidaqmx = self._old_libnidaqmx
-
     # delete all nidaqmx tasks
     devices = set()
     while self.tasks:
@@ -118,6 +114,10 @@ class Driver(Base):
     for d in system.devices:
       if str(d) in devices:
         d.reset()
+
+    if self.simulated:
+      # restore the nidaqmx lib
+      nidaqmx.libnidaqmx.libnidaqmx = self._old_libnidaqmx
 
   def get_devices(self):
     """
