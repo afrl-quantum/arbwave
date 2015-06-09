@@ -12,7 +12,7 @@ import ctypes_comedi as c
 class Driver(Base):
   prefix = 'comedi'
   description = 'Comedi Driver'
-  has_simulated_mode = True # will not be a lie some time in the future
+  has_simulated_mode = False # will not be a lie some time in the future
 
   @staticmethod
   def glob_comedi_devices():
@@ -38,11 +38,11 @@ class Driver(Base):
     self.signals     = list()
     self.routed_signals = dict()
 
-    for df in glob_comedi_devices():
+    for df in self.glob_comedi_devices():
       if Device.parse_dev( df ) is None:
         continue # don't match subdevices
       try:
-        d = Device( prefix(), df )
+        d = Device( self, df )
       except:
         traceback.print_exc()
         print 'Could not open comedi device: ', df

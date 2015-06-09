@@ -6,6 +6,7 @@ import ctypes_comedi as c
 
 from ....tools import cached
 import subdevice
+from subdevice.subdevice import Subdevice
 import channels
 from . import routes
 
@@ -27,7 +28,7 @@ klasses = {
 def get_useful_subdevices(route_loader, device, typ,
                           restrictions=dict(
                             start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,
-                          ),
+                          ), ret_index_list=False 
                          ):
   L = list()
   cmd = c.comedi_cmd_struct()
@@ -54,7 +55,10 @@ def get_useful_subdevices(route_loader, device, typ,
   for li in L:
     try: subdevs.append(klass( route_loader, name_uses_subdev=(len(L)>1), *li))
     except: pass
-  return subdevs
+  if ret_index_list:
+    return L
+  else:  
+    return subdevs
 
 class Device(object):
   @staticmethod
@@ -62,14 +66,17 @@ class Device(object):
     m = re.match('/dev/comedi(?P<device>[0-9]+)$', dev)
     return None if not m else m.group('device')
 
-  def __init__(self, prefix, device):
-    self.prefix = prefix
+  def __init__(self, driver, device):
+    self.driver = driver
     self.dev    = device
+    
+    #self.prefix = '' # shouldn't need this because of defaults in ni_routes
+
     self.fd     = c.comedi_open(self.dev)
     if self.fd is None:
       raise NameError('could not open comedi device: ' + self.dev)
     self.device = 'Dev'+self.parse_dev(device)
-    rl = routes.getRouteLoader(self.driver) ( self )
+    self.rl = rl = routes.getRouteLoader(self.kernel) ( driver, self )
     gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
@@ -84,8 +91,23 @@ class Device(object):
       channels.Backplane(src,destinations=dest,invertible=True)
       for src,dest in rl.aggregate_map.iteritems()
     ]
-
-    #self.backplane_subdevice = None
+    
+    #######
+    
+    List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+    
+    self.backplane_subdevices = dict()
+    
+    for dev, index in List:
+      
+      if Subdevice.status(Subdevice(rl,self,index))['internal']:
+        
+        sdev = subdevice.Digital( rl, name_uses_subdev=(len(List)>1), *(dev, index))
+        
+        self.backplane_subdevices.update( {str(sdev):sdev} ) 
+      
+    
+    
     #if self.driver.startswith('ni_'):
     #  FIXME:  we should not need to use ni_ specifically here.  that should be
     #  taken care of in RouteLoader
@@ -96,7 +118,7 @@ class Device(object):
     # represents the PFI I/O lines.
 
   def __str__(self):
-    return '{}/{}'.format(self.prefix, self.device)
+    return '{}/{}'.format(self.driver, self.device)
 
   def __del__(self):
     # first instruct each one of the subdevs to be deleted
@@ -121,5 +143,5 @@ class Device(object):
     return c.comedi_get_board_name(self.fd).lower()
 
   @cached.property
-  def driver(self):
+  def kernel(self):
     return c.comedi_get_driver_name(self.fd).lower()

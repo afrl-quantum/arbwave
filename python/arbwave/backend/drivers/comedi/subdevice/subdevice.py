@@ -19,7 +19,7 @@ class Subdevice(Base):
 
   def __init__(self, route_loader, device, subdevice, name_uses_subdev=False):
     if name_uses_subdev: devname = '{}{}'.format(self.subdev_type, subdevice)
-    else:                devname = self.subdev_type
+    else:                devname = 'ao'#self.subdev_type
     name = '{}/{}'.format(device, devname)
     Base.__init__(self, name=name)
     self.base_name = devname
@@ -41,14 +41,14 @@ class Subdevice(Base):
       error("No clocks found for clock-able device '%s' (%s)",
             self, self.device.board)
     if trg not in route_loader.source_map:
-      error("No triggers found for triggerable device '%s' (%s)",
-            self, self.device.board)
+      error("No triggers found for triggerable device '%s' (%s)", self, self.device.board)
     self.clock_sources = route_loader.source_map[clk]
     self.trig_sources  = route_loader.source_map[trg]
     self.sources_to_native = dict() # not sure if we need this
 
     self.config = self.get_config_template()
-
+    
+    
 
   def __del__(self):
     self.clear()
@@ -67,6 +67,8 @@ class Subdevice(Base):
   @property
   def prefix(self):
     return self.device.prefix
+    
+  
 
   @property
   def flags(self):
@@ -80,7 +82,7 @@ class Subdevice(Base):
   def running(self):
     return self.flags & c.SDF_RUNNING
 
-  @property
+  #@property
   def status(self):
     flags = self.flags
     D = dict(
@@ -107,7 +109,7 @@ class Subdevice(Base):
       sample_16bit          = not bool(flags & c.SDF_LSAMPL),
       sample_bitwise        =     bool(flags & c.SDF_PACKED),
     )
-    D.__dict__ = D
+    #D.__dict__ = D
     return D
 
   @property
