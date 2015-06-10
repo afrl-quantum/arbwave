@@ -16,17 +16,16 @@ class Subdevice(Base):
   WAVEFORM_SINGLE     = 1
   WAVEFORM_CONTINUOUS = 2
   subdev_type         = None  # changed by inheriting device types
-
+  
   def __init__(self, route_loader, device, subdevice, name_uses_subdev=False):
     if name_uses_subdev: devname = '{}{}'.format(self.subdev_type, subdevice)
-    else:                devname = 'ao'#self.subdev_type
+    else:                devname = self.subdev_type
     name = '{}/{}'.format(device, devname)
     Base.__init__(self, name=name)
     self.base_name = devname
     self.device = device
     self.subdevice = subdevice
     debug( 'loading comedi subdevice %s', self )
-
     self.task = None
     self.channels = dict()
     self.clocks = None
@@ -37,13 +36,25 @@ class Subdevice(Base):
     # first find the possible trigger and clock sources
     clk = self.name + '/SampleClock'
     trg = self.name + '/StartTrigger'
+    
     if clk not in route_loader.source_map:
+    
       error("No clocks found for clock-able device '%s' (%s)",
             self, self.device.board)
+    
+    #print route_loader.source_map.keys()
+ 
+      
+    #print route_loader.aggregate_map.keys()
+            
     if trg not in route_loader.source_map:
       error("No triggers found for triggerable device '%s' (%s)", self, self.device.board)
+    
+    
     self.clock_sources = route_loader.source_map[clk]
-    self.trig_sources  = route_loader.source_map[trg]
+    
+    self.trig_sources  = route_loader.aggregate_map[trg] #changed to agg map because it contains starttrigger for do
+    
     self.sources_to_native = dict() # not sure if we need this
 
     self.config = self.get_config_template()

@@ -27,8 +27,8 @@ klasses = {
 
 def get_useful_subdevices(route_loader, device, typ,
                           restrictions=dict(
-                            start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,
-                          ), ret_index_list=False 
+                            start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,),
+                          ret_index_list=False 
                          ):
   L = list()
   cmd = c.comedi_cmd_struct()
@@ -52,12 +52,13 @@ def get_useful_subdevices(route_loader, device, typ,
     L.append( (device, index) )
   #del cmd # Syntax error to delete this!?!
   subdevs = list()
+  
   for li in L:
-    try: subdevs.append(klass( route_loader, name_uses_subdev=(len(L)>1), *li))
+    try: subdevs.append(klass( route_loader, name_uses_subdev=False, *li))
     except: pass
   if ret_index_list:
     return L
-  else:  
+  else:      
     return subdevs
 
 class Device(object):
@@ -80,13 +81,15 @@ class Device(object):
     gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
+
     self.dio_subdevices     = gus(rl, self, c.COMEDI_SUBD_DIO)
     self.counter_subdevices = gus(rl, self, c.COMEDI_SUBD_COUNTER)
-
-    self.subdevices       = { str(ao):ao for ao in self.ao_subdevices }
-    self.subdevices.update( { str(do):do for do in self.do_subdevices } )
-    self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
-
+    
+    self.subdevices = dict()
+    self.subdevices.update( { str(ao)+str(ao.subdevice):ao for ao in self.ao_subdevices } )
+    self.subdevices.update( { str(do)+str(do.subdevice):do for do in self.do_subdevices } )
+    self.subdevices.update( { str(dio)+str(dio.subdevice):dio for dio in self.dio_subdevices } ) # this will only include one subdev
+    self.subdevices.update( { str(co)+str(co.subdevice):co for co in self.counter_subdevices } )
     self.signals = [
       channels.Backplane(src,destinations=dest,invertible=True)
       for src,dest in rl.aggregate_map.iteritems()
@@ -94,29 +97,35 @@ class Device(object):
     
     #######
     
+    
     List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+    
+    
     
     self.backplane_subdevices = dict()
     
     for dev, index in List:
       
-      if Subdevice.status(Subdevice(rl,self,index))['internal']:
-        
-        sdev = subdevice.Digital( rl, name_uses_subdev=(len(List)>1), *(dev, index))
-        
-        self.backplane_subdevices.update( {str(sdev):sdev} ) 
+      sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
       
+      
+      if Subdevice.status(sdev)['internal']:
+        
+        self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev  
+        
     
     
-    #if self.driver.startswith('ni_'):
-    #  FIXME:  we should not need to use ni_ specifically here.  that should be
-    #  taken care of in RouteLoader
-    #  # for now, we only know how to deal with NI devices (that have the
-    #  # backplane on subdevice 10)
-    #  self.backplane_subdevice = subdevice.Backplane(self.fd,10,self.prefix)
-    # *** actually, as Ian has found, subdevice=7 is also special as it
-    # represents the PFI I/O lines.
-
+    #Fixed?
+    # #if self.driver.startswith('ni_'):
+    # #  FIXME:  we should not need to use ni_ specifically here.  that should be
+    # #  taken care of in RouteLoader
+    # #  # for now, we only know how to deal with NI devices (that have the
+    # #  # backplane on subdevice 10)
+    # #  self.backplane_subdevice = subdevice.Backplane(self.fd,10,self.prefix)
+    # # *** actually, as Ian has found, subdevice=7 is also special as it
+    # # represents the PFI I/O lines.
+    
+      
   def __str__(self):
     return '{}/{}'.format(self.driver, self.device)
 
@@ -127,13 +136,24 @@ class Device(object):
     while self.subdevices:
       subname, subdev = self.subdevices.popitem()
       del subdev
-
-    # Set all routes to their default and configure all routable pins to
-    # COMEDI_INPUT as an attempt to protect any pins from damage
-    # Following Ian's work, this means using both "Backplane" type subdevices (7
-    # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
-    # lines.
-    # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
+    
+    List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+    
+    
+    
+    for device, index in List:
+      
+      chans = c.comedi_get_n_channels(self.fd, index)
+      
+      c.comedi_dio_config(self.fd, index, chans, COMEDI_INPUT)
+      
+     # Fixed?
+     # # Set all routes to their default and configure all routable pins to
+     # # COMEDI_INPUT as an attempt to protect any pins from damage
+     # # Following Ian's work, this means using both "Backplane" type subdevices (7
+     # # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
+     # # lines.
+     # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
 
     # now close the device
     c.comedi_close(self.fd)
