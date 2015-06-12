@@ -189,7 +189,11 @@ class ConfigDialog(gtk.Dialog):
           ed.get_selection().select_iter( n )
 
     def addrow( action, stor, ed ):
-      stor.insert_before( ed.get_selection().get_selected()[1] )
+      sel = ed.get_selection().get_selected()[1]
+      if sel:
+        stor.insert_after( sel )
+      else:
+        stor.insert_before( sel )
 
 
     def add_dev_config( action, devcfg ):

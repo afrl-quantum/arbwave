@@ -34,7 +34,7 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
 
     self.toolitems = tuple( toolitems )
 
-    NavigationToolbar2GTKAgg.__init__(self, canvas, window)
+    super(NavigationToolbar,self).__init__(canvas, window)
 
 
 

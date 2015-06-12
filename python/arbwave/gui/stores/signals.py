@@ -22,6 +22,8 @@ class Signals(TreeModelDispatcher, gtk.ListStore):
   def dict(self):
     D = dict()
     for i in iter(self):
+      if not (i[Signals.SOURCE] and i[Signals.DEST]):
+        continue # skip rows that are not yet complete
       D[ ( i[Signals.SOURCE], i[Signals.DEST] ) ] = {
         'invert'  : i[Signals.INVERT],
       }
