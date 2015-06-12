@@ -11,25 +11,28 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
     self.vspan_controls = vspan_controls
     self.set_max_ranges = set_max_ranges
     toolitems = [
-      ('Home', 'Reset original view', 'home.png', 'home'),
-      ('Back', 'Back to  previous view','back.png', 'back'),
-      ('Forward', 'Forward to next view','forward.png', 'forward'),
-      ('Pan', 'Pan axes with left mouse, zoom with right', 'move.png','pan'),
-      ('Zoom', 'Zoom to rectangle','zoom_to_rect.png', 'zoom'),
+      ('Home', 'Reset original view', 'home', 'home'),
+      ('Back', 'Back to  previous view','back', 'back'),
+      ('Forward', 'Forward to next view','forward', 'forward'),
+      (None, None, None, None),
+      ('Pan', 'Pan axes with left mouse, zoom with right', 'move','pan'),
+      ('Zoom', 'Zoom to rectangle','zoom_to_rect', 'zoom'),
     ]
+    if self.hspan_controls or self.vspan_controls:
+      toolitems.append( (None, None, None, None) )
     if self.hspan_controls:
       toolitems.append(
-        ('HZoom', 'Zoom to horizontal span','zoom_to_rect.png', 'hspan'),
+        ('HZoom', 'Zoom to horizontal span','zoom_to_rect', 'hspan'),
       )
     if self.vspan_controls:
       toolitems.append(
-        ('VZoom', 'Zoom to vertical span','zoom_to_rect.png', 'vspan'),
+        ('VZoom', 'Zoom to vertical span','zoom_to_rect', 'vspan'),
       )
 
     toolitems += [
       (None, None, None, None),
-      #('Subplots', 'Configure subplots','subplots.png', 'configure_subplots'),
-      ('Save', 'Save the figure','filesave.png', 'save_figure'),
+      #('Subplots', 'Configure subplots','subplots', 'configure_subplots'),
+      ('Save', 'Save the figure','filesave', 'save_figure'),
     ]
 
     self.toolitems = tuple( toolitems )
