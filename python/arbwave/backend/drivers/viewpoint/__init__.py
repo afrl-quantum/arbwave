@@ -106,7 +106,7 @@ class Driver(Base):
     D = collect_prefix(digital, 0, 2, 2)
     C = collect_prefix(transitions, 0, 2, 2)
     E = collect_prefix(dict.fromkeys( end_clocks ), 0, 2, 2)
-    for d in self.devices.items():
+    for d,dev in self.devices.items():
       if d in D or d in C:
         dev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
                            continuous )
