@@ -4,6 +4,7 @@ Simulated low-level nidaqmx library.
 """
 
 import re, ctypes
+from itertools import chain
 import nidaqmx
 from logging import log, debug, info, warn, error, critical, DEBUG
 
@@ -105,7 +106,7 @@ class NiDAQmx:
 
   # PHYSICAL CHANNEL INFORMATION
   def DAQmxGetPhysicalChanDOSampClkSupported(self, chan, retval_ref):
-    retval_ref._obj.value = 0x0 # false for PCI-6723
+    retval_ref._obj.value = 0x1 # false for PCI-6723, but let's set true anyway
     return 0
 
 
@@ -131,7 +132,7 @@ class NiDAQmx:
   #   DEVICE INFORMATION
   def DAQmxGetDevProductType(self, dev, buf_ref, bufsize):
     # for now, we will default to simulating a PCI-6723 ao card
-    buf_ref._obj.value = 'PCI-6723'[:bufsize]
+    buf_ref._obj.value = 'PCI-6229'[:bufsize]
     return 0
 
 
@@ -152,7 +153,11 @@ class NiDAQmx:
 
 
   def DAQmxGetDevDOLines(self, dev, buf_ref, bufsize):
-    chans = ','.join([ '{}/port0/line{}'.format(dev,i) for i in xrange(8) ])
+    # this is not really consistent right now, but we're simulating 32 lines
+    chans = ','.join( chain(* [
+      [ '{}/port{}/line{}'.format(dev,pi,li) for li in xrange(8) ]
+      for pi in xrange(4)
+    ]) )
     buf_ref._obj.value = chans[:bufsize]
     return 0
 
@@ -218,6 +223,19 @@ class NiDAQmx:
     assert chname not in T.channels, \
       'NIDAQmx:  channel already exists in task'
     T.add_channel( Channel(chname, 'ao') )
+    return 0
+
+
+  def DAQmxCreateDOChan(self,task, phys_chan, chname, grouping_val):
+    assert phys_chan, 'NIDAQmx:  missing physical DO channel name(s)'
+    assert grouping_val==nidaqmx.libnidaqmx.DAQmx_Val_ChanPerLine, \
+      'only per_line DO group ing implemented in simulator'
+    if not chname:
+      chname = phys_chan
+    T = self.tasks[ task.value ]
+    assert chname not in T.channels, \
+      'NIDAQmx:  channel already exists in task'
+    T.add_channel( Channel(chname, 'do') )
     return 0
 
 
@@ -334,4 +352,14 @@ class NiDAQmx:
       task, n_per_chan.value, bool(auto_start.value), timeout.value, layout,
       cdata[0:(n_per_chan.value * len(self.tasks[task.value].channels))] )
     n_written_ref._obj.value = n_per_chan.value
+    return 0
+
+
+  def DAQmxWriteDigitalLines(self, task, n_per_chan, auto_start, timeout, layout,
+                          data, n_written_ref, ignored):
+    cdata = ctypes.cast( data, ctypes.POINTER(ctypes.c_uint8))
+    log(DEBUG-1, 'DAQmxWriteAnalogF64(%s,%d,%s,%f,%d,%s,n_written_ref, None)',
+      task, n_per_chan, bool(auto_start.value), timeout.value, layout,
+      cdata[0:(n_per_chan * len(self.tasks[task.value].channels))] )
+    n_written_ref._obj.value = n_per_chan
     return 0

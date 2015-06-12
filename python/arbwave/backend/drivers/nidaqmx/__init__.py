@@ -29,7 +29,7 @@ class Driver(Base):
     self.tasks          = dict()
     self.analogs        = list()
     self.lines          = list()
-    self.counters       = list()
+    self.timing_channels= list()
     self.signals        = list()
     self.routed_signals = dict()
 
@@ -56,13 +56,16 @@ class Driver(Base):
 
 
       t = task.Digital(self, '{}/{}'.format(self.prefix,d))
-      available = [ channels.Digital('{}/{}'.format(self.prefix,do), t)
+      available = [ ( channels.Digital ('{}/{}'.format(self.prefix,do), t),
+                      channels.DOTiming('{}/{}'.format(self.prefix,do), t) )
                     for do in d.get_digital_output_lines()
                       if nidaqmx.physical.get_do_sample_clock_supported(do)
                   ]
       if available:
+        available = zip(*available) # unzip
         self.tasks[ str(t) ] = t
-        self.lines += available
+        self.lines            += available[0]
+        self.timing_channels  += available[1]
 
 
       t = task.Timing(self, '{}/{}'.format(self.prefix,d))
@@ -70,7 +73,7 @@ class Driver(Base):
                     for co in d.get_counter_output_channels() ]
       if available:
         self.tasks[ str(t) ] = t
-        self.counters += available
+        self.timing_channels += available
 
     for src, dest in self.rl.aggregate_map.items():
       logging.log(logging.DEBUG-1,
@@ -132,7 +135,7 @@ class Driver(Base):
     return self.lines
 
   def get_timing_channels(self):
-    return self.counters
+    return self.timing_channels
 
   def get_routeable_backplane_signals(self):
     return self.signals
