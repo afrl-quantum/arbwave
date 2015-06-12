@@ -86,7 +86,7 @@ available = {
     ai_ST                 : { P15, (T7,R7), ao_ST, 'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
     'ai/ReferenceTrigger' : { P15, (T7,R7),        'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
     ao_ST                 : { P15, (T7,R7) },
-    'd{i,o}/StartTrigger' : { P15 },
+    dio_SC                : { P15 },
     '20MHzTimebase'       : { ai_CCTB, ai_SCTB, ao_SCTB, 'Ctr{0,1}Source' },
     '80MHzTimebase'       : {                            'Ctr{0,1}Source' },
     '10MHzRefClock'       : { (T7,R7) },
@@ -104,12 +104,15 @@ available = {
     'FrequencyOutput'     : { P15, (T7,R7), dio_SC },
     '100kHzTimebase'      : { ai_SCTB, ao_SCTB, 'Ctr{0,1}Source' },
     'ChangeDetectionEvent': { P15, (T7,R7), dio_SC },
+    'port0/line{0..7}'    : { Ext },
   },
 }
 
 available['pci-6733'] = available['pci-6723']
 available['pxi-6723'] = available['pxi-6733']
-available['pci-6229'] = available['pci-6221']
+available['pci-6225'] = available['pci-6221']
+available['pci-6229'] = available['pci-6221'].copy()
+available['pci-6229']['port{1..3}/line{0..7}'] = Ext # 32 channels for 6229
 
 
 def format_terminals(dev, dest, host_prefix='', prefix=''):
