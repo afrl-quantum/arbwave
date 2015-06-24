@@ -16,29 +16,26 @@ def load_nidaqmx_h(module):
   nidaqmx_version = module.get_nidaqmx_version()
   nidaqmx_h_name = 'nidaqmx_h_%s' % (nidaqmx_version.replace ('.', '_'))
   exec 'from nidaqmx import %s as nidaqmx_h' % (nidaqmx_h_name)
-  d = nidaqmx_h.__dict__
-  for name, value in d.items():
-    if name.startswith ('_'): continue
-    exec 'module.libnidaqmx.%s = %r' % (name, value)
-
+  module.libnidaqmx.DAQmx     = nidaqmx_h.DAQmx
+  module.libnidaqmx.error_map = nidaqmx_h.error_map
 
   global regen_modes, ch_types, polarity_map
   l = module.libnidaqmx
   regen_modes = {
-    True  : l.DAQmx_Val_AllowRegen,
-    False : l.DAQmx_Val_DoNotAllowRegen,
+    True  : l.DAQmx.Val_AllowRegen,
+    False : l.DAQmx.Val_DoNotAllowRegen,
 
-    l.DAQmx_Val_AllowRegen      : True,
-    l.DAQmx_Val_DoNotAllowRegen : False,
+    l.DAQmx.Val_AllowRegen      : True,
+    l.DAQmx.Val_DoNotAllowRegen : False,
   }
   ch_types = {
-    'ai':l.DAQmx_Val_AI, 'ao':l.DAQmx_Val_AO,
-    'di':l.DAQmx_Val_DI, 'do':l.DAQmx_Val_DO,
-    'ci':l.DAQmx_Val_CI, 'co':l.DAQmx_Val_CO,
+    'ai':l.DAQmx.Val_AI, 'ao':l.DAQmx.Val_AO,
+    'di':l.DAQmx.Val_DI, 'do':l.DAQmx.Val_DO,
+    'ci':l.DAQmx.Val_CI, 'co':l.DAQmx.Val_CO,
   }
   polarity_map = {
-    l.DAQmx_Val_InvertPolarity      : True,
-    l.DAQmx_Val_DoNotInvertPolarity : False,
+    l.DAQmx.Val_InvertPolarity      : True,
+    l.DAQmx.Val_DoNotInvertPolarity : False,
   }
 
 
@@ -228,7 +225,7 @@ class NiDAQmx:
 
   def DAQmxCreateDOChan(self,task, phys_chan, chname, grouping_val):
     assert phys_chan, 'NIDAQmx:  missing physical DO channel name(s)'
-    assert grouping_val==nidaqmx.libnidaqmx.DAQmx_Val_ChanPerLine, \
+    assert grouping_val==nidaqmx.libnidaqmx.DAQmx.Val_ChanPerLine, \
       'only per_line DO group ing implemented in simulator'
     if not chname:
       chname = phys_chan
