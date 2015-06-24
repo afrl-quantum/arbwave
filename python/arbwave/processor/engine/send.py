@@ -62,10 +62,9 @@ class ToDriver:
     logging.info( 'sending go signal to all hardware for waveform output' )
     # 1.  Create a graph of signals and clocks; map 'name' to dev
     graph = signal_graphs.build_graph( signals, *clocks )
-    to_dev = { d[0]:d[1]  for d in backend.get_devices().items() }
-
+    to_dev = backend.get_devices() # get_devices returns a new dict everytime
     to_dev.update({ clk[0]:clk[1].device
-                      for clk in backend.get_timing_channels().items() })
+                    for clk in backend.get_timing_channels().items() })
 
 
     # 2.  Add each use device into the graph:
@@ -75,13 +74,13 @@ class ToDriver:
     #       is the connection made by the device to the clock
     #   d.  add a graph edge from this nearest connection to the device
     shortest_paths = signal_graphs.shortest_paths_wgraph(graph, *clocks)
-    for dev in devcfg.items():
-      graph.add_node( dev[0] )
+    for dev, cfg in devcfg.items():
+      graph.add_node( dev )
       term = signal_graphs.nearest_terminal(
-        dev[1]['clock']['value'],
-        set(to_dev[dev[0]].get_config_template()['clock']['range']),
+        cfg['clock']['value'],
+        set(to_dev[dev].get_config_template()['clock']['range']),
         shortest_paths )
-      graph.add_edge( (term, dev[0]) )
+      graph.add_edge( (term, dev) )
 
 
     # 3.  Create a list of all devices, sorted by dependency
