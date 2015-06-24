@@ -142,6 +142,7 @@ class WaveformEvalulator:
 
     # all the currently known possible channels
     self.timing_channels = backend.get_timing_channels()
+    self.used_clocks = dict() # cache of clock values
     self.do_ao_channels = backend.get_analog_channels()
     self.do_ao_channels.update( backend.get_digital_channels() )
 
@@ -191,7 +192,18 @@ class WaveformEvalulator:
       # assign this found maximum period required to each of the devices that
       # use a particular clock.
       # project device min_period to the nearest next later clock pulse
-      clock_period = self.timing_channels[ clk ] .get_min_period()
+      # FOR _CLOCKS ONLY_: it should be necessary to allow for clocks to
+      #   depend on other clocks.  For example, a digital line being used as an
+      #   aperiodic clock might actually be using another clock as its timebase.
+      #   In this situation, we need to recursively query all required clocks
+      #   in order to allow for a dependent clock to calculate/determine its
+      #   minimum clock period.  Note that this only applies to clocks, not
+      #   devices.
+      if clk in self.used_clocks:
+        clock_period = self.used_clocks[clk]
+      else:
+        clock_period = self.used_clocks[clk] = self.get_clock_period( clk )
+
       self.min_periods[ clk ] = max(
         self.min_periods.get(clk, clock_period),
         ceil( chan_dev.get_min_period() / clock_period ) * clock_period,
@@ -409,6 +421,15 @@ class WaveformEvalulator:
     return retvals['analog'], retvals['digital'], clock_transitions, clocks, \
            self.t_max.coeff, self.finite_mode_end_clocks_required, \
            self.eval_cache
+
+  def get_clock_period(self, clk_name):
+    """Recursively determine the minimum separation of a clock pulse"""
+    clk = self.timing_channels[ clk_name ].get_min_period()
+    if issubclass( type(clk), backend.channels.RecursiveMinPeriod ):
+      if self.timing_channels[ clk.parent_clock ].is_aperiodic():
+        raise RuntimeError('Recursive clock cannot depend on aperiodic clocks')
+      return clk( self.get_clock_period(clk.parent_clock) )
+    return clk
 
 
 def insert_value( ti, dti, v, dt_clk, chname, ci, trans, group, group_name ):

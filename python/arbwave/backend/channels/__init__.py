@@ -3,5 +3,5 @@
 from base import Base
 from analog import Analog
 from digital import Digital
-from timing import Timing
+from timing import Timing, RecursiveMinPeriod
 from backplane import Backplane
