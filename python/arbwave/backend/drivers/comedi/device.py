@@ -27,7 +27,7 @@ klasses = {
 
 def get_useful_subdevices(route_loader, device, typ,
                           restrictions=dict(
-                            start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,),
+                          start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,),
                           ret_index_list=False 
                          ):
   L = list()
@@ -56,7 +56,7 @@ def get_useful_subdevices(route_loader, device, typ,
   for li in L:
     try: subdevs.append(klass( route_loader, name_uses_subdev=False, *li))
     except: pass
-  if ret_index_list:
+  if ret_index_list: #added to collect subdev number
     return L
   else:      
     return subdevs
@@ -95,27 +95,25 @@ class Device(object):
       for src,dest in rl.aggregate_map.iteritems()
     ]
     
-    #######
+    print self.subdevices
+  
     
     
     List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
-    
-    
-    
+ 
     self.backplane_subdevices = dict()
     
     for dev, index in List:
       
       sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
-      
-      
+
       if Subdevice.status(sdev)['internal']:
         
         self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev  
         
     
     
-    #Fixed?
+    #Fixed? But not implemented
     # #if self.driver.startswith('ni_'):
     # #  FIXME:  we should not need to use ni_ specifically here.  that should be
     # #  taken care of in RouteLoader
@@ -138,22 +136,21 @@ class Device(object):
       del subdev
     
     List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
-    
-    
-    
+
     for device, index in List:
       
       chans = c.comedi_get_n_channels(self.fd, index)
       
-      c.comedi_dio_config(self.fd, index, chans, COMEDI_INPUT)
+      c.comedi_dio_config(self.fd, index, chans, COMEDI_INPUT) 
       
-     # Fixed?
-     # # Set all routes to their default and configure all routable pins to
-     # # COMEDI_INPUT as an attempt to protect any pins from damage
-     # # Following Ian's work, this means using both "Backplane" type subdevices (7
-     # # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
-     # # lines.
-     # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
+    
+    # # Fixed?
+    # # # Set all routes to their default and configure all routable pins to    
+    # # # COMEDI_INPUT as an attempt to protect any pins from damage
+    # # # Following Ian's work, this means using both "Backplane" type subdevices (7
+    # # # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
+    # # # lines.
+    # # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
 
     # now close the device
     c.comedi_close(self.fd)
