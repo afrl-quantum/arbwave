@@ -6,6 +6,7 @@ import ctypes_comedi as c
 
 from ....tools import cached
 import subdevice
+from subdevice.subdevice import Subdevice
 import channels
 from . import routes
 
@@ -26,8 +27,8 @@ klasses = {
 
 def get_useful_subdevices(route_loader, device, typ,
                           restrictions=dict(
-                            start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,
-                          ),
+                          start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,),
+                          ret_index_list=False 
                          ):
   L = list()
   cmd = c.comedi_cmd_struct()
@@ -51,10 +52,14 @@ def get_useful_subdevices(route_loader, device, typ,
     L.append( (device, index) )
   #del cmd # Syntax error to delete this!?!
   subdevs = list()
+  
   for li in L:
-    try: subdevs.append(klass( route_loader, name_uses_subdev=(len(L)>1), *li))
+    try: subdevs.append(klass( route_loader, name_uses_subdev=False, *li))
     except: pass
-  return subdevs
+  if ret_index_list: #added to collect subdev number
+    return L
+  else:      
+    return subdevs
 
 class Device(object):
   @staticmethod
@@ -62,41 +67,65 @@ class Device(object):
     m = re.match('/dev/comedi(?P<device>[0-9]+)$', dev)
     return None if not m else m.group('device')
 
-  def __init__(self, prefix, device):
-    self.prefix = prefix
+  def __init__(self, driver, device):
+    self.driver = driver
     self.dev    = device
+    
+    #self.prefix = '' # shouldn't need this because of defaults in ni_routes
+
     self.fd     = c.comedi_open(self.dev)
     if self.fd is None:
       raise NameError('could not open comedi device: ' + self.dev)
     self.device = 'Dev'+self.parse_dev(device)
-    rl = routes.getRouteLoader(self.driver) ( self )
+    self.rl = rl = routes.getRouteLoader(self.kernel) ( driver, self )
     gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
+
     self.dio_subdevices     = gus(rl, self, c.COMEDI_SUBD_DIO)
     self.counter_subdevices = gus(rl, self, c.COMEDI_SUBD_COUNTER)
-
-    self.subdevices       = { str(ao):ao for ao in self.ao_subdevices }
-    self.subdevices.update( { str(do):do for do in self.do_subdevices } )
-    self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
-
+    
+    self.subdevices = dict()
+    self.subdevices.update( { str(ao)+str(ao.subdevice):ao for ao in self.ao_subdevices } )
+    self.subdevices.update( { str(do)+str(do.subdevice):do for do in self.do_subdevices } )
+    self.subdevices.update( { str(dio)+str(dio.subdevice):dio for dio in self.dio_subdevices } ) # this will only include one subdev
+    self.subdevices.update( { str(co)+str(co.subdevice):co for co in self.counter_subdevices } )
     self.signals = [
       channels.Backplane(src,destinations=dest,invertible=True)
       for src,dest in rl.aggregate_map.iteritems()
     ]
+    
+    print self.subdevices
+  
+    
+    
+    List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+ 
+    self.backplane_subdevices = dict()
+    
+    for dev, index in List:
+      
+      sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
 
-    #self.backplane_subdevice = None
-    #if self.driver.startswith('ni_'):
-    #  FIXME:  we should not need to use ni_ specifically here.  that should be
-    #  taken care of in RouteLoader
-    #  # for now, we only know how to deal with NI devices (that have the
-    #  # backplane on subdevice 10)
-    #  self.backplane_subdevice = subdevice.Backplane(self.fd,10,self.prefix)
-    # *** actually, as Ian has found, subdevice=7 is also special as it
-    # represents the PFI I/O lines.
-
+      if Subdevice.status(sdev)['internal']:
+        
+        self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev  
+        
+    
+    
+    #Fixed? But not implemented
+    # #if self.driver.startswith('ni_'):
+    # #  FIXME:  we should not need to use ni_ specifically here.  that should be
+    # #  taken care of in RouteLoader
+    # #  # for now, we only know how to deal with NI devices (that have the
+    # #  # backplane on subdevice 10)
+    # #  self.backplane_subdevice = subdevice.Backplane(self.fd,10,self.prefix)
+    # # *** actually, as Ian has found, subdevice=7 is also special as it
+    # # represents the PFI I/O lines.
+    
+      
   def __str__(self):
-    return '{}/{}'.format(self.prefix, self.device)
+    return '{}/{}'.format(self.driver, self.device)
 
   def __del__(self):
     # first instruct each one of the subdevs to be deleted
@@ -105,13 +134,23 @@ class Device(object):
     while self.subdevices:
       subname, subdev = self.subdevices.popitem()
       del subdev
+    
+    List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
 
-    # Set all routes to their default and configure all routable pins to
-    # COMEDI_INPUT as an attempt to protect any pins from damage
-    # Following Ian's work, this means using both "Backplane" type subdevices (7
-    # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
-    # lines.
-    # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
+    for device, index in List:
+      
+      chans = c.comedi_get_n_channels(self.fd, index)
+      
+      c.comedi_dio_config(self.fd, index, chans, COMEDI_INPUT) 
+      
+    
+    # # Fixed?
+    # # # Set all routes to their default and configure all routable pins to    
+    # # # COMEDI_INPUT as an attempt to protect any pins from damage
+    # # # Following Ian's work, this means using both "Backplane" type subdevices (7
+    # # # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
+    # # # lines.
+    # # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
 
     # now close the device
     c.comedi_close(self.fd)
@@ -121,5 +160,5 @@ class Device(object):
     return c.comedi_get_board_name(self.fd).lower()
 
   @cached.property
-  def driver(self):
+  def kernel(self):
     return c.comedi_get_driver_name(self.fd).lower()

@@ -3,28 +3,46 @@
 from logging import log, debug, info, warn, error, critical, DEBUG
 from .....tools.float_range import float_range
 from subdevice import Subdevice as Base
-import nidaqmx
+import ctypes_comedi as c
+import re
 
 class Analog(Base):
   subdev_type = 'ao'
+  
 
-
-  def add_channels(self):
+  def add_channels(self, aref=c.AREF_GROUND, rng=0):
     # populate the task with output channels and accumulate the data
     dflt_mn = self.config['default-voltage-range']['minimum']['value']
     dflt_mx = self.config['default-voltage-range']['maximum']['value']
+    
     chans = self.channels.items()
-    chans.sort( key = lambda v : v[1]['order'] )
-    for c in chans:
-      if c[1]:
-        mn, mx = c[1]['min'], c[1]['max']
+    
+    #chans.sort( key = lambda v : v[1]['order'] )
+    
+ 
+    i = 0
+    
+    for ch in chans:
+      
+      if ch[1]:
+        mn, mx = ch[1]['min'], ch[1]['max']
       else:
         # use the default range values
         mn, mx = dflt_mn, dflt_mx
-      debug( 'nidaqmx: creating analog output NIDAQmx channel: %s', c[0] )
-      self.task.create_voltage_channel(
-        c[0].partition('/')[-1], # cut off the prefix
-        min_val=mn, max_val=mx )
+      
+      num = re.search('([0-9]*)$', ch[0])
+      
+      
+      
+      #rng = c.comedi_find_range(self.fd, self.subdevice, int(num.group()),c.UNIT_volt,mn,mx)
+      # references to self.fd nside of comedi functions only work in subdevice.py why?
+      
+      self.cmd_chanlist[i] = c.CR_PACK(int(num.group()), rng, aref)
+      self.chan_index_list.append(int(num.group()))
+      i += 1
+      
+    
+     
 
 
   def get_config_template(self):

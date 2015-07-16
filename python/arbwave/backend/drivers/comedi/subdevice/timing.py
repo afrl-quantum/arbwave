@@ -2,6 +2,8 @@
 
 from subdevice import Subdevice as Base
 import nidaqmx
+import ctypes_comedi as c
+import numpy as np
 
 class Timing(Base):
   subdev_type = 'to'
@@ -13,15 +15,7 @@ class Timing(Base):
 
 
   def add_channels(self):
-    for c in self.clocks.items():
-      name = c[0].partition('/')[-1] # cut off the prefix
-      self.task.create_channel_frequency(
-        name, name=name,
-        idle_state  = c[1]['idle-state'],
-        delay       = c[1]['delay'],
-        freq        = c[1]['rate'],
-        duty_cycle  = c[1]['duty-cycle'],
-      )
+    print "add chans to"
 
   def get_config_template(self):
     template = Base.get_config_template(self)

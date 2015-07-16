@@ -21,6 +21,7 @@ class BaseRouteLoader(object):
     for src,dst in route_map:
       D = self.source_map.setdefault( dst, list() )
       D.append(src)
+      
 
 class NullRouteLoader(BaseRouteLoader):
   def __init__(self, device):
@@ -29,17 +30,19 @@ class NullRouteLoader(BaseRouteLoader):
 
 
 class NIRouteLoader(BaseRouteLoader):
-  def __init__(self, device):
-    ni_rl = ni_routes.RouteLoader(device.prefix)
+  def __init__(self, driver, device ):
+    ni_rl = ni_routes.RouteLoader( driver.host_prefix, str(driver) )
     aggregate_map, route_map = \
       ni_rl.mk_signal_route_map(device.device,device.board)
     super(NIRouteLoader,self).__init__(device, aggregate_map, route_map)
     self.ni_rl = ni_rl
+  
+  
+  
 
-
-driver_to_loader = {
+kernel_module_to_loader = {
   'ni_pcimio' : NIRouteLoader,
 }
 
-def getRouteLoader( driver ):
-  return driver_to_loader.get(driver, NullRouteLoader)
+def getRouteLoader( kernel_module ):
+  return kernel_module_to_loader.get(kernel_module, NullRouteLoader)

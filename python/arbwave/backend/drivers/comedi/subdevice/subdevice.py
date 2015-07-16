@@ -9,14 +9,16 @@ from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
 from ....device import Device as Base
 from .. import channels
-
+import mmap
+from mmap import PROT_WRITE, MAP_SHARED
+import re
 
 class Subdevice(Base):
   STATIC              = 0
   WAVEFORM_SINGLE     = 1
   WAVEFORM_CONTINUOUS = 2
   subdev_type         = None  # changed by inheriting device types
-
+  
   def __init__(self, route_loader, device, subdevice, name_uses_subdev=False):
     if name_uses_subdev: devname = '{}{}'.format(self.subdev_type, subdevice)
     else:                devname = self.subdev_type
@@ -26,27 +28,44 @@ class Subdevice(Base):
     self.device = device
     self.subdevice = subdevice
     debug( 'loading comedi subdevice %s', self )
-
-    self.task = None
+    self.task = True #TO DO: get rid of this
     self.channels = dict()
     self.clocks = None
     self.clock_terminal = None
     self.use_case = None
     self.t_max = 0.0
+    self.chan_index_list = list()
+    self.cmd = c.comedi_cmd()
+    
+    # below will need work when routing is implemented
+    if not self.subdev_type == 'to': 
+      
+      # first find the possible trigger and clock sources
+      clk = self.name + '/SampleClock'
+      trg = self.name + '/StartTrigger'
+      
+    else: 
+      
+      index = str(self.subdevice - c.comedi_find_subdevice_by_type(self.fd,c.COMEDI_SUBD_COUNTER,0))
 
-    # first find the possible trigger and clock sources
-    clk = self.name + '/SampleClock'
-    trg = self.name + '/StartTrigger'
+      clk = str(self.device) + '/Ctr'+index+'Gate' #might be source instead
+
+      trg = str(self.device) +'/Ctr'+index+'Source' #probably wrong, not sure what should go here
+
     if clk not in route_loader.source_map:
+      
       error("No clocks found for clock-able device '%s' (%s)",
-            self, self.device.board)
-    if trg not in route_loader.source_map:
-      error("No triggers found for triggerable device '%s' (%s)",
-            self, self.device.board)
-    self.clock_sources = route_loader.source_map[clk]
-    self.trig_sources  = route_loader.source_map[trg]
-    self.sources_to_native = dict() # not sure if we need this
+              self, self.device.board)
 
+    if trg not in route_loader.aggregate_map:
+        error("No triggers found for triggerable device '%s' (%s)", self, self.device.board)
+
+    self.clock_sources = route_loader.source_map[clk]
+    
+    self.trig_sources  = route_loader.aggregate_map[trg] #changed to agg map because it contains starttrigger for do, may be incorrect
+      
+    self.sources_to_native = dict() # not sure if we need this
+      
     self.config = self.get_config_template()
 
 
@@ -55,7 +74,7 @@ class Subdevice(Base):
 
 
   def clear(self):
-    if self.task:
+    if self.task:   
       debug( 'comedi: cancelling commands for comedi subdevice %s', self )
       c.comedi_cancel( self.fd, self.subdevice )
       self.t_max = 0.0
@@ -67,6 +86,8 @@ class Subdevice(Base):
   @property
   def prefix(self):
     return self.device.prefix
+    
+  
 
   @property
   def flags(self):
@@ -79,8 +100,12 @@ class Subdevice(Base):
   @property
   def running(self):
     return self.flags & c.SDF_RUNNING
-
+    
   @property
+  def buf_size(self):
+    return c.comedi_get_buffer_size(self.fd, self.subdevice)
+
+  #@property
   def status(self):
     flags = self.flags
     D = dict(
@@ -107,12 +132,13 @@ class Subdevice(Base):
       sample_16bit          = not bool(flags & c.SDF_LSAMPL),
       sample_bitwise        =     bool(flags & c.SDF_PACKED),
     )
-    D.__dict__ = D
+    #D.__dict__ = D
     return D
 
   @property
   def available_channels(self):
     klass = channels.klasses[self.subdev_type]
+    
     return [
       klass('{}/{}'.format(self, i), self)
       for i in xrange(c.comedi_get_n_channels( self.fd, self.subdevice ))
@@ -122,15 +148,134 @@ class Subdevice(Base):
     """
     Sub-task types must override this for specific channel creation.
     """
-    # populate the task with output channels and accumulate the data
-    for c in self.channels:
-      warn( 'creating unknown NIDAQmx task/channel: %s/%s', self.task, c )
-      self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
 
+  def dump_cmd(self, cmd):
+    print "---------------------------"
+    print "command structure contains:"
+    print "cmd.subdev : ", cmd.subdev
+    print "cmd.flags : ", cmd.flags
+    print "cmd.start :\t", cmd.start_src, "\t", cmd.start_arg
+    print "cmd.scan_beg :\t", cmd.scan_begin_src, "\t", cmd.scan_begin_arg
+    print "cmd.convert :\t", cmd.convert_src, "\t", cmd.convert_arg
+    print "cmd.scan_end :\t", cmd.scan_end_src, "\t", cmd.scan_end_arg
+    print "cmd.stop :\t", cmd.stop_src, "\t", cmd.stop_arg
+    print "cmd.chanlist : ", cmd.chanlist
+    print "cmd.chanlist_len : ", cmd.chanlist_len
+    print "cmd.data : ", cmd.data
+    print "cmd.data_len : ", cmd.data_len
+    print "---------------------------"
+
+  
+  
+  def cmd_config(self, config):
+    """
+    Takes values from config and configures a comedi command
+    """
+
+    trig_num = re.search('([0-9]*)$', config['trigger']['source']['value'])
+      
+    trig = trig_num.group()
+      
+    if not config['trigger']['enable']['value']:
+      start_src = c.TRIG_INT
+    else:
+      start_src = c.TRIG_EXT
+      if config['trigger']['edge']['value'] == 'rising':
+        start_arg = c.CR_EDGE
+      if config['trigger']['edge']['value'] == 'falling':
+        start_arg = c.CR_INVERT | c.CR_EDGE
+          
+    clk_num = re.search('([0-9]*)$', config['clock']['value'])
+      
+    clk = clk_num.group()
+      
+      
+      
+    if config['clock-settings']['mode']['value'] == 'finite':
+      stop_src = c.TRIG_COUNT
+        
+      #Number of counts input?
+      stop_arg = 1
+    else:
+      stop_src = c.TRIG_NONE
+      stop_arg = 0
+      
+    if config['clock-settings']['edge']['value'] == 'rising':
+        scan_begin_arg = c.CR_EDGE
+    if config['clock-settings']['edge']['value'] == 'falling':
+        scan_begin_arg = c.CR_INVERT | c.CR_EDGE
+    
+    
+    
+    if trig == '':
+      start_src = c.TRIG_INT
+      start_arg, trig = 0, 0
+    else:
+      trig = int(trig)  
+    if clk == '':
+      scan_begin_src = c.TRIG_TIMER
+      # clk = period ?
+      scan_begin_arg = 0
+      clk = int((1e9))
+    else:
+      clk = int(clk)
+      scan_begin_src = c.TRIG_EXT
+      scan_begin_arg = c.CR_EDGE
+      # if digital scan_begin_arg ==> cant have CR_EDGE
+    
+    self.add_channels() # populates cmd_chanlist
+    
+       
+     
+     #TRIG_EXT argument: digital line of trigger (watch for inconisitent PFI index)
+     #TRIG_INT argument: Zero, triggers with: comedi_internal_trigger(device, subdevice, 0)
+     #TRIG_COUNT argument: int counted to
+     #all other arguments are zero
+                 
+    self.cmd.subdev = self.subdevice 
+    self.cmd.flags = c.TRIG_WRITE #bitwise or'd subdevice flags
+    self.cmd.start_src = start_src # start trigger source accepts: TRIG_INT, TRIG_EXT
+    self.cmd.start_arg = start_arg | trig
+    self.cmd.scan_begin_src = scan_begin_src # accepts: TRIG_TIMER, TRIG_EXT
+    self.cmd.scan_begin_arg = scan_begin_arg | clk
+    self.cmd.convert_src = c.TRIG_NOW # accpets: TRIG_TIMER, TRIG_EXT, TRIG_NOW
+    self.cmd.convert_arg = 0
+    self.cmd.scan_end_src = c.TRIG_COUNT
+    self.cmd.scan_end_arg = len ( self.cmd_chanlist[:] )
+    self.cmd.stop_src = stop_src # accepts: TRIG_COUNT, TRIG_NONE
+    self.cmd.stop_arg = stop_arg
+    self.cmd.chanlist = self.cmd_chanlist #pointer to array with elements --> c.CR_PACK(chan, range, aref) 
+    self.cmd.chanlist_len = len ( self.cmd_chanlist[:] ) # wrong way to do this?
+    
+    
+    #self.dump_cmd(self.cmd)
+    
+   
+    for  i in xrange(2):
+    
+      test = c.comedi_command_test(self.fd, self.cmd)
+
+      if test < 0:
+          error ('invalid comedi command for %s', self)
+      if test == 1:
+          warn ('unsupported trigger in ..._src setting of comedi command, setting zeroed')
+      if test == 2:
+          warn ('..._src setting not supported by driver')
+      if test == 3:
+          warn ('TRIG argument of comedi command outside accepted range')
+      if test == 4:
+          warn ('adjusted TRIG argument in comedi command')
+      if test == 5:
+          warn ('chanlist not supported by board')
+      if test == 0:
+          continue
+
+  
   def set_config(self, config=None, channels=None, shortest_paths=None,
                  timing_channels=None, force=False):
     debug('comedi[%s].set_config', self)
+
     if channels and self.channels != channels:
       self.channels = channels
       force = True
@@ -140,27 +285,32 @@ class Subdevice(Base):
 
     if not self.config['clock']['value']:
       self.clock_terminal = None
-    else:
-      if shortest_paths:
-        self.clock_terminal = \
-          self.sources_to_native[
-            nearest_terminal( self.config['clock']['value'],
-                              set(self.clock_sources),
-                              shortest_paths ) ]
-        force = True
-
+    #else:  ###removed for test, should be implemented with routing
+    #  if shortest_paths:
+    #    self.clock_terminal = \
+    #      self.sources_to_native[
+    #        nearest_terminal( self.config['clock']['value'],
+    #                          set(self.clock_sources),
+    #                          shortest_paths ) ]
+    #    force = True
+    
     if force:
-      self._rebuild_task()
+      self._rebuild_cmd()
 
-  def _rebuild_task(self):
-    # rebuild the task
+  def _rebuild_cmd(self):
+    # rebuild the command
     self.clear()
+    
     if not self.channels:
       return
-    debug( 'nidaqmx: creating task:  %s', self.name )
-    self.task = self.task_class(self.name.replace('/','-'))
+    debug( 'comedi: creating command:  %s', self.name )
+    
+    self.cmd_chanlist = (c.lsampl_t*len(self.channels))()
+    
+    self.cmd_config(self.config)
+    
     self.use_case = None
-    self.add_channels()
+    
 
     # set persistent task properties
     # Not sure if we really need to worry about on-board memory
@@ -179,41 +329,107 @@ class Subdevice(Base):
     """
     Sets a static value on each output channel of this task.
     """
-    if self.use_case in [ None, Task.STATIC ]:
-      if self.use_case is not None:
-        debug( 'nidaqmx: stopping task: %s', self.task )
-        self.task.stop()
-    else:
-      self._rebuild_task()
-    self.use_case = Task.STATIC
+     
+    if self.channels:
+      if self.use_case in [ None, self.STATIC ]:
+        if self.use_case is not None:
+          debug( 'comedi: stopping task: %s', self.name)
+          self.stop()
+      else: 
+      
+        self._rebuild_cmd()
 
-    debug( 'nidaqmx: configuring task for static output: %s', self.task )
-    self.task.set_sample_timing( timing_type='on_demand',
-                                 mode='finite',
-                                 samples_per_channel=1 )
-    self.task.configure_trigger_disable_start()
-    # get the data
-    px = self.prefix
-    chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
-    assert set(chlist) == set( data.keys() ), \
-      'NIDAQmx.set_output: mismatched channels'
-    debug( 'nidaqmx: writing static data for channels: %s', chlist )
-    if rootlog.getEffectiveLevel() <= (DEBUG-1):
-      log(DEBUG-1, '%s', [ float(data[c])  for c in chlist ])
-    self.task.write( [ data[c]  for c in chlist ] )
-    debug( 'nidaqmx: starting task: %s', self.task )
-    self.task.start()
+        self.use_case = self.STATIC
 
+      if self.subdev_type == 'do':  #had to include this here, because self.fd wont work in digital.py
+        
+        bits = 0
+        print self.chan_index_list
+        print data
+        for i in self.chan_index_list:
+          c.comedi_dio_config(self.fd, self.subdevice, i, c.COMEDI_OUTPUT)
+          print "dio_config_output", i
+          if data['do'+str(i)] == True:
+            bits = bits|(2**i)
+        
+        print bin(bits)
+        bits = (c.lsampl_t*1)(bits)
+      
+        c.comedi_dio_bitfield2(self.fd,2, c.lsampl_t((2**(max(self.chan_index_list)+1))-1), bits, 0)
+     
+      else:
+        
+        
+        self.start() 
+        
+        
+        mapp = mmap.mmap(c.comedi_fileno(self.fd), self.buf_size, MAP_SHARED, PROT_WRITE, 0, 0) #
+            
+        npmap = np.ndarray(shape=((self.buf_size/2)), dtype=c.sampl_t, buffer = mapp, offset=0, order='C')
+        
+         
+        
+        for i in xrange((len(data))):
+          
+          #TO DO: implement calibration
+          ############################
+          #num = re.search('([0-9]*)$', data.keys()[i])
+          #chan = int(num.group())
+          #poly = c.comedi_polynomial_t()
+
+          ##include findable rng integer
+          #rng = 0
+
+          ##below is device dependenent, but can be descovederd and selected using subdevice flag SDF_SOFT_CALIBRATED
+          
+          #path = c.comedi_get_default_calibration_path(self.fd)
+          
+          #path_point = comedi_ 
+          #calibration = c.comedi_parse_calibration_file(path)
+          ##print calibration[0]
+          #c.comedi_get_softcal_converter(self.subdevice,chan,rng, c.COMEDI_FROM_PHYSICAL,calibration, poly)
+
+          #npmap[i] = c.comedi_from_physical(data[data.keys()[i]], poly)
+          ############################
+          print self.channels, 'chans'
+          rng = self.channels[self.channels.keys()[i]]
+          
+          rng = c.comedi_range( rng['min'], rng['max'], 0 )
+          
+          npmap[:] = c.comedi_from_phys(data[data.keys()[i]], rng, c.lsampl_t(65535)) #max data will be device specific?
+        
+        
+        
+        c.comedi_mark_buffer_written(self.fd, self.subdevice, self.buf_size)
+        
+        c.comedi_internal_trigger(self.fd, self.subdevice, 0)
+        
+        
+        #while(1): #protects from buffer underwrite
+         # print c.comedi_get_buffer_contents(self.fd, self.subdevice)
+         
+         # unmarked = self.buf_size - c.comedi_get_buffer_contents(self.fd, self.subdevice)
+          #print unmarked, 'A'
+          #if unmarked > 0:
+          
+           # c.comedi_mark_buffer_written(self.fd, self.subdevice, unmarked)
+           # print unmarked, 'B'
 
   def get_min_period(self):
-    if self.task and self.channels:
+    print self.subdev_type
+    if self.subdev_type == 'to':
       # this is kind of hackish and might be wrong for other hardware (that is
       # not the PCI-6723).  The PCI-6723 did not like having < 1*..., therefore
       # we use max(1, .6*...).
-      return max( 1, .6*len(self.channels) ) \
-            * unit.s / self.task.get_sample_clock_max_rate()
-    return 0*unit.s
-
+      #return max( 1, .6*len(self.channels) ) \
+      #      * unit.s / self.task.get_sample_clock_max_rate()
+	chan = 0 #I think this is what we want
+	clock = c.lsampl_t()
+	period = c.lsampl_t()
+	c.comedi_get_clock_source(self.fd, self.subdevice, chan, clock, period)
+	return int(period.value)*unit.s
+    else:
+	return 0*unit.s	
 
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
     """
@@ -227,6 +443,7 @@ class Subdevice(Base):
         debug( 'nidaqmx: stopping task: %s', self.task )
         self.task.stop()
     else:
+      fopen
       self._rebuild_task()
     if continuous:
       self.use_case = Task.WAVEFORM_CONTINUOUS
@@ -238,7 +455,6 @@ class Subdevice(Base):
 
     my_clock = clock_transitions[ self.config['clock']['value'] ]
     dt_clk = my_clock['dt']
-    transitions = list( my_clock['transitions'] )
     transitions.sort()
 
     # 1.  Sample clock
@@ -375,7 +591,7 @@ class Subdevice(Base):
 
   def start(self):
     if self.task:
-      self.task.start()
+      c.comedi_command(self.fd, self.cmd)
 
 
   def wait(self):
@@ -393,7 +609,14 @@ class Subdevice(Base):
 
   def stop(self):
     if self.task:
-      self.task.stop()
+      c.comedi_close(self.fd) #more here
+
+
+      
+      
+      
+        
+
 
 
   def get_config_template(self):
