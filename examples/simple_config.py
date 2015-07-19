@@ -49,6 +49,18 @@ clocks = \
 {'vp/Dev0/A/13': {'divider': {'type': int, 'value': 1}},
  'vp/Dev0/Internal_XO': {'scan_rate': {'type': float, 'value': 20000000.0}}}
 
+hosts = \
+{'__default__': 'local', 'local': 'localhost'}
+
+version = \
+'0.1.8'
+
+signals = \
+{('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}
+
+runnable_settings = \
+{}
+
 global_script = \
 """# This script sets global variables and/or functions.
 # All other scripts and processing will be done in this context.
@@ -67,15 +79,6 @@ class SimpleRun(Arbwave.Runnable):
 
 Arbwave.add_runnable( 'Simple', SimpleRun() )
 """
-
-version = \
-'0.1.7-15-g73de591'
-
-signals = \
-{('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}
-
-runnable_settings = \
-{}
 
 devices = \
 {'ni/Dev1/ao': {'clock': {'type': str, 'value': 'vp/Dev0/A/13'},

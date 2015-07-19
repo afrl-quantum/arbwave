@@ -133,8 +133,10 @@ DONE
 DONE
 
 16. Fix icons in graph toolbar
+DONE
 
 17. Add remote hardware layer
+DONE
 
 18. make python/arbwave subdir:
   a) mkdir python;
