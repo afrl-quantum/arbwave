@@ -55,17 +55,17 @@ global_script = \
 from physical.unit import *
 from physical.constant import *
 from physical import unit
-import arbwave
+import Arbwave
 
-class SimpleRun(arbwave.Runnable):
+class SimpleRun(Arbwave.Runnable):
 	def run(self):
-		arbwave.update()
+		Arbwave.update()
 		# if possible, the run function should return a value indicative of the
 		# performance of the particular run.  Below is just a "random" example.
 		import random
 		return random.randint(0,100)
 
-arbwave.add_runnable( 'Simple', SimpleRun() )
+Arbwave.add_runnable( 'Simple', SimpleRun() )
 """
 
 version = \
