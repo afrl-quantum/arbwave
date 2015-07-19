@@ -24,6 +24,9 @@ def to_plotter( plotter, analog, digital, clocks, channels, t_max ):
   d = signals.merge_signals_sets( [digital] )
   do_gui_operation( plot_stuff, plotter, a, d, names, t_max )
 
+def to_ui_notify( ui, message ):
+  do_gui_operation( ui.notify.show, message )
+
 def to_file( analog, digital, transitions, clocks, channels, filename=None, fmt=None ):
   S = signals.merge_signals_sets( [analog, digital] )
   S.to_arrays( transitions, clocks, channels ).save( filename, fmt=fmt )
@@ -120,10 +123,22 @@ class ToDriver:
     """
     def waiter(d):
       d.wait()
-    tids = [ threading.Thread(target=lambda d:d.wait(), args=(d,))
-      for d in self.sorted_device_list ]
+    class Waiter( threading.Thread ):
+      def __init__(self, target, args=(), kwargs={}):
+        super(Waiter,self).__init__()
+        self.excObj = None
+        self.target,self.args,self.kwargs = target, args, kwargs
+      def run(self):
+        try:
+          self.target(*self.args, **self.kwargs)
+        except Exception as e:
+          self.excObj = e
+          raise
+    tids = [ Waiter(target=d.wait) for d in self.sorted_device_list ]
     for t in tids: t.start()
     for t in tids: t.join()
+    # return all errors
+    return [ t.excObj for t in tids if t.excObj is not None ]
 
 
   def stop(self):

@@ -126,7 +126,14 @@ class Arbwave:
     send.to_driver.waveform( analog, digital, transitions, t_max, end_clocks, continuous )
     send.to_driver.start(self.devcfg, self.clocks, self.signals)
     if wait and not continuous:
-      send.to_driver.wait()
+      excObjs = send.to_driver.wait()
+      if excObjs:
+        # notify user of any errors occurred during wait
+        send.to_ui_notify( self.ui,
+          '<span color="red"><b>Error(s) in waiting for waveforms</b>: \n'
+          '  {} \n'
+          '</span>\n'.format( '\n  '.join([ repr(e) for e in excObjs ]) )
+        )
 
     if (stop & self.AFTER) and self.stop_request:
       self.dostop()
