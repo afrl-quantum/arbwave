@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from .timing      import Timing
+from .timing      import Timing as TBase
 from ....channels import Analog as ABase
 from ....channels import Digital as DBase
 from ....channels import Backplane as BBase
@@ -17,6 +17,7 @@ class ComediChannel:
 class Analog(ComediChannel, ABase): pass
 class Digital(ComediChannel, DBase): pass
 class Backplane(BBase): pass
+class Timing(ComediChannel, TBase): pass # added this to allow for 
 
 klasses = dict(
   to = Timing,
