@@ -275,7 +275,7 @@ class Subdevice(Base):
 
   
   def set_config(self, config=None, channels=None, shortest_paths=None,
-                 timing_channels=None, force=False):
+                 force=False):
     debug('comedi[%s].set_config', self)
     
     print "config", self.name, self.config['clock']['value']

@@ -7,6 +7,7 @@ class Base(object):
   _pyro_ = True # For remote connections, this class must use pyro
 
   def __init__(self, name, dev=None, explicit_timing=True, finite_end_clock=True):
+    super(Base,self).__init__()
     self.name = name
     self.dev = dev
     self._explicit_timing = explicit_timing

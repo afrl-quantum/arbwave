@@ -149,11 +149,7 @@ class Task(Base):
 
   def get_min_period(self):
     if self.task and self.channels:
-      # this is kind of hackish and might be wrong for other hardware (that is
-      # not the PCI-6723).  The PCI-6723 did not like having < 1*..., therefore
-      # we use max(1, .6*...).
-      return max( 1, .6*len(self.channels) ) \
-            * unit.s / self.task.get_sample_clock_max_rate()
+      return unit.s / self.task.get_sample_clock_max_rate()
     return 0*unit.s
 
 
@@ -177,6 +173,11 @@ class Task(Base):
 
     if not self.clock_terminal:
       raise UserWarning('cannot start waveform without a output clock defined')
+
+    if set(waveforms.keys()).intersection( clock_transitions.keys() ):
+      raise RuntimeError('NI channels cannot be used as clocks and ' \
+                         'output simultaneously')
+
 
     my_clock = clock_transitions[ self.config['clock']['value'] ]
     dt_clk = my_clock['dt']

@@ -20,7 +20,7 @@ def get_range( scaling, units, offset, globals, **kwargs ):
   this, for example.
   """
   if not scaling:
-    return None
+    return kwargs
   # note:  we ignore lines with either empty x _OR_ y values
   mn, mx = calculate_scaling(scaling, units, offset, globals, return_range=True)
   return dict(min=mn, max=mx, **kwargs)

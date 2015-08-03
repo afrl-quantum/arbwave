@@ -64,7 +64,8 @@ class Device(Base):
 
     # we have to strip off the device prefix...
 
-    C['out']['channels'] = channels
+    # ensure that clock channels are added to the output list
+    C['out']['channels'] = self.timing_channels.union(channels)
     C['in']['clock'    ] = C['out']['clock'] = \
       self.possible_clock_sources[
         nearest_terminal( clk,
@@ -90,12 +91,18 @@ class Device(Base):
   def set_clocks(self, clocks):
     if self.clocks != clocks:
       self.clocks = clocks
+      self.timing_channels = set()
+
+      pfxlen = len( str(self) )
 
       C = self.board.configs
-      for clk in clocks.items():
-        if 'Internal' in clk[0]:
+      for clk, clkcfg in clocks.items():
+        if 'Internal' in clk:
           C['in']['scan_rate'] = \
-          C['out']['scan_rate'] = clk[1]['scan_rate']['value']
+          C['out']['scan_rate'] = clkcfg['scan_rate']['value']
+        else:
+          self.timing_channels.add( clk[pfxlen+1:] )
+
 
 
   def set_signals(self, signals):
@@ -222,6 +229,8 @@ class Device(Base):
       raise NotImplementedError(
         'viewpoint scans < len(transitions); configure failed?')
     self.board.write(transitions, stat, integer_time=True)
+    # we set all the lines being used as clocks to low.  This is done before the
+    # waveform is actually started and in preparation of the start signal.
     self.board.set_output(
       { c:False for c in clock_transitions if 'Internal' not in c },
       self.board.out_state )

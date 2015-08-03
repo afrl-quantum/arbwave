@@ -3,6 +3,7 @@
 from logging import log, debug, info, warn, error, critical, DEBUG
 from .....tools.float_range import float_range
 from task import Task as Base
+from physical import unit
 import nidaqmx
 
 class Analog(Base):
@@ -26,6 +27,16 @@ class Analog(Base):
       self.task.create_voltage_channel(
         c[0].partition('/')[-1], # cut off the prefix
         min_val=mn, max_val=mx )
+
+
+  def get_min_period(self):
+    if self.task and self.channels:
+      # this is kind of hackish and might be wrong for other hardware (that is
+      # not the PCI-6723).  The PCI-6723 did not like having < 1*..., therefore
+      # we use max(1, .6*...).
+      return max( 1, .6*len(self.channels) ) \
+            * unit.s / self.task.get_sample_clock_max_rate()
+    return 0*unit.s
 
 
   def get_config_template(self):
