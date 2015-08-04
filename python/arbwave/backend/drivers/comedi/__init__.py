@@ -53,11 +53,12 @@ class Driver(Base):
       self.analogs  += [ ao for sub in d.ao_subdevices for ao in sub.available_channels ]
       self.lines    += [ do for sub in d.do_subdevices for do in sub.available_channels ]
       self.lines    += [ do for sub in d.dio_subdevices for do in sub.available_channels ]
-      self.counters += [ co for sub in d.counter_subdevices for co in sub.available_channels ]
+      self.counters += [ sub for sub in d.counter_subdevices  ] #don't collect counter channels
       self.signals  += [ so for  so in d.signals ]
       
     print 'found {} comedi supported boards'.format(len(self.devices))
-
+    
+    
 
   def close(self):
     """
@@ -76,7 +77,7 @@ class Driver(Base):
 
   def get_analog_channels(self):
     return self.analogs
-
+  
   def get_digital_channels(self):
     return self.lines
 
@@ -94,24 +95,17 @@ class Driver(Base):
     chans = dict()
     
     for s in self.subdevices.keys():
-    
-      subdev_pre = re.search('(\w*/\w*/\D*)', s)
-      
-      for c in channels:
-        
-        chan_pre = re.search('(\w*/\w*/\w*)', c) #could be more specific
-          
-        
-        if subdev_pre.group() == chan_pre.group():
-          subdev_chans.update( {c:channels[c]} )
-          chans.update( {s:subdev_chans} )
+        subdev_pre = re.search('(\w*/\w*/\D*)', s)
+        for c in channels:
+          chan_pre = re.search('(\w*/\w*/\w*)', c) #could be more specific
+          if subdev_pre.group() == chan_pre.group():
+            subdev_chans.update( {c:channels[c]} )
+            chans.update( {s:subdev_chans} )
           
     
     for d, sdev in self.subdevices.items():
       if d in config or d in chans:
-        
         cheat = re.search('(\w*/\w*/\D*)', d) ## this is a cheating fix for mismatched subdevice naming conventions
-        
         sdev.set_config( config.get(cheat.group(),{}), chans.get(d,[]), shortest_paths )
     
 
@@ -152,7 +146,7 @@ class Driver(Base):
 
   def set_waveforms( self, analog, digital, transitions,
                      t_max, end_clocks, continuous ):
-                 
+              
     debug('comedi.set_waveforms')
     
     D = collect_prefix( digital, 0, 2, 2 )
@@ -163,9 +157,9 @@ class Driver(Base):
     #TO DO: select all valid subdevices as above.
     for d,sdev in self.subdevices.items():
       if d in D or d in C:
-        sdev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
-                            continuous )
+        sdev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}), continuous )
+                      
     for dev in A.items():
-      
+       
       self.subdevices[ dev[0]+'/ao1' ].set_waveforms( dev[1], transitions, t_max, continuous )
       

@@ -85,6 +85,7 @@ class Device(object):
     self.sig_map = signal_map.getSignalLoader(self.kernel) (self)
     
     gus = get_useful_subdevices
+    self.gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
 
@@ -95,7 +96,7 @@ class Device(object):
     self.subdevices.update( { str(ao)+str(ao.subdevice):ao for ao in self.ao_subdevices } )
     self.subdevices.update( { str(do)+str(do.subdevice):do for do in self.do_subdevices } )
     self.subdevices.update( { str(dio)+str(dio.subdevice):dio for dio in self.dio_subdevices } ) # this will only include one subdev
-    self.subdevices.update( { str(co)+str(co.subdevice):co for co in self.counter_subdevices } )
+    self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
     self.signals = [
       channels.Backplane(src,destinations=dest,invertible=True)
       for src,dest in rl.aggregate_map.iteritems()
@@ -142,7 +143,6 @@ class Device(object):
         
       new = set(new)
       
-     
       # disconnect routes no longer in use
       for route in ( old - new ):
         if 'External/' in route[0] or 'External/' in route[1]:
@@ -159,8 +159,6 @@ class Device(object):
       for route in ( new - old ):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue
-        
-        
         
         s, d = self.rl.route_map[ route ]
         s = s.lstrip(str(self.driver)+str(self))
@@ -209,15 +207,15 @@ class Device(object):
       subname, subdev = self.subdevices.popitem()
       del subdev
     
-    List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+    List = self.gus(self.rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
 
     for device, index in List:
       
       chans = c.comedi_get_n_channels(self.fd, index)
       
-      c.comedi_dio_config(self.fd, index, chans, COMEDI_INPUT) 
+      c.comedi_dio_config(self.fd, index, chans, c.COMEDI_INPUT) 
       
-    
+   
     # # Fixed?
     # # # Set all routes to their default and configure all routable pins to    
     # # # COMEDI_INPUT as an attempt to protect any pins from damage
@@ -228,7 +226,13 @@ class Device(object):
 
     # now close the device
     c.comedi_close(self.fd)
-
+  
+  def stop(self):
+    self.__del__()
+  
+  def start(self):
+    print "dev start not implemented" 
+  
   @cached.property
   def board(self):
     return c.comedi_get_board_name(self.fd).lower()
