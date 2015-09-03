@@ -148,3 +148,5 @@ DONE
      arbwave.backend.connection
      rmdir src
 DONE
+
+19. Add external clock.  Not tied to any particular backend
