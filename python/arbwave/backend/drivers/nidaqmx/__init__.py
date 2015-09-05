@@ -106,6 +106,7 @@ class Driver(Base):
     system = nidaqmx.System()
     for route in self.routed_signals.keys():
       if 'External/' in route[0] or 'External/' in route[1]:
+        logging.debug( 'disconnect {}-->{}'.format(*route) )
         continue
 
       s, d = self.rl.signal_route_map[ route ]
@@ -179,19 +180,22 @@ class Driver(Base):
       # disconnect routes no longer in use
       for route in ( old - new ):
         if 'External/' in route[0] or 'External/' in route[1]:
+          logging.debug( 'disconnect {}-->{}'.format(*route) )
           continue
 
         s, d = self.rl.signal_route_map[ route ]
         system.disconnect_terminals( s, d )
         system.tristate_terminal(d) # an attempt to protect the dest terminal
 
-      # connect new routes routes no longer in use
+      # connect new routes
       for route in ( new - old ):
         if 'External/' in route[0] or 'External/' in route[1]:
+          logging.debug( 'connect {}-->{}'.format(*route) )
           continue
 
         s, d = self.rl.signal_route_map[ route ]
         if s is None or d is None:
+          logging.warning( 'not sure why I am connecting {}-->{}'.format(s,d) )
           continue # None means an external connection
         system.connect_terminals(s, d, signals[route]['invert'])
 
