@@ -39,7 +39,7 @@ class Device(Base):
       board=board_number,
     )
     self.clocks = None
-    self.signals = None
+    self.signals = dict()
     self.routes = 0x0
     self.t_max = 0.0
 
