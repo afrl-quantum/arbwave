@@ -97,15 +97,17 @@ class Driver(Base):
         return self.signals
 
     def set_device_config( self, config, channels, shortest_paths ):
-        # we need to separate channels first by device
-        # (configs are already naturally separated by device)
-        # in addition, we use collect_prefix to drop the 'vp/DevX' part of the
-        # channel paths
-        chans = collect_prefix(channels, 0, 2, 2)
-#        for d,dev in self.devices.items():
-#            if d in config or d in chans:
-#                dev.set_config( config.get(d,{}), chans.get(d,[]), shortest_paths )
+        """
+        Set the device configurations for all devices controlled by this
+        driver.
 
+        :param config: a dict of {'device-path': configration_dict }
+        :param channels: ??
+        :param shortest_paths: ??
+        """
+        for d,dev in self.devices.items():
+            if d in config:
+                dev.set_config( config.get(d,{}) )
 
     def set_clocks( self, clocks ):
         clocks = collect_prefix(clocks, 0, 2)
