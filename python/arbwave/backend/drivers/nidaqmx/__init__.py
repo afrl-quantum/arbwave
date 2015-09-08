@@ -106,7 +106,7 @@ class Driver(Base):
     system = nidaqmx.System()
     for route in self.routed_signals.keys():
       if 'External/' in route[0] or 'External/' in route[1]:
-        logging.debug( 'disconnect {}-->{}'.format(*route) )
+        logging.debug( 'ni: disconnect {}-->{}'.format(*route) )
         continue
 
       s, d = self.rl.signal_route_map[ route ]
@@ -180,7 +180,7 @@ class Driver(Base):
       # disconnect routes no longer in use
       for route in ( old - new ):
         if 'External/' in route[0] or 'External/' in route[1]:
-          logging.debug( 'disconnect {}-->{}'.format(*route) )
+          logging.debug( 'ni: disconnect {}-->{}'.format(*route) )
           continue
 
         s, d = self.rl.signal_route_map[ route ]
@@ -190,7 +190,7 @@ class Driver(Base):
       # connect new routes
       for route in ( new - old ):
         if 'External/' in route[0] or 'External/' in route[1]:
-          logging.debug( 'connect {}-->{}'.format(*route) )
+          logging.debug( 'ni: connect {}-->{}'.format(*route) )
           continue
 
         s, d = self.rl.signal_route_map[ route ]
