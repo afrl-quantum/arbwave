@@ -74,6 +74,7 @@ class Device(Base):
 
         self.clocks = None
         self.config = None
+        self.signals = None
         self.ports = np.zeros((4,), dtype=np.uint32)
         self.set_output({}) # write the port values to the hardware
 
@@ -136,6 +137,37 @@ class Device(Base):
         self.clocks = copy.deepcopy(clocks)
 
         warn('gx3500: Device.set_clocks() not implemented')
+
+    def set_signals(self, signals):
+        """
+        Set the PXI routing bits.
+
+        :param signals: a dict of { (src, dest) : config_dict} where src and
+                        dest are both paths
+        """
+        debug('gx3500.Device({}).set_signals(signals={})'.format(self, signals))
+        if self.signals == signals:
+            return
+        self.signals = copy.deepcopy(signals)
+
+        skip_self = len(str(self)) + 1
+
+        kwroutes = {}
+        used_triggers = set()
+
+        for src, dest in signals.iterkeys():
+            if src.startswith( str(self) ) and 'TRIG' in dest:
+                n = int(dest[-1])
+                if n < 0 or n > 7:
+                    raise ValueError('cannot route to ' + dest)
+                if n in used_triggers:
+                    raise ValueError('cannot route multiple channels to ' + dest)
+                used_triggers.add(n)
+
+                port, bit = _port_bit(src[skip_self:])
+                kwroutes['pxi' + dest[-1]] = 32*port + bit
+
+        self.board.set_pxi_routing(**kwroutes)
 
     def set_output(self, values):
         """

@@ -122,12 +122,15 @@ class Driver(Base):
             if d in clocks:
                 dev.set_clocks( clocks[d] )
 
-
     def set_signals( self, signals ):
-        signals = collect_prefix(signals, 0, 2, prefix_list=self.devices)
-#        for d,dev in self.devices.items():
-#           dev.set_signals( signals.get(d,{}) )
+        """
+        Sets the signal routing for all devices controlled by this driver.
 
+        :param signals: a dict of { (src, dest): config_dict }
+        """
+        signals = collect_prefix(signals, 0, 2, prefix_list=self.devices)
+        for d,dev in self.devices.items():
+           dev.set_signals( signals.get(d,{}) )
 
     def set_static(self, analog, digital):
         """
