@@ -101,7 +101,7 @@ class Driver(Base):
         Set the device configurations for all devices controlled by this
         driver.
 
-        :param config: a dict of {'device-path': configration_dict }
+        :param config: a dict of {'device/path': config_dict }
         :param channels: ??
         :param shortest_paths: ??
         """
@@ -110,10 +110,17 @@ class Driver(Base):
                 dev.set_config( config.get(d,{}) )
 
     def set_clocks( self, clocks ):
+        """
+        Set the clock configurations for all devices controlled by this
+        driver.
+
+        :param clocks: a dict of {'device/path': clock_config_dict } where
+                       clock_config_dict is a dict of { 'clock/path': config_dict }
+        """
         clocks = collect_prefix(clocks, 0, 2)
-#        for d,dev in self.devices.items():
-#            if d in clocks:
-#                dev.set_clocks( clocks[d] )
+        for d,dev in self.devices.items():
+            if d in clocks:
+                dev.set_clocks( clocks[d] )
 
 
     def set_signals( self, signals ):

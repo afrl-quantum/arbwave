@@ -48,6 +48,7 @@ class Device(Base):
             'external_trigger': True
         }
 
+        self.clocks = None
         self.config = None
 
     def __del__(self):
@@ -97,3 +98,16 @@ class Device(Base):
             self.board_config['external_trigger'] = config['hw_trigger']['value'] == 1
 
         self.config = copy.deepcopy(config)
+
+    def set_clocks(self, clocks):
+        """
+        Set which clock is controlling the board.
+
+        :param clocks: a dict of {'clock/path': config_dict }
+        """
+        if self.clocks == clocks:
+            return
+        self.clocks = copy.deepcopy(clocks)
+
+        warn('gx3500: Device.set_clocks() not implemented')
+
