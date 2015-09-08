@@ -18,6 +18,16 @@ class Driver(Base):
     self.clocks = dict()
     self.routed_signals = dict()
 
+  def start(self):
+    """Dummy start function because we use this class as the device arg for
+    Timing(...)"""
+    pass
+
+  def stop(self):
+    """Dummy start function because we use this class as the device arg for
+    Timing(...)"""
+    pass
+
   def get_timing_channels(self):
     retval = [ Timing(clk, self) for clk in self.clocks ]
 
