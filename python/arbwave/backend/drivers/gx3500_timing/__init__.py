@@ -65,15 +65,35 @@ class Driver(Base):
         del self.devices
 
     def get_devices(self):
+        """
+        Get the list of present devices.
+
+        :return: a list of gx3500_timing.Device objects
+        """
         return self.devices.values()
 
     def get_digital_channels(self):
+        """
+        Get the complete list of available digital channels.
+
+        :return: a list of channels.Digital objects
+        """
         return self.digital_channels
 
     def get_timing_channels(self):
+        """
+        Get the list of available timing channels.
+
+        :return: a list of channels.Timing objects
+        """
         return self.timing_channels
 
     def get_routeable_backplane_signals(self):
+        """
+        Get the list of signals which can be routed to the backplane.
+
+        :return: a list of channels.Backplane objects
+        """
         return self.signals
 
     def set_device_config( self, config, channels, shortest_paths ):
