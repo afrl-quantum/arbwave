@@ -112,6 +112,7 @@ class Device(Base):
         :param config: the configuration dictionary to be applied, compare
                        get_config_template()
         """
+        debug('gx3500.Device({}).set_config(config={})'.format(self, config))
         valid_keys = set(self.get_config_template().keys())
         assert set(config.keys()).issubset(valid_keys), \
           'Unknown configuration keys for GX3500 timing board'
@@ -132,6 +133,7 @@ class Device(Base):
 
         :param clocks: a dict of {'clock/path': config_dict }
         """
+        debug('gx3500.Device({}).set_clocks(clocks={})'.format(self, clocks))
         if self.clocks == clocks:
             return
         self.clocks = copy.deepcopy(clocks)
@@ -185,6 +187,7 @@ class Device(Base):
             port is one of [ABCD]; group is one of [EFGHJKLM],
             and line is between 0 and 3 (e.g. A/E2)
         """
+        debug('gx3500.Device({}).set_output(values={})'.format(self, values))
         if not isinstance(values, dict):
             values = dict(values)
 
