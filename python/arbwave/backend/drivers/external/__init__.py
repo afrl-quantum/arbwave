@@ -19,11 +19,15 @@ class Driver(Base):
     self.routed_signals = dict()
 
   def get_timing_channels(self):
+    retval = [ Timing(clk, self) for clk in self.clocks ]
+
+    # now we add just one more (new) timing channel for the user to add
     for i in xrange(10000):
       clk = 'External/clk{}'.format(i)
       if clk not in self.clocks:
-        return [Timing(clk, self)]
-    return []
+        retval.append( Timing(clk, self) )
+        break
+    return retval
 
   def get_routeable_backplane_signals(self):
     return [ #Backplane('External/',['External/'])] + [
@@ -31,6 +35,7 @@ class Driver(Base):
     ]
 
   def set_clocks( self, clocks ):
+    logging.debug( 'set clocks: %s', clocks )
     self.clocks = clocks.copy()
 
   def set_signals( self, signals ):
@@ -40,10 +45,10 @@ class Driver(Base):
 
       # disconnect routes no longer in use
       for route in ( old - new ):
-        logging.debug( 'disconnect {}-->{}'.format(*route) )
+        logging.debug( 'ext: disconnect %s-->%s', *route )
 
       # connect new routes
       for route in ( new - old ):
-        logging.debug( 'connect {}-->{}'.format(*route) )
+        logging.debug( 'ext: connect %s-->%s', *route )
 
       self.routed_signals = signals
