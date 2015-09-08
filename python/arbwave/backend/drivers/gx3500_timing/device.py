@@ -9,12 +9,36 @@ Logical device for GX3500 timing board.
 import copy
 #from marvin import timingboard, timingboard_sim
 from logging import error, warn, debug, log, DEBUG, INFO
+import numpy as np
 import time
 
 from ...device import Device as Base
 from ....tools.float_range import float_range
 from ....tools.signal_graphs import nearest_terminal
 
+
+_port_bases = {'A': 0, 'B': 32, 'C': 64, 'D': 96}
+_group_bases = {'E': 0, 'F': 4, 'G': 8, 'H': 12, 'J': 16, 'K': 20, 'L': 24, 'M': 28}
+
+def _port_bit(path_or_line):
+    """
+    Convert a path or line number to a (port_nr, bit_nr) bit addess. The
+    path should just be the tail port/group#bit part (e.g. A/G2)
+
+    :return: the (port_nr, bit_nr) tuple such that 
+             (ports[port_nr] & (1 << bit_nr)) >> bit_nr
+             will extract the referenced bit.
+    """
+    if type(path_or_line) == str:
+        assert len(path_or_line) == 4, \
+          'Path must be of the form A/E0'
+        port_nr = _port_bases[path_or_line[0]]
+        bit_nr = _group_bases[path_or_line[2]] + int(path_or_line[3])
+    else:
+        port_nr = path_or_line / 32
+        bit_nr = path_or_line % 32
+
+    return (port_nr, bit_nr)
 
 class Device(Base):
     """
@@ -50,6 +74,8 @@ class Device(Base):
 
         self.clocks = None
         self.config = None
+        self.ports = np.zeros((4,), dtype=np.uint32)
+        self.set_output({}) # write the port values to the hardware
 
     def __del__(self):
         """
@@ -111,3 +137,30 @@ class Device(Base):
 
         warn('gx3500: Device.set_clocks() not implemented')
 
+    def set_output(self, values):
+        """
+        Immediately force the output on several channels; all others are
+        unchanged. Channels default to LOW on board initialization.
+
+        :param values: the channels to set. May be a dict of { <channel>: bool},
+                       or a list of [ (<channel>, bool), ...] tuples or something
+                       equivalently coercable to a dict
+
+        Channel names can be of the following forms:
+          integer:
+            between 0 and 127
+          'port/group#line':
+            port is one of [ABCD]; group is one of [EFGHJKLM],
+            and line is between 0 and 3 (e.g. A/E2)
+        """
+        if not isinstance(values, dict):
+            values = dict(values)
+
+        for channel, val in values.iteritems():
+            (port, bit) = _port_bit(channel)
+            if val:
+                self.ports[port] |= (1 << bit)
+            else:
+                self.ports[port] &= ~(1 << bit)
+
+        self.board.set_defaults(*self.ports)

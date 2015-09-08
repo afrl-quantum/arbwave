@@ -130,10 +130,16 @@ class Driver(Base):
 
 
     def set_static(self, analog, digital):
+        """
+        Set immediate output values.
+
+        :param analog: analog output value dicts
+        :param digital: digital output value dicts
+        """
         assert len(analog) == 0, 'GX3500 does not perform analog output'
-#        D = collect_prefix(digital, 0, 2, 2)
-#        for dev in D.items():
-#            self.devices[ dev[0] ].set_output( dev[1] )
+        D = collect_prefix(digital, 0, 2, 2)
+        for dev in D.items():
+            self.devices[ dev[0] ].set_output( dev[1] )
 
 
     def set_waveforms(self, analog, digital, transitions,
