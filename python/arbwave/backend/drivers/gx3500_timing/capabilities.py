@@ -66,7 +66,7 @@ def get_routeable_backplane_signals(devices):
   :param devices: the devices map
   :return: a list of Backplane channels
   """
-  def H(fmt, *args):
+  def F(fmt, *args):
       return fmt.format(*args)
 
   # use get_channels() to create a template list
@@ -75,7 +75,7 @@ def get_routeable_backplane_signals(devices):
 
   def add_destinations(chan):
     host = chan.dev.driver.host_prefix
-    destinations = ['External/'] + [H('{}TRIG/{}', host, n) for n in xrange(8)]
+    destinations = ['External/'] + [F('{}TRIG/{}', host, n) for n in xrange(8)]
     return channels.Backplane(chan.name, destinations=destinations, invertible=False)
 
   return [add_destinations(chan) for chan in template]
