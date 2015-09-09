@@ -7,7 +7,6 @@ FPGA PXI card.
 @author: bks
 """
 
-import logging
 from device import Device
 from marvin.exceptions import NotATimingBoard
 import capabilities
@@ -46,7 +45,6 @@ class Driver(Base):
         self.devices = {}
         for addr in board_addresses:
             try:
-                sim = self.simulated
                 dev = Device(self, addr, simulated=self.simulated)
                 self.devices[str(dev)] = dev
             except NotATimingBoard:
