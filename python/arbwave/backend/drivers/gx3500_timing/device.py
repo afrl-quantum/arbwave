@@ -169,6 +169,8 @@ class Device(Base):
                 port, bit = _port_bit(src[skip_self:])
                 kwroutes['pxi' + dest[-1]] = 32*port + bit
 
+        debug('gx3500.Device({}): calling board.set_pxi_routing(**{})' \
+               .format(self, kwroutes))
         self.board.set_pxi_routing(**kwroutes)
 
     def set_output(self, values):
@@ -198,4 +200,6 @@ class Device(Base):
             else:
                 self.ports[port] &= ~(1 << bit)
 
+        debug('gx3500.Device({}): calling board.set_defaults(*{})' \
+               .format(self, self.ports))
         self.board.set_defaults(*self.ports)
