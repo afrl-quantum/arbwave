@@ -17,7 +17,7 @@ from ....tools.float_range import float_range
 from ....tools.signal_graphs import nearest_terminal
 
 
-_port_bases = {'A': 0, 'B': 32, 'C': 64, 'D': 96}
+_port_bases = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
 _group_bases = {'E': 0, 'F': 4, 'G': 8, 'H': 12, 'J': 16, 'K': 20, 'L': 24, 'M': 28}
 
 def _port_bit(path_or_line):
@@ -35,8 +35,8 @@ def _port_bit(path_or_line):
         port_nr = _port_bases[path_or_line[0]]
         bit_nr = _group_bases[path_or_line[2]] + int(path_or_line[3])
     else:
-        port_nr = path_or_line / 32
-        bit_nr = path_or_line % 32
+        port_nr = int(path_or_line / 32)
+        bit_nr = int(path_or_line % 32)
 
     return (port_nr, bit_nr)
 
