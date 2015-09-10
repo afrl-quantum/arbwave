@@ -145,4 +145,23 @@ class Driver(Base):
 
     def set_waveforms(self, analog, digital, transitions,
                       t_max, end_clocks, continuous):
-        pass
+        """
+        Load waveforms to all the devices controlled by this driver.
+
+        :param analog: the dict of waveform elements for the analog channels
+        :param digital: the dict of waveform elements for the digital channels
+        :param transitions: the dict of transitions for the clock channels
+        :param t_max: the total duration of the waveform set
+        :param end_clocks: a sequence of clocks which need an additional pulse
+                           at t_max **in continuous mode only**
+        :param continuous: bool of whether to run in continuous or single-shot
+                           mode
+        """
+        assert len(analog) == 0, 'GX3500 does not perform analog output'
+        D = collect_prefix(digital, 0, 2, 2)
+        C = collect_prefix(transitions, 0, 2, 2)
+        E = collect_prefix(dict.fromkeys( end_clocks ), 0, 2, 2)
+        for d,dev in self.devices.items():
+          if d in D or d in C:
+            dev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
+                               continuous )
