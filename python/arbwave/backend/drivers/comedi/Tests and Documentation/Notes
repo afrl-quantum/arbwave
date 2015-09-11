@@ -1,0 +1,41 @@
+
+
+
+The most up to date and useful test in this folder is "better wave test". This file should allow arbwave to demonstrate static and limited waveform output. The Comedi still has many areas in need of attention, which I will note by location.
+
+
+__init__.py in drivers/comedi:
+
+The biggest issue in this file is the naming discrepancy between subdevices in Arbwave and subdevices in the comedi backend. In arbwave a subdevice name would look something like "ao" for an anaolg output subdevice. Because this does not distinguish between similarly functioning subdevices, the backend would only return one subdevice per type even if multiples exist, as is the case with backplane and timing devices. I included the subdevice number recognised by comedi in the subdevice name ex: "ao1". This was a good solution early on, but it could be done much more elegantly.
+
+Timing subdevices now look like "Ctr0" to make routing easier. My guess is that FREQOUT is "Ctr3" right now, which should change once there is code that can configure that device.
+
+the methods which set static output and waveforms have no way to select subdevices beyond type. My temporary solution was to simply select all compatible devices, but in waveforms an arbitrary channel is still selected.
+
+
+device.py in drivers/comedi:
+
+the Sigconfig method will need to eventually be able to deal with all signals on the board. Currently it is only cappable of routing to PFI and RTSI lines as well as setting clocks and triggers in commands
+
+the start method is incomplete
+
+
+subdevice.py in comedi/subdevice
+
+the init of this file tries to populate the configuration with a list of routable triggers and clocks. Not only is this currently done poorly, but if it is going to continue to be based off of the names of the signals, it will have to move into an NI specific portion of a file. 
+
+Currently commands and configurations for timing channels are treated identically to ao/do subdevices.
+This is wrong because timing channels, although they accept commands, operate very differently. (see comedi provided demos) FREQOUT is even somewhat different from the counters. There is a lot of funtionality on these devices which will only be accessable once they have thier own unique code.
+
+The cmd_config method will need more tweaks. Not every available option for configuration is clearly available from the gui, and its unclear how a user will select the TRIG_TIMER scan trigger or different conversion triggers. This method contains some good comments about comedi commands and also tests the command with comedi's built in test. This built in test can CHANGE THE COMMAND ITSELF. Be careful to disable the test if you want to precisley control the nature of the command. Any change to the driver's treatment of commands should be reflected in the driver's treatment of the command test.
+
+the set output method which is responsible for static output currently relies on a command. This can cause issues with a waveform command (esp because they USE THE SAME TRIGGER!!!). Because static output is less time sensitive, this method should not be done with a command but rather with comedi's built in comedi_data_write function or an instruction. 
+
+
+Waveform output has a few unresolved issues. Although it has been demonstrated in a standalone example (cmd_practice.py) for some reason the buffer will not recycle when an AO command is run in arbwave despite the command being identical. 
+
+simultaneous output on multiple channels was demonstrated while testing static output, but is not yet working for waveforms. 
+
+Digital waveforms have not been implemented at all. 
+
+Some work has to be done, not only in supplying commands with correct triggers and clocks, but also allowing the arbwave processor to find clock and determine their period.  

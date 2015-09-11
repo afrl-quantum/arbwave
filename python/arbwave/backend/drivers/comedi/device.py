@@ -5,10 +5,14 @@ from logging import log, debug, DEBUG
 import ctypes_comedi as c
 
 from ....tools import cached
-import subdevice
+from ....tools.path import collect_prefix
 from subdevice.subdevice import Subdevice
+import subdevice
 import channels
 from . import routes
+import signal_map
+import re
+from . import signal_map
 
 def subdev_iterator(fd, typ):
   i = 0
@@ -70,15 +74,18 @@ class Device(object):
   def __init__(self, driver, device):
     self.driver = driver
     self.dev    = device
-    
-    #self.prefix = '' # shouldn't need this because of defaults in ni_routes
+    self.routed_signals = dict()
+    self.prefix = '' # shouldn't need this because of defaults in ni_routes
 
     self.fd     = c.comedi_open(self.dev)
     if self.fd is None:
       raise NameError('could not open comedi device: ' + self.dev)
     self.device = 'Dev'+self.parse_dev(device)
     self.rl = rl = routes.getRouteLoader(self.kernel) ( driver, self )
+    self.sig_map = signal_map.getSignalLoader(self.kernel) (self)
+    
     gus = get_useful_subdevices
+    self.gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
 
@@ -89,16 +96,13 @@ class Device(object):
     self.subdevices.update( { str(ao)+str(ao.subdevice):ao for ao in self.ao_subdevices } )
     self.subdevices.update( { str(do)+str(do.subdevice):do for do in self.do_subdevices } )
     self.subdevices.update( { str(dio)+str(dio.subdevice):dio for dio in self.dio_subdevices } ) # this will only include one subdev
-    self.subdevices.update( { str(co)+str(co.subdevice):co for co in self.counter_subdevices } )
+    self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
     self.signals = [
       channels.Backplane(src,destinations=dest,invertible=True)
       for src,dest in rl.aggregate_map.iteritems()
     ]
     
-    print self.subdevices
-  
-    
-    
+
     List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
  
     self.backplane_subdevices = dict()
@@ -123,6 +127,74 @@ class Device(object):
     # # *** actually, as Ian has found, subdevice=7 is also special as it
     # # represents the PFI I/O lines.
     
+    
+    
+  def Sigconfig(self, signals):
+    '''
+    Accesses sig_map to transform arbwave terminal/signal names into appropriate comedi ints
+    '''
+    if self.routed_signals != signals:
+      
+      old = set(self.routed_signals.keys())
+      new = list()
+      
+      for pair in signals.keys():
+        new.append(pair)
+        
+      new = set(new)
+      
+      # disconnect routes no longer in use
+      for route in ( old - new ):
+        if 'External/' in route[0] or 'External/' in route[1]:
+          continue
+        
+        s, d = self.rl.route_map[ route ]
+        
+        if d.find(str(self).rstrip(str(self.driver)))>-1:
+          d = d.lstrip(str(self.driver)+str(self))
+          d = self.sig_map.ch_nums(d)
+          c.comedi_dio_config(self.fd, d['subdev'], d['chan'], c.COMEDI_INPUT) # an attempt to protect the dest terminal
+
+      # connect new routes routes no longer in use
+      for route in ( new - old ):
+        if 'External/' in route[0] or 'External/' in route[1]:
+          continue
+        
+        s, d = self.rl.route_map[ route ]
+        s = s.lstrip(str(self.driver)+str(self))
+       
+        if s is None or d is None:
+          continue # None means an external connection
+        
+        if d.find(str(self).lstrip(str(self.driver)))>-1:
+          d_dev = d.lstrip(str(self.driver)+str(self))
+          
+          d =  self.sig_map.ch_nums[d_dev]
+          
+          if d['kind'] == 'ao_clock': 
+            AO_CLOCK = {d_dev:self.sig_map.sig_nums_AO_CLOCK[s]}
+            return AO_CLOCK
+             #Ctr0InternalOutput is listed as routing to the ao clock, but I've found no way to do this.
+             
+             #fixed. found separate clock sig_num function. no longer driver dependent.
+             ##plus one to reflect ni driver offset? TODO: make this make sense. edit driver?
+           
+          if d['kind'] == 'trigger':
+            TRIGGER = {d_dev:self.sig_map.sig_nums_EXT[s]}
+            return TRIGGER
+           
+          if d['kind'] =='PFI':  
+            s =  self.sig_map.sig_nums_PFI[s]
+            c.comedi_dio_config(self.fd, d['subdev'], d['chan'], c.COMEDI_OUTPUT)
+            c.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
+          if d['kind'] =='RTSI':
+            s =  self.sig_map.sig_nums_RTSI[s]
+            c.comedi_dio_config(self.fd, d['subdev'], d['chan'], c.COMEDI_OUTPUT)
+            c.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
+          #TODO: GPCT config/routing, CDIO clocks? 
+    self.routed_signals = signals
+    
+  
       
   def __str__(self):
     return '{}/{}'.format(self.driver, self.device)
@@ -135,15 +207,15 @@ class Device(object):
       subname, subdev = self.subdevices.popitem()
       del subdev
     
-    List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+    List = self.gus(self.rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
 
     for device, index in List:
       
       chans = c.comedi_get_n_channels(self.fd, index)
       
-      c.comedi_dio_config(self.fd, index, chans, COMEDI_INPUT) 
+      c.comedi_dio_config(self.fd, index, chans, c.COMEDI_INPUT) 
       
-    
+   
     # # Fixed?
     # # # Set all routes to their default and configure all routable pins to    
     # # # COMEDI_INPUT as an attempt to protect any pins from damage
@@ -154,7 +226,13 @@ class Device(object):
 
     # now close the device
     c.comedi_close(self.fd)
-
+  
+  def stop(self):
+    self.__del__()
+  
+  def start(self):
+    print "dev start not implemented" 
+  
   @cached.property
   def board(self):
     return c.comedi_get_board_name(self.fd).lower()

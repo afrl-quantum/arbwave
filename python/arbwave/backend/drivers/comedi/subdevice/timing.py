@@ -7,7 +7,15 @@ import numpy as np
 
 class Timing(Base):
   subdev_type = 'to'
-
+  
+  
+  def is_aperiodic(self):
+    return False
+  #timing subdevices include the GPCTs and the FREQ OUT channel
+  #this class should in the future include a cmd_config overwrite to
+  #configure these channels for their unique output commands
+  #and also read off settings from the 'clocks' window in arbwave 
+ 
   def set_clocks(self, clocks):
     if self.clocks != clocks:
       self.clocks = clocks

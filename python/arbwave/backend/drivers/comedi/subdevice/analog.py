@@ -23,7 +23,7 @@ class Analog(Base):
     i = 0
     
     for ch in chans:
-      
+      print ch
       if ch[1]:
         mn, mx = ch[1]['min'], ch[1]['max']
       else:
@@ -31,9 +31,7 @@ class Analog(Base):
         mn, mx = dflt_mn, dflt_mx
       
       num = re.search('([0-9]*)$', ch[0])
-      
-      
-      
+
       #rng = c.comedi_find_range(self.fd, self.subdevice, int(num.group()),c.UNIT_volt,mn,mx)
       # references to self.fd nside of comedi functions only work in subdevice.py why?
       

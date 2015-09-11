@@ -25,6 +25,7 @@ ai_sig = 'ai/{SampleClock,StartTrigger,ReferenceTrigger,ConvertClock,' \
 do_SC = 'do/SampleClock'
 di_SC = 'di/SampleClock'
 dio_SC = 'd{i,o}/SampleClock'
+
 Ext = ('External/', None)
 PXI6= '{PXI_Trig{0..5},PXI_Star}'
 PXIi7 = 'PXI_Trig7'
@@ -37,8 +38,8 @@ ai_CCTB = 'ai/ConvertClockTimebase'
 ai_SC = 'ai/SampleClock'
 ai_CC = 'ai/ConvertClock'
 ai_ST = 'ai/StartTrigger'
-ctr0  = ImplicitRoute( ('ctr0', 'Ctr0InternalOutput') )
-ctr1  = ImplicitRoute( ('ctr1', 'Ctr1InternalOutput') )
+Ctr0  = ImplicitRoute( ('Ctr0', 'Ctr0InternalOutput') )
+Ctr1  = ImplicitRoute( ('Ctr1', 'Ctr1InternalOutput') )
 
 available = {
   'pci-6723' : {
@@ -53,10 +54,10 @@ available = {
     'Ctr0Out'             : { (T6,R6) },
     'Ctr0Gate'            : { 'PFI9', (T6,R6) },
     'Ctr0Source'          : { 'PFI8', (T6,R6) },
-    ctr0                  : { (T6,R6), 'Ctr0Out', 'Ctr1Gate' },
+    Ctr0                  : { (T6,R6), 'Ctr0Out', 'Ctr1Gate' },
     'Ctr1Gate'            : { 'PFI4' },
     'Ctr1Source'          : { 'PFI3' },
-    ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
+    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
     "{"+MTB+",100kHzTimebase}" : { ao_SCTB,       'Ctr{0,1}Source' },
   },
 
@@ -72,10 +73,10 @@ available = {
     'Ctr0Out'             : { (T6,PXI6) },
     'Ctr0Gate'            : { 'PFI9', (T6,PXI6) },
     'Ctr0Source'          : { 'PFI8', (T6,PXI6) },
-    ctr0                  : { (T6,PXI6), 'Ctr0Out', 'Ctr1Gate' },
+    Ctr0                  : { (T6,PXI6), 'Ctr0Out', 'Ctr1Gate' },
     'Ctr1Gate'            : { 'PFI4' },
     'Ctr1Source'          : { 'PFI3' },
-    ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
+    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
     "{"+MTB+",100kHzTimebase}" : { ao_SCTB,         'Ctr{0,1}Source' },
   },
 
@@ -103,8 +104,8 @@ available = {
     'Ctr1Source'          : { P15, (T7,R7), 'Ctr0Gate', 'Ctr0Aux' },
     'Ctr0Gate'            : { P15, (T7,R7), 'Ctr1Source', 'Ctr{0,1}Aux' },
     'Ctr1Gate'            : { P15, (T7,R7), 'Ctr0Source', 'Ctr{0,1}Aux' },
-    ctr0                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr1Gate', 'Ctr1Aux', 'Ctr1ArmStartTrigger' },
-    ctr1                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr0Gate', 'Ctr0Aux', 'Ctr0ArmStartTrigger' },
+    Ctr0                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr1Gate', 'Ctr1Aux', 'Ctr1ArmStartTrigger' },
+    Ctr1                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr0Gate', 'Ctr0Aux', 'Ctr0ArmStartTrigger' },
     'FrequencyOutput'     : { P15, (T7,R7), dio_SC },
     '100kHzTimebase'      : { ai_SCTB, ao_SCTB, 'Ctr{0,1}Source' },
     'ChangeDetectionEvent': { P15, (T7,R7), dio_SC },
