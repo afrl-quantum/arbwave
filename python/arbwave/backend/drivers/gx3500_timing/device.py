@@ -158,9 +158,7 @@ class Device(Base):
         if self.clocks == clocks:
             return
         self.clocks = copy.deepcopy(clocks)
-
-        # FIXME: do we need to do anything here?
-        warn('gx3500: Device.set_clocks() not implemented')
+        # FIXME: do we need to do anything else here?
 
     def set_signals(self, signals):
         """
@@ -335,7 +333,7 @@ class Device(Base):
     def _assemble_program(self, transitions):
         """
         Convert a transition list into a board program for the GX3500. This
-        function the program compression using the port mask bits in the
+        function implements program compression using the port mask bits in the
         hardware instruction format.
 
         :param transitions: a list of sequence(timestamp, port_vals[4])
@@ -412,7 +410,10 @@ class Device(Base):
         # remove Internal clocks from the clock_transitions
         clock_transitions = { c:p for c, p in clock_transitions.iteritems()
                               if 'Internal' not in c }
-        assert set(clock_transitions.iterkeys()).issubset(self.clocks.iterkeys()), \
+        debug('gx3500: clock transitions for {}'.format(clock_transitions))
+
+        assert set([str(self) + '/' + c for c in clock_transitions]) \
+                 .issubset(self.clocks.iterkeys()), \
             'got clock transitions for channels not defined as clocks'
 
         transition_map = self._compile_transition_map(waveforms, clock_transitions, t_max)
@@ -442,7 +443,9 @@ class Device(Base):
         # force all the clock channels to LOW in preparation but don't change
         # the manual preset values
         p = np.array(self.ports, copy=True)
-        self.set_output({ c:False for c in self.clocks if 'Internal' not in c})
+        pfxlen = len(str(self)) + 1
+        clock_channels = { c[pfxlen:]: False for c in self.clocks if 'Internal' not in c}
+        self.set_output(clock_channels)
         self.ports = p
 
         # arm the board
