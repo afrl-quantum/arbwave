@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # vim: ts=2:sw=2:tw=80:nowrap
 
+# THIS TEST WAS MEANT TO HELP TEST gtk_tools stuff.
+# This appears to be slightly out of date.
+# Not sure if this can be used in a unit test.
+
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 
 import gtk
 from storage.gtk_tools import *
