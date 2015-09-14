@@ -1,12 +1,17 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+from physical import unit
 from ....tools.float_range import float_range
 from ...channels import Timing as TBase, Backplane
 
 class Timing(TBase):
   """NIDAQmx Timing channel class"""
   def get_min_period(self):
-    return 1. /self.dev.clocks[self.name]['rate']['value']
+    """
+    Returns the minimum timing period (period between two rising edges of this
+    clock pulse) in units of seconds.
+    """
+    return unit.s / self.dev.clocks[self.name]['rate']['value']
 
   def get_config_template(self):
     return {
