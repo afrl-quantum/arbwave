@@ -159,10 +159,27 @@ class Driver(Base):
 
 
   def set_clocks( self, clocks ):
+    # clocks:  {'ni/Dev1': {'ni/Dev1/port0/line0': {}}}
+    # d,T:  ni/Dev1/to ni/Dev1/to
+    # d,T:  ni/Dev1/ao ni/Dev1/ao
+    # d,T:  ni/Dev1/do ni/Dev1/do
+
     clocks = collect_prefix(clocks, 0, 2)
-    for d,T in self.tasks.items():
-      if d in clocks:
-        T.set_clocks( clocks[d] )
+    for dev, clks in clocks.items():
+      ctr_timing = dict()
+      do_timing = dict()
+      for clk,conf in clks.items():
+        if   clk[len(dev)+1:].startswith('port'):
+          do_timing[ clk ] = conf
+        elif clk[len(dev)+1:].startswith('ctr'):
+          ctr_timing[ clk ] = conf
+        else:
+          raise RuntimeError('Expected clock on {}/do or {}/ctr*'.format(dev))
+
+      if do_timing:
+        self.tasks[ dev+'/do' ].set_clocks( do_timing )
+      if ctr_timing:
+        self.tasks[ dev+'/to' ].set_clocks( ctr_timing )
 
 
   def set_signals( self, signals ):
@@ -221,11 +238,12 @@ class Driver(Base):
     """
     D = collect_prefix( digital, 0, 2 )
     A = collect_prefix( analog, 0, 2 )
+    E = collect_prefix(dict.fromkeys( end_clocks ), 0, 2) #, 2)
 
-    for dev in D.items():
-      self.tasks[ dev[0]+'/do' ] \
-        .set_waveforms( dev[1], transitions, t_max, continuous )
+    for dev, wvfms in D.items():
+      self.tasks[ dev+'/do' ] \
+        .set_waveforms( wvfms, transitions, t_max, E.get(dev,{}), continuous )
 
-    for dev in A.items():
-      self.tasks[ dev[0]+'/ao' ] \
-        .set_waveforms( dev[1], transitions, t_max, continuous )
+    for dev, wvfms in A.items():
+      self.tasks[ dev+'/ao' ] \
+        .set_waveforms( wvfms, transitions, t_max, continuous )
