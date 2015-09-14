@@ -2,7 +2,6 @@
 
 import gtk, pydoc
 from ..processor import functions
-from ..processor.engine import Arbwave
 
 
 def show_generators(parent):
@@ -36,6 +35,7 @@ def show_generators(parent):
 
 
 def show_arbwavefunctions(parent):
+  from ..processor.engine import Arbwave
   dialog = gtk.Dialog( 'Arbwave functions',
     parent, gtk.DIALOG_DESTROY_WITH_PARENT,
     (gtk.STOCK_CLOSE, gtk.RESPONSE_OK) )

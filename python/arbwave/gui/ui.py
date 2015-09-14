@@ -19,7 +19,6 @@ import storage
 from notification import Notification
 import embedded
 
-from ..processor import Processor
 from ..processor import default
 from .. import backend
 from .. import version
@@ -130,6 +129,9 @@ class ArbWave(gtk.Window):
   ALL_ITEMS = -1
 
   def __init__(self, parent=None):
+    # delay this import to try and separate arbwave submodules
+    from ..processor import Processor
+
     #create the toplevel window
     gtk.Window.__init__(self)
     try:

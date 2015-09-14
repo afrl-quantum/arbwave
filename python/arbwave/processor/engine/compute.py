@@ -134,7 +134,7 @@ def set_units_and_scaling(chname, ci, chan, globals):
 
 
 class WaveformEvalulator:
-  def __init__(self,devcfg, clocks, channels, globals, continuous):
+  def __init__(self, devcfg, clocks, channels, globals, continuous):
     # currently configured...
     self.devcfg = devcfg
     self.clocks = clocks
