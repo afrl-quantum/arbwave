@@ -7,7 +7,7 @@ This package is also responsible for determining which hardware is available at
 the time of initialization.
 """
 
-from logging import debug, DEBUG
+from logging import info, debug, DEBUG
 from . import connection
 
 class Hosts(dict):
@@ -49,12 +49,12 @@ def reconnect( host_defs ):
   # first close out old retired hosts
   for h in (old_hosts - new_hosts):
     hconn = hosts.pop(h)
-    print 'removed connection to ', h, ': ', hconn
+    info ('removed connection to %s : %s', h, hconn)
     del hconn
 
   # now create new connection to new hosts
   for h in (new_hosts - old_hosts):
-    print 'adding connection to', h
+    info ('adding connection to %s', h)
     hosts.connect(*h)
 
   # finally, repopulate the drivers dictionary

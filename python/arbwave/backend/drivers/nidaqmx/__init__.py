@@ -34,11 +34,11 @@ class Driver(Base):
     self.routed_signals = dict()
 
     if not self.nidaqmx_loaded:
-      print 'found 0 NI DAQmx boards'
+      logging.info( 'found 0 NI DAQmx boards' )
       return
 
     system = nidaqmx.System()
-    print 'found {i} NI DAQmx boards'.format(i=len(system.devices))
+    logging.info( 'found %d NI DAQmx boards', len(system.devices) )
     self.rl = routes.RouteLoader(self.host_prefix, self.prefix)
     for d in system.devices:
       product = d.get_product_type()

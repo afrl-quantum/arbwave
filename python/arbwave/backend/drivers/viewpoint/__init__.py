@@ -26,15 +26,15 @@ class Driver(Base):
     # mapping from board index to device
     self.devices = dict()
 
-    print 'probing for first {l} viewpoint boards...' \
-      .format( l=len(self.boards_to_probe) )
+    logging.info( 'probing for first %d viewpoint boards...',
+      len(self.boards_to_probe) )
     for i in self.boards_to_probe:
       try:
         d = Device( self, i )
       except:
         break
       self.devices[str(d)] = d
-    print 'found {i} viewpoint boards'.format(i=len(self.devices))
+    logging.info( 'found %d viewpoint boards', len(self.devices) )
 
     self.digital_channels = capabilities.get_digital_channels(self.devices)
     self.timing_channels = capabilities.get_timing_channels(self.devices)

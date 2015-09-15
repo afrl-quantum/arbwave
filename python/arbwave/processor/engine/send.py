@@ -37,16 +37,16 @@ class ToDriver:
 
   def static(self, analog, digital):
     """Send a bunch of static values to each of the drivers"""
-    print 'trying to update the hardware to static output!!!!'
+    logging.info( 'trying to update the hardware to static output!!!!' )
     for D,driver in backend.all_drivers.items():
       driver.set_static(analog.get(D,{}), digital.get(D,{}))
     logging.debug('updated hardware to static output')
 
 
   def waveform(self, analog, digital, transitions, t_max, end_clocks, continuous):
-    print 'trying to update the hardware to waveform output!!!!'
+    logging.info( 'trying to update the hardware to waveform output!!!!' )
     if continuous:
-      print 'requesting continuous regeneration...'
+      logging.info( 'requesting continuous regeneration...' )
 
     for D,driver in backend.all_drivers.items():
       driver.set_waveforms(analog.get(D,{}), digital.get(D,{}),
