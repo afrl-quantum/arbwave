@@ -2,10 +2,30 @@
 
 import threading, logging
 from pygraph.algorithms.sorting import topological_sorting
-from ...tools.gui_callbacks import do_gui_operation
 from ... import backend
+from ...tools.gui_callbacks import do_gui_operation
+from ...tools.path import collect_prefix
+from ...tools.scaling import calculate as calculate_scaling
 from ...tools import signal_graphs
 from ...tools import signals
+
+
+
+
+def _get_range( scaling, units, offset, globals, **kwargs ):
+  """
+  Get the minimum and maximum values of a given channels scaling.  Some devices
+  can use this to provide more firm limits on channel outputs.  NIDAQmx does
+  this, for example.
+  """
+  if not scaling:
+    return kwargs
+  # note:  we ignore lines with either empty x _OR_ y values
+  mn, mx = calculate_scaling(scaling, units, offset, globals, return_range=True)
+  return dict(min=mn, max=mx, **kwargs)
+
+
+
 
 def plot_stuff( plotter, analog, digital, names, t_max ):
   if analog or digital:
@@ -154,11 +174,41 @@ class ToDriver:
     logging.info( 'sent stop signal to all hardware for waveform output' )
 
 
-  def config(self, config, channels, shortest_paths):
-    """Send device level configuration information to drivers"""
+  def config(self, config, channels, signals, clocks, globals):
+    """
+    Send device level configuration information to drivers.
+
+    Note that signals and clocks information are needed in order to know how
+    various terminals/cables are connected, but this information is sent
+    separately via the send.to_driver.clocks(...) and
+    send.to_driver.signals(...) functions.
+    """
+    # we need to calculate the shortest connected paths of all signals
+    # these paths are used to determine which terminal a device should
+    # connect to in order to use a particular clock.
+    # Sending config to drivers also depends on clock changes because
+    # drivers may need to know (approximate) rates for clocks.  We don't
+    # send in clocks since the clocks have already been configured.
+    # We'll rely on engine.send.to_driver.config to send in a link to the
+    # timing channels.
+    shortest_paths, graph = signal_graphs.shortest_paths( signals, *clocks )
+
+    num_node_incidences = [ len(i) for i in graph.node_incidence.values() ]
+    if num_node_incidences and max(num_node_incidences) > 1:
+      raise RuntimeError('Double driving a terminal/cable is not allowed!')
+
+    C = collect_prefix(config)
+    CH= collect_prefix(
+      {c['device'] : _get_range( c['scaling'], c['units'], c['offset'],
+                                 globals, order=c['order'] )
+        for  c in channels.values()
+          if c['enable']
+      },
+      1,
+    )
+
     for D,driver in backend.all_drivers.items():
-      driver.set_device_config( config.get(D,{}), channels.get(D,{}),
-                                shortest_paths )
+      driver.set_device_config( C.get(D,{}), CH.get(D,{}), shortest_paths )
 
 
   def hosts(self, hosts):
@@ -171,14 +221,16 @@ class ToDriver:
 
   def clocks(self, config):
     """Send clock(s) configuration information to drivers"""
+    C = collect_prefix( config )
     for D,driver in backend.all_drivers.items():
-      driver.set_clocks( config.get(D,{}) )
+      driver.set_clocks( C.get(D,{}) )
 
 
   def signals(self, config):
     """Send clock(s) configuration information to drivers"""
+    C = collect_prefix( config )
     for D,driver in backend.all_drivers.items():
-      driver.set_signals( config.get(D,{}) )
+      driver.set_signals( C.get(D,{}) )
 
 
 to_driver = ToDriver()
