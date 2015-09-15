@@ -76,9 +76,8 @@ class Driver(object):
     """
     return []
 
-  def set_set_device_config( self, config,
-                             channels, shortest_paths, timing_channels ):
-    if config or channels or timing_channels:
+  def set_device_config( self, config, channels, shortest_paths ):
+    if config or channels:
       raise NotImplementedError('Drivers must implement set_device_config')
 
   def set_clocks( self, clocks ):
@@ -97,8 +96,7 @@ class Driver(object):
         'Drivers with analog/digtal channels must implement set_static'
       )
 
-  def set_waveforms(self, analog, digital, transitions,
-                    t_max, end_clocks, continuous):
+  def set_waveforms(self, analog, digital, transitions, t_max, continuous):
     if analog or digital:
       raise NotImplementedError(
         'Drivers with analog/digtal channels must implement set_waveforms'

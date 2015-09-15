@@ -168,9 +168,11 @@ def drag_motion(w, ctx, x, y, time):
 class Generic:
   def __init__(self, model, add_undo=None,
                range_factory=RangeFactory(), template=None,
-               reorderable=False):
+               reorderable=False,
+               editable_label_prefixes=['External/']):
     self.add_undo = add_undo
     self.range_factory = range_factory
+    self.editable_label_prefixes = editable_label_prefixes
     assert callable(range_factory), 'Generic.range_factory must be callable'
     if template is not None:
       self.range_factory.set_template( template )
@@ -223,6 +225,11 @@ class Generic:
 
 
     sheet_cb.connect_column(
+      R['label'],
+      setitem=(helpers.set_item, model, model.LABEL, add_undo,
+               False, str, self.editable_label_prefixes) )
+
+    sheet_cb.connect_column(
       R['val:bool'],
       toggleitem=(helpers.toggle_item, model, model.VAL_BOOL, add_undo) )
 
@@ -271,6 +278,16 @@ class Generic:
     C['V'].set_attributes( R['cmb:text'],   text=model.VAL_STR )
     C['V'].set_attributes( R['cmb:int'],    text=model.VAL_INT )
     C['V'].set_attributes( R['cmb:float'],  text=model.VAL_FLOAT )
+
+
+    def can_edit(treecol, cell, model, i ):
+      Ltxt = model[i][model.LABEL]
+      if True in [ Ltxt.startswith(i) for i in self.editable_label_prefixes ]:
+        cell.set_property('editable', True)
+      else:
+        cell.set_property('editable', False)
+
+    C['L'].set_cell_data_func( R['label'], can_edit )
 
     def is_sensitive( treecol, cell, model, i, TYPE ):
       combo = False

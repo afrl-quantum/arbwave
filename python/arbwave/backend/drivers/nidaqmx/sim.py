@@ -77,32 +77,38 @@ class NiDAQmx:
   #   SYSTEM INFORMATION
   def DAQmxGetSysNIDAQMajorVersion(self, retval_ref):
     retval_ref._obj.value = 8
+    log(DEBUG-1, 'DAQmxGetSysNIDAQMajorVersion() = %s', retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysNIDAQMinorVersion(self, retval_ref):
     retval_ref._obj.value = 0
+    log(DEBUG-1, 'DAQmxGetSysNIDAQMinorVersion() = %s', retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysDevNames(self,buf_ref,bufsize):
     buf_ref._obj.value = 'Dev1, Dev2, Dev3'[:bufsize]
+    log(DEBUG-1, 'DAQmxGetSysDevNames() = %s', buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysTasks(self,buf_ref,bufsize):
     buf_ref._obj.value = ''[:bufsize]
+    log(DEBUG-1, 'DAQmxGetSysTasks(%s) = %s', chan, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysGlobalChans(self,buf_ref,bufsize):
     buf_ref._obj.value = ''[:bufsize]
+    log(DEBUG-1, 'DAQmxGetSysGlobalChans(%s) = %s', chan, buf_ref._obj.value)
     return 0
 
 
 
   # PHYSICAL CHANNEL INFORMATION
   def DAQmxGetPhysicalChanDOSampClkSupported(self, chan, retval_ref):
+    log(DEBUG-1, 'DAQmxGetPhysicalChanDOSampClkSupported(%s) = %s', chan, retval_ref._obj.value)
     retval_ref._obj.value = 0x1 # false for PCI-6723, but let's set true anyway
     return 0
 
@@ -130,22 +136,26 @@ class NiDAQmx:
   def DAQmxGetDevProductType(self, dev, buf_ref, bufsize):
     # for now, we will default to simulating a PCI-6723 ao card
     buf_ref._obj.value = 'PCI-6229'[:bufsize]
+    log(DEBUG-1, 'DAQmxGetDevProductType(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevProductNum(self, dev, retval_ref):
     retval_ref._obj.value = 0x2A
+    log(DEBUG-1, 'DAQmxGetDevProductNum(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevSerialNum(self, dev, retval_ref):
     retval_ref._obj.value = 0xDEADBEEF
+    log(DEBUG-1, 'DAQmxGetDevSerialNum(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevAOPhysicalChans(self, dev, buf_ref, bufsize):
     chans = ','.join([ '{}/ao{}'.format(dev,i) for i in xrange(32) ])
     buf_ref._obj.value = chans[:bufsize]
+    log(DEBUG-1, 'DAQmxGetDevAOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
@@ -156,16 +166,19 @@ class NiDAQmx:
       for pi in xrange(4)
     ]) )
     buf_ref._obj.value = chans[:bufsize]
+    log(DEBUG-1, 'DAQmxGetDevDOLines(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevCOPhysicalChans(self, dev, buf_ref, bufsize):
     buf_ref._obj.value = '{0}/ctr0,{0}/ctr1'.format(dev)[:bufsize]
+    log(DEBUG-1, 'DAQmxGetDevCOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevAOSampClkSupported(self, dev, retval_ref):
     retval_ref._obj.value = 0x1
+    log(DEBUG-1, 'DAQmxGetDevAOSampClkSupported(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
   def DAQmxResetDevice(self, dev):
@@ -185,6 +198,7 @@ class NiDAQmx:
 
   def DAQmxGetTaskName(self,task,buf_ref,bufsize):
     buf_ref._obj.value = self.tasks[task.value].name[:bufsize]
+    log(DEBUG-1, 'DAQmxGetTaskName(%d) = %s', task.value, buf_ref._obj.value)
     return 0
 
 
@@ -213,6 +227,9 @@ class NiDAQmx:
 
   def DAQmxCreateAOVoltageChan(self,task, phys_chan, chname,
                                min_val, max_val, units, custom_scale_name):
+    log(DEBUG-1, 'DAQmxCreateAOVoltageChan(%s,%s,%s,%g,%g,%d,%s)',
+        task, phys_chan, chname, min_val.value, max_val.value, units,
+        custom_scale_name)
     assert phys_chan, 'NIDAQmx:  missing physical channel name'
     if not chname:
       chname = phys_chan
@@ -224,6 +241,7 @@ class NiDAQmx:
 
 
   def DAQmxCreateDOChan(self,task, phys_chan, chname, grouping_val):
+    log(DEBUG-1, 'DAQmxCreateDOChan(%s,%s,%s,%d)', task, phys_chan, chname, grouping_val)
     assert phys_chan, 'NIDAQmx:  missing physical DO channel name(s)'
     assert grouping_val==nidaqmx.libnidaqmx.DAQmx.Val_ChanPerLine, \
       'only per_line DO group ing implemented in simulator'
@@ -242,23 +260,27 @@ class NiDAQmx:
       retval_ref._obj.value = ch_types[ T.channels[ T.chindx[chname] ].typ ]
     else:
       retval_ref._obj.value = ch_types[ T.channels[ 0 ].typ ]
+    log(DEBUG-1, 'DAQmxGetChanType(%s,%s) = %s', task, chname, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetTaskNumChans(self, task, retval_ref):
     retval_ref._obj.value = len(self.tasks[task.value].channels)
+    log(DEBUG-1, 'DAQmxGetTaskNumChans(%s) = %s', task, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetTaskChannels(self,task,buf_ref,bufsize):
     chnames = [ str(c)  for c in self.tasks[task.value].channels ]
     buf_ref._obj.value = ','.join(chnames)[:bufsize]
+    log(DEBUG-1, 'DAQmxGetTaskChannels(%s) = %s', task, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetTaskDevices(self,task,buf_ref,bufsize):
     devs = { c.name.partition('/')[0] for c in self.tasks[task.value].channels }
     buf_ref._obj.value = ','.join(devs)[:bufsize]
+    log(DEBUG-1, 'DAQmxGetTaskDevices(%s) = %s', task, buf_ref._obj.value)
     return 0
 
 
@@ -293,6 +315,7 @@ class NiDAQmx:
 
 
   def DAQmxGetSampClkMaxRate(self, task, retval_ref):
+    log(DEBUG-1, 'DAQmxGetSampClkMaxRate(%s) = %d', task, 2e6)
     # we'll return the value for the PCI-6723
     #retval_ref._obj.value = 800e3
     # what the heck. let's return a larger value!
@@ -311,17 +334,25 @@ class NiDAQmx:
 
 
   def DAQmxGetBufAOOnbrdBufSize(self, task, retval_ref):
+    log(DEBUG-1, 'DAQmxGetBufAOOnbrdBufSize(%s) = %d', task, 2**14)
     retval_ref._obj.value = 2**14
     return 0
 
-  DAQmxGetBufDOOnbrdBufSize = DAQmxGetBufAOOnbrdBufSize
+  def DAQmxGetBufDOOnbrdBufSize(self, task, retval_ref):
+    log(DEBUG-1, 'DAQmxGetBufDOOnbrdBufSize(%s) = %d', task, 2**14)
+    retval_ref._obj.value = 2**14
+    return 0
 
 
   def DAQmxGetBufAOBufSize(self, task, retval_ref):
+    log(DEBUG-1, 'DAQmxGetBufAOBufSize(%s) = %d', task, 2**16)
     retval_ref._obj.value = 2**16
     return 0
 
-  DAQmxGetBufDOBufSize = DAQmxGetBufAOBufSize
+  def DAQmxGetBufDOBufSize(self, task, retval_ref):
+    log(DEBUG-1, 'DAQmxGetBufDOBufSize(%s) = %d', task, 2**16)
+    retval_ref._obj.value = 2**16
+    return 0
 
 
   def DAQmxWaitUntilTaskDone(self, task, timeout):
@@ -355,7 +386,7 @@ class NiDAQmx:
   def DAQmxWriteDigitalLines(self, task, n_per_chan, auto_start, timeout, layout,
                           data, n_written_ref, ignored):
     cdata = ctypes.cast( data, ctypes.POINTER(ctypes.c_uint8))
-    log(DEBUG-1, 'DAQmxWriteAnalogF64(%s,%d,%s,%f,%d,%s,n_written_ref, None)',
+    log(DEBUG-1, 'DAQmxWriteDigitalLines(%s,%d,%s,%f,%d,%s,n_written_ref, None)',
       task, n_per_chan, bool(auto_start.value), timeout.value, layout,
       cdata[0:(n_per_chan * len(self.tasks[task.value].channels))] )
     n_written_ref._obj.value = n_per_chan

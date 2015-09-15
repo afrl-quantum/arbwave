@@ -112,7 +112,7 @@ class Arbwave:
     if (stop & self.BEFORE) and self.stop_request:
       self.dostop()
 
-    analog, digital, transitions, dev_clocks, t_max, end_clocks, eval_cache = \
+    analog, digital, transitions, dev_clocks, t_max, eval_cache = \
       compute.waveforms( self.devcfg,
                          self.clocks,
                          self.signals,
@@ -123,7 +123,7 @@ class Arbwave:
 
     self.ui.waveform_editor.set_eval_cache( eval_cache )
     send.to_plotter( self.ui.plotter, analog, digital, dev_clocks, self.channels, t_max )
-    send.to_driver.waveform( analog, digital, transitions, t_max, end_clocks, continuous )
+    send.to_driver.waveform( analog, digital, transitions, t_max, continuous )
     send.to_driver.start(self.devcfg, self.clocks, self.signals)
     if wait and not continuous:
       excObjs = send.to_driver.wait()
@@ -173,7 +173,7 @@ class Arbwave:
     Process inputs to send only to plotter.
     """
 
-    analog, digital, transitions, dev_clocks, t_max, end_clocks, eval_cache = \
+    analog, digital, transitions, dev_clocks, t_max, eval_cache = \
       compute.waveforms( self.devcfg,
                          self.clocks,
                          self.signals,
@@ -200,7 +200,7 @@ class Arbwave:
     assert not (filename is not None == fmt is not None), \
       'must specify either filename or fmt, _not_ both'
 
-    analog, digital, transitions, dev_clocks, t_max, end_clocks, eval_cache = \
+    analog, digital, transitions, dev_clocks, t_max, eval_cache = \
       compute.waveforms( self.devcfg,
                          self.clocks,
                          self.signals,

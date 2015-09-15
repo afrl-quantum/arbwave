@@ -4,9 +4,9 @@ from scipy.interpolate import UnivariateSpline, interp1d
 import numpy as np
 import bisect, sys
 from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
+from itertools import chain
 
 from ... import backend
-from .. import functions
 import physical
 from physical import unit
 from math import ceil
@@ -133,7 +133,7 @@ def set_units_and_scaling(chname, ci, chan, globals):
 
 
 class WaveformEvalulator:
-  def __init__(self,devcfg, clocks, channels, globals, continuous):
+  def __init__(self, devcfg, clocks, channels, globals, continuous):
     # currently configured...
     self.devcfg = devcfg
     self.clocks = clocks
@@ -175,7 +175,7 @@ class WaveformEvalulator:
       ci['clock'] = clk
 
       if clk not in self.transitions:
-        self.transitions[ clk ] = list()
+        self.transitions[ clk ] = set()
         self.explicit_timing[ clk ] = False
 
       # determine if the channel needs explicit timing (in case its clock
@@ -368,6 +368,20 @@ class WaveformEvalulator:
 
 
   def finish(self):
+    """
+    Gather all of the generated waveform values into the correct arrays and
+    dictionaries.
+
+    This function also ensures that, if not otherwise specified, each channel
+    starts its waveform at a value equal to the value of its static setting.
+
+    Furthermore, this function ensures that each channel ends back at its static
+    value if the waveform is not in continuous mode.
+
+    Still further, this function also ensure that clocks are generated for
+    channels that require an extra clock so that the appropriate software
+    drivers can sense that the waveform has completed (notably NIDAQmx drivers).
+    """
     debug('initial t_max: %s', self.t_max)
     # the return values are initially empty
     retvals = {'analog':dict(), 'digital':dict()}
@@ -387,30 +401,61 @@ class WaveformEvalulator:
       elems = ci['elements']
       trans = self.transitions[ ci['clock'] ]
       dt_clk = ci['min_period']
+
       if len(elems) == 0 or elems[0].ti > 0:
         # first element of this channel is at t > 0 so we insert a
         # t=0 value that lasts for at least t_clk time
         insert_value(0,1, ci['init'], dt_clk, chname, ci, trans, (-1,),'root')
+
       if not self.continuous:
+        # Ensure that each channel ends on its static value
         insert_value( int(round( self.t_max / dt_clk )), 1, ci['init'],
-                      dt_clk, chname, ci, trans,
-                      (sys.maxint,), 'root' )
-        t_max = max( t_max, t_max + dt_clk )
+                      dt_clk, chname, ci, trans, (-2,), 'root' )
+        t_max = max( t_max, self.t_max + dt_clk )
+
 
       if prfx not in D:
         D[ prfx ] = dict()
       D[ prfx ][ dev ] = to_plottable( elems )
       clocks[ dev ] = (ci['clock'], dt_clk)
 
+
     self.t_max = t_max
+
+    if not self.continuous:
+      # now we ensure that an extra clock is provided for each channel that
+      # requires an extra clock in order for its driver software to know that it
+      # has completed the waveform.
+
+      for clk in self.finite_mode_end_clocks_required:
+        self.transitions[clk].add( max(self.transitions[clk]) + 1 )
+
+      # for simplicity, we just assume that the largest clock was needed.
+      self.t_max += max( self.min_periods.viewvalues() )
+
+
     debug('final t_max: %s', self.t_max)
+
+    # before we finish, we need to copy transitions from dependent clocks to
+    # those clocks that they depend on.
+    # this is not necessarily the most efficient since it could mean that parent
+    # clocks that are also dependent clocks could be iterated upon more than
+    # once.
+    for i in self.transitions:
+      self._insert_into_parent_clock_transitions(i)
+
 
     # ensure that we have a unique set of transitions
     clock_transitions = dict()
     for i in self.transitions:
-      if self.timing_channels[i].is_aperiodic() or not self.explicit_timing[i]:
-        self.transitions[i] = set( self.transitions[i] )
-      else:
+      if (not self.timing_channels[i].is_aperiodic()) and self.explicit_timing[i]:
+        # for these types of clocks, we will just use an xrange, since every
+        # possible clock cycle must be used.
+        # NOTE:  explicit_timing is the notion that an output device must be
+        # programmed for every single clock it receives.  This is generally true
+        # for devices like national instruments, but not true for devices such
+        # as the viewpoint card where each output transition is timed with a
+        # timestamp, regardless of how its clock operates.
         self.transitions[i] = xrange( 0, max(self.transitions[i]) + 1 )
 
       clock_transitions[i] = dict(
@@ -419,8 +464,7 @@ class WaveformEvalulator:
       )
 
     return retvals['analog'], retvals['digital'], clock_transitions, clocks, \
-           self.t_max.coeff, self.finite_mode_end_clocks_required, \
-           self.eval_cache
+           self.t_max.coeff, self.eval_cache
 
   def get_clock_period(self, clk_name):
     """Recursively determine the minimum separation of a clock pulse"""
@@ -430,6 +474,34 @@ class WaveformEvalulator:
         raise RuntimeError('Recursive clock cannot depend on aperiodic clocks')
       return clk( self.get_clock_period(clk.parent_clock) )
     return clk
+
+  def _insert_into_parent_clock_transitions(self, clk_name):
+    """
+    The point of this function is to ensure that dependent clocks have their
+    dependent transitions copied into the clocks that they depend on.
+
+    This function should only be called by self.finish().
+    This relies on self.transitions, self.timing_channels, self.min_periods as
+    already calculated in other member functions before self.finish() gets
+    called.
+    """
+    clk = self.timing_channels[ clk_name ].get_min_period()
+    if issubclass( type(clk), backend.channels.RecursiveMinPeriod ):
+      # clk_name has a parent clock, so insert transitions into its parent after
+      # scaling.
+      dt_scale = int( self.min_periods[clk_name] /
+                      self.min_periods[clk.parent_clock] )
+      # !!!! This choice of dt_on must be used in all drivers also !!!!
+      dt_on = int( dt_scale / 2 )
+
+      T = np.array( list( self.transitions[clk_name] ), dtype=int ) * dt_scale
+
+      self.transitions[clk.parent_clock].update(
+        chain(* [(ti, ti+dt_on) for ti in T] )
+      )
+
+      # now recurse
+      self._insert_into_parent_clock_transitions( clk.parent_clock )
 
 
 def insert_value( ti, dti, v, dt_clk, chname, ci, trans, group, group_name ):
@@ -442,7 +514,7 @@ def insert_value( ti, dti, v, dt_clk, chname, ci, trans, group, group_name ):
     log(DEBUG-1, 'inserting transition:\n%s', repr(u) )
 
   bisect.insort_right( ci['elements'], u )
-  trans.append( u.ti )
+  trans.add( u.ti )
 
 
 def waveforms( devcfg, clocks, signals, channels, waveforms, globals,

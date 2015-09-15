@@ -362,7 +362,6 @@ class PulseTrain(ScaledFunction):
       else:
         self.low = _from
     self.t = t
-    duration = duration - 1
 
     self.pulse_period = int(duration / self.n)
     max_dt_on = self.pulse_period - 1

@@ -32,7 +32,7 @@ class Undo:
 
 
 def set_item( cell, path, new_item, model, ITEM, add_undo=None,
-              unique=False, type=str ):
+              unique=False, type=str, valid_prefixes=[] ):
   """
     if unique is True, this searches through the immediate chlidren for
       duplicate names before allowing the edit.
@@ -52,6 +52,10 @@ def set_item( cell, path, new_item, model, ITEM, add_undo=None,
 
   if model[path][ITEM] == new_item:
     return  # avoid triggering a change if there is not actually a change
+
+  if valid_prefixes and \
+     True not in [new_item.startswith(i) for i in valid_prefixes]:
+    return # the item does not match the specified prefix critera
 
   if add_undo is not None:
     add_undo( Undo(model[path][ITEM], new_item, model, path, ITEM) )

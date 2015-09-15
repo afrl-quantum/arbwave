@@ -133,8 +133,10 @@ DONE
 DONE
 
 16. Fix icons in graph toolbar
+DONE
 
 17. Add remote hardware layer
+DONE
 
 18. make python/arbwave subdir:
   a) mkdir python;
@@ -146,3 +148,5 @@ DONE
      arbwave.backend.connection
      rmdir src
 DONE
+
+19. Add external clock.  Not tied to any particular backend

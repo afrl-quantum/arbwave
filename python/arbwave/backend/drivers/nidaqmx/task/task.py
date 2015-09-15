@@ -159,6 +159,10 @@ class Task(Base):
       1.  Sets sample clock properly.
       2.  Sets triggering.
       3.  Writes data to hardware buffers without auto_start.
+
+      waveforms : see gui/plotter/digital.py for format
+      clock_transitions :  dictionary of clocks to dict(ignore,transitions)
+      t_max : maximum time of waveforms
     """
     if self.use_case in [None, Task.WAVEFORM_SINGLE, Task.WAVEFORM_CONTINUOUS]:
       if self.use_case is not None:
@@ -173,10 +177,6 @@ class Task(Base):
 
     if not self.clock_terminal:
       raise UserWarning('cannot start waveform without a output clock defined')
-
-    if set(waveforms.keys()).intersection( clock_transitions.keys() ):
-      raise RuntimeError('NI channels cannot be used as clocks and ' \
-                         'output simultaneously')
 
 
     my_clock = clock_transitions[ self.config['clock']['value'] ]

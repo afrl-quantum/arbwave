@@ -1,7 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import Pyro.core
-from logging import debug, DEBUG
+from logging import critical, debug, DEBUG
+import traceback
 
 class PyroResponse(object):
   """
@@ -119,9 +120,15 @@ class Exec(object):
     self.proxy = proxy
     self.fun = fun
   def __call__(self, *a, **kw):
-    return self.proxy._proxy_all_results(
-      self.proxy.obj._execFunc( self.fun, *a, **kw )
-    )
+    try:
+      return self.proxy._proxy_all_results(
+        self.proxy.obj._execFunc( self.fun, *a, **kw )
+      )
+    except:
+      critical( 'Could not remotely call \'%s(%s,%s)\'', self.fun, a, kw )
+      traceback.print_exc()
+      raise
+
 
 class Proxy(object):
   """
