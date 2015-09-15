@@ -4,6 +4,7 @@ PROGNAME = 'Arbitrary Wavform Generator'
 AUTHORS = [
   'Spencer E. Olson (Air Force Research Laboratory)',
   'Brian Kasch (Space Dynamics Laboratory)',
+  'Ian Hage (Universities Space Research Association)',
 ]
 
 import gtk
@@ -20,9 +21,10 @@ def show():
     '\n'
     'This software is released under the GPL v3 license\n'
     '\n'
-    ' Public Domain Contributions 2012 United States Government '
+    ' Public Domain Contributions 2012-2015 United States Government '
     ' as represented by the U.S. Air Force Research Laboratory.\n'
     ' Portions copyright Copyright (C) 2012 Space Dynamics Laboratory\n'
+    ' Portions copyright Copyright (C) 2015 Universities Space Research Association\n'
   )
   dialog.set_wrap_license(80)
   dialog.set_copyright("\302\251 Cold Atom Navigation Laboratory")
