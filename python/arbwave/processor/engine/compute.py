@@ -7,7 +7,6 @@ from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 from itertools import chain
 
 from ... import backend
-from .. import functions
 import physical
 from physical import unit
 from math import ceil
