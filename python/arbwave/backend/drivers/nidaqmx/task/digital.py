@@ -33,7 +33,7 @@ class Digital(Base):
     super(Digital,self).set_output(data)
 
 
-  def set_waveforms(self, waveforms, clock_transitions, t_max, end_clocks, continuous):
+  def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
     """
     Set up the hardware for waveform output.  This function does:
       1.  Sets sample clock properly.
@@ -68,8 +68,6 @@ class Digital(Base):
 
         Tlist = [((ti, True), (ti+dt_on, False)) for ti in transitions*dt_scale]
         waveforms[clk] =  { (-1,): list(chain(*Tlist)) }
-
-    # FIXME:  figure out what to do with the end_clocks
 
     super(Digital,self) \
       .set_waveforms( waveforms, clock_transitions, t_max, continuous)

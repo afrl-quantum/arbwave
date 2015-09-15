@@ -155,17 +155,15 @@ class Driver(Base):
           self.subdevices[ sdev.group() ].set_output( data ) 
 
   def set_waveforms( self, analog, digital, transitions,
-                     t_max, end_clocks, continuous ):
+                     t_max, continuous ):
     debug('comedi.set_waveforms')
     D = collect_prefix( digital, 0, 2, 2 )
     A = collect_prefix( analog, 0, 2, 2 )
     C = collect_prefix( transitions, 0, 2, 2)
-    E = collect_prefix( dict.fromkeys( end_clocks ), 0, 2, 2)
 
     for d,sdev in self.subdevices.items():
       if d in D or d in C:
-        sdev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
-                            continuous )
+        sdev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, continuous )
     #for dev in A.items():
       #self.subdevices[ dev[0]+'/ao1' ] \
         #set_waveforms( dev[1], transitions, t_max, continuous )

@@ -369,6 +369,20 @@ class WaveformEvalulator:
 
 
   def finish(self):
+    """
+    Gather all of the generated waveform values into the correct arrays and
+    dictionaries.
+
+    This function also ensures that, if not otherwise specified, each channel
+    starts its waveform at a value equal to the value of its static setting.
+
+    Furthermore, this function ensures that each channel ends back at its static
+    value if the waveform is not in continuous mode.
+
+    Still further, this function also ensure that clocks are generated for
+    channels that require an extra clock so that the appropriate software
+    drivers can sense that the waveform has completed (notably NIDAQmx drivers).
+    """
     debug('initial t_max: %s', self.t_max)
     # the return values are initially empty
     retvals = {'analog':dict(), 'digital':dict()}
@@ -388,22 +402,39 @@ class WaveformEvalulator:
       elems = ci['elements']
       trans = self.transitions[ ci['clock'] ]
       dt_clk = ci['min_period']
+
       if len(elems) == 0 or elems[0].ti > 0:
         # first element of this channel is at t > 0 so we insert a
         # t=0 value that lasts for at least t_clk time
         insert_value(0,1, ci['init'], dt_clk, chname, ci, trans, (-1,),'root')
+
       if not self.continuous:
         insert_value( int(round( self.t_max / dt_clk )), 1, ci['init'],
                       dt_clk, chname, ci, trans,
                       (sys.maxint,), 'root' )
-        t_max = max( t_max, t_max + dt_clk )
+        t_max = max( t_max, self.t_max + dt_clk )
+
 
       if prfx not in D:
         D[ prfx ] = dict()
       D[ prfx ][ dev ] = to_plottable( elems )
       clocks[ dev ] = (ci['clock'], dt_clk)
 
+
     self.t_max = t_max
+
+    if not self.continuous:
+      # now we ensure that an extra clock is provided for each channel that
+      # requires an extra clock in order for its driver software to know that it
+      # has completed the waveform.
+
+      for clk in self.finite_mode_end_clocks_required:
+        self.transitions[clk].add( max(self.transitions[clk]) + 1 )
+
+      # for simplicity, we just assume that the largest clock was needed.
+      self.t_max += max( self.min_periods.viewvalues() )
+
+
     debug('final t_max: %s', self.t_max)
 
     # before we finish, we need to copy transitions from dependent clocks to
@@ -434,8 +465,7 @@ class WaveformEvalulator:
       )
 
     return retvals['analog'], retvals['digital'], clock_transitions, clocks, \
-           self.t_max.coeff, self.finite_mode_end_clocks_required, \
-           self.eval_cache
+           self.t_max.coeff, self.eval_cache
 
   def get_clock_period(self, clk_name):
     """Recursively determine the minimum separation of a clock pulse"""

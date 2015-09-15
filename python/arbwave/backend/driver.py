@@ -96,8 +96,7 @@ class Driver(object):
         'Drivers with analog/digtal channels must implement set_static'
       )
 
-  def set_waveforms(self, analog, digital, transitions,
-                    t_max, end_clocks, continuous):
+  def set_waveforms(self, analog, digital, transitions, t_max, continuous):
     if analog or digital:
       raise NotImplementedError(
         'Drivers with analog/digtal channels must implement set_waveforms'

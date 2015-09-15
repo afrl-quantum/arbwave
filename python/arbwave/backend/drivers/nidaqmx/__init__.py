@@ -231,18 +231,17 @@ class Driver(Base):
 
 
   def set_waveforms( self, analog, digital, transitions,
-                     t_max, end_clocks, continuous ):
+                     t_max, continuous ):
     """
     Viewpoint ignores all transition information since it only needs absolute
     timing information.
     """
     D = collect_prefix( digital, 0, 2 )
     A = collect_prefix( analog, 0, 2 )
-    E = collect_prefix(dict.fromkeys( end_clocks ), 0, 2) #, 2)
 
     for dev, wvfms in D.items():
       self.tasks[ dev+'/do' ] \
-        .set_waveforms( wvfms, transitions, t_max, E.get(dev,{}), continuous )
+        .set_waveforms( wvfms, transitions, t_max, continuous )
 
     for dev, wvfms in A.items():
       self.tasks[ dev+'/ao' ] \

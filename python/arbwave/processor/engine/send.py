@@ -63,15 +63,14 @@ class ToDriver:
     logging.debug('updated hardware to static output')
 
 
-  def waveform(self, analog, digital, transitions, t_max, end_clocks, continuous):
+  def waveform(self, analog, digital, transitions, t_max, continuous):
     logging.info( 'trying to update the hardware to waveform output!!!!' )
     if continuous:
       logging.info( 'requesting continuous regeneration...' )
 
     for D,driver in backend.all_drivers.items():
       driver.set_waveforms(analog.get(D,{}), digital.get(D,{}),
-                           transitions, t_max, end_clocks,
-                           continuous)
+                           transitions, t_max, continuous)
     logging.debug('send waveform to hardware')
 
 

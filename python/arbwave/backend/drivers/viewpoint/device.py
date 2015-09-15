@@ -135,18 +135,12 @@ class Device(Base):
     self.board.set_output( data )
 
 
-  def set_waveforms(self, waveforms, clock_transitions, t_max, end_clocks,
-                    continuous):
+  def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
     """
     Set the waveform on the DIO64 device.
       waveforms : see gui/plotter/digital.py for format
       clock_transitions :  dictionary of clocks to dict(ignore,transitions)
       t_max : maximum time of waveforms
-      end_clocks : set of clocks for this device that will need to provide an
-        extra clock pulse at t = t_max IN CONTINUOUS MODE ONLY.  This is based
-        on the channels that use these clocks.  There are some devices, notably
-        National Instruments output hardware, that require an extra clock pulse
-        in finite mode so that they can notice that they are finished. 
     """
     if set(waveforms.keys()).intersection( clock_transitions.keys() ):
       raise RuntimeError('Viewpoint channels cannot be used as clocks and ' \
@@ -188,20 +182,6 @@ class Device(Base):
         transitions[ t_fall ][line] = False
 
     t_last = int(round( t_max * scan_rate ))
-    if not continuous:
-      t_rise = t_last
-      transitions[ t_rise ] = \
-        { line:True  for line in end_clocks if 'Internal' not in line }
-      for line in end_clocks:
-        if 'Internal' in line:  continue
-
-        # make sure that the last pulse for each line is large enough
-        t_fall = t_rise + int(round(clock_transitions[line]['dt'] *scan_rate))/2
-        t_last  = max( t_last, t_fall + 1 )
-        if t_fall not in transitions:
-          transitions[ t_fall ] = dict()
-        transitions[ t_fall ][line] = False
-
 
     # Add the last "transition" which is really just a final duration
     transitions[ t_last ] = None
