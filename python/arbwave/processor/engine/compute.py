@@ -409,9 +409,9 @@ class WaveformEvalulator:
         insert_value(0,1, ci['init'], dt_clk, chname, ci, trans, (-1,),'root')
 
       if not self.continuous:
+        # Ensure that each channel ends on its static value
         insert_value( int(round( self.t_max / dt_clk )), 1, ci['init'],
-                      dt_clk, chname, ci, trans,
-                      (sys.maxint,), 'root' )
+                      dt_clk, chname, ci, trans, (-2,), 'root' )
         t_max = max( t_max, self.t_max + dt_clk )
 
 
