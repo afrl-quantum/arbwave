@@ -35,5 +35,18 @@ class DOTiming(Base, TBase):
   """Digital-output Comedi Timing channel class"""
   aperiodic = True # digital line can generate an asynchronous signal.
 
+  def _divider(self):
+    return self.device.clocks[ str(self) ]['divider']['value']
+
   def get_min_period(self):
-    return RecursiveMinPeriod( self.device.config['clock']['value'], 2 )
+    return RecursiveMinPeriod( self.device.config['clock']['value'],
+                               self._divider() )
+
+  def get_config_template(self):
+    return {
+      'divider' : {
+        'value' : 2,
+        'type'  : int,
+        'range' : xrange(2, sys.maxint),
+      }
+    }
