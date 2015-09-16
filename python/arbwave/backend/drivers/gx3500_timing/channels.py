@@ -29,7 +29,7 @@ class Timing(BaseTiming):
 
     :return: the minimum period with physical.uinit.s
     """
-    return 100e-9 * self._divider() * unit.s # 2 x 50ns
+    return 50e-9 * self._divider() * unit.s
 
   def get_config_template(self):
     """
@@ -39,9 +39,9 @@ class Timing(BaseTiming):
     """
     return {
       'divider' : {
-        'value' : 1,
+        'value' : 2,
         'type'  : int,
-        'range' : xrange(1, sys.maxint),
+        'range' : xrange(2, sys.maxint),
       }
     }
 
