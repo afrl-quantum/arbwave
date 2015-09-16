@@ -3,7 +3,7 @@
 import sys
 from .....tools.float_range import float_range
 from ....channels import Timing as TBase, RecursiveMinPeriod
-from base import Base
+from .base import Base
 
 class Timing(Base, TBase):
   """NIDAQmx Timing channel class"""

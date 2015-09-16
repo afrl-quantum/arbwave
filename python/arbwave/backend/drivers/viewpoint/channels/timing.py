@@ -18,19 +18,19 @@ class Timing(Base):
     Returns the minimum timing period (period between two rising edges of this
     clock pulse) in units of seconds.
     """
-    # The factor of two is because scan_rate is the max transition rate of the
-    # DIO64 output channels.  A device using this channel as an aperiodic clock
+    # NOTE:  the divider must be >= 2
+    # A device using this channel as an aperiodic clock
     # will need to see a rising edge and falling edge, the pair of which
     # constitutes one clock pulse.
-    return 2 * self._divider() * unit.s \
-             / self.device.board.configs['out']['scan_rate']
+    return self._divider() * unit.s \
+         / self.device.board.configs['out']['scan_rate']
 
   def get_config_template(self):
     return {
       'divider' : {
-        'value' : 1,
+        'value' : 2,
         'type'  : int,
-        'range' : xrange(1, sys.maxint),
+        'range' : xrange(2, sys.maxint),
       }
     }
 

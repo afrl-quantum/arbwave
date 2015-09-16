@@ -46,14 +46,14 @@ waveforms = \
                             'value': 'ramp(_from=0*V,to=10*V,duration=10*ms)'}]}}
 
 clocks = \
-{'vp/Dev0/A/13': {'divider': {'type': int, 'value': 1}},
+{'vp/Dev0/A/13': {'divider': {'type': int, 'value': 2}},
  'vp/Dev0/Internal_XO': {'scan_rate': {'type': float, 'value': 20000000.0}}}
 
 hosts = \
 {'__default__': 'local', 'local': 'localhost'}
 
 version = \
-'0.1.8'
+'0.1.9'
 
 signals = \
 {('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}
