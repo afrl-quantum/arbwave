@@ -9,22 +9,6 @@ import engine
 from ..tools.gui_callbacks import do_gui_operation
 import default
 import messages as msg
-from ..tools.path import collect_prefix
-from ..tools.signal_graphs import shortest_paths
-from ..tools.scaling import calculate as calculate_scaling
-
-def get_range( scaling, units, offset, globals, **kwargs ):
-  """
-  Get the minimum and maximum values of a given channels scaling.  Some devices
-  can use this to provide more firm limits on channel outputs.  NIDAQmx does
-  this, for example.
-  """
-  if not scaling:
-    return kwargs
-  # note:  we ignore lines with either empty x _OR_ y values
-  mn, mx = calculate_scaling(scaling, units, offset, globals, return_range=True)
-  return dict(min=mn, max=mx, **kwargs)
-
 
 class ModuleLike(object):
   def __init__(self, D):
@@ -130,38 +114,14 @@ class Processor:
           waveforms  = ( waveforms[0], True )
 
       if clocks[1]:
-        engine.send.to_driver.clocks( collect_prefix(clocks[0]) )
+        engine.send.to_driver.clocks( clocks[0] )
 
       if devcfg[1] or channels[1] or signals[1] or clocks[1]:
-        # we need to calculate the shortest connected paths of all signals
-        # these paths are used to determine which terminal a device should
-        # connect to in order to use a particular clock.
-        # Sending config to drivers also depends on clock changes because
-        # drivers may need to know (approximate) rates for clocks.  We don't
-        # send in clocks[0] since the clocks have already been configured.
-        # We'll rely on engine.send.to_driver.config to send in a link to the
-        # timing channels.
-        sp, graph = shortest_paths( signals[0], *clocks[0] )
-
-        num_node_incidences = [ len(i) for i in graph.node_incidence.values() ]
-        if num_node_incidences and max(num_node_incidences) > 1:
-          raise RuntimeError('Double driving a terminal/cable is not allowed!')
-
-        engine.send.to_driver.config(
-          collect_prefix(devcfg[0]),
-          collect_prefix(
-            {c['device'] : get_range(c['scaling'],c['units'],c['offset'],
-                                     self.Globals,order=c['order'])
-              for  c in channels[0].values()
-                if c['enable']
-            },
-            1,
-          ),
-          sp,
-        )
+        engine.send.to_driver.config( devcfg[0], channels[0],
+                                      signals[0], clocks[0], self.Globals )
 
       if signals[1]:
-        engine.send.to_driver.signals(collect_prefix(signals[0]))
+        engine.send.to_driver.signals( signals[0] )
 
       if self.running or toggle_run:
         self.start()

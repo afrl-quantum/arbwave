@@ -26,15 +26,15 @@ class Driver(Base):
     # mapping from board index to device
     self.devices = dict()
 
-    print 'probing for first {l} viewpoint boards...' \
-      .format( l=len(self.boards_to_probe) )
+    logging.info( 'probing for first %d viewpoint boards...',
+      len(self.boards_to_probe) )
     for i in self.boards_to_probe:
       try:
         d = Device( self, i )
       except:
         break
       self.devices[str(d)] = d
-    print 'found {i} viewpoint boards'.format(i=len(self.devices))
+    logging.info( 'found %d viewpoint boards', len(self.devices) )
 
     self.digital_channels = capabilities.get_digital_channels(self.devices)
     self.timing_channels = capabilities.get_timing_channels(self.devices)
@@ -96,8 +96,7 @@ class Driver(Base):
       self.devices[ dev[0] ].set_output( dev[1] )
 
 
-  def set_waveforms(self, analog, digital, transitions,
-                    t_max, end_clocks, continuous):
+  def set_waveforms(self, analog, digital, transitions, t_max, continuous):
     """
     Viewpoint ignores all transition information since it only needs absolute
     timing information.
@@ -105,8 +104,6 @@ class Driver(Base):
     assert len(analog) == 0, 'Viewpoint does not perform analog output'
     D = collect_prefix(digital, 0, 2, 2)
     C = collect_prefix(transitions, 0, 2, 2)
-    E = collect_prefix(dict.fromkeys( end_clocks ), 0, 2, 2)
     for d,dev in self.devices.items():
       if d in D or d in C:
-        dev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, E.get(d,{}),
-                           continuous )
+        dev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, continuous )

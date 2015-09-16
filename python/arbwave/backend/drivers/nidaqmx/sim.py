@@ -198,7 +198,7 @@ class NiDAQmx:
 
   def DAQmxGetTaskName(self,task,buf_ref,bufsize):
     buf_ref._obj.value = self.tasks[task.value].name[:bufsize]
-    log(DEBUG-1, 'DAQmxGetTaskName(%s) = %s', task, buf_ref._obj.value)
+    log(DEBUG-1, 'DAQmxGetTaskName(%d) = %s', task.value, buf_ref._obj.value)
     return 0
 
 
@@ -227,7 +227,9 @@ class NiDAQmx:
 
   def DAQmxCreateAOVoltageChan(self,task, phys_chan, chname,
                                min_val, max_val, units, custom_scale_name):
-    log(DEBUG-1, 'DAQmxCreateAOVoltageChan(%s,%s,%s,%g,%g,%d,%s)', task, phys_chan, chname, min_val, max_val, units, custom_scale_name)
+    log(DEBUG-1, 'DAQmxCreateAOVoltageChan(%s,%s,%s,%g,%g,%d,%s)',
+        task, phys_chan, chname, min_val.value, max_val.value, units,
+        custom_scale_name)
     assert phys_chan, 'NIDAQmx:  missing physical channel name'
     if not chname:
       chname = phys_chan
@@ -384,7 +386,7 @@ class NiDAQmx:
   def DAQmxWriteDigitalLines(self, task, n_per_chan, auto_start, timeout, layout,
                           data, n_written_ref, ignored):
     cdata = ctypes.cast( data, ctypes.POINTER(ctypes.c_uint8))
-    log(DEBUG-1, 'DAQmxWriteAnalogF64(%s,%d,%s,%f,%d,%s,n_written_ref, None)',
+    log(DEBUG-1, 'DAQmxWriteDigitalLines(%s,%d,%s,%f,%d,%s,n_written_ref, None)',
       task, n_per_chan, bool(auto_start.value), timeout.value, layout,
       cdata[0:(n_per_chan * len(self.tasks[task.value].channels))] )
     n_written_ref._obj.value = n_per_chan

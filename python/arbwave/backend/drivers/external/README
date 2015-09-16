@@ -1,0 +1,3 @@
+This a pseudo-driver for external types of hardware connections.  As an example,
+we need to be able to identify a clock that is derived from an externally
+controlled function generator.

@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import gtk
 from numpy.random import rand
 
 var0 = 0.4
@@ -42,12 +43,13 @@ def get_globals():
   return globals()
 
 import traceback, pprint
-from executor import Make
+from ..executor import Make
 
 main_settings = dict()
 
 def main():
-  e = Make('func', main_settings)( func(), globals() )
+  win = gtk.Window()
+  e = Make(win, 'func', main_settings)( func(), globals() )
 
   print 'e: ', e
   return e

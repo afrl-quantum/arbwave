@@ -34,11 +34,11 @@ class Driver(Base):
     self.routed_signals = dict()
 
     if not self.nidaqmx_loaded:
-      print 'found 0 NI DAQmx boards'
+      logging.info( 'found 0 NI DAQmx boards' )
       return
 
     system = nidaqmx.System()
-    print 'found {i} NI DAQmx boards'.format(i=len(system.devices))
+    logging.info( 'found %d NI DAQmx boards', len(system.devices) )
     self.rl = routes.RouteLoader(self.host_prefix, self.prefix)
     for d in system.devices:
       product = d.get_product_type()
@@ -106,6 +106,7 @@ class Driver(Base):
     system = nidaqmx.System()
     for route in self.routed_signals.keys():
       if 'External/' in route[0] or 'External/' in route[1]:
+        logging.debug( 'ni: disconnect {}-->{}'.format(*route) )
         continue
 
       s, d = self.rl.signal_route_map[ route ]
@@ -158,10 +159,27 @@ class Driver(Base):
 
 
   def set_clocks( self, clocks ):
+    # clocks:  {'ni/Dev1': {'ni/Dev1/port0/line0': {}}}
+    # d,T:  ni/Dev1/to ni/Dev1/to
+    # d,T:  ni/Dev1/ao ni/Dev1/ao
+    # d,T:  ni/Dev1/do ni/Dev1/do
+
     clocks = collect_prefix(clocks, 0, 2)
-    for d,T in self.tasks.items():
-      if d in clocks:
-        T.set_clocks( clocks[d] )
+    for dev, clks in clocks.items():
+      ctr_timing = dict()
+      do_timing = dict()
+      for clk,conf in clks.items():
+        if   clk[len(dev)+1:].startswith('port'):
+          do_timing[ clk ] = conf
+        elif clk[len(dev)+1:].startswith('ctr'):
+          ctr_timing[ clk ] = conf
+        else:
+          raise RuntimeError('Expected clock on {}/do or {}/ctr*'.format(dev))
+
+      if do_timing:
+        self.tasks[ dev+'/do' ].set_clocks( do_timing )
+      if ctr_timing:
+        self.tasks[ dev+'/to' ].set_clocks( ctr_timing )
 
 
   def set_signals( self, signals ):
@@ -179,19 +197,22 @@ class Driver(Base):
       # disconnect routes no longer in use
       for route in ( old - new ):
         if 'External/' in route[0] or 'External/' in route[1]:
+          logging.debug( 'ni: disconnect {}-->{}'.format(*route) )
           continue
 
         s, d = self.rl.signal_route_map[ route ]
         system.disconnect_terminals( s, d )
         system.tristate_terminal(d) # an attempt to protect the dest terminal
 
-      # connect new routes routes no longer in use
+      # connect new routes
       for route in ( new - old ):
         if 'External/' in route[0] or 'External/' in route[1]:
+          logging.debug( 'ni: connect {}-->{}'.format(*route) )
           continue
 
         s, d = self.rl.signal_route_map[ route ]
         if s is None or d is None:
+          logging.warning( 'not sure why I am connecting {}-->{}'.format(s,d) )
           continue # None means an external connection
         system.connect_terminals(s, d, signals[route]['invert'])
 
@@ -210,7 +231,7 @@ class Driver(Base):
 
 
   def set_waveforms( self, analog, digital, transitions,
-                     t_max, end_clocks, continuous ):
+                     t_max, continuous ):
     """
     Viewpoint ignores all transition information since it only needs absolute
     timing information.
@@ -218,10 +239,10 @@ class Driver(Base):
     D = collect_prefix( digital, 0, 2 )
     A = collect_prefix( analog, 0, 2 )
 
-    for dev in D.items():
-      self.tasks[ dev[0]+'/do' ] \
-        .set_waveforms( dev[1], transitions, t_max, continuous )
+    for dev, wvfms in D.items():
+      self.tasks[ dev+'/do' ] \
+        .set_waveforms( wvfms, transitions, t_max, continuous )
 
-    for dev in A.items():
-      self.tasks[ dev[0]+'/ao' ] \
-        .set_waveforms( dev[1], transitions, t_max, continuous )
+    for dev, wvfms in A.items():
+      self.tasks[ dev+'/ao' ] \
+        .set_waveforms( wvfms, transitions, t_max, continuous )

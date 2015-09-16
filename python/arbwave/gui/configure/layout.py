@@ -376,7 +376,6 @@ def do_popup_selection( parent, choices ):
 
   def respond(w):
     selection = w.get_model()[w.get_active_iter()][0]
-    print 'selection: ', selection
     if selection is not None:
       w.selected_device = selection
       menu.response(gtk.RESPONSE_OK)
