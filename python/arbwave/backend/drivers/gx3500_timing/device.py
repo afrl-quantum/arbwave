@@ -345,20 +345,24 @@ class Device(Base):
         ports = new_ports = transitions[0][1] # the first instruction writes all 4 ports
         t_last = 0
 
+        # the card only accepts delays of <= 2**28 * 10 ns + 50 ns; we avoid
+        # hitting the absolute maximum
+        MAX_DURATION = int(2**28/5)
+
         for timestamp, port_vals in transitions[1:]:
             # figure out the duration and store the previous instruction
             dt = timestamp - t_last
             t_last = timestamp
             nr_hold_instrs = 0
-            while dt >= 2**28:
+            while dt >= MAX_DURATION:
                 # will need to insert zero port mask instructions to hold the port values
                 nr_hold_instrs += 1
-                dt -= 2**28 - 1
+                dt -= MAX_DURATION - 1
             # store the main instruction
             instr_list.append(_make_instr(dt, new_ports))
             # and then store the additional hold instructions
             for _ in xrange(nr_hold_instrs):
-                instr_list.append(_make_instr(2**28 - 1, [None]*4))
+                instr_list.append(_make_instr(MAX_DURATION - 1, [None]*4))
 
             # then figure out which ports have changed for the next instruction
             new_ports = [ new if new != old else None for new, old in zip(port_vals, ports)]
