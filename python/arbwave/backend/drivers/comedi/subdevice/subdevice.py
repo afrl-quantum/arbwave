@@ -15,18 +15,23 @@ from mmap import PROT_WRITE, MAP_SHARED
 import re
 
 class Subdevice(Base):
+  """
+  In the context of Arbwave, a comedi subdevice is actually a represetation of
+  what Arbwave considers to be a self-contained device.
+  """
+
   STATIC              = 0
   WAVEFORM_SINGLE     = 1
   WAVEFORM_CONTINUOUS = 2
   subdev_type         = None  # changed by inheriting device types
   
-  def __init__(self, route_loader, device, subdevice, name_uses_subdev=False):
+  def __init__(self, route_loader, card, subdevice, name_uses_subdev=False):
     if name_uses_subdev: devname = '{}{}'.format(self.subdev_type, subdevice)
     else:                devname = self.subdev_type
-    name = '{}/{}'.format(device, devname)
+    name = '{}/{}'.format(card, devname)
     Base.__init__(self, name=name)
     self.base_name = devname
-    self.device = device
+    self.card = card
     self.subdevice = subdevice
     debug( 'loading comedi subdevice %s', self )
     self.task = True #TO DO: get rid of this
@@ -45,7 +50,7 @@ class Subdevice(Base):
     if not self.subdev_type == 'to': #should take care of this in timing.py
       
       #first find the possible trigger and clock sources
-      #this method is ni dependent! might be woth a total reworking in light of routing in device.py
+      #this method is ni dependent! might be woth a total reworking in light of routing in card.py
       clk = self.name + '/SampleClock'
       #trg = self.name + '/StartTrigger'
       trg = "comedi/Dev0/ao/StartTrigger" #Spencer removed di/do start trigger from ni routes for some reason so I have to cheat here for testing
@@ -54,22 +59,23 @@ class Subdevice(Base):
       
       index = str(self.subdevice - c.comedi_find_subdevice_by_type(self.fd,c.COMEDI_SUBD_COUNTER,0))
       
-      clk = str(self.device) + '/Ctr'+index+'Source' 
+      clk = str(self.card) + '/Ctr'+index+'Source' 
 
-      trg = str(self.device) +'/Ctr'+index+'Gate' # wrong, timing devices have different commands and shouldnt need triggers like this
+      trg = str(self.card) +'/Ctr'+index+'Gate' # wrong, timing devices have different commands and shouldnt need triggers like this
       
       devname = 'Ctr'+index          # bad place for this
-      name = '{}/{}'.format(device, devname)
+      name = '{}/{}'.format(self.card, devname)
       Base.__init__(self, name=name)
       self.base_name = devname      
 
 
     if clk not in route_loader.source_map:
         error("No clocks found for clock-able device '%s' (%s)",
-              self, self.device.board)
+              self, self.card.board)
 
     if trg not in route_loader.aggregate_map:
-        error("No triggers found for triggerable device '%s' (%s)", self, self.device.board)
+        error("No triggers found for triggerable device '%s' (%s)",
+              self, self.card.board)
     
     self.clock_sources = route_loader.source_map[clk]
     self.trig_sources  = route_loader.aggregate_map[trg] #changed to agg map because it contains starttrigger for do, may be incorrect
@@ -90,11 +96,11 @@ class Subdevice(Base):
 
   @property
   def fd(self):
-    return self.device.fd
+    return self.card.fd
 
   @property
   def prefix(self):
-    return self.device.prefix
+    return self.card.prefix
 
   @property
   def flags(self):
@@ -206,13 +212,13 @@ class Subdevice(Base):
     if config['clock-settings']['edge']['value'] == 'falling':
         scan_begin_arg = c.CR_INVERT | c.CR_EDGE
     
-    #Below calls device class method to provide integers understood by comedi cmds
+    #Below calls Card class method to provide integers understood by comedi cmds
     trig_signal = {(config['trigger']['source']['value'], self.name+'/StartTrigger'): {'invert': False}}
-    trig = self.device.Sigconfig(trig_signal)
+    trig = self.card.Sigconfig(trig_signal)
     
     
     clk_signal = {(self.clock_terminal, self.name+'/SampleClock'): {'invert': False}}
-    clk = self.device.Sigconfig(clk_signal)
+    clk = self.card.Sigconfig(clk_signal)
     
     if trig == None:
       start_src = c.TRIG_INT
@@ -230,7 +236,7 @@ class Subdevice(Base):
     self.add_channels() # populates cmd_chanlist
     
      #TRIG_EXT argument: digital line of trigger (watch for inconisitent PFI index)
-     #TRIG_INT argument: Zero, triggers with: comedi_internal_trigger(device, subdevice, 0)
+     #TRIG_INT argument: Zero, triggers with: comedi_internal_trigger(card, subdevice, 0)
      #TRIG_COUNT argument: int counted to
      #all other arguments are zero
                  
@@ -357,28 +363,17 @@ class Subdevice(Base):
         #optional: implement calibration
         
         self.start() 
-        
-        
+
         mapp = mmap.mmap(c.comedi_fileno(self.fd), self.buf_size, MAP_SHARED, PROT_WRITE, 0, 0) #
-            
         npmap = np.ndarray(shape=((self.buf_size/2)), dtype=c.sampl_t, buffer = mapp, offset=0, order='C')
-        
-         
-        
+
+
         for i in xrange((len(data))):
-          
-          
-          
           rng = self.channels[self.channels.keys()[i]]
-          
           rng = c.comedi_range( rng['min'], rng['max'], 0 )
-          
           npmap[:] = c.comedi_from_phys(data[data.keys()[i]], rng, c.lsampl_t(65535)) #max data will be device specific?
-        
-        
-        
+
         print c.comedi_mark_buffer_written(self.fd, self.subdevice, self.buf_size), "written"
-        
         print c.comedi_internal_trigger(self.fd, self.subdevice, 0), "trigger"
         
         
@@ -518,16 +513,15 @@ class Subdevice(Base):
         
     print self.buf_size, "buf sz"  
     mapp = mmap.mmap(c.comedi_fileno(self.fd), self.buf_size, MAP_SHARED, PROT_WRITE, 0, 0) 
-            
+
     npmap = np.ndarray(shape=((self.buf_size/2)), dtype=c.sampl_t, buffer = mapp, offset=0, order='C')
-        
+
     rng = self.channels[self.channels.keys()[0]] #this assumes all chans on subdevice have the same range
-          
+
     rng = c.comedi_range( rng['min'], rng['max'], 0 )    
-    
+
     print len(scans), 'len scans'  
     for i in xrange((len(scans))):
-          
       #TO DO: implement calibration
       ############################
       #num = re.search('([0-9]*)$', data.keys()[i])
@@ -537,10 +531,10 @@ class Subdevice(Base):
       ##include findable rng integer PACK
       #rng = 0
 
-      ##below is device dependenent, but can be descovederd and selected using subdevice flag SDF_SOFT_CALIBRATED
-          
+      ##below is device dependenent, but can be discovered and selected using subdevice flag SDF_SOFT_CALIBRATED
+
       #path = c.comedi_get_default_calibration_path(self.fd)
-          
+
       #path_point = comedi_ 
       #calibration = c.comedi_parse_calibration_file(path)
       ##print calibration[0]
@@ -548,10 +542,10 @@ class Subdevice(Base):
 
       #npmap[i] = c.comedi_from_physical(data[data.keys()[i]], poly)
       ############################
-      
-      
-      
-      
+
+
+
+
       npmap[scans.keys()[i]:(self.buf_size/2)] = c.comedi_from_phys(scans[scans.keys()[i]][0], rng, c.lsampl_t(65535)) #max data will be device specific?
       #need to account for multiple chans in 'scans' 
        
@@ -601,7 +595,8 @@ class Subdevice(Base):
   def stop(self):
     if self.task:
       c.comedi_cancel(self.fd, self.subdevice)
-      c.comedi_close(self.fd) #put in device.py?
+      # this seems a little drastic, but I think Ian found this necessary
+      c.comedi_close(self.fd) #put in card.py?
 
 
 

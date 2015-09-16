@@ -29,7 +29,7 @@ klasses = {
   c.COMEDI_SUBD_COUNTER : subdevice.Timing,
 }
 
-def get_useful_subdevices(route_loader, device, typ,
+def get_useful_subdevices(route_loader, card, typ,
                           restrictions=dict(
                           start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,),
                           ret_index_list=False 
@@ -38,22 +38,22 @@ def get_useful_subdevices(route_loader, device, typ,
   cmd = c.comedi_cmd_struct()
 
   klass = klasses[typ]
-  for index in subdev_iterator(device.fd, typ):
-    if c.comedi_get_cmd_src_mask(device.fd, index, cmd) < 0:
+  for index in subdev_iterator(card.fd, typ):
+    if c.comedi_get_cmd_src_mask(card.fd, index, cmd) < 0:
       # we only will look at those subdevs that can have asynchronous use
-      log(DEBUG-1, 'ignoring subdev without async mode: %s/%d', device, index)
+      log(DEBUG-1, 'ignoring subdev without async mode: %s/%d', card, index)
       continue
     if not reduce( lambda x,y: x|y,
                    [ getattr(cmd,n) & r for n,r in restrictions.items() ]):
       # we only return unrestricted devs
       debug( 'ignoring restricted subdev: %s/%s(%d)',
-             device, klass.subdev_type, index )
+             card, klass.subdev_type, index )
       if logging.root.getEffectiveLevel() <= (DEBUG-1):
         log(DEBUG-1, 'cmd restrictions: %s', restrictions)
         log(DEBUG-1, 'cmd capabilities: %s',
                      { n:getattr(cmd,n) for n in restrictions })
       continue
-    L.append( (device, index) )
+    L.append( (card, index) )
   #del cmd # Syntax error to delete this!?!
   subdevs = list()
   
@@ -65,27 +65,26 @@ def get_useful_subdevices(route_loader, device, typ,
   else:      
     return subdevs
 
-class Device(object):
+class Card(object):
   @staticmethod
-  def parse_dev(dev):
-    m = re.match('/dev/comedi(?P<device>[0-9]+)$', dev)
-    return None if not m else m.group('device')
+  def get_card_number(device_filename):
+    m = re.match('/dev/comedi(?P<board_number>[0-9]+)$', device_filename)
+    return None if not m else m.group('board_number')
 
-  def __init__(self, driver, device):
+  def __init__(self, driver, device_file):
     self.driver = driver
-    self.dev    = device
+    self.device_file    = device_file
     self.routed_signals = dict()
     self.prefix = '' # shouldn't need this because of defaults in ni_routes
 
-    self.fd     = c.comedi_open(self.dev)
+    self.fd     = c.comedi_open(self.device_file)
     if self.fd is None:
-      raise NameError('could not open comedi device: ' + self.dev)
-    self.device = 'Dev'+self.parse_dev(device)
+      raise NameError('could not open comedi device file: ' + self.device_file)
+    self.device = 'Dev'+self.get_card_number(device_file)
     self.rl = rl = routes.getRouteLoader(self.kernel) ( driver, self )
     self.sig_map = signal_map.getSignalLoader(self.kernel) (self)
     
     gus = get_useful_subdevices
-    self.gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
 
@@ -206,16 +205,15 @@ class Device(object):
     while self.subdevices:
       subname, subdev = self.subdevices.popitem()
       del subdev
-    
-    List = self.gus(self.rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+
+    gus = get_useful_subdevices
+    List = gus(self.rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
 
     for device, index in List:
-      
       chans = c.comedi_get_n_channels(self.fd, index)
-      
       c.comedi_dio_config(self.fd, index, chans, c.COMEDI_INPUT) 
-      
-   
+
+
     # # Fixed?
     # # # Set all routes to their default and configure all routable pins to    
     # # # COMEDI_INPUT as an attempt to protect any pins from damage
@@ -224,7 +222,7 @@ class Device(object):
     # # # lines.
     # # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
 
-    # now close the device
+    # now close the comedi device handle
     c.comedi_close(self.fd)
   
   def stop(self):

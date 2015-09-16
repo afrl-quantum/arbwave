@@ -4,7 +4,7 @@ import re, glob, traceback
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 from ....tools.path import collect_prefix
 from ...driver import Driver as Base
-from device import Device
+from card import Card
 import re
 import ctypes_comedi as c
 
@@ -15,8 +15,8 @@ class Driver(Base):
   has_simulated_mode = False # will not be a lie some time in the future
 
   @staticmethod
-  def glob_comedi_devices():
-    """creates a list of all comedi devices"""
+  def glob_comedi_device_files():
+    """creates a list of all comedi device files"""
     return glob.glob('/dev/comedi*')
 
 
@@ -27,51 +27,52 @@ class Driver(Base):
     if self.simulated:
       import sim # rehook comedi lib so that hardware is simulated.
       Csim = sim.inject_sim_lib()
-      self.glob_comedi_devices = Csim.glob_devices
+      self.glob_comedi_device_files = Csim.glob_device_files
 
 
     # device path --> Device instance
-    self.devices     = dict()
-    self.subdevices  = dict()
-    self.analogs     = list()
-    self.lines       = list()
-    self.counters    = list()
-    self.signals     = list()
+    self.cards      = dict()
+    self.subdevices = dict()
+    self.analogs    = list()
+    self.lines      = list()
+    self.counters   = list()
+    self.signals    = list()
     
     
-    for df in self.glob_comedi_devices():
-      if Device.parse_dev( df ) is None:
+    for df in self.glob_comedi_device_files():
+      if Card.get_card_number( df ) is None:
         continue # don't match subdevices
       try:
-        d = Device( self, df )
+        card = Card( self, df )
       except:
         traceback.print_exc()
-        print 'Could not open comedi device: ', df
+        print 'Could not open comedi card: ', df
         continue
-      self.devices[ str(d) ] = d
-      self.subdevices.update( d.subdevices )
-      self.analogs  += [ ao for sub in d.ao_subdevices for ao in sub.available_channels ]
-      self.lines    += [ do for sub in d.do_subdevices for do in sub.available_channels ]
-      self.lines    += [ do for sub in d.dio_subdevices for do in sub.available_channels ]
-      self.counters += [ sub for sub in d.counter_subdevices  ] #don't collect counter channels
-      self.signals  += [ so for  so in d.signals ]
+      self.cards[ str(card) ] = card
+      self.subdevices.update( card.subdevices )
+      self.analogs  += [ ao for sub in card.ao_subdevices for ao in sub.available_channels ]
+      self.lines    += [ do for sub in card.do_subdevices for do in sub.available_channels ]
+      self.lines    += [ do for sub in card.dio_subdevices for do in sub.available_channels ]
+      self.counters += [ sub for sub in card.counter_subdevices  ] #don't collect counter channels
+      self.signals  += [ so for  so in card.signals ]
       
-    print 'found {} comedi supported boards'.format(len(self.devices))
+    print 'found {} comedi supported boards'.format(len(self.cards))
     
     
 
   def close(self):
     """
-    Close each device.  Each device will first close each of its subdevices.
+    Close each card.  Each card will first close each of its subdevices.
     """
-    while self.devices:
-      devname, dev = self.devices.popitem()
-      debug( 'closing comedi device: %s', devname )
+    while self.cards:
+      devname, dev = self.cards.popitem()
+      debug( 'closing comedi card: %s', devname )
       del dev
 
   def get_devices(self):
     """
-    Actually, to fit into the framework here for Arbwave, we return the subdevices
+    Return the arbwave notion of devices.  In comedi nomenclature, this
+    corresponds to subdevices.
     """
     return self.subdevices.values()
 
@@ -89,7 +90,6 @@ class Driver(Base):
 
 
   def set_device_config( self, config, channels, shortest_paths ):
- 
     debug('comedi.set_device_config')
     subdev_chans = dict()
     chans = dict()
@@ -119,7 +119,7 @@ class Driver(Base):
 
   def set_signals( self, signals ):
     debug('comedi.set_signals')
-    for d, dev in self.devices.items():
+    for d, dev in self.cards.items():
       dev.Sigconfig(signals)
     
     

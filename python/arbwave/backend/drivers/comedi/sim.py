@@ -140,12 +140,12 @@ class SimSubDev(dict):
 
 
 
-class SimDevice(object):
+class SimCard(object):
   driver  = None
   board   = None
   subdevs = dict()
   def __init__(self):
-    super(SimDevice,self).__init__()
+    super(SimCard,self).__init__()
     # initialize subdevs...
     self.subdevs = [ SimSubDev(D) for D in self.subdevs ]
 
@@ -197,7 +197,7 @@ class SimDevice(object):
   def get_write_subdevice(self):
     """
     The function comedi_get_write_subdevice() returns the index of the subdevice
-    whose streaming output buffer is accessible through the device device. If
+    whose streaming output buffer is accessible through this (simulated) card. If
     there is no such subdevice, -1 is returned.
     """
     return self.find_subdevice_by_type(
@@ -205,7 +205,7 @@ class SimDevice(object):
     )
 
 
-class PXI_6733(SimDevice):
+class PXI_6733(SimCard):
   driver = 'ni_pcimio'
   board = 'pxi-6733'
   subdevs = {
@@ -245,7 +245,7 @@ class PXI_6723(PXI_6733):
   board = 'pxi-6723'
   subdevs = subdev_replace_n_channels(PXI_6733.subdevs.copy(), 32)
 
-class PCI_6229(SimDevice):
+class PCI_6229(SimCard):
   driver = 'ni_pcimio'
   board = 'pci-6229'
   subdevs = {
@@ -281,36 +281,48 @@ class PCI_6229(SimDevice):
 
 class ComediSim(object):
   def __init__(self):
-    self.devices = {
+    self.cards = {
       0 : PXI_6733(),
       1 : PXI_6723(),
       2 : PCI_6229(),
     }
 
   def __getitem__(self, i):
-    """Quick access to devices by index"""
-    return self.devices[i]
+    """Quick access to cards by index"""
+    return self.cards[i]
 
-  def glob_devices(self):
-    mn,mx = min(self.devices), max(self.devices)
+  def glob_device_files(self):
+    mn,mx = min(self.cards), max(self.cards)
     return expand_braces('/dev/comedi{{{}..{}}}'.format(mn,mx))
 
   def comedi_open(self, filename):
     debug('comedi_open(%s)', filename)
-    m = re.match( '/dev/comedi(?P<device>[0-9]+)$', filename )
-    if not m or int(m.group('device')) not in self.devices: return None
-    return int(m.group('device')) # FIXME:  return the right type of value(?)
+    m = re.match( '/dev/comedi(?P<card_number>[0-9]+)$', filename )
+    if not m:
+      return None
+
+    card_number = int(m.group('card_number'))
+
+    if card_number not in self.cards:
+      return None
+
+    # NOTE:  return the right type of value(?)
+    # I think this is perfectly fine since the c-library returns a pointer to an
+    # opaque type.  Hence, we can return any particular value that is convenient
+    # for us.
+    return card_number
 
   def comedi_close(self, fd):
+    # FIXME:  Not sure if this implementation is any good.
     debug('comedi_close(%d)', fd)
-    for d in self.devices.values():
+    for d in self.cards.values():
       for sd in d.subdevs:
         if d.isLockedBySelf(sd):
           self.comedi_unlock(d,sd)
     return 0
 
   def comedi_fileno(self, fd):
-    return fd if fd in self.devices else -1
+    return fd if fd in self.cards else -1
 
   def comedi_get_version_code(self, fd):
     return 0x1 # we'll just return a lame version for all kernel modules
@@ -318,15 +330,15 @@ class ComediSim(object):
   def comedi_get_read_subdevice(self, fd):
     """
     The function comedi_get_read_subdevice() returns the index of the subdevice
-    whose streaming input buffer is accessible
-    through the device device . If there is no such subdevice, -1 is returned.
+    whose streaming input buffer is accessible through the (simulated) card . If
+    there is no such subdevice, -1 is returned.
     """
     return self[fd].get_read_subdevice()
 
   def comedi_get_write_subdevice(self, fd):
     """
     The function comedi_get_write_subdevice() returns the index of the subdevice
-    whose streaming output buffer is accessible through the device device. If
+    whose streaming output buffer is accessible through the (simulated) card. If
     there is no such subdevice, -1 is returned.
     """
     return self[fd].get_write_subdevice()
@@ -341,17 +353,17 @@ class ComediSim(object):
 
   def comedi_find_subdevice_by_type(self, fd, typ, start_subdevice):
     debug('comedi_find_subdevice_by_type(%d, %d, %d)', fd,typ,start_subdevice)
-    if fd not in self.devices: return -1
+    if fd not in self.cards: return -1
     return self[fd].find_subdevice_by_type(typ, start_subdevice)
 
   def comedi_get_subdevice_flags(self, fd, sub):
     debug('comedi_get_subdevice_flags(%d, %d)', fd, sub)
-    if fd not in self.devices: return -1
+    if fd not in self.cards: return -1
     return self[fd][sub].flags
 
   def comedi_get_n_channels(self, fd, sub):
     debug('comedi_get_n_channels(%d, %d)', fd, sub)
-    if fd not in self.devices: return -1
+    if fd not in self.cards: return -1
     return self[fd][sub].n_channels
 
   def comedi_get_driver_name(self, fd):
@@ -424,11 +436,11 @@ class ComediSim(object):
   # AO functions
   def comedi_data_write(self, fd, subdev, channel, range, aref, data):
     """
-    Writes a single sample on the channel that is specified by the Comedi device
-    device, the subdevice subdevice, and the channel channel. If appropriate,
-    the device is configured to use range specification range and analog
-    reference type aref. Analog reference types that are not supported by the
-    device are silently ignored.
+    Writes a single sample on the channel that is specified by the Comedi
+    (simulated) card, the subdevice subdevice, and the channel channel. If
+    appropriate, the card is configured to use range specification range and
+    analog reference type aref. Analog reference types that are not supported by
+    the card are silently ignored.
 
     The function comedi_data_write() writes the data value specified by the
     parameter data to the specified channel.
@@ -441,7 +453,7 @@ class ComediSim(object):
   # CMD functions
   def comedi_get_cmd_src_mask(self, fd, subdev, cmd):
     debug('comedi_get_cmd_src_mask(%d, %d, %s)', fd, subdev, cmd)
-    if fd not in self.devices: return -1
+    if fd not in self.cards: return -1
     return self[fd][subdev].get_cmd_src_mask(cmd)
 
   def comedi_internal_trigger(self, fd, subdevice, trig_num=0):
@@ -513,7 +525,7 @@ class ComediSim(object):
   def comedi_get_buffer_size(self, fd, subdevice):
     """
     The function comedi_get_buffer_size() returns the size (in bytes) of the
-    streaming buffer for the subdevice specified by device and subdevice. On
+    streaming buffer for the subdevice specified by card and subdevice. On
     error, -1 is returned.
     """
     debug('comedi_get_buffer_size(%d, %d)', fd, subdevice)

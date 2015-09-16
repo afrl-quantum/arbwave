@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 """
-  Driver specific singals inteligible to comedi.
+Driver specific singals inteligible to comedi.
 """
 
 import logging, re
@@ -9,13 +9,13 @@ import ctypes_comedi as c
 
 
 class NullSignalLoader(object):
-  def __init__(self, device):
-    debug("signals for device '%s' not yet known", device)
+  def __init__(self, card):
+    debug("signals for card '%s' not yet known", card)
 
 
 
 class NISignalLoader(object):
-  def __init__(self, device):
+  def __init__(self, card):
     
     #put None for unknown signals
     self.sig_nums_PFI = \

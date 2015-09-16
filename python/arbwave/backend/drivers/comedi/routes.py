@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 """
-  The set of routes that are possible depending on the particular hardware.
+The set of routes that are possible depending on the particular hardware.
 """
 
 import logging, re
@@ -13,8 +13,8 @@ class BaseRouteLoader(object):
   route_map     (src, destination) -> (native-src, native-destination)
   aggregate_map (src) -> [dest0, dest1, ...]
   """
-  def __init__(self, device, aggregate_map, route_map):
-    self.device         = device
+  def __init__(self, card, aggregate_map, route_map):
+    self.card           = card
     self.aggregate_map  = aggregate_map
     self.route_map      = route_map
     self.source_map     = dict()
@@ -24,17 +24,16 @@ class BaseRouteLoader(object):
       
 
 class NullRouteLoader(BaseRouteLoader):
-  def __init__(self, device):
-    debug("routes for device '%s' not yet known", device)
+  def __init__(self, driver, card):
+    debug("routes for card '%s' not yet known", card)
 
 
 
 class NIRouteLoader(BaseRouteLoader):
-  def __init__(self, driver, device ):
+  def __init__(self, driver, card ):
     ni_rl = ni_routes.RouteLoader( driver.host_prefix, str(driver) )
-    aggregate_map, route_map = \
-      ni_rl.mk_signal_route_map(device.device,device.board)
-    super(NIRouteLoader,self).__init__(device, aggregate_map, route_map)
+    aggregate_map, route_map = ni_rl.mk_signal_route_map(card.device,card.board)
+    super(NIRouteLoader,self).__init__(card, aggregate_map, route_map)
     self.ni_rl = ni_rl
   
   
