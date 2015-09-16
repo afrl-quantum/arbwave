@@ -10,6 +10,7 @@ FPGA PXI card.
 from device import Device
 from marvin.exceptions import NotATimingBoard
 import capabilities
+import logging
 from ...driver import Driver as Base
 from .. import pci_utils
 from ....tools.path import collect_prefix
@@ -37,7 +38,7 @@ class Driver(Base):
             DEV_GX3500 = 0x3500
             board_addresses = []
             search = pci_utils.PciBusSearch(manufacturer=MFR_MARVIN, device=DEV_GX3500)
-            print 'Probing {} GX3500 devices...'.format(len(search.result))
+            logging.info('Probing %d GX3500 devices...', len(search.result))
             for bus, dev, fn in search.result:
                 board_addresses.append(int(bus, 16) << 8 | int(dev, 16))
 
@@ -50,7 +51,7 @@ class Driver(Base):
             except NotATimingBoard:
                 pass
         
-        print 'Found {} timing boards.'.format(len(self.devices))
+        logging.info('Found %d timing boards.', len(self.devices))
 
         self.digital_channels = capabilities.get_digital_channels(self.devices)
         self.timing_channels = capabilities.get_timing_channels(self.devices)
