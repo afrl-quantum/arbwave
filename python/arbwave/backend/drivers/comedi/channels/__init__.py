@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 
-from base import Base
+from .base import Base
 from .timing      import Timing
 from ....channels import Analog as ABase
 from ....channels import Digital as DBase

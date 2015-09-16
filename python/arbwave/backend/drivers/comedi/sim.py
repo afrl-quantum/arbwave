@@ -3,7 +3,7 @@
 Simulated low-level comedilib library.
 """
 
-import ctypes_comedi as c
+import ctypes_comedi as clib
 from ctypes import c_ubyte
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re, time
@@ -13,12 +13,12 @@ def inject_sim_lib():
   C = ComediSim()
   import_funcs = [ f for f in dir(C) if f.startswith('comedi')]
   for f in import_funcs:
-    setattr( c, f, getattr(C,f) )
+    setattr( clib, f, getattr(C,f) )
   return C
 
 
 def mk_crange(min,max,unit):
-  r = c.comedi_range()
+  r = clib.comedi_range()
   r.min = min
   r.max = max
   r.unit = unit
@@ -29,7 +29,7 @@ class SimSubDev(dict):
     super(SimSubDev,self).__init__(*a, **kw)
     self.__dict__ = self
     # ensure that ranges are sorted correctly
-    self.setdefault('type', c.COMEDI_SUBD_UNUSED)
+    self.setdefault('type', clib.COMEDI_SUBD_UNUSED)
     self.setdefault('n_channels', 0)
     # FIXME:  replace this with a non static digital/analog representation
     self.setdefault('state', [0 for i in xrange(self.n_channels)])
@@ -109,7 +109,7 @@ class SimSubDev(dict):
     return self.buf_begin
 
   def mark_buffer_read(self, num_bytes):
-    if self.type not in [c.COMEDI_SUBD_AI, c.COMEDI_SUBD_DI]:
+    if self.type not in [clib.COMEDI_SUBD_AI, clib.COMEDI_SUBD_DI]:
       return -1
     avail = self.get_buffer_contents()
     if num_bytes > avail:
@@ -118,7 +118,7 @@ class SimSubDev(dict):
     return num_bytes
 
   def mark_buffer_written(self, num_bytes):
-    if self.type not in [c.COMEDI_SUBD_AO, c.COMEDI_SUBD_DO]:
+    if self.type not in [clib.COMEDI_SUBD_AO, clib.COMEDI_SUBD_DO]:
       return -1
     avail = self.get_buffer_contents()
     if num_bytes > avail:
@@ -154,19 +154,19 @@ class SimCard(object):
     return self.subdevs[i]
 
   def lock(self, subdevice):
-    if self.subdevs[subdevice].flags & c.SDF_LOCKED:
+    if self.subdevs[subdevice].flags & clib.SDF_LOCKED:
       return -1
-    self.subdevs[subdevice].flags |= c.SDF_LOCKED | c.SDF_LOCK_OWNER
+    self.subdevs[subdevice].flags |= clib.SDF_LOCKED | clib.SDF_LOCK_OWNER
     return 0
 
   def unlock(self, subdevice):
     if not self.isLockedBySelf(subdevice):
       return -1
-    self.subdevs[subdevice].flags &= ~(c.SDF_LOCKED | c.SDF_LOCK_OWNER)
+    self.subdevs[subdevice].flags &= ~(clib.SDF_LOCKED | clib.SDF_LOCK_OWNER)
     return 0
 
   def isLockedBySelf(self, subdevice):
-    lock_owned = (c.SDF_LOCKED | c.SDF_LOCK_OWNER)
+    lock_owned = (clib.SDF_LOCKED | clib.SDF_LOCK_OWNER)
     return (self.subdevs[subdevice].flags & lock_owned) == lock_owned
 
   def find_subdevice_by_type(self, typ, start_subdevice, flagmask=0):
@@ -191,7 +191,8 @@ class SimCard(object):
     through the device device . If there is no such subdevice, -1 is returned.
     """
     return self.find_subdevice_by_type(
-      (c.COMEDI_SUBD_AI, c.COMEDI_SUBD_DI), 0,flagmask=c.SDF_CMD|c.SDF_CMD_READ
+      (clib.COMEDI_SUBD_AI, clib.COMEDI_SUBD_DI), 0,
+      flagmask=clib.SDF_CMD | clib.SDF_CMD_READ
     )
 
   def get_write_subdevice(self):
@@ -201,7 +202,8 @@ class SimCard(object):
     there is no such subdevice, -1 is returned.
     """
     return self.find_subdevice_by_type(
-      (c.COMEDI_SUBD_AO, c.COMEDI_SUBD_DO), 0,flagmask=c.SDF_CMD|c.SDF_CMD_WRITE
+      (clib.COMEDI_SUBD_AO, clib.COMEDI_SUBD_DO), 0,
+      flagmask=clib.SDF_CMD | clib.SDF_CMD_WRITE
     )
 
 
@@ -209,14 +211,14 @@ class PXI_6733(SimCard):
   driver = 'ni_pcimio'
   board = 'pxi-6733'
   subdevs = {
-    1 : dict( type=c.COMEDI_SUBD_AO, n_channels=8,
+    1 : dict( type=clib.COMEDI_SUBD_AO, n_channels=8,
       bits=16,
-      flags= c.SDF_CMD       |
-             c.SDF_CMD_WRITE |
-             c.SDF_DEGLITCH  |
-             c.SDF_GROUND    |
-             c.SDF_WRITABLE  |
-             c.SDF_WRITEABLE,
+      flags= clib.SDF_CMD       |
+             clib.SDF_CMD_WRITE |
+             clib.SDF_DEGLITCH  |
+             clib.SDF_GROUND    |
+             clib.SDF_WRITABLE  |
+             clib.SDF_WRITEABLE,
       cmd=dict(chanlist=None,
                chanlist_len=0,
                convert_arg=0,
@@ -234,7 +236,7 @@ class PXI_6733(SimCard):
                stop_src=33,
                subdev=1,
       ),
-      ranges={ c.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
+      ranges={ clib.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
     ),
   }
 
@@ -249,15 +251,15 @@ class PCI_6229(SimCard):
   driver = 'ni_pcimio'
   board = 'pci-6229'
   subdevs = {
-    1 : dict( type=c.COMEDI_SUBD_AO, n_channels=4,
+    1 : dict( type=clib.COMEDI_SUBD_AO, n_channels=4,
       bits=16,
-      flags= c.SDF_CMD       |
-             c.SDF_CMD_WRITE |
-             c.SDF_DEGLITCH  |
-             c.SDF_GROUND    |
-             c.SDF_WRITABLE  |
-             c.SDF_WRITEABLE |
-             c.SDF_SOFT_CALIBRATED,
+      flags= clib.SDF_CMD       |
+             clib.SDF_CMD_WRITE |
+             clib.SDF_DEGLITCH  |
+             clib.SDF_GROUND    |
+             clib.SDF_WRITABLE  |
+             clib.SDF_WRITEABLE |
+             clib.SDF_SOFT_CALIBRATED,
       cmd=dict(chanlist=None,
                chanlist_len=0,
                convert_arg=0,
@@ -463,24 +465,24 @@ class ComediSim(object):
   def comedi_do_insn(self, fd, instruction):
     i = instruction
     debug('comedi_do_insn(%d, %d, %s)', fd, subdev, i)
-    if ( i.insn == c.INSN_WRITE ):
-      C,R,A = ( f(i.chanspec) for i in [c.CR_CHAN,c.CR_RANGE,c.CR_AREF] )
+    if ( i.insn == clib.INSN_WRITE ):
+      C,R,A = ( f(i.chanspec) for i in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
       for j in xrange(i.n):
         self[fd][i.subdev].data_write(C,R,A,i.data[j])
       return i.n
-    if ( i.insn == c.INSN_READ ):
-      C,R,A = ( f(i.chanspec) for i in [c.CR_CHAN,c.CR_RANGE,c.CR_AREF] )
+    if ( i.insn == clib.INSN_READ ):
+      C,R,A = ( f(i.chanspec) for i in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
       self[fd][i.subdev].data_read_n(C,R,A,i.data,i.n)
       return i.n
-    if ( i.insn == c.INSN_BITS ):
+    if ( i.insn == clib.INSN_BITS ):
       return -1
-    if ( i.insn == c.INSN_GTOD ):
+    if ( i.insn == clib.INSN_GTOD ):
       assert i.n == 2, 'INSN_GTOD requires buffer of len=2'
       t = time.time()
       i.data[0] = int(t)
       i.data[1] = int( ( t - int(t)) * 1e6 )
       return 0
-    if ( i.insn == c.INSN_WAIT ):
+    if ( i.insn == clib.INSN_WAIT ):
       assert i.n == 1, 'INSN_WAIT requires buffer of len=1'
       time.sleep(i.data[0])
       return 0

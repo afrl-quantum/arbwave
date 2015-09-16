@@ -2,44 +2,39 @@
 
 import logging, re
 from logging import log, debug, DEBUG
-import ctypes_comedi as c
+import ctypes_comedi as clib
 
 from ....tools import cached
 from ....tools.path import collect_prefix
-from subdevice.subdevice import Subdevice
-import subdevice
-import channels
-from . import routes
-import signal_map
-import re
-from . import signal_map
+from . import subdevice, channels, routes, signal_map
+
 
 def subdev_iterator(fd, typ):
   i = 0
   while True:
-    i = c.comedi_find_subdevice_by_type(fd, typ, i)
+    i = clib.comedi_find_subdevice_by_type(fd, typ, i)
     if i < 0: break
     yield i
     i += 1
 
 klasses = {
-  c.COMEDI_SUBD_AO      : subdevice.Analog,
-  c.COMEDI_SUBD_DO      : subdevice.Digital,
-  c.COMEDI_SUBD_DIO     : subdevice.Digital,
-  c.COMEDI_SUBD_COUNTER : subdevice.Timing,
+  clib.COMEDI_SUBD_AO      : subdevice.Analog,
+  clib.COMEDI_SUBD_DO      : subdevice.Digital,
+  clib.COMEDI_SUBD_DIO     : subdevice.Digital,
+  clib.COMEDI_SUBD_COUNTER : subdevice.Timing,
 }
 
 def get_useful_subdevices(route_loader, card, typ,
                           restrictions=dict(
-                          start_src=c.TRIG_FOLLOW|c.TRIG_INT|c.TRIG_EXT,),
+                          start_src=clib.TRIG_FOLLOW|clib.TRIG_INT|clib.TRIG_EXT,),
                           ret_index_list=False 
                          ):
   L = list()
-  cmd = c.comedi_cmd_struct()
+  cmd = clib.comedi_cmd_struct()
 
   klass = klasses[typ]
   for index in subdev_iterator(card.fd, typ):
-    if c.comedi_get_cmd_src_mask(card.fd, index, cmd) < 0:
+    if clib.comedi_get_cmd_src_mask(card.fd, index, cmd) < 0:
       # we only will look at those subdevs that can have asynchronous use
       log(DEBUG-1, 'ignoring subdev without async mode: %s/%d', card, index)
       continue
@@ -77,7 +72,7 @@ class Card(object):
     self.routed_signals = dict()
     self.prefix = '' # shouldn't need this because of defaults in ni_routes
 
-    self.fd     = c.comedi_open(self.device_file)
+    self.fd     = clib.comedi_open(self.device_file)
     if self.fd is None:
       raise NameError('could not open comedi device file: ' + self.device_file)
     self.device = 'Dev'+self.get_card_number(device_file)
@@ -85,11 +80,11 @@ class Card(object):
     self.sig_map = signal_map.getSignalLoader(self.kernel) (self)
     
     gus = get_useful_subdevices
-    self.ao_subdevices      = gus(rl, self, c.COMEDI_SUBD_AO)
-    self.do_subdevices      = gus(rl, self, c.COMEDI_SUBD_DO)
+    self.ao_subdevices      = gus(rl, self, clib.COMEDI_SUBD_AO)
+    self.do_subdevices      = gus(rl, self, clib.COMEDI_SUBD_DO)
 
-    self.dio_subdevices     = gus(rl, self, c.COMEDI_SUBD_DIO)
-    self.counter_subdevices = gus(rl, self, c.COMEDI_SUBD_COUNTER)
+    self.dio_subdevices     = gus(rl, self, clib.COMEDI_SUBD_DIO)
+    self.counter_subdevices = gus(rl, self, clib.COMEDI_SUBD_COUNTER)
     
     self.subdevices = dict()
     self.subdevices.update( { str(ao)+str(ao.subdevice):ao for ao in self.ao_subdevices } )
@@ -102,7 +97,7 @@ class Card(object):
     ]
     
 
-    List = gus(rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+    List = gus(rl, self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
  
     self.backplane_subdevices = dict()
     
@@ -110,7 +105,7 @@ class Card(object):
       
       sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
 
-      if Subdevice.status(sdev)['internal']:
+      if subdevice.Subdevice.status(sdev)['internal']:
         
         self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev  
         
@@ -152,7 +147,7 @@ class Card(object):
         if d.find(str(self).rstrip(str(self.driver)))>-1:
           d = d.lstrip(str(self.driver)+str(self))
           d = self.sig_map.ch_nums(d)
-          c.comedi_dio_config(self.fd, d['subdev'], d['chan'], c.COMEDI_INPUT) # an attempt to protect the dest terminal
+          clib.comedi_dio_config(self.fd, d['subdev'], d['chan'], clib.COMEDI_INPUT) # an attempt to protect the dest terminal
 
       # connect new routes routes no longer in use
       for route in ( new - old ):
@@ -184,12 +179,12 @@ class Card(object):
            
           if d['kind'] =='PFI':  
             s =  self.sig_map.sig_nums_PFI[s]
-            c.comedi_dio_config(self.fd, d['subdev'], d['chan'], c.COMEDI_OUTPUT)
-            c.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
+            clib.comedi_dio_config(self.fd, d['subdev'], d['chan'], clib.COMEDI_OUTPUT)
+            clib.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
           if d['kind'] =='RTSI':
             s =  self.sig_map.sig_nums_RTSI[s]
-            c.comedi_dio_config(self.fd, d['subdev'], d['chan'], c.COMEDI_OUTPUT)
-            c.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
+            clib.comedi_dio_config(self.fd, d['subdev'], d['chan'], clib.COMEDI_OUTPUT)
+            clib.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
           #TODO: GPCT config/routing, CDIO clocks? 
     self.routed_signals = signals
     
@@ -207,11 +202,11 @@ class Card(object):
       del subdev
 
     gus = get_useful_subdevices
-    List = gus(self.rl, self, c.COMEDI_SUBD_DIO, ret_index_list=True)
+    List = gus(self.rl, self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
 
     for device, index in List:
-      chans = c.comedi_get_n_channels(self.fd, index)
-      c.comedi_dio_config(self.fd, index, chans, c.COMEDI_INPUT) 
+      chans = clib.comedi_get_n_channels(self.fd, index)
+      clib.comedi_dio_config(self.fd, index, chans, clib.COMEDI_INPUT) 
 
 
     # # Fixed?
@@ -223,7 +218,7 @@ class Card(object):
     # # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
 
     # now close the comedi device handle
-    c.comedi_close(self.fd)
+    clib.comedi_close(self.fd)
   
   def stop(self):
     self.__del__()
@@ -233,8 +228,8 @@ class Card(object):
   
   @cached.property
   def board(self):
-    return c.comedi_get_board_name(self.fd).lower()
+    return clib.comedi_get_board_name(self.fd).lower()
 
   @cached.property
   def kernel(self):
-    return c.comedi_get_driver_name(self.fd).lower()
+    return clib.comedi_get_driver_name(self.fd).lower()

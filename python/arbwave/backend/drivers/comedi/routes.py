@@ -3,8 +3,8 @@
 The set of routes that are possible depending on the particular hardware.
 """
 
-import logging, re
 from logging import debug
+
 from ..nidaqmx import routes as ni_routes
 
 class BaseRouteLoader(object):

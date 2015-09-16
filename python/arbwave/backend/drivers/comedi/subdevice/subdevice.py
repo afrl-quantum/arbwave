@@ -1,18 +1,17 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import copy
+import copy, time, mmap, re
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
-from physical import unit
-from .. import ctypes_comedi as c
 import numpy as np
+
+from physical import unit
+
+from .. import ctypes_comedi as clib
+
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
 from ....device import Device as Base
-import time
 from .. import channels
-import mmap
-from mmap import PROT_WRITE, MAP_SHARED
-import re
 
 class Subdevice(Base):
   """
@@ -41,7 +40,7 @@ class Subdevice(Base):
     self.use_case = None
     self.t_max = 0.0
     self.chan_index_list = list()
-    self.cmd = c.comedi_cmd()
+    self.cmd = clib.comedi_cmd()
     self.sources_to_native = dict() # not sure if we need this
     
     
@@ -57,7 +56,7 @@ class Subdevice(Base):
       
     else: 
       
-      index = str(self.subdevice - c.comedi_find_subdevice_by_type(self.fd,c.COMEDI_SUBD_COUNTER,0))
+      index = str(self.subdevice - clib.comedi_find_subdevice_by_type(self.fd,clib.COMEDI_SUBD_COUNTER,0))
       
       clk = str(self.card) + '/Ctr'+index+'Source' 
 
@@ -91,7 +90,7 @@ class Subdevice(Base):
   def clear(self):
       
       debug( 'comedi: cancelling commands for comedi subdevice %s', self )
-      c.comedi_cancel( self.fd, self.subdevice )
+      clib.comedi_cancel( self.fd, self.subdevice )
       self.t_max = 0.0
 
   @property
@@ -104,46 +103,46 @@ class Subdevice(Base):
 
   @property
   def flags(self):
-    return c.comedi_get_subdevice_flags(self.fd, self.subdevice)
+    return clib.comedi_get_subdevice_flags(self.fd, self.subdevice)
 
   @property
   def busy(self):
-    return self.flags & c.SDF_BUSY
+    return self.flags & clib.SDF_BUSY
 
   @property
   def running(self):
-    return self.flags & c.SDF_RUNNING
+    return self.flags & clib.SDF_RUNNING
     
   @property
   def buf_size(self):
-    return c.comedi_get_buffer_size(self.fd, self.subdevice) 
+    return clib.comedi_get_buffer_size(self.fd, self.subdevice) 
 
   #@property
   def status(self):
     flags = self.flags
     D = dict(
-      busy                  =     bool(flags & c.SDF_BUSY),
-      busy_owner            =     bool(flags & c.SDF_BUSY_OWNER),
-      locked                =     bool(flags & c.SDF_LOCKED),
-      lock_owner            =     bool(flags & c.SDF_LOCK_OWNER),
-      maxdata_per_channel   =     bool(flags & c.SDF_MAXDATA),
-      flags_per_channel     =     bool(flags & c.SDF_FLAGS),
-      rangetype_per_channel =     bool(flags & c.SDF_RANGETYPE),
-      async_cmd_supported   =     bool(flags & c.SDF_CMD),
-      soft_calibrated       =     bool(flags & c.SDF_SOFT_CALIBRATED),
-      readable              =     bool(flags & c.SDF_READABLE),
-      writeable             =     bool(flags & c.SDF_WRITEABLE),
-      internal              =     bool(flags & c.SDF_INTERNAL),
-      aref_ground_supported =     bool(flags & c.SDF_GROUND),
-      aref_common_supported =     bool(flags & c.SDF_COMMON),
-      aref_diff_supported   =     bool(flags & c.SDF_DIFF),
-      aref_other_supported  =     bool(flags & c.SDF_OTHER),
-      dither_supported      =     bool(flags & c.SDF_DITHER),
-      deglitch_supported    =     bool(flags & c.SDF_DEGLITCH),
-      running               =     bool(flags & c.SDF_RUNNING),
-      sample_32bit          =     bool(flags & c.SDF_LSAMPL),
-      sample_16bit          = not bool(flags & c.SDF_LSAMPL),
-      sample_bitwise        =     bool(flags & c.SDF_PACKED),
+      busy                  =     bool(flags & clib.SDF_BUSY),
+      busy_owner            =     bool(flags & clib.SDF_BUSY_OWNER),
+      locked                =     bool(flags & clib.SDF_LOCKED),
+      lock_owner            =     bool(flags & clib.SDF_LOCK_OWNER),
+      maxdata_per_channel   =     bool(flags & clib.SDF_MAXDATA),
+      flags_per_channel     =     bool(flags & clib.SDF_FLAGS),
+      rangetype_per_channel =     bool(flags & clib.SDF_RANGETYPE),
+      async_cmd_supported   =     bool(flags & clib.SDF_CMD),
+      soft_calibrated       =     bool(flags & clib.SDF_SOFT_CALIBRATED),
+      readable              =     bool(flags & clib.SDF_READABLE),
+      writeable             =     bool(flags & clib.SDF_WRITEABLE),
+      internal              =     bool(flags & clib.SDF_INTERNAL),
+      aref_ground_supported =     bool(flags & clib.SDF_GROUND),
+      aref_common_supported =     bool(flags & clib.SDF_COMMON),
+      aref_diff_supported   =     bool(flags & clib.SDF_DIFF),
+      aref_other_supported  =     bool(flags & clib.SDF_OTHER),
+      dither_supported      =     bool(flags & clib.SDF_DITHER),
+      deglitch_supported    =     bool(flags & clib.SDF_DEGLITCH),
+      running               =     bool(flags & clib.SDF_RUNNING),
+      sample_32bit          =     bool(flags & clib.SDF_LSAMPL),
+      sample_16bit          = not bool(flags & clib.SDF_LSAMPL),
+      sample_bitwise        =     bool(flags & clib.SDF_PACKED),
     )
     #D.__dict__ = D
     return D
@@ -154,7 +153,7 @@ class Subdevice(Base):
     
     return [
       klass('{}/{}'.format(self, i), self)
-      for i in xrange(c.comedi_get_n_channels( self.fd, self.subdevice ))
+      for i in xrange(clib.comedi_get_n_channels( self.fd, self.subdevice ))
     ]
 
   def add_channels(self):
@@ -187,30 +186,30 @@ class Subdevice(Base):
     """
 
     if not config['trigger']['enable']['value']:
-      start_src = c.TRIG_INT
+      start_src = clib.TRIG_INT
       start_arg = 0
     else:
-      start_src = c.TRIG_EXT
+      start_src = clib.TRIG_EXT
       if config['trigger']['edge']['value'] == 'rising':
-        start_arg = c.CR_EDGE
+        start_arg = clib.CR_EDGE
       if config['trigger']['edge']['value'] == 'falling':
-        start_arg = c.CR_INVERT | c.CR_EDGE
+        start_arg = clib.CR_INVERT | clib.CR_EDGE
     
     
     if config['clock-settings']['mode']['value'] == 'finite':
-      stop_src = c.TRIG_COUNT
+      stop_src = clib.TRIG_COUNT
       #stop_arg actually should take the ammount of buffer to run through
       #stop_arg = 1 may allow for continuous genertion
       stop_arg = 1 #should be: (desired count)*(buffer len)
 
     else:
-      stop_src = c.TRIG_COUNT
+      stop_src = clib.TRIG_COUNT
       stop_arg = 1
       
     if config['clock-settings']['edge']['value'] == 'rising':
-        scan_begin_arg = c.CR_EDGE
+        scan_begin_arg = clib.CR_EDGE
     if config['clock-settings']['edge']['value'] == 'falling':
-        scan_begin_arg = c.CR_INVERT | c.CR_EDGE
+        scan_begin_arg = clib.CR_INVERT | clib.CR_EDGE
     
     #Below calls Card class method to provide integers understood by comedi cmds
     trig_signal = {(config['trigger']['source']['value'], self.name+'/StartTrigger'): {'invert': False}}
@@ -221,16 +220,16 @@ class Subdevice(Base):
     clk = self.card.Sigconfig(clk_signal)
     
     if trig == None:
-      start_src = c.TRIG_INT
+      start_src = clib.TRIG_INT
       start_arg, trig = 0, 0
     
     if clk == None:
-      scan_begin_src = c.TRIG_TIMER
+      scan_begin_src = clib.TRIG_TIMER
       scan_begin_arg = 0
       clk = 1200 #int((1e9/100000))
     else:
-      scan_begin_src = c.TRIG_EXT
-      scan_begin_arg = c.CR_EDGE
+      scan_begin_src = clib.TRIG_EXT
+      scan_begin_arg = clib.CR_EDGE
       #if digital scan_begin_arg ==> cant have CR_EDGE
    
     self.add_channels() # populates cmd_chanlist
@@ -241,25 +240,25 @@ class Subdevice(Base):
      #all other arguments are zero
                  
     self.cmd.subdev = self.subdevice 
-    self.cmd.flags = c.TRIG_WRITE #bitwise or'd subdevice flags
+    self.cmd.flags = clib.TRIG_WRITE #bitwise or'd subdevice flags
     self.cmd.start_src = start_src # start trigger source accepts: TRIG_INT, TRIG_EXT
     self.cmd.start_arg = start_arg | trig
     self.cmd.scan_begin_src = scan_begin_src # accepts: TRIG_TIMER, TRIG_EXT
     self.cmd.scan_begin_arg = scan_begin_arg | clk
-    self.cmd.convert_src = c.TRIG_NOW # accpets: TRIG_TIMER, TRIG_EXT, TRIG_NOW
+    self.cmd.convert_src = clib.TRIG_NOW # accpets: TRIG_TIMER, TRIG_EXT, TRIG_NOW
     self.cmd.convert_arg = 0
-    self.cmd.scan_end_src = c.TRIG_COUNT
+    self.cmd.scan_end_src = clib.TRIG_COUNT
     self.cmd.scan_end_arg = len ( self.cmd_chanlist[:] )
     self.cmd.stop_src = stop_src # accepts: TRIG_COUNT, TRIG_NONE
     self.cmd.stop_arg = stop_arg #for some reason TRIG_COUNT with stop_arg = 1 gives continuous waveform
-    self.cmd.chanlist = self.cmd_chanlist #pointer to array with elements --> c.CR_PACK(chan, range, aref) 
+    self.cmd.chanlist = self.cmd_chanlist #pointer to array with elements --> clib.CR_PACK(chan, range, aref) 
     self.cmd.chanlist_len = len ( self.cmd_chanlist[:] ) # wrong way to do this?
     
     #self.dump_cmd(self.cmd)
     
     for  i in xrange(2):
     
-      test = c.comedi_command_test(self.fd, self.cmd)
+      test = clib.comedi_command_test(self.fd, self.cmd)
 
       if test < 0:
           error ('invalid comedi command for %s', self)
@@ -311,7 +310,7 @@ class Subdevice(Base):
       return
     debug( 'comedi: creating command:  %s', self.name )
     
-    self.cmd_chanlist = (c.lsampl_t*len(self.channels))()
+    self.cmd_chanlist = (clib.lsampl_t*len(self.channels))()
     
     self.cmd_config(self.config)
     
@@ -347,34 +346,34 @@ class Subdevice(Base):
         bits = 0
         
         for i in self.chan_index_list:
-          c.comedi_dio_config(self.fd, self.subdevice, i, c.COMEDI_OUTPUT)
+          clib.comedi_dio_config(self.fd, self.subdevice, i, clib.COMEDI_OUTPUT)
           print "dio_config_output", i
           if data['do'+str(i)] == True:
             bits = bits|(2**i)
             
-        bits = (c.lsampl_t*1)(bits)
+        bits = (clib.lsampl_t*1)(bits)
       
-        c.comedi_dio_bitfield2(self.fd,2, c.lsampl_t((2**(max(self.chan_index_list)+1))-1), bits, 0)
+        clib.comedi_dio_bitfield2(self.fd,2, clib.lsampl_t((2**(max(self.chan_index_list)+1))-1), bits, 0)
      
       else:
         
         #Because static output is not timing sensitive, this should be done
-        #using premade comedi function c.comedi-data_write
+        #using premade comedi function clib.comedi-data_write
         #optional: implement calibration
         
         self.start() 
 
-        mapp = mmap.mmap(c.comedi_fileno(self.fd), self.buf_size, MAP_SHARED, PROT_WRITE, 0, 0) #
-        npmap = np.ndarray(shape=((self.buf_size/2)), dtype=c.sampl_t, buffer = mapp, offset=0, order='C')
+        mapp = mmap.mmap(clib.comedi_fileno(self.fd), self.buf_size, mmap.MAP_SHARED, mmap.PROT_WRITE, 0, 0) #
+        npmap = np.ndarray(shape=((self.buf_size/2)), dtype=clib.sampl_t, buffer = mapp, offset=0, order='C')
 
 
         for i in xrange((len(data))):
           rng = self.channels[self.channels.keys()[i]]
-          rng = c.comedi_range( rng['min'], rng['max'], 0 )
-          npmap[:] = c.comedi_from_phys(data[data.keys()[i]], rng, c.lsampl_t(65535)) #max data will be device specific?
+          rng = clib.comedi_range( rng['min'], rng['max'], 0 )
+          npmap[:] = clib.comedi_from_phys(data[data.keys()[i]], rng, clib.lsampl_t(65535)) #max data will be device specific?
 
-        print c.comedi_mark_buffer_written(self.fd, self.subdevice, self.buf_size), "written"
-        print c.comedi_internal_trigger(self.fd, self.subdevice, 0), "trigger"
+        print clib.comedi_mark_buffer_written(self.fd, self.subdevice, self.buf_size), "written"
+        print clib.comedi_internal_trigger(self.fd, self.subdevice, 0), "trigger"
         
         
         
@@ -387,9 +386,9 @@ class Subdevice(Base):
     
     if self.subdev_type == 'to':
       chan = 0 #I think this is what we want
-      clock = c.lsampl_t()
-      period = c.lsampl_t()
-      c.comedi_get_clock_source(self.fd, self.subdevice, chan, clock, period)
+      clock = clib.lsampl_t()
+      period = clib.lsampl_t()
+      clib.comedi_get_clock_source(self.fd, self.subdevice, chan, clock, period)
       print self.subdevice, "timing device"
       return int(period.value)*unit.ns
     else:
@@ -436,7 +435,7 @@ class Subdevice(Base):
     name = self.subdev_type
     
     
-    chlist = ['{}/{}'.format(name, str(ch)) for ch in xrange(c.comedi_get_n_channels(self.fd, self.subdevice))]
+    chlist = ['{}/{}'.format(name, str(ch)) for ch in xrange(clib.comedi_get_n_channels(self.fd, self.subdevice))]
    
     assert set(chlist).issuperset( waveforms.keys() ), \
       'NIDAQmx.set_output: mismatched channels'
@@ -512,13 +511,13 @@ class Subdevice(Base):
     self.start() 
         
     print self.buf_size, "buf sz"  
-    mapp = mmap.mmap(c.comedi_fileno(self.fd), self.buf_size, MAP_SHARED, PROT_WRITE, 0, 0) 
+    mapp = mmap.mmap(clib.comedi_fileno(self.fd), self.buf_size, mmap.MAP_SHARED, mmap.PROT_WRITE, 0, 0) 
 
-    npmap = np.ndarray(shape=((self.buf_size/2)), dtype=c.sampl_t, buffer = mapp, offset=0, order='C')
+    npmap = np.ndarray(shape=((self.buf_size/2)), dtype=clib.sampl_t, buffer = mapp, offset=0, order='C')
 
     rng = self.channels[self.channels.keys()[0]] #this assumes all chans on subdevice have the same range
 
-    rng = c.comedi_range( rng['min'], rng['max'], 0 )    
+    rng = clib.comedi_range( rng['min'], rng['max'], 0 )    
 
     print len(scans), 'len scans'  
     for i in xrange((len(scans))):
@@ -526,47 +525,47 @@ class Subdevice(Base):
       ############################
       #num = re.search('([0-9]*)$', data.keys()[i])
       #chan = int(num.group())
-      #poly = c.comedi_polynomial_t()
+      #poly = clib.comedi_polynomial_t()
 
       ##include findable rng integer PACK
       #rng = 0
 
       ##below is device dependenent, but can be discovered and selected using subdevice flag SDF_SOFT_CALIBRATED
 
-      #path = c.comedi_get_default_calibration_path(self.fd)
+      #path = clib.comedi_get_default_calibration_path(self.fd)
 
       #path_point = comedi_ 
-      #calibration = c.comedi_parse_calibration_file(path)
+      #calibration = clib.comedi_parse_calibration_file(path)
       ##print calibration[0]
-      #c.comedi_get_softcal_converter(self.subdevice,chan,rng, c.COMEDI_FROM_PHYSICAL,calibration, poly)
+      #clib.comedi_get_softcal_converter(self.subdevice,chan,rng, clib.COMEDI_FROM_PHYSICAL,calibration, poly)
 
-      #npmap[i] = c.comedi_from_physical(data[data.keys()[i]], poly)
+      #npmap[i] = clib.comedi_from_physical(data[data.keys()[i]], poly)
       ############################
 
 
 
 
-      npmap[scans.keys()[i]:(self.buf_size/2)] = c.comedi_from_phys(scans[scans.keys()[i]][0], rng, c.lsampl_t(65535)) #max data will be device specific?
+      npmap[scans.keys()[i]:(self.buf_size/2)] = clib.comedi_from_phys(scans[scans.keys()[i]][0], rng, clib.lsampl_t(65535)) #max data will be device specific?
       #need to account for multiple chans in 'scans' 
        
     self.dump_cmd(self.cmd)  
     
     print len (mapp), len (npmap)
     
-    print c.comedi_mark_buffer_written(self.fd, self.subdevice, self.buf_size), "write"
+    print clib.comedi_mark_buffer_written(self.fd, self.subdevice, self.buf_size), "write"
       
-    print c.comedi_internal_trigger(self.fd, self.subdevice, 0), "trig"
+    print clib.comedi_internal_trigger(self.fd, self.subdevice, 0), "trig"
     
     
        
     while(0): #protects from buffer underwrite
-         print c.comedi_get_buffer_contents(self.fd, self.subdevice)
+         print clib.comedi_get_buffer_contents(self.fd, self.subdevice)
          
-         unmarked = self.buf_size - c.comedi_get_buffer_contents(self.fd, self.subdevice)
+         unmarked = self.buf_size - clib.comedi_get_buffer_contents(self.fd, self.subdevice)
          #print unmarked, 'A'
          #if unmarked > 0:
           
-         #   c.comedi_mark_buffer_written(self.fd, self.subdevice, unmarked)
+         #   clib.comedi_mark_buffer_written(self.fd, self.subdevice, unmarked)
             #print unmarked, 'B'
     #while loop should be unnecessary with TRIG_COUNT and stop_arg = 1
     
@@ -576,7 +575,7 @@ class Subdevice(Base):
 
   def start(self):
     if self.task:
-      c.comedi_command(self.fd, self.cmd)
+      clib.comedi_command(self.fd, self.cmd)
 
 
   def wait(self):
@@ -594,9 +593,9 @@ class Subdevice(Base):
 
   def stop(self):
     if self.task:
-      c.comedi_cancel(self.fd, self.subdevice)
+      clib.comedi_cancel(self.fd, self.subdevice)
       # this seems a little drastic, but I think Ian found this necessary
-      c.comedi_close(self.fd) #put in card.py?
+      clib.comedi_close(self.fd) #put in card.py?
 
 
 

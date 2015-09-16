@@ -1,16 +1,17 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from logging import log, debug, info, warn, error, critical, DEBUG
-from .....tools.float_range import float_range
-from subdevice import Subdevice as Base
-import ctypes_comedi as c
 import re
+from .. import ctypes_comedi as clib
+
+from .....tools.float_range import float_range
+from .subdevice import Subdevice as Base
 
 class Analog(Base):
   subdev_type = 'ao'
   
 
-  def add_channels(self, aref=c.AREF_GROUND, rng=0):
+  def add_channels(self, aref=clib.AREF_GROUND, rng=0):
     # populate the task with output channels and accumulate the data
     dflt_mn = self.config['default-voltage-range']['minimum']['value']
     dflt_mx = self.config['default-voltage-range']['maximum']['value']
@@ -32,10 +33,10 @@ class Analog(Base):
       
       num = re.search('([0-9]*)$', ch[0])
 
-      #rng = c.comedi_find_range(self.fd, self.subdevice, int(num.group()),c.UNIT_volt,mn,mx)
+      #rng = clib.comedi_find_range(self.fd, self.subdevice, int(num.group()),clib.UNIT_volt,mn,mx)
       # references to self.fd nside of comedi functions only work in subdevice.py why?
       
-      self.cmd_chanlist[i] = c.CR_PACK(int(num.group()), rng, aref)
+      self.cmd_chanlist[i] = clib.CR_PACK(int(num.group()), rng, aref)
       self.chan_index_list.append(int(num.group()))
       i += 1
       

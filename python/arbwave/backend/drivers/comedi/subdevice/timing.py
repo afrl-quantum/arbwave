@@ -1,9 +1,9 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from subdevice import Subdevice as Base
-import nidaqmx
-import ctypes_comedi as c
 import numpy as np
+
+from .subdevice import Subdevice as Base
+from .. import ctypes_comedi as clib
 
 class Timing(Base):
   subdev_type = 'to'

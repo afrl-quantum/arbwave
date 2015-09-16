@@ -2,11 +2,10 @@
 
 import re, glob, traceback
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
+
 from ....tools.path import collect_prefix
 from ...driver import Driver as Base
-from card import Card
-import re
-import ctypes_comedi as c
+from .card import Card
 
 
 class Driver(Base):
