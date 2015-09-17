@@ -4,17 +4,38 @@ Simulated low-level comedilib library.
 """
 
 import ctypes_comedi as clib
-from ctypes import c_ubyte
+from ctypes import c_ubyte, cast, POINTER, addressof
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re, time
 from ....tools.expand import expand_braces
 
-def inject_sim_lib():
-  C = ComediSim()
-  import_funcs = [ f for f in dir(C) if f.startswith('comedi')]
-  for f in import_funcs:
-    setattr( clib, f, getattr(C,f) )
-  return C
+
+comedi_t_ptr = POINTER(clib.comedi_t)
+def ctypes_ptr_to_int(self):
+  """
+  Simple class function to help turn comedi_t struct pointers into numbers
+
+  To use:
+    POINTER(comedi_t).__class__.__int__ = ctypes_ptr_to_int
+  """
+  if not self:
+    return -1 
+  return addressof( self.contents ) - 1
+
+def comedi_t_pointer_to_str(self):
+  return 'comedi_t_ptr({})'.format( int(self) )
+
+def ctypes_ptr_hash(self):
+  return hash( int(self) )
+
+def ctypes_ptr_eq(self, other):
+  return int(self) == int(other)
+
+
+def comedi_t_pointer(value):
+  return cast( value+1, comedi_t_ptr )
+
+
 
 
 def mk_crange(min,max,unit):
@@ -58,11 +79,17 @@ class SimSubDev(dict):
   def get_maxdata(self, channel):
     return (2<<(self.bits-1)) - 1
 
+  def maxdata_is_chan_specific(self):
+    return 0
+
   def get_n_ranges(self, channel):
     return len( self.ranges ) # ignoring channel for now
 
   def get_range(self, channel, range):
     return self.ranges[range] if range < len(self.ranges) else None
+
+  def range_is_chan_specific(self):
+    return 0
 
   # AI functions
   def data_read(self, channel, range, aref, data):
@@ -147,7 +174,7 @@ class SimCard(object):
   def __init__(self):
     super(SimCard,self).__init__()
     # initialize subdevs...
-    self.subdevs = [ SimSubDev(D) for D in self.subdevs ]
+    self.subdevs = { i:SimSubDev(D) for i,D in self.subdevs.items() }
 
   def __getitem__(self,i):
     """Quick method of indexing the subdevice"""
@@ -184,7 +211,7 @@ class SimCard(object):
     log(DEBUG-1,'returning subdev: %d', start_subdevice)
     return start_subdevice
 
-  def get_read_subdevice(self, fd):
+  def get_read_subdevice(self):
     """
     The function comedi_get_read_subdevice() returns the index of the subdevice
     whose streaming input buffer is accessible
@@ -282,19 +309,50 @@ class PCI_6229(SimCard):
 
 
 class ComediSim(object):
-  def __init__(self):
+  def __init__(self, auto_inject=True):
+    self.cards = None
+    if auto_inject:
+      self.inject_into_clib()
+
+  def inject_into_clib(self):
+    # these have to bound to the class
+    comedi_t_ptr.__int__ = ctypes_ptr_to_int
+    comedi_t_ptr.__hash__ = ctypes_ptr_hash
+    comedi_t_ptr.__repr__ = comedi_t_pointer_to_str
+    comedi_t_ptr.__eq__ = ctypes_ptr_eq
+
     self.cards = {
-      0 : PXI_6733(),
-      1 : PXI_6723(),
-      2 : PCI_6229(),
+      comedi_t_pointer(0) : PXI_6733(),
+      comedi_t_pointer(1) : PXI_6723(),
+      comedi_t_pointer(2) : PCI_6229(),
     }
 
+    debug( 'comedi.sim:  injecting simulated library into c-interface' )
+    import_funcs = [ f for f in dir(self) if f.startswith('comedi')]
+    for f in import_funcs:
+      setattr( clib, f, getattr(self,f) )
+
+  def remove_from_clib(self):
+    if hasattr( comedi_t_ptr, '__int__' ):
+      debug( 'comedi.sim:  removing injected simulated library from c-interface' )
+      del comedi_t_ptr.__int__
+      del comedi_t_ptr.__hash__
+      del comedi_t_ptr.__repr__
+      del comedi_t_ptr.__eq__
+      reload(clib)
+
+  def __del__(self):
+    self.remove_from_clib()
+
   def __getitem__(self, i):
-    """Quick access to cards by index"""
+    """Quick access to cards by index or by comedi_t_ptr"""
+    if type(i) is int:
+      return self[ comedi_t_pointer(i) ]
     return self.cards[i]
 
   def glob_device_files(self):
-    mn,mx = min(self.cards), max(self.cards)
+    dev_numbers = [ self.comedi_fileno(p) for p in self.cards ]
+    mn,mx = min(dev_dumbers), max(dev_dumbers)
     return expand_braces('/dev/comedi{{{}..{}}}'.format(mn,mx))
 
   def comedi_open(self, filename):
@@ -314,129 +372,161 @@ class ComediSim(object):
     # for us.
     return card_number
 
-  def comedi_close(self, fd):
-    # FIXME:  Not sure if this implementation is any good.
-    debug('comedi_close(%d)', fd)
-    for d in self.cards.values():
-      for sd in d.subdevs:
-        if d.isLockedBySelf(sd):
-          self.comedi_unlock(d,sd)
+
+  def comedi_close(self, fp):
+    debug('comedi_close(%d)', fp)
+    if fp not in self.cards:
+      return -1
+
+    card = self.cards[fp]
+    for sd in card.subdevs:
+      if card.isLockedBySelf(sd):
+        self.comedi_unlock(card,sd)
     return 0
 
-  def comedi_fileno(self, fd):
-    return fd if fd in self.cards else -1
 
-  def comedi_get_version_code(self, fd):
-    return 0x1 # we'll just return a lame version for all kernel modules
+  def comedi_fileno(self, fp):
+    """
+    get file descriptor for open Comedilib device.
 
-  def comedi_get_read_subdevice(self, fd):
+    This simulated interface simply returns the input _if_ the input corresponds
+    to the one of the simualted card numbers.
+    """
+    debug('comedi_fileno(%d)', fp)
+    if not fp or fp not in self.cards:
+      return -1
+    return int(fp)
+
+
+  def comedi_get_version_code(self, fp):
+    """
+    Comedi version code.
+
+    we'll just return a lame version for all kernel modules
+    """
+    debug('comedi_get_version_code(%d)', fp)
+    return 0x1
+
+
+  def comedi_get_read_subdevice(self, fp):
     """
     The function comedi_get_read_subdevice() returns the index of the subdevice
     whose streaming input buffer is accessible through the (simulated) card . If
     there is no such subdevice, -1 is returned.
     """
-    return self[fd].get_read_subdevice()
+    debug('comedi_get_read_subdevice(%d)', fp)
+    return self[fp].get_read_subdevice()
 
-  def comedi_get_write_subdevice(self, fd):
+
+  def comedi_get_write_subdevice(self, fp):
     """
     The function comedi_get_write_subdevice() returns the index of the subdevice
     whose streaming output buffer is accessible through the (simulated) card. If
     there is no such subdevice, -1 is returned.
     """
-    return self[fd].get_write_subdevice()
+    debug('comedi_get_write_subdevice(%d)', fp)
+    return self[fp].get_write_subdevice()
 
-  def comedi_get_n_subdevices(self, fd):
-    debug('comedi_get_n_subdevices(%d)', fd)
-    return len( self[fd].subdevs )
 
-  def comedi_get_subdevice_type(self, fd, sub):
-    debug('comedi_get_subdevice_type(%d, %d)', fd, sub)
-    return self[fd][sub].type
+  def comedi_get_n_subdevices(self, fp):
+    debug('comedi_get_n_subdevices(%d)', fp)
+    return len( self[fp].subdevs )
 
-  def comedi_find_subdevice_by_type(self, fd, typ, start_subdevice):
-    debug('comedi_find_subdevice_by_type(%d, %d, %d)', fd,typ,start_subdevice)
-    if fd not in self.cards: return -1
-    return self[fd].find_subdevice_by_type(typ, start_subdevice)
 
-  def comedi_get_subdevice_flags(self, fd, sub):
-    debug('comedi_get_subdevice_flags(%d, %d)', fd, sub)
-    if fd not in self.cards: return -1
-    return self[fd][sub].flags
+  def comedi_get_subdevice_type(self, fp, sub):
+    debug('comedi_get_subdevice_type(%d, %d)', fp, sub)
+    return self[fp][sub].type
 
-  def comedi_get_n_channels(self, fd, sub):
-    debug('comedi_get_n_channels(%d, %d)', fd, sub)
-    if fd not in self.cards: return -1
-    return self[fd][sub].n_channels
+  def comedi_find_subdevice_by_type(self, fp, typ, start_subdevice):
+    debug('comedi_find_subdevice_by_type(%d, %d, %d)', fp,typ,start_subdevice)
+    if fp not in self.cards: return -1
+    return self[fp].find_subdevice_by_type(typ, start_subdevice)
 
-  def comedi_get_driver_name(self, fd):
-    debug('comedi_get_driver_name(%d)', fd)
-    return self[fd].driver
+  def comedi_get_subdevice_flags(self, fp, sub):
+    debug('comedi_get_subdevice_flags(%d, %d)', fp, sub)
+    if fp not in self.cards: return -1
+    return self[fp][sub].flags
 
-  def comedi_get_board_name(self, fd):
-    debug('comedi_get_board_name(%d)', fd)
-    return self[fd].board
+  def comedi_get_n_channels(self, fp, sub):
+    debug('comedi_get_n_channels(%d, %d)', fp, sub)
+    if fp not in self.cards: return -1
+    return self[fp][sub].n_channels
 
-  def comedi_cancel(self, fd, sub):
-    debug('comedi_cancel(%d, %d)', fd, sub)
+  def comedi_get_driver_name(self, fp):
+    debug('comedi_get_driver_name(%d)', fp)
+    return self[fp].driver
+
+  def comedi_get_board_name(self, fp):
+    debug('comedi_get_board_name(%d)', fp)
+    return self[fp].board
+
+  def comedi_cancel(self, fp, sub):
+    debug('comedi_cancel(%d, %d)', fp, sub)
     return 0
 
-  def comedi_lock(self, fd, sub):
-    debug('comedi_lock(%d, %d)', fd, sub)
-    return self[fd].lock(sub)
+  def comedi_lock(self, fp, sub):
+    debug('comedi_lock(%d, %d)', fp, sub)
+    return self[fp].lock(sub)
 
-  def comedi_unlock(self, fd, sub):
-    debug('comedi_unlock(%d, %d)', fd, sub)
-    return self[fd].unlock(sub)
+  def comedi_unlock(self, fp, sub):
+    debug('comedi_unlock(%d, %d)', fp, sub)
+    return self[fp].unlock(sub)
 
-  def comedi_find_range(self, fd, sub, channel, unit, min, max):
-    debug('comedi_find_range(%d,%d,%d,%d,%g,%g)', fd,sub,channel,unit,min,max)
-    return self[fd][sub].find_range(channel, unit, min, max)
+  def comedi_find_range(self, fp, sub, channel, unit, min, max):
+    debug('comedi_find_range(%d,%d,%d,%d,%g,%g)', fp,sub,channel,unit,min,max)
+    return self[fp][sub].find_range(channel, unit, min, max)
 
-  def comedi_get_maxdata(self, fd, sub, channel):
-    return self[fd][sub].get_maxdata(channel)
+  def comedi_get_maxdata(self, fp, sub, channel):
+    debug('comedi_get_maxdata(%d,%d,%d)', fp,sub,channel)
+    return self[fp][sub].get_maxdata(channel)
 
-  def comedi_get_n_ranges(self, fd, sub, channel):
-    return self[fd][sub].get_n_ranges(channel)
+  def comedi_get_n_ranges(self, fp, sub, channel):
+    debug('comedi_get_n_ranges(%d,%d,%d)', fp,sub,channel)
+    return self[fp][sub].get_n_ranges(channel)
 
-  def comedi_get_range(self, fd, sub, channel, range):
-    return self[fd][sub].get_range(channel, range)
+  def comedi_get_range(self, fp, sub, channel, range):
+    debug('comedi_get_ranges(%d,%d,%d,%s)', fp,sub,channel, range)
+    return self[fp][sub].get_range(channel, range)
 
-  def comedi_maxdata_is_chan_specific(self, fd, sub):
-    #return self[fd][sub].comedi_maxdata_is_chan_specific()
-    return 0
+  def comedi_maxdata_is_chan_specific(self, fp, sub):
+    debug('comedi_maxdata_is_chan_specific(%d,%d)', fp,sub)
+    return self[fp][sub].maxdata_is_chan_specific()
 
-  def comedi_range_is_chan_specific(self, fd, sub):
-    #return self[fd][sub].comedi_range_is_chan_specific()
-    return 0
+  def comedi_range_is_chan_specific(self, fp, sub):
+    debug('comedi_range_is_chan_specific(%d,%d)', fp,sub)
+    return self[fp][sub].range_is_chan_specific()
 
 
   # AI functions
-  def comedi_data_read(self, fd, subdev, channel, range, aref, data):
+  def comedi_data_read(self, fp, subdev, channel, range, aref, data):
     debug('comedi_data_read(%d, %d, %d, %d, %d, %d)',
-          fd, subdev, channel, range, aref, data)
-    return self[fd][subdev].data_read(channel, range, aref, data)
+          fp, subdev, channel, range, aref, data)
+    return self[fp][subdev].data_read(channel, range, aref, data)
 
-  def comedi_data_read_n(self, fd, subdev, channel, range, aref, data, n):
+  def comedi_data_read_n(self, fp, subdev, channel, range, aref, data, n):
     debug('comedi_data_read_n(%d, %d, %d, %d, %d, %d, %d)',
-          fd, subdev, channel, range, aref, data, n)
-    return self[fd][subdev].data_read_n(channel, range, aref, data, n)
+          fp, subdev, channel, range, aref, data, n)
+    return self[fp][subdev].data_read_n(channel, range, aref, data, n)
 
-  def comedi_data_read_delayed(self, fd, subdev, channel,
+  def comedi_data_read_delayed(self, fp, subdev, channel,
                                range, aref, data, nanosec):
     """
     read single sample from channel after delaying for specified settling time
     """
     debug('comedi_data_read_delayed(%d, %d, %d, %d, %d, %d, %d)',
-          fd, subdev, channel, range, aref, data, nanosec)
-    return self[fd][subdev] \
+          fp, subdev, channel, range, aref, data, nanosec)
+    return self[fp][subdev] \
       .data_read_delayed(channel, range, aref, data, nanosec)
 
-  def comedi_data_read_hint(self, fd, subdev, channel, range, aref):
-    return self[fd][subdev].data_read_hint(channel, range, aref)
+  def comedi_data_read_hint(self, fp, subdev, channel, range, aref):
+    """
+    tell driver which channel/range/aref you are going to read from next
+    """
+    return self[fp][subdev].data_read_hint(channel, range, aref)
 
 
   # AO functions
-  def comedi_data_write(self, fd, subdev, channel, range, aref, data):
+  def comedi_data_write(self, fp, subdev, channel, range, aref, data):
     """
     Writes a single sample on the channel that is specified by the Comedi
     (simulated) card, the subdevice subdevice, and the channel channel. If
@@ -448,31 +538,31 @@ class ComediSim(object):
     parameter data to the specified channel.
     """
     debug('comedi_data_write(%d, %d, %d, %d, %d, %d)',
-          fd, subdev, channel, range, aref, data)
-    return self[fd][subdev].data_write(channel, range, aref, data)
+          fp, subdev, channel, range, aref, data)
+    return self[fp][subdev].data_write(channel, range, aref, data)
 
 
   # CMD functions
-  def comedi_get_cmd_src_mask(self, fd, subdev, cmd):
-    debug('comedi_get_cmd_src_mask(%d, %d, %s)', fd, subdev, cmd)
-    if fd not in self.cards: return -1
-    return self[fd][subdev].get_cmd_src_mask(cmd)
+  def comedi_get_cmd_src_mask(self, fp, subdev, cmd):
+    debug('comedi_get_cmd_src_mask(%d, %d, %s)', fp, subdev, cmd)
+    if fp not in self.cards: return -1
+    return self[fp][subdev].get_cmd_src_mask(cmd)
 
-  def comedi_internal_trigger(self, fd, subdevice, trig_num=0):
-    debug('comedi_internal_trigger(%d, %d, %s)', fd, subdev, trig_num)
+  def comedi_internal_trigger(self, fp, subdevice, trig_num=0):
+    debug('comedi_internal_trigger(%d, %d, %s)', fp, subdev, trig_num)
     return 0
 
-  def comedi_do_insn(self, fd, instruction):
+  def comedi_do_insn(self, fp, instruction):
     i = instruction
-    debug('comedi_do_insn(%d, %d, %s)', fd, subdev, i)
+    debug('comedi_do_insn(%d, %d, %s)', fp, subdev, i)
     if ( i.insn == clib.INSN_WRITE ):
       C,R,A = ( f(i.chanspec) for i in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
       for j in xrange(i.n):
-        self[fd][i.subdev].data_write(C,R,A,i.data[j])
+        self[fp][i.subdev].data_write(C,R,A,i.data[j])
       return i.n
     if ( i.insn == clib.INSN_READ ):
       C,R,A = ( f(i.chanspec) for i in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
-      self[fd][i.subdev].data_read_n(C,R,A,i.data,i.n)
+      self[fp][i.subdev].data_read_n(C,R,A,i.data,i.n)
       return i.n
     if ( i.insn == clib.INSN_BITS ):
       return -1
@@ -490,8 +580,8 @@ class ComediSim(object):
     raise NotImplementedError(
       'command instruction ({}) not simulated yet'.format(i.insn))
 
-  def comedi_do_insnlist(self, fd, instruction_list):
-    debug('comedi_do_insnlist(%d, %d, %s)', fd, subdev, instruction_list)
+  def comedi_do_insnlist(self, fp, instruction_list):
+    debug('comedi_do_insnlist(%d, %d, %s)', fp, subdev, instruction_list)
     successes = 0
     for i in xrange(instruction_list.n_insns):
       ri = self.comedi_do_insn( instruction_list.insns[i] )
@@ -499,161 +589,161 @@ class ComediSim(object):
       else: break
     return successes if successes > 0 else -1
 
-  def comedi_command(self, fd, command):
+  def comedi_command(self, fp, command):
     raise NotImplementedError('not simulated yet')
 
-  def comedi_command_test(self, fd, command):
+  def comedi_command_test(self, fp, command):
     raise NotImplementedError('not simulated yet')
 
-  def comedi_get_buffer_contents(self, fd, subdevice):
+  def comedi_get_buffer_contents(self, fp, subdevice):
     """
     The function comedi_get_buffer_contents() is used on a subdevice that has a
     Comedi command in progress. The number of bytes that are available in the
     streaming buffer is returned. If there is an error, -1 is returned.
     """
-    debug('comedi_get_buffer_contents(%d, %d)', fd, subdevice)
-    return self[fd][subdevice].get_buffer_contents()
+    debug('comedi_get_buffer_contents(%d, %d)', fp, subdevice)
+    return self[fp][subdevice].get_buffer_contents()
 
-  def comedi_get_buffer_offset(self, fd, subdevice):
+  def comedi_get_buffer_offset(self, fp, subdevice):
     """
     The function comedi_get_buffer_offset() is used on a subdevice that has a
     Comedi command in progress. This function returns the offset in bytes of the
     read pointer in the streaming buffer.  This offset is only useful for memory
     mapped buffers. If there is an error, -1 is returned.
     """
-    debug('comedi_get_buffer_offset(%d, %d)', fd, subdevice)
-    return self[fd][subdevice].get_buffer_offset()
+    debug('comedi_get_buffer_offset(%d, %d)', fp, subdevice)
+    return self[fp][subdevice].get_buffer_offset()
 
-  def comedi_get_buffer_size(self, fd, subdevice):
+  def comedi_get_buffer_size(self, fp, subdevice):
     """
     The function comedi_get_buffer_size() returns the size (in bytes) of the
     streaming buffer for the subdevice specified by card and subdevice. On
     error, -1 is returned.
     """
-    debug('comedi_get_buffer_size(%d, %d)', fd, subdevice)
-    return len( self[fd][subdevice].buffer )
+    debug('comedi_get_buffer_size(%d, %d)', fp, subdevice)
+    return len( self[fp][subdevice].buffer )
 
-  def comedi_set_buffer_size(self, fd, subdevice, size):
-    debug('comedi_set_buffer_size(%d, %d, %d)', fd, subdevice, size)
-    self[fd][subdevice].set_buffer_size(size)
+  def comedi_set_buffer_size(self, fp, subdevice, size):
+    debug('comedi_set_buffer_size(%d, %d, %d)', fp, subdevice, size)
+    self[fp][subdevice].set_buffer_size(size)
 
-  def comedi_set_max_buffer_size(self, fd, subdevice, max_size):
+  def comedi_set_max_buffer_size(self, fp, subdevice, max_size):
     """Requires privileged execution."""
-    debug('comedi_set_max_buffer_size(%d, %d, %d)', fd, subdevice, max_size)
-    self[fd][subdevice].max_buf_size = max_size
+    debug('comedi_set_max_buffer_size(%d, %d, %d)', fp, subdevice, max_size)
+    self[fp][subdevice].max_buf_size = max_size
 
-  def comedi_get_max_buffer_size(self, fd, subdevice):
-    debug('comedi_get_max_buffer_size(%d, %d)', fd, subdevice)
-    return self[fd][subdevice].max_buf_size
+  def comedi_get_max_buffer_size(self, fp, subdevice):
+    debug('comedi_get_max_buffer_size(%d, %d)', fp, subdevice)
+    return self[fp][subdevice].max_buf_size
 
-  def comedi_get_cmd_generic_timed(self, fd, subdevice, command,
+  def comedi_get_cmd_generic_timed(self, fp, subdevice, command,
                                    chanlist_len, scan_period_ns):
     debug('comedi_get_cmd_generic_timed(%d, %d, %s, %d, %d)',
-          fd, subdevice, command, chanlist_len, scan_period_ns)
+          fp, subdevice, command, chanlist_len, scan_period_ns)
     raise NotImplementedError('not simulated yet')
 
-  def comedi_mark_buffer_read(self, fd, subdevice, num_bytes):
+  def comedi_mark_buffer_read(self, fp, subdevice, num_bytes):
     """
     The function comedi_mark_buffer_read() is used on a subdevice that has a
     Comedi input command in progress. It should only be used if you are using a
-    mmap() mapping to read data from Comedi’s buffer.
+    mmap() mapping to read data from Comedi's buffer.
     """
-    debug('comedi_mark_buffer_read(%d, %d, %d)', fd, subdevice, num_bytes)
-    return self[fd][subdevice].mark_buffer_read( num_bytes )
+    debug('comedi_mark_buffer_read(%d, %d, %d)', fp, subdevice, num_bytes)
+    return self[fp][subdevice].mark_buffer_read( num_bytes )
 
-  def comedi_mark_buffer_written(self, fd, subdevice, num_bytes):
-    debug('comedi_mark_buffer_written(%d, %d, %d)', fd, subdevice, num_bytes)
-    return self[fd][subdevice].mark_buffer_written( num_bytes )
+  def comedi_mark_buffer_written(self, fp, subdevice, num_bytes):
+    debug('comedi_mark_buffer_written(%d, %d, %d)', fp, subdevice, num_bytes)
+    return self[fp][subdevice].mark_buffer_written( num_bytes )
 
 
-  def comedi_poll(self, fd, subdevice):
-    debug('comedi_poll(%d, %d)', fd, subdevice)
+  def comedi_poll(self, fp, subdevice):
+    debug('comedi_poll(%d, %d)', fp, subdevice)
     # we'll just return what is available now; no actual dma
-    return self[fd][subdevice].get_buffer_contents()
+    return self[fp][subdevice].get_buffer_contents()
 
 
   # calibration
-  def comedi_apply_calibration(self, fd, sub, channel, range, aref,
+  def comedi_apply_calibration(self, fp, sub, channel, range, aref,
                                file_path):
-    return self[fd][sub] \
+    return self[fp][sub] \
       .apply_calibration(channel, range, aref, file_path)
 
-  def comedi_apply_parsed_calibration(self, fd, sub, channel, range,
+  def comedi_apply_parsed_calibration(self, fp, sub, channel, range,
                                       aref, calibration):
-    return self[fd][sub] \
+    return self[fp][sub] \
       .apply_parsed_calibration(channel, range, aref, calibration)
 
-  def comedi_get_default_calibration_path(self, fd):
-    return self[fd].comedi_get_default_calibration_path()
+  def comedi_get_default_calibration_path(self, fp):
+    return self[fp].comedi_get_default_calibration_path()
 
-  def comedi_get_hardcal_converter(self, fd, sub, channel,
+  def comedi_get_hardcal_converter(self, fp, sub, channel,
                                    range, direction, converter):
-    return self[fd][sub] \
+    return self[fp][sub] \
       .comedi_get_hardcal_converter(channel, range, direction, converter)
 
   def comedi_get_softcal_converter(self, sub, channel,
                                    range, direction, parsed_calibration,
                                    converter):
-    return self[fd][sub] \
+    return self[fp][sub] \
       .comedi_get_softcal_converter(channel, range, direction,
                                     parsed_calibration, converter)
 
 
   # Digital I/O
-  def comedi_dio_bitfield2(self, fd, sub, write_mask, bits, base_channel):
-    return self[fd][sub].comedi_dio_bitfield2(write_mask, bits, base_channel)
+  def comedi_dio_bitfield2(self, fp, sub, write_mask, bits, base_channel):
+    return self[fp][sub].comedi_dio_bitfield2(write_mask, bits, base_channel)
 
-  def comedi_dio_config(self, fd, sub, channel, direction):
-    return self[fd][sub].comedi_dio_config(channel, direction)
+  def comedi_dio_config(self, fp, sub, channel, direction):
+    return self[fp][sub].comedi_dio_config(channel, direction)
 
-  def comedi_dio_get_config(self, fd, sub, channel, direction):
-    return self[fd][sub].comedi_dio_get_config(channel, direction)
+  def comedi_dio_get_config(self, fp, sub, channel, direction):
+    return self[fp][sub].comedi_dio_get_config(channel, direction)
 
-  def comedi_dio_read(self, fd, sub, channel, bit):
-    return self[fd][sub].comedi_dio_read(channel, bit)
+  def comedi_dio_read(self, fp, sub, channel, bit):
+    return self[fp][sub].comedi_dio_read(channel, bit)
 
-  def comedi_dio_write(self, fd, sub, channel, bit):
-    return self[fd][sub].comedi_dio_write(channel, bit)
+  def comedi_dio_write(self, fp, sub, channel, bit):
+    return self[fp][sub].comedi_dio_write(channel, bit)
 
 
   # Extensions
-  def comedi_arm(self, fd, sub, source):
-    debug('comedi_arm(%d, %d, %d)', fd, sub, source)
+  def comedi_arm(self, fp, sub, source):
+    debug('comedi_arm(%d, %d, %d)', fp, sub, source)
     # nothing to really arm...
-    #return self[fd][sub].comedi_arm(source)
+    #return self[fp][sub].comedi_arm(source)
     return 0
 
-  def comedi_get_clock_source(self, fd, sub, channel, clock, period_ns):
-    return self[fd][sub].comedi_get_clock_source(channel, clock, period_ns)
+  def comedi_get_clock_source(self, fp, sub, channel, clock, period_ns):
+    return self[fp][sub].comedi_get_clock_source(channel, clock, period_ns)
 
-  def comedi_get_gate_source(self, fd, sub, channel, gate_index,
+  def comedi_get_gate_source(self, fp, sub, channel, gate_index,
                              gate_source):
-    return self[fd][sub].comedi_get_gate_source(channel, gate_index, gate_source)
+    return self[fp][sub].comedi_get_gate_source(channel, gate_index, gate_source)
 
-  def comedi_get_hardware_buffer_size(self, fd, sub, direction):
-    return self[fd][sub].comedi_get_hardware_buffer_size(direction)
+  def comedi_get_hardware_buffer_size(self, fp, sub, direction):
+    return self[fp][sub].comedi_get_hardware_buffer_size(direction)
 
-  def comedi_get_routing(self, fd, sub, channel, routing):
-    return self[fd][sub].comedi_get_routing(channel, routing)
+  def comedi_get_routing(self, fp, sub, channel, routing):
+    return self[fp][sub].comedi_get_routing(channel, routing)
 
-  def comedi_reset(self, fd, sub):
-    return self[fd][sub].comedi_reset():
+  def comedi_reset(self, fp, sub):
+    return self[fp][sub].comedi_reset()
 
-  def comedi_set_clock_source(self, fd, sub, channel, clock, period_ns):
-    return self[fd][sub].comedi_set_clock_source(channel, clock, period_ns)
+  def comedi_set_clock_source(self, fp, sub, channel, clock, period_ns):
+    return self[fp][sub].comedi_set_clock_source(channel, clock, period_ns)
 
-  def comedi_set_counter_mode(self, fd, sub, channel, mode):
-    return self[fd][sub].comedi_set_counter_mode(channel, mode)
+  def comedi_set_counter_mode(self, fp, sub, channel, mode):
+    return self[fp][sub].comedi_set_counter_mode(channel, mode)
 
-  def comedi_set_filter(self, fd, sub, channel, filter):
-    return self[fd][sub].comedi_set_filter(channel, filter)
+  def comedi_set_filter(self, fp, sub, channel, filter):
+    return self[fp][sub].comedi_set_filter(channel, filter)
 
-  def comedi_set_gate_source(self, fd, sub, channel, gate_index,
+  def comedi_set_gate_source(self, fp, sub, channel, gate_index,
                              gate_source):
-    return self[fd][sub].comedi_set_gate_source(channel, gate_index, gate_source)
+    return self[fp][sub].comedi_set_gate_source(channel, gate_index, gate_source)
 
-  def comedi_set_other_source(self, fd, sub, channel, other, source):
-    return self[fd][sub].comedi_set_other_source(channel, other, source)
+  def comedi_set_other_source(self, fp, sub, channel, other, source):
+    return self[fp][sub].comedi_set_other_source(channel, other, source)
 
-  def comedi_set_routing(self, fd, sub, channel, routing):
-    return self[fd][sub].comedi_set_routing(channel, routing)
+  def comedi_set_routing(self, fp, sub, channel, routing):
+    return self[fp][sub].comedi_set_routing(channel, routing)

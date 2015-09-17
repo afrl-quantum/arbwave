@@ -27,7 +27,7 @@ klasses = {
 def get_useful_subdevices(route_loader, card, typ,
                           restrictions=dict(
                           start_src=clib.TRIG_FOLLOW|clib.TRIG_INT|clib.TRIG_EXT,),
-                          ret_index_list=False 
+                          ret_index_list=False
                          ):
   L = list()
   cmd = clib.comedi_cmd_struct()
@@ -51,14 +51,15 @@ def get_useful_subdevices(route_loader, card, typ,
     L.append( (card, index) )
   #del cmd # Syntax error to delete this!?!
   subdevs = list()
-  
+
   for li in L:
     try: subdevs.append(klass( route_loader, name_uses_subdev=False, *li))
     except: pass
   if ret_index_list: #added to collect subdev number
     return L
-  else:      
+  else:
     return subdevs
+
 
 class Card(object):
   @staticmethod
@@ -75,17 +76,18 @@ class Card(object):
     self.fd     = clib.comedi_open(self.device_file)
     if self.fd is None:
       raise NameError('could not open comedi device file: ' + self.device_file)
+
     self.device = 'Dev'+self.get_card_number(device_file)
-    self.rl = rl = routes.getRouteLoader(self.kernel) ( driver, self )
-    self.sig_map = signal_map.getSignalLoader(self.kernel) (self)
-    
+    self.rl = rl= routes.getRouteLoader(self.kernel) ( driver, self )
+    self.sig_map= signal_map.getSignalLoader(self.kernel) (self)
+
     gus = get_useful_subdevices
     self.ao_subdevices      = gus(rl, self, clib.COMEDI_SUBD_AO)
     self.do_subdevices      = gus(rl, self, clib.COMEDI_SUBD_DO)
 
     self.dio_subdevices     = gus(rl, self, clib.COMEDI_SUBD_DIO)
     self.counter_subdevices = gus(rl, self, clib.COMEDI_SUBD_COUNTER)
-    
+
     self.subdevices = dict()
     self.subdevices.update( { str(ao)+str(ao.subdevice):ao for ao in self.ao_subdevices } )
     self.subdevices.update( { str(do)+str(do.subdevice):do for do in self.do_subdevices } )
@@ -95,22 +97,17 @@ class Card(object):
       channels.Backplane(src,destinations=dest,invertible=True)
       for src,dest in rl.aggregate_map.iteritems()
     ]
-    
+
 
     List = gus(rl, self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
- 
-    self.backplane_subdevices = dict()
-    
-    for dev, index in List:
-      
-      sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
 
+    self.backplane_subdevices = dict()
+
+    for dev, index in List:
+      sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
       if subdevice.Subdevice.status(sdev)['internal']:
-        
-        self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev  
-        
-    
-    
+        self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev
+
     #Fixed? But not implemented
     # #if self.driver.startswith('ni_'):
     # #  FIXME:  we should not need to use ni_ specifically here.  that should be
@@ -120,30 +117,30 @@ class Card(object):
     # #  self.backplane_subdevice = subdevice.Backplane(self.fd,10,self.prefix)
     # # *** actually, as Ian has found, subdevice=7 is also special as it
     # # represents the PFI I/O lines.
-    
-    
-    
+
+
+
   def Sigconfig(self, signals):
     '''
     Accesses sig_map to transform arbwave terminal/signal names into appropriate comedi ints
     '''
     if self.routed_signals != signals:
-      
+
       old = set(self.routed_signals.keys())
       new = list()
-      
+
       for pair in signals.keys():
         new.append(pair)
-        
+
       new = set(new)
-      
+
       # disconnect routes no longer in use
       for route in ( old - new ):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue
-        
+
         s, d = self.rl.route_map[ route ]
-        
+
         if d.find(str(self).rstrip(str(self.driver)))>-1:
           d = d.lstrip(str(self.driver)+str(self))
           d = self.sig_map.ch_nums(d)
@@ -153,31 +150,31 @@ class Card(object):
       for route in ( new - old ):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue
-        
+
         s, d = self.rl.route_map[ route ]
         s = s.lstrip(str(self.driver)+str(self))
-       
+
         if s is None or d is None:
           continue # None means an external connection
-        
+
         if d.find(str(self).lstrip(str(self.driver)))>-1:
           d_dev = d.lstrip(str(self.driver)+str(self))
-          
+
           d =  self.sig_map.ch_nums[d_dev]
-          
-          if d['kind'] == 'ao_clock': 
+
+          if d['kind'] == 'ao_clock':
             AO_CLOCK = {d_dev:self.sig_map.sig_nums_AO_CLOCK[s]}
             return AO_CLOCK
              #Ctr0InternalOutput is listed as routing to the ao clock, but I've found no way to do this.
-             
+
              #fixed. found separate clock sig_num function. no longer driver dependent.
              ##plus one to reflect ni driver offset? TODO: make this make sense. edit driver?
-           
+
           if d['kind'] == 'trigger':
             TRIGGER = {d_dev:self.sig_map.sig_nums_EXT[s]}
             return TRIGGER
-           
-          if d['kind'] =='PFI':  
+
+          if d['kind'] =='PFI':
             s =  self.sig_map.sig_nums_PFI[s]
             clib.comedi_dio_config(self.fd, d['subdev'], d['chan'], clib.COMEDI_OUTPUT)
             clib.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
@@ -185,11 +182,11 @@ class Card(object):
             s =  self.sig_map.sig_nums_RTSI[s]
             clib.comedi_dio_config(self.fd, d['subdev'], d['chan'], clib.COMEDI_OUTPUT)
             clib.comedi_set_routing(self.fd,  d['subdev'], d['chan'], s)
-          #TODO: GPCT config/routing, CDIO clocks? 
+          #TODO: GPCT config/routing, CDIO clocks?
     self.routed_signals = signals
-    
-  
-      
+
+
+
   def __str__(self):
     return '{}/{}'.format(self.driver, self.device)
 
@@ -206,11 +203,11 @@ class Card(object):
 
     for device, index in List:
       chans = clib.comedi_get_n_channels(self.fd, index)
-      clib.comedi_dio_config(self.fd, index, chans, clib.COMEDI_INPUT) 
+      clib.comedi_dio_config(self.fd, index, chans, clib.COMEDI_INPUT)
 
 
     # # Fixed?
-    # # # Set all routes to their default and configure all routable pins to    
+    # # # Set all routes to their default and configure all routable pins to
     # # # COMEDI_INPUT as an attempt to protect any pins from damage
     # # # Following Ian's work, this means using both "Backplane" type subdevices (7
     # # # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
@@ -219,13 +216,14 @@ class Card(object):
 
     # now close the comedi device handle
     clib.comedi_close(self.fd)
-  
+
   def stop(self):
+    # FIXME:  This is BAD!
     self.__del__()
-  
+
   def start(self):
-    print "dev start not implemented" 
-  
+    print "dev start not implemented"
+
   @cached.property
   def board(self):
     return clib.comedi_get_board_name(self.fd).lower()
