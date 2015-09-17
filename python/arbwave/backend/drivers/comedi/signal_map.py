@@ -16,7 +16,7 @@ class NullSignalLoader(object):
 
 class NISignalLoader(object):
   def __init__(self, card):
-    
+
     #put None for unknown signals
     self.sig_nums_PFI = \
     {
@@ -37,9 +37,9 @@ class NISignalLoader(object):
      'di/StartTrigger':None,
      'do/StartTrigger':None
     }
-    
+
     self.sig_nums_PFI.update({'RTSI'+str(i):clib.NI_PFI_OUTPUT_RTSI(i) for i in xrange(8)})
-    
+
     self.sig_nums_RTSI = \
     {
       '10MHsRefClock':clib.NI_RTSI_OUTPUT_RTSI_OSC,
@@ -51,25 +51,25 @@ class NISignalLoader(object):
       'ai/StartTrigger':clib.NI_RTSI_OUTPUT_ADR_START1,
       'ai/ReferenceTrigger':clib.NI_RTSI_OUTPUT_ADR_START2
     }
-    
+
     self.sig_nums_EXT = dict()
     self.sig_nums_EXT.update({'PFI'+str(i):clib.NI_EXT_PFI(i) for i in xrange(16)})
     self.sig_nums_EXT.update({'RTSI'+str(i):clib.NI_EXT_RTSI(i) for i in xrange(16)})
-    
+
     self.sig_nums_AO_CLOCK = dict()
     self.sig_nums_AO_CLOCK.update({'PFI'+str(i):clib.NI_AO_SCAN_BEGIN_SRC_PFI(i) for i in xrange(16)})
     self.sig_nums_AO_CLOCK.update({'RTSI'+str(i):clib.NI_AO_SCAN_BEGIN_SRC_RTSI(i) for i in xrange(8)})
     #cheat for a test:
-    self.sig_nums_AO_CLOCK.update({'Ctr1InternalOutput':clib.NI_AO_SCAN_BEGIN_SRC_PFI(0)}) 
-    
+    self.sig_nums_AO_CLOCK.update({'Ctr1InternalOutput':clib.NI_AO_SCAN_BEGIN_SRC_PFI(0)})
+
     self.ch_nums = dict()
-    
+
     self.ch_nums.update({'PFI'+str(i):{'kind':'PFI','subdev':7,'chan':i} for i in xrange(16)})
     self.ch_nums.update({'RTSI'+str(i):{'kind':'RTSI','subdev':10,'chan':i} for i in xrange(8)})
     self.ch_nums.update({'ao/SampleClock':{'kind':'ao_clock'}})
     self.ch_nums.update({'ao/StartTrigger':{'kind':'trigger'}})
-     
-     
+
+
 kernel_module_to_loader = {
   'ni_pcimio' : NISignalLoader,
 }

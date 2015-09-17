@@ -9,20 +9,20 @@ from .subdevice import Subdevice as Base
 
 class Analog(Base):
   subdev_type = 'ao'
-  
+
 
   def add_channels(self, aref=clib.AREF_GROUND, rng=0):
     # populate the task with output channels and accumulate the data
     dflt_mn = self.config['default-voltage-range']['minimum']['value']
     dflt_mx = self.config['default-voltage-range']['maximum']['value']
-    
+
     chans = self.channels.items()
-    
+
     #chans.sort( key = lambda v : v[1]['order'] )
-    
- 
+
+
     i = 0
-    
+
     for ch in chans:
       print ch
       if ch[1]:
@@ -30,18 +30,18 @@ class Analog(Base):
       else:
         # use the default range values
         mn, mx = dflt_mn, dflt_mx
-      
+
       num = re.search('([0-9]*)$', ch[0])
 
       #rng = clib.comedi_find_range(self.card, self.subdevice, int(num.group()),clib.UNIT_volt,mn,mx)
       # references to self.card nside of comedi functions only work in subdevice.py why?
-      
+
       self.cmd_chanlist[i] = clib.CR_PACK(int(num.group()), rng, aref)
       self.chan_index_list.append(int(num.group()))
       i += 1
-      
-    
-     
+
+
+
 
 
   def get_config_template(self):

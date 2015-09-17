@@ -19,7 +19,7 @@ def ctypes_ptr_to_int(self):
     POINTER(comedi_t).__class__.__int__ = ctypes_ptr_to_int
   """
   if not self:
-    return -1 
+    return -1
   return addressof( self.contents ) - 1
 
 def comedi_t_pointer_to_str(self):
