@@ -33,8 +33,8 @@ class Analog(Base):
       
       num = re.search('([0-9]*)$', ch[0])
 
-      #rng = clib.comedi_find_range(self.fd, self.subdevice, int(num.group()),clib.UNIT_volt,mn,mx)
-      # references to self.fd nside of comedi functions only work in subdevice.py why?
+      #rng = clib.comedi_find_range(self.card, self.subdevice, int(num.group()),clib.UNIT_volt,mn,mx)
+      # references to self.card nside of comedi functions only work in subdevice.py why?
       
       self.cmd_chanlist[i] = clib.CR_PACK(int(num.group()), rng, aref)
       self.chan_index_list.append(int(num.group()))
