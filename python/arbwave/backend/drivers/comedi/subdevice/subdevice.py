@@ -115,8 +115,13 @@ class Subdevice(Base):
 
   #@property
   def status(self):
+    class Dict(dict):
+      def __init__(self, *a, **kw):
+        super(Dict,self).__init__(*a, **kw)
+        self.__dict__ = self
+
     flags = self.flags
-    D = dict(
+    D = Dict(
       busy                  =     bool(flags & clib.SDF_BUSY),
       busy_owner            =     bool(flags & clib.SDF_BUSY_OWNER),
       locked                =     bool(flags & clib.SDF_LOCKED),
@@ -140,7 +145,6 @@ class Subdevice(Base):
       sample_16bit          = not bool(flags & clib.SDF_LSAMPL),
       sample_bitwise        =     bool(flags & clib.SDF_PACKED),
     )
-    #D.__dict__ = D
     return D
 
   @property
