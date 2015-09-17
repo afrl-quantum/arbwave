@@ -57,9 +57,7 @@ class Subdevice(Base):
     else:
 
       index = str(self.subdevice - clib.comedi_find_subdevice_by_type(self.card,clib.COMEDI_SUBD_COUNTER,0))
-
       clk = str(self.card) + '/Ctr'+index+'Source'
-
       trg = str(self.card) +'/Ctr'+index+'Gate' # wrong, timing devices have different commands and shouldnt need triggers like this
 
       devname = 'Ctr'+index          # bad place for this
@@ -79,19 +77,16 @@ class Subdevice(Base):
     self.clock_sources = route_loader.source_map[clk]
     self.trig_sources  = route_loader.aggregate_map[trg] #changed to agg map because it contains starttrigger for do, may be incorrect
 
-
     self.config = self.get_config_template()
 
 
   def __del__(self):
     self.clear()
 
-
   def clear(self):
-
-      debug( 'comedi: cancelling commands for comedi subdevice %s', self )
-      clib.comedi_cancel( self.card, self.subdevice )
-      self.t_max = 0.0
+    debug( 'comedi: cancelling commands for comedi subdevice %s', self )
+    clib.comedi_cancel( self.card, self.subdevice )
+    self.t_max = 0.0
 
   @property
   def prefix(self):
@@ -160,24 +155,7 @@ class Subdevice(Base):
     """
     Sub-task types must override this for specific channel creation.
     """
-
-
-  def dump_cmd(self, cmd):
-    print "---------------------------"
-    print "command structure contains:"
-    print "cmd.subdev : ", cmd.subdev
-    print "cmd.flags : ", cmd.flags
-    print "cmd.start :\t", cmd.start_src, "\t", cmd.start_arg
-    print "cmd.scan_beg :\t", cmd.scan_begin_src, "\t", cmd.scan_begin_arg
-    print "cmd.convert :\t", cmd.convert_src, "\t", cmd.convert_arg
-    print "cmd.scan_end :\t", cmd.scan_end_src, "\t", cmd.scan_end_arg
-    print "cmd.stop :\t", cmd.stop_src, "\t", cmd.stop_arg
-    print "cmd.chanlist : ", cmd.chanlist
-    print "cmd.chanlist_len : ", cmd.chanlist_len
-    print "cmd.data : ", cmd.data
-    print "cmd.data_len : ", cmd.data_len
-    print "---------------------------"
-
+    raise NotImplementedError('Specific task must implement add_channels')
 
 
   def cmd_config(self, config):
@@ -254,7 +232,7 @@ class Subdevice(Base):
     self.cmd.chanlist = self.cmd_chanlist #pointer to array with elements --> clib.CR_PACK(chan, range, aref)
     self.cmd.chanlist_len = len ( self.cmd_chanlist[:] ) # wrong way to do this?
 
-    #self.dump_cmd(self.cmd)
+    #print 'cmd: ', self.cmd
 
     for  i in xrange(2):
 
@@ -311,9 +289,7 @@ class Subdevice(Base):
     debug( 'comedi: creating command:  %s', self.name )
 
     self.cmd_chanlist = (clib.lsampl_t*len(self.channels))()
-
     self.cmd_config(self.config)
-
     self.use_case = None
 
 
@@ -330,19 +306,15 @@ class Subdevice(Base):
     """
 
     if self.channels:
-
       if self.use_case in [ None, self.STATIC ]:
         if self.use_case is not None:
           debug( 'comedi: stopping task: %s', self.name)
           self.stop()
       else:
-
         self._rebuild_cmd()
-
         self.use_case = self.STATIC
 
       if self.subdev_type == 'do':  #had to include this here, because self.card wont work in digital.py
-
         bits = 0
 
         for i in self.chan_index_list:
@@ -356,7 +328,6 @@ class Subdevice(Base):
         clib.comedi_dio_bitfield2(self.card,2, clib.lsampl_t((2**(max(self.chan_index_list)+1))-1), bits, 0)
 
       else:
-
         #Because static output is not timing sensitive, this should be done
         #using premade comedi function clib.comedi-data_write
         #optional: implement calibration
@@ -365,7 +336,6 @@ class Subdevice(Base):
 
         mapp = mmap.mmap(clib.comedi_fileno(self.card), self.buf_size, mmap.MAP_SHARED, mmap.PROT_WRITE, 0, 0) #
         npmap = np.ndarray(shape=((self.buf_size/2)), dtype=clib.sampl_t, buffer = mapp, offset=0, order='C')
-
 
         for i in xrange((len(data))):
           rng = self.channels[self.channels.keys()[i]]
@@ -379,7 +349,6 @@ class Subdevice(Base):
 
 
   def get_min_period(self):
-
     #important function for Arbwave to use clocks
     #below is effective for timing subdevices
     #getting a period of a non-subdevice signal will need a dictionary with their period
@@ -401,7 +370,6 @@ class Subdevice(Base):
       2.  Sets triggering.
       3.  Writes data to hardware buffers without auto_start.
     """
-
     if self.channels:
       if self.use_case in [ None, self.STATIC, self.WAVEFORM_SINGLE, self.WAVEFORM_CONTINUOUS ]:
         if self.use_case is not None:
@@ -548,15 +516,10 @@ class Subdevice(Base):
       npmap[scans.keys()[i]:(self.buf_size/2)] = clib.comedi_from_phys(scans[scans.keys()[i]][0], rng, clib.lsampl_t(65535)) #max data will be device specific?
       #need to account for multiple chans in 'scans'
 
-    self.dump_cmd(self.cmd)
-
+    print 'cmd: ', self.cmd
     print len (mapp), len (npmap)
-
     print clib.comedi_mark_buffer_written(self.card, self.subdevice, self.buf_size), "write"
-
     print clib.comedi_internal_trigger(self.card, self.subdevice, 0), "trig"
-
-
 
     while(0): #protects from buffer underwrite
          print clib.comedi_get_buffer_contents(self.card, self.subdevice)
@@ -568,7 +531,6 @@ class Subdevice(Base):
          #   clib.comedi_mark_buffer_written(self.card, self.subdevice, unmarked)
             #print unmarked, 'B'
     #while loop should be unnecessary with TRIG_COUNT and stop_arg = 1
-
 
     self.t_max = t_max
 
