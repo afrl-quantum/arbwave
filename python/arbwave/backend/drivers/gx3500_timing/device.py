@@ -8,14 +8,12 @@ Logical device for GX3500 timing board.
 
 import copy
 import itertools
-from logging import error, warn, debug
+from logging import debug
 import numpy as np
 from physical import units
 import time
 
 from ...device import Device as Base
-from ....tools.float_range import float_range
-from ....tools.signal_graphs import nearest_terminal
 
 
 _port_bases = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
@@ -264,43 +262,11 @@ class Device(Base):
                 transition_map.setdefault(edge + period/2, {})[channel] = False
 
         # add a dummy transition to the end to finish the sequence
-        t_end = int(round(t_max * 20e6 / units.s)) # convert to 50ns units
-        transition_map.setdefault(t_end, {})
+        ts_max = int(round(t_max * 20e6 / units.s)) # convert to 50ns units
+        ts_max = max([max(transition_map.iterkeys())+1, ts_max])
+        transition_map[ts_max] = {}
 
         return transition_map
-
-    def _fixup_end_clocks(self, transition_map, t_max, end_clocks, clock_transitions):
-        """
-        Add an additional clock pulse at t_max for all the clocks in
-        end_clocks. Modifies transition_map in place.
-
-        :param transition_map: a dict(timestamp: {channel: value})
-        :param t_max: the maximum duration of the sequence
-        :param end_clocks: a sequence of the clocks that need fixups
-        :param clock_transitions: a dict(channel: {'dt': clock period, ...})
-        """
-        debug('gx3500: fixing up {} clocks'.format(len(end_clocks)))
-
-        t_end = int(round(t_max * 20e6 / units.s)) # rescale to 50ns units
-        t_end_new = t_end
-        for clock in end_clocks:
-            if 'Internal' in clock:
-                continue
-
-            # add a rising edge at the end of the sequence
-            # FIXME: this also needs to change for inverted clock channels
-            transition_map.setdefault(t_end, {})[clock] = True
-
-            # and a falling edge far enough out
-            dt_clk = clock_transitions[clock]['dt']
-            half_period = int(round(dt_clk * 20e6 / units.s)) / 2
-            transition_map.setdefault(t_end + half_period, {})[clock] = False
-
-            # keep track of the last falling edge
-            t_end_new = max(t_end_new, t_end + half_period + 1)
-
-        debug('gx3500: t_end was {} and now is {}'.format(t_end, t_end_new))
-        transition_map.setdefault(t_end_new, {})
 
     def _compile_transitions(self, transition_map):
         """
@@ -391,8 +357,7 @@ class Device(Base):
         debug('gx3500({}): program dump follows:\n'.format(self) + program_dump)
         self.board.write('mem', 0x0000, words)
 
-    def set_waveforms(self, waveforms, clock_transitions, t_max, end_clocks,
-                      continuous):
+    def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
         """
         Set the output waveforms for the GX3500 device.
 
@@ -402,8 +367,6 @@ class Device(Base):
                                   'transitions': iterable})
                                   (see processor/engine/compute.py for format)
         :param t_max: the maximum duration of any channel
-        :param end_clocks: an iterable of clocks that need to provide an extra
-                           clock pulse at t=t_max **in continuous mode only**
         :param continuous: bool of continuous or single-shot mode
         """
 
@@ -421,10 +384,6 @@ class Device(Base):
             'got clock transitions for channels not defined as clocks'
 
         transition_map = self._compile_transition_map(waveforms, clock_transitions, t_max)
-
-        if continuous:
-            self._fixup_end_clocks(transition_map, t_max, end_clocks, clock_transitions)
-
         transitions = self._compile_transitions(transition_map)
         instr_list = self._assemble_program(transitions)
 
