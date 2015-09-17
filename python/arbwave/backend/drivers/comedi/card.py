@@ -144,19 +144,13 @@ class Card( POINTER(clib.comedi_t) ):
 
 
 
-  def Sigconfig(self, signals):
+  def set_signals(self, signals):
     '''
     Accesses sig_map to transform arbwave terminal/signal names into appropriate comedi ints
     '''
     if self.routed_signals != signals:
-
-      old = set(self.routed_signals.keys())
-      new = list()
-
-      for pair in signals.keys():
-        new.append(pair)
-
-      new = set(new)
+      old = set( self.routed_signals.keys() )
+      new = set( signals.keys() )
 
       # disconnect routes no longer in use
       for route in ( old - new ):

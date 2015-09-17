@@ -124,7 +124,7 @@ class Driver(Base):
   def set_signals( self, signals ):
     debug('comedi.set_signals')
     for d, dev in self.cards.items():
-      dev.Sigconfig(signals)
+      dev.set_signals(signals)
 
 
 

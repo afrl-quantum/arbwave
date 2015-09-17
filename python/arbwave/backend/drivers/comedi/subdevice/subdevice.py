@@ -209,11 +209,11 @@ class Subdevice(Base):
 
     #Below calls Card class method to provide integers understood by comedi cmds
     trig_signal = {(config['trigger']['source']['value'], self.name+'/StartTrigger'): {'invert': False}}
-    trig = self.card.Sigconfig(trig_signal)
+    trig = self.card.set_signals(trig_signal)
 
 
     clk_signal = {(self.clock_terminal, self.name+'/SampleClock'): {'invert': False}}
-    clk = self.card.Sigconfig(clk_signal)
+    clk = self.card.set_signals(clk_signal)
 
     if trig == None:
       start_src = clib.TRIG_INT
