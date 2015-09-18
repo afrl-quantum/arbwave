@@ -142,7 +142,7 @@ class Device(Base):
         if 'clock' in config:
             self.board_config['use_10_MHz'] = not 'Internal_XO' in config['clock']['value']
         if 'hw_trigger' in config:
-            self.board_config['external_trigger'] = config['hw_trigger']['value'] == 1
+            self.board_config['external_trigger'] = config['hw_trigger']['value']
 
         self.config = copy.deepcopy(config)
 
@@ -412,10 +412,12 @@ class Device(Base):
         self.ports = p
 
         # arm the board
+        debug('gx3500: ARMing the board')
         self.board.command('ARM')
 
         # trigger the board if it isn't waiting for a hardware trigger
-        if not self.board_config['external_trigger']:
+        if not self.board_config['external_trigger'] and not self.is_continuous:
+            debug('gx3500: TRIGGERing the board')
             self.board.command('TRIGGER')
 
     def wait(self):
