@@ -25,11 +25,22 @@ class Subdevice(Base):
   subdev_type         = None  # changed by inheriting device types
 
   def __init__(self, route_loader, card, subdevice, name_uses_subdev=False):
+    """
+    parameter:  name_uses_subdev
+      If there are more than one device on this card that performs the same
+      function, such as two analog output devices (which get separately clocked,
+      triggered, ...), then we want the name of those devices to also use the
+      number of the subdevice.  But, when there is only one device of a certain
+      type on the card, we simply use the subdev_type as the main part of the
+      name.  For instance, if it is an analog output device and there is only
+      one on the "0" card, the name of the device would be "comedi/0/ao"
+      whereas, if there were two analog output devices on the card, the names
+      would be "comedi/0/ao1" and "comedi/0/ao2".
+    """
     if name_uses_subdev: devname = '{}{}'.format(self.subdev_type, subdevice)
     else:                devname = self.subdev_type
-    name = '{}/{}'.format(card, devname)
-    Base.__init__(self, name=name)
-    self.base_name = devname
+
+    super(Subdevice,self).__init__(name='{}/{}'.format(card, devname))
     self.card = card
     self.subdevice = subdevice
     debug( 'loading comedi subdevice %s', self )
@@ -51,8 +62,8 @@ class Subdevice(Base):
       #first find the possible trigger and clock sources
       #this method is ni dependent! might be woth a total reworking in light of routing in card.py
       clk = self.name + '/SampleClock'
-      #trg = self.name + '/StartTrigger'
-      trg = "comedi/Dev0/ao/StartTrigger" #Spencer removed di/do start trigger from ni routes for some reason so I have to cheat here for testing
+      trg = self.name + '/StartTrigger'
+      #trg = "comedi/Dev0/ao/StartTrigger" #Spencer removed di/do start trigger from ni routes for some reason so I have to cheat here for testing
 
     else:
 
@@ -61,9 +72,6 @@ class Subdevice(Base):
       trg = str(self.card) +'/Ctr'+index+'Gate' # wrong, timing devices have different commands and shouldnt need triggers like this
 
       devname = 'Ctr'+index          # bad place for this
-      name = '{}/{}'.format(self.card, devname)
-      Base.__init__(self, name=name)
-      self.base_name = devname
 
 
     if clk not in route_loader.source_map:
@@ -147,7 +155,7 @@ class Subdevice(Base):
     klass = channels.klasses[self.subdev_type]
 
     return [
-      klass('{}/{}'.format(self, i), self)
+      klass('{}{}'.format(self, i), self)
       for i in xrange(clib.comedi_get_n_channels( self.card, self.subdevice ))
     ]
 

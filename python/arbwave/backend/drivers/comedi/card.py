@@ -53,8 +53,10 @@ def get_useful_subdevices(route_loader, card, typ,
   #del cmd # Syntax error to delete this!?!
   subdevs = list()
 
+
+  nus = len(L) > 1
   for li in L:
-    try: subdevs.append(klass( route_loader, name_uses_subdev=False, *li))
+    try: subdevs.append(klass( route_loader, name_uses_subdev=nus, *li))
     except: pass
   if ret_index_list: #added to collect subdev number
     return L
@@ -113,9 +115,9 @@ class Card( POINTER(clib.comedi_t) ):
     self.counter_subdevices = gus(rl, self, clib.COMEDI_SUBD_COUNTER)
 
     self.subdevices = dict()
-    self.subdevices.update( { str(ao)+str(ao.subdevice):ao for ao in self.ao_subdevices } )
-    self.subdevices.update( { str(do)+str(do.subdevice):do for do in self.do_subdevices } )
-    self.subdevices.update( { str(dio)+str(dio.subdevice):dio for dio in self.dio_subdevices } ) # this will only include one subdev
+    self.subdevices.update( { str(ao):ao for ao in self.ao_subdevices } )
+    self.subdevices.update( { str(do):do for do in self.do_subdevices } )
+    self.subdevices.update( { str(dio):dio for dio in self.dio_subdevices } )
     self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
     self.signals = [
       channels.Backplane(src,destinations=dest,invertible=True)
