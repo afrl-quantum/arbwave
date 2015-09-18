@@ -51,7 +51,6 @@ class PciBusSearch(object):
         r = []
 
         for line in lines:
-            print line
             parts = line.split(' ')
             addr, pciclass, manufacturer, device = parts[:4]
             if (manufacturer == self.manufacturer and
