@@ -94,6 +94,8 @@ class Card( POINTER(clib.comedi_t) ):
     return None if not m else m.group('board_number')
 
   def __init__(self, driver, device_file):
+    super(Card,self).__init__()
+
     self.driver = driver
     self.device_file    = device_file
     self.routed_signals = dict()
@@ -226,13 +228,13 @@ class Card( POINTER(clib.comedi_t) ):
       clib.comedi_dio_config(self, index, chans, clib.COMEDI_INPUT)
 
 
-    # # Fixed?
-    # # # Set all routes to their default and configure all routable pins to
-    # # # COMEDI_INPUT as an attempt to protect any pins from damage
-    # # # Following Ian's work, this means using both "Backplane" type subdevices (7
-    # # # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
-    # # # lines.
-    # # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
+    # Fixed?
+    # # Set all routes to their default and configure all routable pins to
+    # # COMEDI_INPUT as an attempt to protect any pins from damage
+    # # Following Ian's work, this means using both "Backplane" type subdevices (7
+    # # and 10) to unroute and protect all RTSI/PXI trigger lines and all PFI I/O
+    # # lines.
+    # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
 
     # now close the comedi device handle
     clib.comedi_close(self)

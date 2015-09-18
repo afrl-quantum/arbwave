@@ -11,6 +11,11 @@ class Analog(Base):
   subdev_type = 'ao'
 
 
+  refs_map = dict(
+    common = clib.AREF_COMMON,
+    ground = clib.AREF_GROUND,
+  )
+
   def add_channels(self, aref=clib.AREF_GROUND, rng=0):
     # populate the task with output channels and accumulate the data
     dflt_mn = self.config['default-voltage-range']['minimum']['value']
@@ -42,20 +47,51 @@ class Analog(Base):
 
 
 
+  def cr_pack(self, chname, chinfo):
+    # FIXME:  get the correct range
+    rng = 0
+    return clib.CR_PACK(
+      self.get_channel(chname),
+      rng,
+      self.refs_map[self.config['reference']['value']],
+    )
+
+
+  def convert_data(self, chname, data):
+    # FIXME:  implement this
+    #  1:  find range
+    #  2:  specify maxdata
+    #  3:  use comedi_from_phys
+    #  clib.comedi_find_range(self.card, self.subdevice, chan, self.comedi_unit, rng['min'], rng['max'])
+    #  *OR*
+    #  1:  find comedi_polynomial_t
+    #  2:  use comedi_from_physical
+    return 0
 
 
   def get_config_template(self):
     template = Base.get_config_template(self)
-    template['default-voltage-range'] = {
-      'minimum' : {
-        'value' : -10.0,
-        'type'  : float,
-        'range' : float_range(-10.0, 10.0),
+    template.update( {
+      'default-voltage-range' : {
+        'minimum' : {
+          'value' : -10.0,
+          'type'  : float,
+          'range' : float_range(-10.0, 10.0),
+        },
+        'maximum' : {
+          'value' : 10.0,
+          'type'  : float,
+          'range' : float_range(-10.0, 10.0),
+        },
       },
-      'maximum' : {
-        'value' : 10.0,
-        'type'  : float,
-        'range' : float_range(-10.0, 10.0),
+
+      'reference' : {
+        'value' : 'common',
+        'type' : str,
+        'range' : [
+          ('ground', 'Referenced to ground'),
+          ('common', 'Referenced to isolated \'common\' potential'),
+        ],
       },
-    }
+    } )
     return template

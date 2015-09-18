@@ -3,6 +3,8 @@
 import copy, time, mmap, re
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 import numpy as np
+import ctypes
+from itertools import izip
 
 from physical import unit
 
@@ -308,52 +310,61 @@ class Subdevice(Base):
     raise NotImplementedError('only the Timing task can implement clocks')
 
 
+  def get_channel(self, name):
+    return int( re.search('ao([0-9]*)$', name).group(1) )
+
+
+  def convert_data(self, chname, data):
+    """
+    Takes data in physical units and converts it to lsampl_t data that comedi
+    needs.
+    """
+    return NotImplementedError('subdevices must implement this')
+    #for digital:
+    #  return data
+    #for analog:
+    #  1:  find range
+    #  2:  specify maxdata
+    #  3:  use comedi_from_phys
+    #  clib.comedi_find_range(self.card, self.subdevice, chan, self.comedi_unit, rng['min'], rng['max'])
+    #  *OR*
+    #  1:  find comedi_polynomial_t
+    #  2:  use comedi_from_physical
+
+
+  def cr_pack(self, chname, chinfo):
+    """
+    Packs data properly whether this is digital or analog
+    """
+    return NotImplementedError('subdevices must implement this')
+    #for digital:
+    #  return clib.CR_PACK( chan, 0, 0)
+    #for analog:
+    #  1:  find range
+    #  2:  specify aref
+    #  reteurn clib.CR_PACK( chan, rng, aref )
+
   def set_output(self, data):
     """
     Sets a static value on each output channel of this task.
     """
+    data = data.items()
+    data.sort( key = lambda i : self.channels[i[0]]['order'] )
 
-    if self.channels:
-      if self.use_case in [ None, self.STATIC ]:
-        if self.use_case is not None:
-          debug( 'comedi: stopping task: %s', self.name)
-          self.stop()
-      else:
-        self._rebuild_cmd()
-        self.use_case = self.STATIC
+    insn_list = clib.comedi_insnlist()
+    insn_list.set_length( len(data) )
+    # we allocate the data to ensure it does not get garbage collected too soon
+    L = [ clib.lsampl_t() for i in xrange( len(data) ) ]
 
-      if self.subdev_type == 'do':  #had to include this here, because self.card wont work in digital.py
-        bits = 0
+    for i, (chname, value), di in izip( insn_list, data, L ):
+      di.value = self.convert_data( chname, value )
 
-        for i in self.chan_index_list:
-          clib.comedi_dio_config(self.card, self.subdevice, i, clib.COMEDI_OUTPUT)
-          print "dio_config_output", i
-          if data['do'+str(i)] == True:
-            bits = bits|(2**i)
-
-        bits = (clib.lsampl_t*1)(bits)
-
-        clib.comedi_dio_bitfield2(self.card,2, clib.lsampl_t((2**(max(self.chan_index_list)+1))-1), bits, 0)
-
-      else:
-        #Because static output is not timing sensitive, this should be done
-        #using premade comedi function clib.comedi-data_write
-        #optional: implement calibration
-
-        self.start()
-
-        mapp = mmap.mmap(clib.comedi_fileno(self.card), self.buf_size, mmap.MAP_SHARED, mmap.PROT_WRITE, 0, 0) #
-        npmap = np.ndarray(shape=((self.buf_size/2)), dtype=clib.sampl_t, buffer = mapp, offset=0, order='C')
-
-        for i in xrange((len(data))):
-          rng = self.channels[self.channels.keys()[i]]
-          rng = clib.comedi_range( rng['min'], rng['max'], 0 )
-          npmap[:] = clib.comedi_from_phys(data[data.keys()[i]], rng, clib.lsampl_t(65535)) #max data will be device specific?
-
-        print clib.comedi_mark_buffer_written(self.card, self.subdevice, self.buf_size), "written"
-        print clib.comedi_internal_trigger(self.card, self.subdevice, 0), "trigger"
-
-
+      i.insn = clib.INSN_WRITE
+      i.subdev = self.subdevice
+      i.chanspec = self.cr_pack(chname, self.channels[chname])
+      i.n = 1
+      i.data = ctypes.pointer( di )
+    clib.comedi_do_insnlist( self.card, insn_list )
 
 
   def get_min_period(self):
@@ -448,7 +459,7 @@ class Subdevice(Base):
       last = scans[ transitions[0] ] = [0] * n_channels
     else:
       scans[ transitions[0] ] = [
-        zero_if_none(v,i) for v,i in zip( S0, xrange(len(S0)) )
+        zero_if_none(v,i) for v,i in izip( S0, xrange(len(S0)) )
       ]
       last = scans[ transitions[0] ]
 
