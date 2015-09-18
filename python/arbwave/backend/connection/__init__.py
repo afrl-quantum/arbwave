@@ -19,7 +19,7 @@ PYRO_MAXCONNECTIONS = 1024
 LOCALHOST = 'localhost'
 
 class Local(object):
-  def __init__(self, prefix):
+  def __init__(self, prefix, remote_backend=False):
     super(Local,self).__init__()
     self.klasses  = dict()
     self.drivers  = dict()
@@ -27,6 +27,10 @@ class Local(object):
 
     DRIVERS = path.join( path.dirname( __file__ ), path.pardir, 'drivers' )
     for P in os.listdir(DRIVERS):
+      if remote_backend and P == 'external':
+        # we only let the external driver be service by a pure Local instance
+        continue
+
       if path.isdir( path.join(DRIVERS,P) ):
         try:
           # do an explicit relative import of driver
@@ -62,9 +66,11 @@ class Local(object):
 
   def open(self):
     for k,D in self.klasses.items():
-      k = D.format_prefix(self.prefix)
+      pfx = self.prefix if k != 'External' else ''
+
+      k = D.format_prefix(pfx)
       if k not in self.drivers:
-        self.drivers[k] = D(self.prefix)
+        self.drivers[k] = D(pfx)
 
   def __getitem__(self,i):
     return self.drivers[i]
@@ -88,7 +94,7 @@ def serve():
 
   Pyro.config.PYRO_MAXCONNECTIONS = PYRO_MAXCONNECTIONS
   S = pyro.Service()
-  S( backend=RootWrapper(S.daemon, Local(prefix=None)) )
+  S( backend=RootWrapper(S.daemon, Local(prefix=None, remote_backend=True)) )
 
 
 class Remote(pyro.Proxy):
