@@ -11,7 +11,7 @@ from .card import Card
 class Driver(Base):
   prefix = 'comedi'
   description = 'Comedi Driver'
-  has_simulated_mode = False # will not be a lie some time in the future
+  has_simulated_mode = True
 
   @staticmethod
   def glob_comedi_device_files():

@@ -114,7 +114,7 @@ class SimSubDev(dict):
 
   # AO functions
   def data_write(self, channel, range, aref, data):
-    self.state[channel] = data._obj.value
+    self.state[channel] = data
     return 1 # success in any case!
 
   # CMD functions
@@ -326,6 +326,7 @@ class ComediSim(object):
       comedi_t_pointer(1) : PXI_6723(),
       comedi_t_pointer(2) : PCI_6229(),
     }
+    assert -1 not in [ int(i) for i in self.cards ]
 
     debug( 'comedi.sim:  injecting simulated library into c-interface' )
     import_funcs = [ f for f in dir(self) if f.startswith('comedi')]
@@ -352,25 +353,21 @@ class ComediSim(object):
 
   def glob_device_files(self):
     dev_numbers = [ self.comedi_fileno(p) for p in self.cards ]
-    mn,mx = min(dev_dumbers), max(dev_dumbers)
+    mn,mx = min(dev_numbers), max(dev_numbers)
     return expand_braces('/dev/comedi{{{}..{}}}'.format(mn,mx))
 
   def comedi_open(self, filename):
     debug('comedi_open(%s)', filename)
     m = re.match( '/dev/comedi(?P<card_number>[0-9]+)$', filename )
     if not m:
-      return None
+      return comedi_t_pointer(-1)
 
-    card_number = int(m.group('card_number'))
+    card_ptr = comedi_t_pointer( int(m.group('card_number')) )
 
-    if card_number not in self.cards:
-      return None
+    if card_ptr not in self.cards:
+      return comedi_t_pointer(-1)
 
-    # NOTE:  return the right type of value(?)
-    # I think this is perfectly fine since the c-library returns a pointer to an
-    # opaque type.  Hence, we can return any particular value that is convenient
-    # for us.
-    return card_number
+    return card_ptr
 
 
   def comedi_close(self, fp):
@@ -554,14 +551,14 @@ class ComediSim(object):
 
   def comedi_do_insn(self, fp, instruction):
     i = instruction
-    debug('comedi_do_insn(%d, %d, %s)', fp, subdev, i)
+    debug('comedi_do_insn(%d, %s)', fp, i)
     if ( i.insn == clib.INSN_WRITE ):
-      C,R,A = ( f(i.chanspec) for i in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
+      C,R,A = ( f(i.chanspec) for f in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
       for j in xrange(i.n):
         self[fp][i.subdev].data_write(C,R,A,i.data[j])
       return i.n
     if ( i.insn == clib.INSN_READ ):
-      C,R,A = ( f(i.chanspec) for i in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
+      C,R,A = ( f(i.chanspec) for f in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
       self[fp][i.subdev].data_read_n(C,R,A,i.data,i.n)
       return i.n
     if ( i.insn == clib.INSN_BITS ):
@@ -581,10 +578,10 @@ class ComediSim(object):
       'command instruction ({}) not simulated yet'.format(i.insn))
 
   def comedi_do_insnlist(self, fp, instruction_list):
-    debug('comedi_do_insnlist(%d, %d, %s)', fp, subdev, instruction_list)
+    debug('comedi_do_insnlist(%d, %s)', fp, instruction_list)
     successes = 0
     for i in xrange(instruction_list.n_insns):
-      ri = self.comedi_do_insn( instruction_list.insns[i] )
+      ri = self.comedi_do_insn( fp, instruction_list.insns[i] )
       if ri >= 0: successes += 1
       else: break
     return successes if successes > 0 else -1
