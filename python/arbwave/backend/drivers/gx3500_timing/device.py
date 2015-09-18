@@ -101,7 +101,8 @@ class Device(Base):
         """
         Final cleanup.
         """
-        self.board.command('STOP')
+        if hasattr(self, 'board'):
+            self.board.command('STOP')
 
     def get_config_template(self):
         """
