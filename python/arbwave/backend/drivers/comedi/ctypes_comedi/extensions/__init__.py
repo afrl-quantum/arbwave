@@ -7,3 +7,4 @@ ctypes library.
 
 import cmd
 import insn
+import crange

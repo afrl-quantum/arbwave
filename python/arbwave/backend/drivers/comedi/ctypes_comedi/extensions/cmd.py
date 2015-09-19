@@ -9,12 +9,15 @@ def comedi_cmd_to_dict(self):
       if i[0] != '_' and not callable(getattr(self,i))
   }
 
-  D['chanlist'] = tuple(
-    dict( channel = comedi.CR_CHAN(self.chanlist[i]),
-             aref = comedi.CR_AREF(self.chanlist[i]),
-            range = comedi.CR_RANGE(self.chanlist[i]) )
-    for i in xrange( self.chanlist_len )
-  )
+  D.update(dict(
+    chanlist = tuple(
+      dict( channel = comedi.CR_CHAN(self.chanlist[i]),
+               aref = comedi.CR_AREF(self.chanlist[i]),
+              range = comedi.CR_RANGE(self.chanlist[i]) )
+      for i in xrange( self.chanlist_len )
+    ),
+    data = None if not self.data else self.data.contents
+  ))
 
   return D
 
