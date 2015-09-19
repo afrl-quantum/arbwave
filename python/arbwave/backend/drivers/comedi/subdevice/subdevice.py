@@ -76,16 +76,16 @@ class Subdevice(Base):
       devname = 'Ctr'+index          # bad place for this
 
 
-    if clk not in route_loader.source_map:
+    if clk not in route_loader.dst_to_src:
         error("No clocks found for clock-able device '%s' (%s)",
               self, self.card.board)
 
-    if trg not in route_loader.aggregate_map:
+    if trg not in route_loader.dst_to_src:
         error("No triggers found for triggerable device '%s' (%s)",
               self, self.card.board)
 
-    self.clock_sources = route_loader.source_map[clk]
-    self.trig_sources  = route_loader.aggregate_map[trg] #changed to agg map because it contains starttrigger for do, may be incorrect
+    self.clock_sources = route_loader.dst_to_src[clk]
+    self.trig_sources  = route_loader.src_to_dst[trg]
 
     self.config = self.get_config_template()
 

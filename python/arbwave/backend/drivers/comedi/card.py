@@ -123,7 +123,7 @@ class Card( POINTER(clib.comedi_t) ):
     self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
     self.signals = [
       channels.Backplane(src,destinations=dest,invertible=True)
-      for src,dest in rl.aggregate_map.iteritems()
+      for src,dest in rl.src_to_dst.iteritems()
     ]
 
 

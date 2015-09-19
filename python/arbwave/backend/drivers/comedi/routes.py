@@ -11,15 +11,16 @@ class BaseRouteLoader(object):
   """
   specializations should create *first before calling this*:
   route_map     (src, destination) -> (native-src, native-destination)
-  aggregate_map (src) -> [dest0, dest1, ...]
+  src_to_dst    (src) -> [dest0, dest1, ...]
+  dst_to_src    (dst) -> [src0, src1, ...] (opposite of src_to_dst)
   """
-  def __init__(self, card, aggregate_map, route_map):
+  def __init__(self, card, src_to_dst, route_map):
     self.card           = card
-    self.aggregate_map  = aggregate_map
+    self.src_to_dst     = src_to_dst
     self.route_map      = route_map
-    self.source_map     = dict()
+    self.dst_to_src     = dict()
     for src,dst in route_map:
-      D = self.source_map.setdefault( dst, list() )
+      D = self.dst_to_src.setdefault( dst, list() )
       D.append(src)
 
 
@@ -32,8 +33,8 @@ class NullRouteLoader(BaseRouteLoader):
 class NIRouteLoader(BaseRouteLoader):
   def __init__(self, driver, card ):
     ni_rl = ni_routes.RouteLoader( driver.host_prefix, str(driver) )
-    aggregate_map, route_map = ni_rl.mk_signal_route_map(card.device,card.board)
-    super(NIRouteLoader,self).__init__(card, aggregate_map, route_map)
+    src_to_dst, route_map = ni_rl.mk_signal_route_map(card.device,card.board)
+    super(NIRouteLoader,self).__init__(card, src_to_dst, route_map)
     self.ni_rl = ni_rl
 
 
