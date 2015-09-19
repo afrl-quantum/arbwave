@@ -75,7 +75,7 @@ class Digital(Base):
 
   def set_clocks(self, clocks):
     """
-    Aperidic clock implemented by a digital line of a digital device.
+    Aperiodic clock implemented by a digital line of a digital device.
     """
     if self.clocks != clocks:
       self.clocks = clocks
