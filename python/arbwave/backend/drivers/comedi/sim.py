@@ -4,9 +4,10 @@ Simulated low-level comedilib library.
 """
 
 import ctypes_comedi as clib
-from ctypes import c_ubyte, cast, POINTER, addressof
+from ctypes import c_ubyte, cast, POINTER, addressof, c_uint, sizeof
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re, time
+from itertools import izip
 from ....tools.expand import expand_braces
 
 
@@ -54,6 +55,8 @@ class SimSubDev(dict):
     self.setdefault('n_channels', 0)
     # FIXME:  replace this with a non static digital/analog representation
     self.setdefault('state', [0 for i in xrange(self.n_channels)])
+    # for dio subdev:
+    self.setdefault('ioconfig', [clib.COMEDI_INPUT for i in xrange(self.n_channels)])
     self.setdefault('flags', 0)
     self.setdefault('cmd', dict())
     self.setdefault('ranges', dict())
@@ -71,7 +74,7 @@ class SimSubDev(dict):
   def find_range(self, channel, unit, min, max):
     assert min <= max, 'comedi_find_range:  min > max'
     ranges = ( r for r in self.ranges if r.unit == unit )
-    for i, r in zip( xrange(len(ranges)), ranges ):
+    for i, r in izip( xrange(len(ranges)), ranges ):
       if r.min < min and max < r.max:
         return i
     return -1
@@ -162,6 +165,30 @@ class SimSubDev(dict):
 
 
   # Digital I/O
+  def dio_bitfield2(self, write_mask, bits, base_channel):
+    for i, ch in izip( xrange(8*sizeof(c_uint)),
+                       xrange( base_channel, self.n_channels ) ):
+      if write_mask & (1 << i):
+        self.state[ch] = bits._obj.value & ( 1 << i )
+      bits._obj.value &= ~( 1 << i ) # clear bit
+      bits._obj.value |= bool(self.state[ch]) << i # write bit
+    return 0
+
+  def dio_config(self, channel, direction):
+    self.ioconfig[channel] = direction
+    return 0
+
+  def dio_get_config(self, channel, direction):
+    direction._obj.value = self.ioconfig[channel]
+    return 0
+
+  def dio_read( self, channel, bit ):
+    bit._obj.value = self.state[channel]
+    return 1
+
+  def dio_write( self, channel, bit ):
+    self.state[channel] = bit
+    return 1
 
 
 
@@ -671,36 +698,36 @@ class ComediSim(object):
       .apply_parsed_calibration(channel, range, aref, calibration)
 
   def comedi_get_default_calibration_path(self, fp):
-    return self[fp].comedi_get_default_calibration_path()
+    return self[fp].get_default_calibration_path()
 
   def comedi_get_hardcal_converter(self, fp, sub, channel,
                                    range, direction, converter):
     return self[fp][sub] \
-      .comedi_get_hardcal_converter(channel, range, direction, converter)
+      .get_hardcal_converter(channel, range, direction, converter)
 
   def comedi_get_softcal_converter(self, sub, channel,
                                    range, direction, parsed_calibration,
                                    converter):
     return self[fp][sub] \
-      .comedi_get_softcal_converter(channel, range, direction,
-                                    parsed_calibration, converter)
+      .get_softcal_converter(channel, range, direction,
+                             parsed_calibration, converter)
 
 
   # Digital I/O
   def comedi_dio_bitfield2(self, fp, sub, write_mask, bits, base_channel):
-    return self[fp][sub].comedi_dio_bitfield2(write_mask, bits, base_channel)
+    return self[fp][sub].dio_bitfield2(write_mask, bits, base_channel)
 
   def comedi_dio_config(self, fp, sub, channel, direction):
-    return self[fp][sub].comedi_dio_config(channel, direction)
+    return self[fp][sub].dio_config(channel, direction)
 
   def comedi_dio_get_config(self, fp, sub, channel, direction):
-    return self[fp][sub].comedi_dio_get_config(channel, direction)
+    return self[fp][sub].dio_get_config(channel, direction)
 
   def comedi_dio_read(self, fp, sub, channel, bit):
-    return self[fp][sub].comedi_dio_read(channel, bit)
+    return self[fp][sub].dio_read(channel, bit)
 
   def comedi_dio_write(self, fp, sub, channel, bit):
-    return self[fp][sub].comedi_dio_write(channel, bit)
+    return self[fp][sub].dio_write(channel, bit)
 
 
   # Extensions
