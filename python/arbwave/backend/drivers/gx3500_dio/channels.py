@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 # -*- coding: utf-8 -*-
 """
-Channel definitions for the GX3500 timing board driver.
+Channel definitions for the GX3500 timing/DIO board driver.
 
 @author: bks
 """

@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 # -*- coding: utf-8 -*-
 """
-Logical device for GX3500 timing board.
+Logical device driver for GX3500 timing/DIO board.
 
 @author: bks
 """
@@ -60,7 +60,7 @@ def _make_instr(dt, new_ports):
 
 class Device(Base):
     """
-    The logical Device for a single instance of the GX3500 timing board.
+    The logical Device for a single instance of the GX3500 timing/DIO board.
     """
 
     def __init__(self, driver, address, N, simulated=False):

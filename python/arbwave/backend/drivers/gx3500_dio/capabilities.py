@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 # -*- coding: utf-8 -*-
 """
-Capabilities generator for the GX3500 timing card. Substantially derived
+Capabilities generator for the GX3500 timing/DIO card. Substantially derived
 from the Viewpoint DIO64 driver code.
 
 @author: bks
@@ -12,7 +12,7 @@ from . import channels
 def get_channels(devices, C, *args, **kwargs):
   """
   Construct the channel list for each device. Each device has 4 ports,
-  32 bits per channel grouped into segments of 4 bits each. Each segment
+  32 bits per channel grouped into 8 segments of 4 bits each. Each segment
   is one CAT-5e cable.
 
   :param devices: the devices map

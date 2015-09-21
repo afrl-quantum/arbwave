@@ -1,8 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 # -*- coding: utf-8 -*-
 """
-Arbwave driver for our custom timing board implemented on the Marvin Test GX3500
-FPGA PXI card.
+Arbwave driver for our custom timing/DIO board implemented on the Marvin Test
+GX3500 FPGA PXI card.
 
 @author: bks
 """
@@ -18,7 +18,7 @@ from ....tools.path import collect_prefix
 
 class Driver(Base):
     """
-    The driver for our GX3500-based 128-bit timing card.
+    The driver for our GX3500-based 128-bit timing/DIO card.
     """
     prefix      = 'gxt'
     description = 'GX3500 Timing Card Driver'
@@ -26,7 +26,7 @@ class Driver(Base):
 
     def __init__(self, *a, **kw):
         """
-        Load the GX300 Timing Card driver and instantiate all available devices.
+        Load the GX3500 timing/DIO driver and instantiate all available devices.
         """
         super(Driver,self).__init__(*a, **kw)
 
@@ -51,7 +51,7 @@ class Driver(Base):
             except NotATimingBoard:
                 pass
         
-        logging.info('Found %d timing boards.', len(self.devices))
+        logging.info('Found %d timing/DIO boards.', len(self.devices))
 
         self.digital_channels = capabilities.get_digital_channels(self.devices)
         self.timing_channels = capabilities.get_timing_channels(self.devices)
@@ -67,7 +67,7 @@ class Driver(Base):
         """
         Get the list of present devices.
 
-        :return: a list of gx3500_timing.Device objects
+        :return: a list of gx3500_dio.Device objects
         """
         return self.devices.values()
 
