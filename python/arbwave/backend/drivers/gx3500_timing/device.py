@@ -63,14 +63,14 @@ class Device(Base):
     The logical Device for a single instance of the GX3500 timing board.
     """
 
-    def __init__(self, driver, address, simulated=False):
+    def __init__(self, driver, address, N, simulated=False):
         """
         Instantiate a Device.
         
         :param address: the board PCI bus/slot address
         :param simulated: if True, use a simulated version of the timing board
         """
-        super(Device,self).__init__(name='{}/Dev_{:04x}'.format( driver, address ))
+        super(Device,self).__init__(name='{}/Dev{}'.format( driver, N ))
         self.driver = driver
 
         if not simulated:

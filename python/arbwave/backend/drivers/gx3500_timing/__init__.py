@@ -44,9 +44,9 @@ class Driver(Base):
 
         # instantiate Devices for all the actual timing boards
         self.devices = {}
-        for addr in board_addresses:
+        for n, addr in enumerate(board_addresses):
             try:
-                dev = Device(self, addr, simulated=self.simulated)
+                dev = Device(self, address=addr, N=(n+1), simulated=self.simulated)
                 self.devices[str(dev)] = dev
             except NotATimingBoard:
                 pass
