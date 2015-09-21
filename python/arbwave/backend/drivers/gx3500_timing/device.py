@@ -240,7 +240,7 @@ class Device(Base):
 
         transition_map = {}
 
-        debug('gx3500: input waveforms are \n' + str(waveforms))
+#        debug('gx3500: input waveforms are \n' + str(waveforms))
         # first reformat the waveforms: this is straightforward
         for channel, groups in waveforms.iteritems():
             for _, transitions in groups.iteritems():
@@ -355,7 +355,7 @@ class Device(Base):
         debug('gx3500: uploading a program of {} words'.format(len(words)))
         program_dump = np.array2string(words, max_line_width=78,
                                        formatter={'all': lambda v: hex(v)[:-1]})
-        debug('gx3500({}): program dump follows:\n'.format(self) + program_dump)
+#        debug('gx3500({}): program dump follows:\n'.format(self) + program_dump)
         self.board.write('mem', 0x0000, words)
 
     def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
@@ -378,7 +378,7 @@ class Device(Base):
         # remove Internal clocks from the clock_transitions
         clock_transitions = { c:p for c, p in clock_transitions.iteritems()
                               if 'Internal' not in c }
-        debug('gx3500: clock transitions for {}'.format(clock_transitions))
+#        debug('gx3500: clock transitions for {}'.format(clock_transitions))
 
         assert set([str(self) + '/' + c for c in clock_transitions]) \
                  .issubset(self.clocks.iterkeys()), \
@@ -430,6 +430,7 @@ class Device(Base):
 
         while self.board.state != 'SETUP':
             time.sleep(0.1)
+#            debug('gx3500: waiting, board is in ' + self.board.state)
 
     def stop(self):
         """
