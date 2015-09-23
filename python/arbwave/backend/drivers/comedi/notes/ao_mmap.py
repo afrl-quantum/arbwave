@@ -297,7 +297,7 @@ class DDS_sine(DDS):
       # Probably a unipolar range.  Bump up the offset.
       ofs = amp
     for i in xrange(self.WAVEFORM_LEN):
-      self.waveform[i]=round(ofs+amp*np.cos(i*2*M_PI/WAVEFORM_LEN))
+      self.waveform[i]=round(ofs+amp*np.cos(i*2*np.pi/self.WAVEFORM_LEN))
 
 
 def triangle(x):
@@ -315,7 +315,7 @@ class DDS_pseudocycloid(DDS):
       t=2*float(i)/self.WAVEFORM_LEN
       self.waveform[i]=round(self.offset+self.amplitude*np.sqrt(1-4*t*t))
     for i in xrange( self.WAVEFORM_LEN/2, self.WAVEFORM_LEN ):
-      t=2*(1-float(i)/WAVEFORM_LEN)
+      t=2*(1-float(i)/self.WAVEFORM_LEN)
       self.waveform[i]=round(self.offset+self.amplitude*np.sqrt(1-t*t))
 
 class DDS_cycloid(DDS):
