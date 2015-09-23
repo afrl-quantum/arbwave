@@ -201,12 +201,18 @@ class Test(object):
 
 
   def close(self):
-    del self.data
-    if not self.options.oswrite:
-      self.mapped.close()
-      del self.mapped
-    clib.comedi_close(self.dev)
-    del self.dev
+    if hasattr( self, 'dev' ):
+      if self.options.verbose:
+        print 'closing comedi driver...'
+      del self.data
+      if not self.options.oswrite:
+        self.mapped.close()
+        del self.mapped
+      clib.comedi_close(self.dev)
+      del self.dev
+
+  def __del__(self):
+    self.close()
 
 
   @property
@@ -241,9 +247,8 @@ class Test(object):
 
     ret = clib.comedi_internal_trigger(self.dev, self.options.subdevice, 0)
     if ret < 0:
-      print "comedi_internal_trigger:"
-      os.strerror(ret)
-      raise OSError()
+      clib.comedi_perror('comedi_internal_trigger error')
+      raise OSError('comedi_internal_trigger error: ')
 
   def wait(self):
     """
@@ -440,6 +445,7 @@ def main(args):
   t.start()
   t.wait()
   t.stop()
+  t.close()
 
 if __name__ == '__main__':
   main( process_args() )
