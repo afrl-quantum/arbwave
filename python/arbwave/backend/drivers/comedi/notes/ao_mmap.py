@@ -73,35 +73,39 @@ class Test(object):
   size = 0
 
   def __init__(self, options):
+    self.options = options
     self.cmd = clib.comedi_cmd()
     self.chanlist = ( c_uint * 16 )()
 
     #/* Use extra to select waveform */
     fn = options.waveform
     if fn < 0 or fn >= len( dds_list ):
-      print "Use the option '-n' to select another waveform."
+      if options.verbose:
+        print "Use the option '-n' to select another waveform."
       fn = 0;
 
     if options.value:
       self.waveform_frequency = options.value
 
-    dev = clib.comedi_open(options.filename)
-    if not dev:
+    self.dev = clib.comedi_open(options.filename)
+    if not self.dev:
       print "error opening ", options.filename
       return -1;
 
 
     if options.subdevice < 0:
-      options.subdevice = clib.comedi_find_subdevice_by_type(dev, clib.COMEDI_SUBD_AO, 0)
+      options.subdevice = \
+        clib.comedi_find_subdevice_by_type(self.dev, clib.COMEDI_SUBD_AO, 0)
 
 
-    self.subdevice_flags = clib.comedi_get_subdevice_flags(dev, options.subdevice)
+    self.subdevice_flags = \
+      clib.comedi_get_subdevice_flags(self.dev, options.subdevice)
     self.sampl_t = clib.sampl_t
     if self.subdevice_flags & clib.SDF_LSAMPL:
       self.sampl_t = clib.lsampl_t
 
-    maxdata = clib.comedi_get_maxdata(dev, options.subdevice, options.channel)
-    rng = clib.comedi_get_range(dev, options.subdevice, options.channel, options.range)
+    maxdata = clib.comedi_get_maxdata(self.dev, options.subdevice, options.channel)
+    rng = clib.comedi_get_range(self.dev, options.subdevice, options.channel, options.range)
 
     self.offset = float( clib.comedi_from_phys(0.0, rng, maxdata) )
     self.amplitude = float( clib.comedi_from_phys(1.0, rng, maxdata) ) - self.offset
@@ -127,38 +131,35 @@ class Test(object):
     self.chanlist[0] = clib.CR_PACK(options.channel, options.range, aref)
     self.chanlist[1] = clib.CR_PACK(options.channel + 1, options.range, aref)
   
-    dds = dds_list[options.waveform]( self.amplitude, self.offset,
-                                      self.waveform_frequency, options.freq )
+    self.dds = dds_list[options.waveform](
+      self.amplitude, self.offset, self.waveform_frequency, options.freq )
 
     if options.verbose:
       print 'cmd: ', self.cmd
 
-    err = clib.comedi_command_test(dev, self.cmd)
+    err = clib.comedi_command_test(self.dev, self.cmd)
     if err < 0:
       clib.comedi_perror("comedi_command_test")
       return 1
 
-    err = clib.comedi_command_test(dev, self.cmd)
+    err = clib.comedi_command_test(self.dev, self.cmd)
     if err < 0:
       clib.comedi_perror("comedi_command_test")
       return 1
 
-    err = clib.comedi_command(dev, self.cmd)
-    if err < 0:
-      clib.comedi_perror("comedi_command");
-      return 1
-
-    size = clib.comedi_get_buffer_size( dev, options.subdevice )
-    print "buffer size is:", size
+    size = clib.comedi_get_buffer_size( self.dev, options.subdevice )
+    if options.verbose:
+      print "buffer size is:", size
     self.BUF_LEN = size / sizeof(self.sampl_t)
 
     if options.oswrite:
-      data = (self.sampl_t * self.BUF_LEN)( )
+      self.data = (self.sampl_t * self.BUF_LEN)( )
 
       def write_data( data, n ):
         buf = ( c_ubyte * n ).from_buffer( data )
-        m = os.write( clib.comedi_fileno(dev), buf )
-        print "wrote {} out of {}".format(m, n)
+        m = os.write( clib.comedi_fileno(self.dev), buf )
+        if self.options.verbose:
+          print "wrote {} out of {}".format(m, n)
         if m < 0:
           raise OSError('os write error')
         return m
@@ -168,52 +169,72 @@ class Test(object):
       #data = mmap(NULL, size, PROT_WRITE, MAP_SHARED, comedi_fileno(dev), 0)
 
       # the python version;  we must cast using ctypes
-      mapped = mmap(clib.comedi_fileno(dev), size, prot=PROT_WRITE, flags=MAP_SHARED, offset=0)
-      data = (self.sampl_t * self.BUF_LEN).from_buffer( mapped )
-      if not data:
+      self.mapped = mmap(clib.comedi_fileno(self.dev), size, prot=PROT_WRITE, flags=MAP_SHARED, offset=0)
+      self.data = (self.sampl_t * self.BUF_LEN).from_buffer( self.mapped )
+      if not self.data:
         #perror("mmap");
         print 'mmap: error!'
         return 1
 
       def write_data( data, n ):
-        m = clib.comedi_mark_buffer_written(dev, options.subdevice, n)
-        print "Marked {} out of {}".format(m, n)
+        m = clib.comedi_mark_buffer_written(self.dev, options.subdevice, n)
+        if self.options.verbose:
+          print "Marked {} out of {}".format(m, n)
         if m < 0:
           clib.comedi_perror("comedi_mark_buffer_written")
           raise OSError('mark_buffer error')
         return m
 
-    dds(data, self.BUF_LEN)
+    self.write_data = write_data
+
+
+  def start(self):
+    """
+    Start the waveform
+    """
+    if self.options.verbose:
+      print 'cmd: ', self.cmd
+    err = clib.comedi_command(self.dev, self.cmd)
+    if err < 0:
+      clib.comedi_perror("comedi_command");
+      return 1
+
+    self.dds(self.data, self.BUF_LEN)
+
     n = self.BUF_LEN * sizeof(self.sampl_t)
-    m = write_data( data, n )
+    m = self.write_data( self.data, n )
     if m < n:
       print "failed to preload output buffer with", n, "bytes, is it too small?"
       print "See the --write-buffer option of comedi_config"
       raise OSError('--write-buffer ?')
 
-    if options.verbose:
+    if self.options.verbose:
       print "m=",m
 
-    ret = clib.comedi_internal_trigger(dev, options.subdevice, 0)
+    ret = clib.comedi_internal_trigger(self.dev, self.options.subdevice, 0)
     if ret < 0:
       print "comedi_internal_trigger:"
       os.strerror(ret)
       raise OSError()
 
+  def wait(self):
+    """
+    wait while the waveform executes
+    """
     try:
       time.sleep(100)
       # FIXME: this is not quite generic for both enough yet.  Need to call
       #   comedi_get_buffer_contents also.
       # total = 0
       #while True:
-      #  dds(data,self.BUF_LEN)
+      #  self.dds(self.data,self.BUF_LEN)
       #  n = self.BUF_LEN * sizeof(self.sampl_t)
       #  while n>0:
       #    next_chunk = ( c_ubyte * n ) \
-      #               .from_address( addressof(data)
+      #               .from_address( addressof(self.data)
       #                            + (self.BUF_LEN*sizeof(self.sampl_t)-n) )
-      #    m=write_data(next_chunk,n)
-      #    if options.verbose:
+      #    m=self.write_data(next_chunk,n)
+      #    if self.options.verbose:
       #      print "m=",m
       #    n-=m
       #  total+=self.BUF_LEN;
@@ -221,11 +242,18 @@ class Test(object):
     except KeyboardInterrupt:
       pass
 
-    # now cleanup
-    clib.comedi_cancel( dev, options.subdevice )
 
-    self.subdevice_flags = clib.comedi_get_subdevice_flags(dev, options.subdevice)
-    print 'flags: ', clib.extensions.subdev_flags.to_dict( self.subdevice_flags )
+  def stop(self):
+    """
+    stop the waveform
+    """
+    # now cleanup
+    clib.comedi_cancel( self.dev, self.options.subdevice )
+
+    if self.options.verbose:
+      self.subdevice_flags = \
+        clib.comedi_get_subdevice_flags(self.dev, self.options.subdevice)
+      print 'flags: ', clib.extensions.subdev_flags.to_dict( self.subdevice_flags )
 
 
 
@@ -373,7 +401,10 @@ def process_args():
   return parser.parse_args()
 
 def main(args):
-  Test( process_args() )
+  t = Test( process_args() )
+  t.start()
+  t.wait()
+  t.stop()
 
 if __name__ == '__main__':
   main( process_args() )
