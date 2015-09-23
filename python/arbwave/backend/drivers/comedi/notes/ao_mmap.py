@@ -91,6 +91,11 @@ class Test(object):
       options.subdevice = \
         clib.comedi_find_subdevice_by_type(self.dev, clib.COMEDI_SUBD_AO, 0)
 
+    # ret = clib.comedi_reset( self.dev, options.subdevice )
+    # if ret < 0:
+    #   clib.comedi_perror('comedi_reset')
+    #   raise OSError('comedi_reset failed')
+
 
     self.subdevice_flags = \
       clib.comedi_get_subdevice_flags(self.dev, options.subdevice)
