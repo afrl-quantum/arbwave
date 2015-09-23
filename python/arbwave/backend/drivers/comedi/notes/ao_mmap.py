@@ -84,8 +84,8 @@ class Test(object):
         print "Use the option '-n' to select another waveform."
       fn = 0;
 
-    if options.value:
-      self.waveform_frequency = options.value
+    if options.waveform_freq:
+      self.waveform_frequency = options.waveform_freq
 
     self.dev = clib.comedi_open(options.filename)
     if not self.dev:
@@ -104,8 +104,12 @@ class Test(object):
     if self.subdevice_flags & clib.SDF_LSAMPL:
       self.sampl_t = clib.lsampl_t
 
-    maxdata = clib.comedi_get_maxdata(self.dev, options.subdevice, options.channel)
-    rng = clib.comedi_get_range(self.dev, options.subdevice, options.channel, options.range)
+    assert not (self.subdevice_flags & clib.SDF_FLAGS), 'flags per channel!'
+    assert not (self.subdevice_flags & clib.SDF_MAXDATA), 'maxdata per channel!'
+    assert not (self.subdevice_flags & clib.SDF_RANGETYPE), 'range per channel!'
+
+    maxdata = clib.comedi_get_maxdata(self.dev, options.subdevice, options.channel[0])
+    rng = clib.comedi_get_range(self.dev, options.subdevice, options.channel[0], options.range)
 
     self.offset = float( clib.comedi_from_phys(0.0, rng, maxdata) )
     self.amplitude = float( clib.comedi_from_phys(1.0, rng, maxdata) ) - self.offset
@@ -120,16 +124,16 @@ class Test(object):
     self.cmd.convert_src = clib.TRIG_NOW
     self.cmd.convert_arg = 0
     self.cmd.scan_end_src = clib.TRIG_COUNT
-    self.cmd.scan_end_arg = options.n_chan
+    self.cmd.scan_end_arg = len(options.channel)
     self.cmd.stop_src = clib.TRIG_NONE
     self.cmd.stop_arg = 0
 
     self.cmd.chanlist = self.chanlist
-    self.cmd.chanlist_len = options.n_chan
+    self.cmd.chanlist_len = len(options.channel)
 
     aref = arefs[ options.aref ]
-    self.chanlist[0] = clib.CR_PACK(options.channel, options.range, aref)
-    self.chanlist[1] = clib.CR_PACK(options.channel + 1, options.range, aref)
+    for i,c in izip( xrange(len(options.channel)), options.channel ):
+      self.chanlist[i] = clib.CR_PACK(c, options.range, aref)
   
     self.dds = dds_list[options.waveform](
       self.amplitude, self.offset, self.waveform_frequency, options.freq )
@@ -387,16 +391,15 @@ def process_args():
   parser.add_argument( '-f', '--filename', nargs='?', default='/dev/comedi0',
     help='Comedi device file' )
   parser.add_argument( '-s', '--subdevice', type=int, default=-1 )
-  parser.add_argument( '-n', '--n_chan', type=int, default=1 )
-  parser.add_argument( '-c', '--channel', type=int, default=0 )
+  parser.add_argument( '-c', '--channel', nargs='+', type=int, default=[0] )
   parser.add_argument( '-a', '--aref',  choices=['ground', 'common'], default='ground' )
   parser.add_argument( '-r', '--range', type=int, default=0 )
   parser.add_argument( '-F', '--freq', type=float, default=1000. )
-  parser.add_argument( '-v', '--value', nargs='?', type=float, default=0. )
   parser.add_argument( '-w', '--waveform', type=int, default=-1,
     help='\n\t'.join([ '{}: {}'.format(i,c.name)
            for i,c in zip(xrange(len(dds_list)), dds_list)]) )
-  parser.add_argument( '-p', '--verbose', action='store_true' )
+  parser.add_argument( '-W', '--waveform_freq', nargs='?', type=float, default=0. )
+  parser.add_argument( '-v', '--verbose', action='store_true' )
   parser.add_argument( '--oswrite', action='store_true' )
   return parser.parse_args()
 
