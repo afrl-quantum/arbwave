@@ -65,12 +65,6 @@ class Test(object):
   #/* offset, in DAC units */
   offset      = 2048
 
-  #/* This is the size of chunks we deal with when creating and
-  #   outputting data.  This *could* be 1, but that would be
-  #   inefficient */
-  ##define BUF_LEN 0x8000
-  BUF_LEN = 0 # default to zero length
-  size = 0
 
   def __init__(self, options):
     self.options = options
@@ -80,9 +74,9 @@ class Test(object):
     #/* Use extra to select waveform */
     fn = options.waveform
     if fn < 0 or fn >= len( dds_list ):
-      if options.verbose:
-        print "Use the option '-n' to select another waveform."
-      fn = 0;
+      print "Use the option '-w' to select another waveform."
+      fn = 0
+    dds_klass = dds_list[fn]
 
     if options.waveform_freq:
       self.waveform_frequency = options.waveform_freq
@@ -108,8 +102,8 @@ class Test(object):
     assert not (self.subdevice_flags & clib.SDF_MAXDATA), 'maxdata per channel!'
     assert not (self.subdevice_flags & clib.SDF_RANGETYPE), 'range per channel!'
 
-    maxdata = clib.comedi_get_maxdata(self.dev, options.subdevice, options.channel[0])
-    rng = clib.comedi_get_range(self.dev, options.subdevice, options.channel[0], options.range)
+    maxdata = clib.comedi_get_maxdata(self.dev, options.subdevice, options.channels[0])
+    rng = clib.comedi_get_range(self.dev, options.subdevice, options.channels[0], options.range)
 
     self.offset = float( clib.comedi_from_phys(0.0, rng, maxdata) )
     self.amplitude = float( clib.comedi_from_phys(1.0, rng, maxdata) ) - self.offset
@@ -124,18 +118,18 @@ class Test(object):
     self.cmd.convert_src = clib.TRIG_NOW
     self.cmd.convert_arg = 0
     self.cmd.scan_end_src = clib.TRIG_COUNT
-    self.cmd.scan_end_arg = len(options.channel)
+    self.cmd.scan_end_arg = len(options.channels)
     self.cmd.stop_src = clib.TRIG_NONE
     self.cmd.stop_arg = 0
 
     self.cmd.chanlist = self.chanlist
-    self.cmd.chanlist_len = len(options.channel)
+    self.cmd.chanlist_len = len(options.channels)
 
     aref = arefs[ options.aref ]
-    for i,c in izip( xrange(len(options.channel)), options.channel ):
+    for i,c in izip( xrange(len(options.channels)), options.channels ):
       self.chanlist[i] = clib.CR_PACK(c, options.range, aref)
   
-    self.dds = dds_list[options.waveform](
+    self.dds = dds_klass(
       self.amplitude, self.offset, self.waveform_frequency, options.freq )
 
     if options.verbose:
@@ -154,10 +148,25 @@ class Test(object):
     size = clib.comedi_get_buffer_size( self.dev, options.subdevice )
     if options.verbose:
       print "buffer size is:", size
-    self.BUF_LEN = size / sizeof(self.sampl_t)
+
+    # the following two integer projections are really unecessary, at least for
+    # python 2.7, but are still written for clarity.  Probably necessar for
+    # python3
+    self.samples_per_channel \
+      = int( int(size / sizeof(self.sampl_t)) / len(options.channels) )
+
+    if options.n_samples:
+      if options.n_samples > self.samples_per_channel:
+        raise RuntimeError('Not enough memory for requested n_samples')
+      self.samples_per_channel = options.n_samples
+
+    shape = ( self.samples_per_channel, len(options.channels) )
+
+    #print 'BUF_LEN, samples_per_channel, n_chan, shape: ', \
+    #  self.BUF_LEN, self.samples_per_channel, len(options.channels), shape
 
     if options.oswrite:
-      self.data = (self.sampl_t * self.BUF_LEN)( )
+      self.data = np.zeros( shape, dtype=self.sampl_t )
 
       def write_data( data, n ):
         buf = ( c_ubyte * n ).from_buffer( data )
@@ -174,11 +183,10 @@ class Test(object):
 
       # the python version;  we must cast using ctypes
       self.mapped = mmap(clib.comedi_fileno(self.dev), size, prot=PROT_WRITE, flags=MAP_SHARED, offset=0)
-      self.data = (self.sampl_t * self.BUF_LEN).from_buffer( self.mapped )
-      if not self.data:
-        #perror("mmap");
-        print 'mmap: error!'
-        return 1
+      if not self.mapped:
+        raise OSError( 'mmap: error!' ) # probably will already be raised
+      self.data = np.ndarray( shape=shape, dtype=self.sampl_t,
+                              buffer=self.mapped, order='C' )
 
       def write_data( data, n ):
         m = clib.comedi_mark_buffer_written(self.dev, options.subdevice, n)
@@ -192,6 +200,21 @@ class Test(object):
     self.write_data = write_data
 
 
+  def close(self):
+    del self.data
+    if not self.options.oswrite:
+      self.mapped.close()
+      del self.mapped
+    clib.comedi_close(self.dev)
+    del self.dev
+
+
+  @property
+  def output_size(self):
+    return ( self.samples_per_channel
+           * len(self.options.channels)
+           * sizeof(self.sampl_t) )
+
   def start(self):
     """
     Start the waveform
@@ -203,9 +226,10 @@ class Test(object):
       clib.comedi_perror("comedi_command");
       return 1
 
-    self.dds(self.data, self.BUF_LEN)
+    for i in xrange( len(self.options.channels) ):
+      self.dds(self.data[:,i], self.samples_per_channel)
 
-    n = self.BUF_LEN * sizeof(self.sampl_t)
+    n = self.output_size
     m = self.write_data( self.data, n )
     if m < n:
       print "failed to preload output buffer with", n, "bytes, is it too small?"
@@ -251,13 +275,20 @@ class Test(object):
     """
     stop the waveform
     """
+    if self.options.verbose:
+      self.subdevice_flags = \
+        clib.comedi_get_subdevice_flags(self.dev, self.options.subdevice)
+      print 'before cancel flags:'
+      print clib.extensions.subdev_flags.to_dict( self.subdevice_flags )
+
     # now cleanup
     clib.comedi_cancel( self.dev, self.options.subdevice )
 
     if self.options.verbose:
       self.subdevice_flags = \
         clib.comedi_get_subdevice_flags(self.dev, self.options.subdevice)
-      print 'flags: ', clib.extensions.subdev_flags.to_dict( self.subdevice_flags )
+      print 'after cancel flags:'
+      print clib.extensions.subdev_flags.to_dict( self.subdevice_flags )
 
 
 
@@ -296,8 +327,8 @@ class DDS_sine(DDS):
     if(ofs < amp):
       # Probably a unipolar range.  Bump up the offset.
       ofs = amp
-    for i in xrange(self.WAVEFORM_LEN):
-      self.waveform[i]=round(ofs+amp*np.cos(i*2*np.pi/self.WAVEFORM_LEN))
+    xt = np.r_[:self.WAVEFORM_LEN] * 2 * np.pi/self.WAVEFORM_LEN
+    self.waveform = (ofs + amp*np.cos(xt)).round().astype(int)
 
 
 def triangle(x):
@@ -391,11 +422,12 @@ def process_args():
   parser.add_argument( '-f', '--filename', nargs='?', default='/dev/comedi0',
     help='Comedi device file' )
   parser.add_argument( '-s', '--subdevice', type=int, default=-1 )
-  parser.add_argument( '-c', '--channel', nargs='+', type=int, default=[0] )
+  parser.add_argument( '-c', '--channels', nargs='+', type=int, default=[0] )
   parser.add_argument( '-a', '--aref',  choices=['ground', 'common'], default='ground' )
   parser.add_argument( '-r', '--range', type=int, default=0 )
+  parser.add_argument( '-N', '--n_samples', type=int, default=0 )
   parser.add_argument( '-F', '--freq', type=float, default=1000. )
-  parser.add_argument( '-w', '--waveform', type=int, default=-1,
+  parser.add_argument( '-w', '--waveform', type=int, default=0,
     help='\n\t'.join([ '{}: {}'.format(i,c.name)
            for i,c in zip(xrange(len(dds_list)), dds_list)]) )
   parser.add_argument( '-W', '--waveform_freq', nargs='?', type=float, default=0. )
