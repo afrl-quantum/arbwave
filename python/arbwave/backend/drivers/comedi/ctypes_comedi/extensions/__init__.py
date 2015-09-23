@@ -8,3 +8,4 @@ ctypes library.
 import cmd
 import insn
 import crange
+import subdev_flags
