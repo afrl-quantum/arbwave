@@ -42,7 +42,7 @@ sys.path.append( path.join( path.dirname(__file__), path.pardir ) )
 
 import ctypes_comedi as clib
 import numpy as np
-from ctypes import byref, pointer, c_uint, sizeof
+from ctypes import byref, pointer, c_uint, c_ubyte, sizeof, addressof
 from mmap import mmap, PROT_WRITE, MAP_SHARED
 from itertools import izip
 
@@ -73,7 +73,6 @@ class Test(object):
   size = 0
 
   def __init__(self, options):
-    self.data = None
     self.cmd = clib.comedi_cmd()
     self.chanlist = ( c_uint * 16 )()
 
@@ -153,28 +152,44 @@ class Test(object):
     print "buffer size is:", size
     self.BUF_LEN = size / sizeof(self.sampl_t)
 
-    # The c version; we can cast directly
-    #data = mmap(NULL, size, PROT_WRITE, MAP_SHARED, comedi_fileno(dev), 0)
+    if options.oswrite:
+      data = (self.sampl_t * self.BUF_LEN)( )
 
-    # the python version;  we must cast using ctypes
-    mapped = mmap(clib.comedi_fileno(dev), size, prot=PROT_WRITE, flags=MAP_SHARED, offset=0)
-    data = (self.sampl_t * self.BUF_LEN).from_buffer( mapped )
-    if not data:
-      #perror("mmap");
-      print 'mmap: error!'
-      return 1
+      def write_data( data, n ):
+        buf = ( c_ubyte * n ).from_buffer( data )
+        m = os.write( clib.comedi_fileno(dev), buf )
+        print "wrote {} out of {}".format(m, n)
+        if m < 0:
+          raise OSError('os write error')
+        return m
 
-    dds(data,self.BUF_LEN)
+    else:
+      # The c version; we can cast directly
+      #data = mmap(NULL, size, PROT_WRITE, MAP_SHARED, comedi_fileno(dev), 0)
+
+      # the python version;  we must cast using ctypes
+      mapped = mmap(clib.comedi_fileno(dev), size, prot=PROT_WRITE, flags=MAP_SHARED, offset=0)
+      data = (self.sampl_t * self.BUF_LEN).from_buffer( mapped )
+      if not data:
+        #perror("mmap");
+        print 'mmap: error!'
+        return 1
+
+      def write_data( data, n ):
+        m = clib.comedi_mark_buffer_written(dev, options.subdevice, n)
+        print "Marked {} out of {}".format(m, n)
+        if m < 0:
+          clib.comedi_perror("comedi_mark_buffer_written")
+          raise OSError('mark_buffer error')
+        return m
+
+    dds(data, self.BUF_LEN)
     n = self.BUF_LEN * sizeof(self.sampl_t)
-    m = clib.comedi_mark_buffer_written(dev, options.subdevice, size)
-    print "Marked {} out of {}".format(m, n)
-    if m < 0:
-      clib.comedi_perror("comedi_mark_buffer_written")
-      return 1
-    elif m < n:
+    m = write_data( data, n )
+    if m < n:
       print "failed to preload output buffer with", n, "bytes, is it too small?"
       print "See the --write-buffer option of comedi_config"
-      return 1
+      raise OSError('--write-buffer ?')
 
     if options.verbose:
       print "m=",m
@@ -183,29 +198,34 @@ class Test(object):
     if ret < 0:
       print "comedi_internal_trigger:"
       os.strerror(ret)
-      return 1
+      raise OSError()
 
-    time.sleep(100)
-    # total = 0
-    #//while(1){
-    #//  dds(data,self.BUF_LEN);
-    #//  n=self.BUF_LEN*sizeof(self.sampl_t);
-    #//  while(n>0){
-    #//    m=write(comedi_fileno(dev),(void *)data+(self.BUF_LEN*sizeof(self.sampl_t)-n),n);
-    #//    printf("wrote..\n");
-    #//    if(m<0){
-    #//      perror("write");
-    #//      exit(0);
-    #//    }
-    #//    if (options.verbose)
-    #//      printf("m=%d\n",m);
-    #//    n-=m;
-    #//  }
-    #//  total+=self.BUF_LEN;
-    #//  //printf("%d\n",total);
-    #//}
+    try:
+      time.sleep(100)
+      # FIXME: this is not quite generic for both enough yet.  Need to call
+      #   comedi_get_buffer_contents also.
+      # total = 0
+      #while True:
+      #  dds(data,self.BUF_LEN)
+      #  n = self.BUF_LEN * sizeof(self.sampl_t)
+      #  while n>0:
+      #    next_chunk = ( c_ubyte * n ) \
+      #               .from_address( addressof(data)
+      #                            + (self.BUF_LEN*sizeof(self.sampl_t)-n) )
+      #    m=write_data(next_chunk,n)
+      #    if options.verbose:
+      #      print "m=",m
+      #    n-=m
+      #  total+=self.BUF_LEN;
+      #  #print 'total: ', total
+    except KeyboardInterrupt:
+      pass
 
-    return 0
+    # now cleanup
+    clib.comedi_cancel( dev, options.subdevice )
+
+    self.subdevice_flags = clib.comedi_get_subdevice_flags(dev, options.subdevice)
+    print 'flags: ', clib.extensions.subdev_flags.to_dict( self.subdevice_flags )
 
 
 
@@ -349,6 +369,7 @@ def process_args():
     help='\n\t'.join([ '{}: {}'.format(i,c.name)
            for i,c in zip(xrange(len(dds_list)), dds_list)]) )
   parser.add_argument( '-p', '--verbose', action='store_true' )
+  parser.add_argument( '--oswrite', action='store_true' )
   return parser.parse_args()
 
 def main(args):
