@@ -56,9 +56,6 @@ arefs = dict(
 
 
 class Test(object):
-  #/* frequency of the sine wave to output */
-  waveform_frequency  = 10.0
-
   #/* peak-to-peak amplitude, in DAC units (i.e., 0-4095) */
   amplitude    = 4000
 
@@ -78,13 +75,12 @@ class Test(object):
       fn = 0
     dds_klass = dds_list[fn]
 
-    if options.waveform_freq:
-      self.waveform_frequency = options.waveform_freq
+    options.waveform_freq = float( options.waveform_freq )
+    options.freq = float( options.freq )
 
     self.dev = clib.comedi_open(options.filename)
     if not self.dev:
-      print "error opening ", options.filename
-      return -1;
+      raise OSError( "error opening " + options.filename )
 
 
     if options.subdevice < 0:
@@ -124,7 +120,7 @@ class Test(object):
     self.cmd.convert_arg = 0
     self.cmd.scan_end_src = clib.TRIG_COUNT
     self.cmd.scan_end_arg = len(options.channels)
-    self.cmd.stop_src = clib.TRIG_NONE
+    self.cmd.stop_src = clib.TRIG_NONE if options.continuous else clib.TRIG_COUNT
     self.cmd.stop_arg = 0
 
     self.cmd.chanlist = self.chanlist
@@ -135,7 +131,7 @@ class Test(object):
       self.chanlist[i] = clib.CR_PACK(c, options.range, aref)
   
     self.dds = dds_klass(
-      self.amplitude, self.offset, self.waveform_frequency, options.freq )
+      self.amplitude, self.offset, options.waveform_freq, options.freq, options.waveform_len )
 
     if options.verbose:
       print 'cmd: ', self.cmd
@@ -143,12 +139,15 @@ class Test(object):
     err = clib.comedi_command_test(self.dev, self.cmd)
     if err < 0:
       clib.comedi_perror("comedi_command_test")
-      return 1
+      raise RuntimeError()
 
     err = clib.comedi_command_test(self.dev, self.cmd)
     if err < 0:
       clib.comedi_perror("comedi_command_test")
-      return 1
+      raise RuntimeError()
+
+    if err:
+      raise RuntimeError('Comedi Test returns: ' + str(err))
 
     size = clib.comedi_get_buffer_size( self.dev, options.subdevice )
     if options.verbose:
@@ -165,7 +164,10 @@ class Test(object):
         raise RuntimeError('Not enough memory for requested n_samples')
       self.samples_per_channel = options.n_samples
 
+    self.cmd.stop_arg = self.samples_per_channel
+
     shape = ( self.samples_per_channel, len(options.channels) )
+    print 'shape: ', shape
 
     #print 'BUF_LEN, samples_per_channel, n_chan, shape: ', \
     #  self.BUF_LEN, self.samples_per_channel, len(options.channels), shape
@@ -192,6 +194,7 @@ class Test(object):
         raise OSError( 'mmap: error!' ) # probably will already be raised
       self.data = np.ndarray( shape=shape, dtype=self.sampl_t,
                               buffer=self.mapped, order='C' )
+      self.data[:] = 0
 
       def write_data( data, n ):
         m = clib.comedi_mark_buffer_written(self.dev, options.subdevice, n)
@@ -226,6 +229,16 @@ class Test(object):
            * len(self.options.channels)
            * sizeof(self.sampl_t) )
 
+  def trigger(self):
+    ret = clib.comedi_internal_trigger(self.dev, self.options.subdevice, 0)
+    if ret < 0:
+      clib.comedi_perror('comedi_internal_trigger error')
+      raise OSError('comedi_internal_trigger error: ')
+
+  def _dds(self):
+    for i in xrange( len(self.options.channels) ):
+      self.dds(self.data[:,i], self.samples_per_channel)
+
   def start(self):
     """
     Start the waveform
@@ -237,8 +250,7 @@ class Test(object):
       clib.comedi_perror("comedi_command");
       return 1
 
-    for i in xrange( len(self.options.channels) ):
-      self.dds(self.data[:,i], self.samples_per_channel)
+    self._dds()
 
     n = self.output_size
     m = self.write_data( self.data, n )
@@ -250,33 +262,37 @@ class Test(object):
     if self.options.verbose:
       print "m=",m
 
-    ret = clib.comedi_internal_trigger(self.dev, self.options.subdevice, 0)
-    if ret < 0:
-      clib.comedi_perror('comedi_internal_trigger error')
-      raise OSError('comedi_internal_trigger error: ')
+    self.trigger()
 
   def wait(self):
     """
     wait while the waveform executes
     """
     try:
-      time.sleep(100)
-      # FIXME: this is not quite generic for both enough yet.  Need to call
-      #   comedi_get_buffer_contents also.
-      # total = 0
-      #while True:
-      #  self.dds(self.data,self.BUF_LEN)
-      #  n = self.BUF_LEN * sizeof(self.sampl_t)
-      #  while n>0:
-      #    next_chunk = ( c_ubyte * n ) \
-      #               .from_address( addressof(self.data)
-      #                            + (self.BUF_LEN*sizeof(self.sampl_t)-n) )
-      #    m=self.write_data(next_chunk,n)
-      #    if self.options.verbose:
-      #      print "m=",m
-      #    n-=m
-      #  total+=self.BUF_LEN;
-      #  #print 'total: ', total
+      if not self.options.write_more:
+        while True:
+          time.sleep(1)
+      elif self.options.oswrite:
+        # FIXME: this is not quite generic for both enough yet.  Need to call
+        #   comedi_get_buffer_contents also.
+        total = 0
+        while True:
+          self._dds()
+          N = n = self.output_size
+          while n>0:
+            next_chunk = self.data[(N-n):]
+            m=self.write_data(next_chunk,n)
+            if self.options.verbose:
+              print "m=",m
+            n-=m
+          total+=self.samples_per_channel
+          #print 'total: ', total
+      else:
+        while True:
+          N = n = self.output_size
+          unmarked = N - clib.comedi_get_buffer_contents(self.dev, self.options.subdevice)
+          if unmarked > 0:
+            clib.comedi_mark_buffer_written(self.dev, self.options.subdevice, unmarked)
     except KeyboardInterrupt:
       pass
 
@@ -304,15 +320,13 @@ class Test(object):
 
 
 class DDS(object):
-  WAVEFORM_SHIFT  = 16
-  WAVEFORM_LEN    = (1<<WAVEFORM_SHIFT)
-  WAVEFORM_MASK   = (WAVEFORM_LEN-1)
   name            = None
 
-
-  def __init__(self, amplitude, offset, waveform_frequency, update_frequency):
+  def __init__(self, amplitude, offset, waveform_frequency, update_frequency, waveform_len = 1<<16):
     self.amplitude = amplitude
     self.offset = offset
+    self.WAVEFORM_SHIFT = int( round( np.log(waveform_len) / np.log(2) ) )
+    self.WAVEFORM_LEN = 1 << self.WAVEFORM_SHIFT
     self.adder = int( waveform_frequency / update_frequency
                       * (1 << 16) * (1 << self.WAVEFORM_SHIFT) )
     self.acc = 0;
@@ -320,8 +334,9 @@ class DDS(object):
     self.init()
 
   def __call__(self, buf, n):
+    WAVEFORM_MASK   = (self.WAVEFORM_LEN-1)
     for i in xrange( n ):
-      buf[i] = int( self.waveform[(self.acc >> 16) & self.WAVEFORM_MASK] )
+      buf[i] = int( self.waveform[(self.acc >> 16) & WAVEFORM_MASK] )
       self.acc += self.adder;
 
   def __str__(self):
@@ -377,8 +392,8 @@ class DDS_cycloid(DDS):
 class DDS_ramp_up(DDS):
   name = 'ramp_up'
   def init(self):
-    for i in xrange( self.WAVEFORM_LEN ):
-      self.waveform[i]=round(self.offset+self.amplitude*float(i)/self.WAVEFORM_LEN)
+    L = self.WAVEFORM_LEN
+    self.waveform = ( self.offset + self.amplitude*np.r_[0:L]/float(L) ).round()
 
 class DDS_ramp_down(DDS):
   name = 'ramp_down'
@@ -436,13 +451,18 @@ def process_args():
   parser.add_argument( '-a', '--aref',  choices=['ground', 'common'], default='ground' )
   parser.add_argument( '-r', '--range', type=int, default=0 )
   parser.add_argument( '-N', '--n_samples', type=int, default=0 )
-  parser.add_argument( '-F', '--freq', type=float, default=1000. )
+  parser.add_argument( '-W', '--waveform_freq', type=float, default=10.0,
+    help='set waveform frequency [default 10.0]' )
+  parser.add_argument( '-F', '--freq', type=float, default=1000.,
+    help='set update frequency [default 1000.]' )
   parser.add_argument( '-w', '--waveform', type=int, default=0,
     help='\n\t'.join([ '{}: {}'.format(i,c.name)
            for i,c in zip(xrange(len(dds_list)), dds_list)]) )
-  parser.add_argument( '-W', '--waveform_freq', nargs='?', type=float, default=0. )
+  parser.add_argument( '-C', '--continuous', action='store_true' )
   parser.add_argument( '-v', '--verbose', action='store_true' )
   parser.add_argument( '--oswrite', action='store_true' )
+  parser.add_argument( '--write_more', action='store_true' )
+  parser.add_argument( '-L', '--waveform_len', type=int, default=1<<16 )
   return parser.parse_args()
 
 def main(args):
