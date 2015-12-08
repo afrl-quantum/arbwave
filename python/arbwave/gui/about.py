@@ -5,6 +5,7 @@ AUTHORS = [
   'Spencer E. Olson (Air Force Research Laboratory)',
   'Brian Kasch (Space Dynamics Laboratory)',
   'Ian Hage (Universities Space Research Association)',
+  'Benjamin Stuhl (Space Dynamics Laboratory)',
 ]
 
 import gtk
@@ -23,7 +24,7 @@ def show():
     '\n'
     ' Public Domain Contributions 2012-2015 United States Government '
     ' as represented by the U.S. Air Force Research Laboratory.\n'
-    ' Portions copyright Copyright (C) 2012 Space Dynamics Laboratory\n'
+    ' Portions copyright Copyright (C) 2012-2015 Space Dynamics Laboratory\n'
     ' Portions copyright Copyright (C) 2015 Universities Space Research Association\n'
   )
   dialog.set_wrap_license(80)

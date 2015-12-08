@@ -145,7 +145,7 @@ class Driver(Base):
   def set_device_config( self, config, channels, shortest_paths ):
     # we need to separate channels first by device
     # (configs are already naturally separated by device)
-    chans = { k:dict()  for k in self.tasks }
+    chans = { k:dict()  for k in config }
     for c in channels:
       m = re.match( '((' + self.prefix + '/Dev[0-9]*/[ap]o).*)', c)
       # we change '/po' to '/do' to correspond with the task name given above for

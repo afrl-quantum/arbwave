@@ -51,3 +51,30 @@ class DOTiming(Base, TBase):
         'range' : xrange(2, sys.maxint),
       }
     }
+
+
+
+class SCTB_Timing(Base, TBase):
+  """
+  NIDAQmx Timing channel class for output channels timed from a division of the
+  ?/SampleClockTimebase.
+  """
+
+  def _divider(self):
+    return self.device.clocks[ str(self) ]['divider']['value']
+
+  def get_min_period(self):
+    """
+    Return a multiplication of the ?/SampleClockTimebase.
+    """
+    return RecursiveMinPeriod( self.device.config['clock-settings']['Timebase']['clock']['value'],
+                               self._divider() )
+
+  def get_config_template(self):
+    return {
+      'divider' : {
+        'value' : 2,
+        'type'  : int,
+        'range' : xrange(2, sys.maxint),
+      }
+    }
