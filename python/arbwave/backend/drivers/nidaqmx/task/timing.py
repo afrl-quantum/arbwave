@@ -10,7 +10,6 @@ class Timing(Base):
   def set_clocks(self, clocks):
     if self.clocks != clocks:
       self.clocks = clocks
-      self.set_config( force=True )
 
 
   def add_channels(self):

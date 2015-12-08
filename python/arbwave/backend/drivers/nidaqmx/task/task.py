@@ -29,21 +29,20 @@ class Task(Base):
     # first find the possible trigger and clock sources
     self.trig_sources = list()
     self.clock_sources = list()
+    self.SCTB_sources = list()
     self.sources_to_native = dict()
 
     # make sure the strip off the leading 'ni' but leave the '/'
-    clk = self.name[len(self.prefix):] + '/SampleClock'
-    trg = self.name[len(self.prefix):] + '/StartTrigger'
+    clk = self.format_ni_terminal_name('SampleClock')
+    trg = self.format_ni_terminal_name('StartTrigger')
+    sctb= self.format_ni_terminal_name('SampleClockTimebase')
+
+    lD = {clk:self.clock_sources, trg:self.trig_sources, sctb:self.SCTB_sources}
 
     for i in driver.rl.signal_route_map.items():
-      add = False
-      if clk == i[1][1]:
-        self.clock_sources.append( i[0][0] )
-        add = True
-      elif trg == i[1][1]:
-        self.trig_sources.append( i[0][0] )
-        add = True
-      if add:
+      l = lD.get( i[1][1], None )
+      if l is not None:
+        l.append( i[0][0] )
         self.sources_to_native[ i[0][0] ] = i[1][0]
 
     self.config = self.get_config_template()
@@ -60,6 +59,8 @@ class Task(Base):
       self.task = None
       self.t_max = 0.0
 
+  def format_ni_terminal_name(self, terminal):
+    return self.name[len(self.prefix):] + '/' + terminal
 
   def add_channels(self):
     """
@@ -71,14 +72,14 @@ class Task(Base):
       self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
 
-  def set_config(self, config=None, channels=None, shortest_paths=None,
-                 force=False):
+  def set_config(self, config=None, channels=None, shortest_paths=None):
+    do_rebuild = False
     if channels and self.channels != channels:
       self.channels = channels
-      force = True
+      do_rebuild = True
     if config and self.config != config:
       self.config = config
-      force = True
+      do_rebuild = True
 
     if not self.config['clock']['value']:
       self.clock_terminal = None
@@ -89,9 +90,9 @@ class Task(Base):
             nearest_terminal( self.config['clock']['value'],
                               set(self.clock_sources),
                               shortest_paths ) ]
-        force = True
+        do_rebuild = True
 
-    if force:
+    if do_rebuild:
       self._rebuild_task()
 
   def _rebuild_task(self):
@@ -388,6 +389,13 @@ class Task(Base):
             ('falling','Sample on Falling Edge of Trigger'),
             ('rising', 'Sample on Rising Edge of Trigger'),
           ],
+        },
+        'Timebase' : {
+          'clock' : {
+            'value' : '', #FIXME:  what should the default be? MasterTimebase?
+            'type' : str,
+            'range' : self.SCTB_sources,
+          },
         },
       },
     }
