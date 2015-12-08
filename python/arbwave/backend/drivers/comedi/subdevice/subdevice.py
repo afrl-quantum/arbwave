@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import copy, time, mmap, re
+import copy, time, re
+from mmap import mmap, PROT_WRITE, MAP_SHARED
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 import numpy as np
 import ctypes
@@ -38,9 +39,6 @@ class Subdevice(Base):
   what Arbwave considers to be a self-contained device.
   """
 
-  #for continuous mode, this appears to be a magic value! fix the dumb kernel:
-  # self.cmd.stop_arg = 1
-  STOP_ARG_CONTINUOUS = 1
   subdev_type         = None  # changed by inheriting device types
   units               = clib.UNIT_volt
   default_range_min   = 0
@@ -67,27 +65,55 @@ class Subdevice(Base):
     self.subdevice = subdevice
     debug( 'loading comedi subdevice %s', self )
     self.channels = dict()
-    self.clocks = None
+    self.clocks = dict()
     self.clock_terminal = None
     self.use_case = None
     self.t_max = 0.0
     self.cmd = clib.comedi_cmd()
     self.cmd_chanlist = None
 
+    sd_flags = self.status()
+    self.sampl_t = clib.sampl_t if sd_flags.sample_16bit else clib.lsampl_t
+
+    assert not sd_flags.flags_per_channel, 'flags per channel!'
+
+    size = clib.comedi_get_buffer_size( self.card, self.subdevice )
+    # The c version; we can cast directly
+    #data = mmap(NULL, size, PROT_WRITE, MAP_SHARED, comedi_fileno(dev), 0)
+
+    # the python version;  we must cast using ctypes/numpy
+    if not self.card.driver.simulated:
+      self.mapped = mmap( clib.comedi_fileno(self.card), size,
+                          prot=PROT_WRITE, flags=MAP_SHARED, offset=0 )
+    else:
+      self.mapped = clib.sim.cards[self.card].subdevs[self.subdevice].buffer
+    if not self.mapped:
+      raise OSError( 'mmap: error!' ) # probably will already be raised
+
+    memory = np.ndarray( shape=(size,), dtype=ctypes.c_ubyte,
+                         buffer=self.mapped, order='C' )
+    memory[:] = 0 # zero the buffer to begin
+
+
     #first find the possible trigger and clock sources
     clk = self.name + '/SampleClock'
     trg = self.name + '/StartTrigger'
 
+    self.clock_sources = route_loader.dst_to_src.get(clk, list())
+    self.trig_sources  = route_loader.dst_to_src.get(trg, list())
+
     if clk not in route_loader.dst_to_src:
       error("No clocks found for clock-able device '%s' (%s)",
             self, self.card.board)
+    else:
+      self.config_template['clock']['range'] = self.clock_sources
 
     if trg not in route_loader.dst_to_src:
-        warn ("No triggers found for triggerable(?) device '%s' (%s)",
-              self, self.card.board)
-
-    self.clock_sources = route_loader.dst_to_src.get(clk, list())
-    self.trig_sources  = route_loader.dst_to_src.get(trg, list())
+      # internal trigger only
+      self.config_template = self.config_template.copy()
+      self.config_template.pop('trigger')
+    else:
+      self.config_template['trigger']['source']['range'] = self.trig_sources
 
     self.config = self.get_config_template()
 
@@ -159,15 +185,15 @@ class Subdevice(Base):
 
     Actually just calls self._config_all_channels(self.channels)
     """
-    return self._config_all_channels(self.channels)
+    return self._config_all_channels( dict(self.channels, **self.clocks) )
 
 
   def _config_all_channels(self, channels):
     """
     Configure all given channels and return them.
     """
-    dflt_mn = self.get_config( default_range_min )
-    dflt_mx = self.get_config( default_range_max )
+    dflt_mn = self.get_config( self.default_range_min )
+    dflt_mx = self.get_config( self.default_range_max )
 
     self.ranges = dict()
     self.maxdata = dict()
@@ -178,7 +204,7 @@ class Subdevice(Base):
       ch = self.get_channel(chname)
 
       self.ranges[chname]=r=clib.comedi_find_range(C, S, ch, self.units, mn, mx)
-      self.maxdata[chname] = clib.comedi_get_maxdata(C, S, ch)
+      self.maxdata[chname]= clib.comedi_get_maxdata(C, S, ch)
 
       assert r >= 0, 'comedi: Could not identify output range for '+chname
 
@@ -200,15 +226,15 @@ class Subdevice(Base):
     """
     Tests the comedi_cmd to see if it was configured for continuous mode.
     """
-    return self.cmd.stop_arg == self.STOP_ARG_CONTINUOUS
+    return self.cmd.stop_src == clib.TRIG_NONE
 
 
   def set_config(self, config=None, channels=None, shortest_paths=None):
     debug('comedi[%s].set_config', self)
 
-    if channels and self.channels != channels:
+    if channels is not None and self.channels != channels:
       self.channels = channels
-    if config and self.config != config:
+    if config is not None and self.config != config:
       self.config = config
 
     if not self.config['clock']['value']:
@@ -231,7 +257,7 @@ class Subdevice(Base):
       clock_args = ( clib.TRIG_EXT, channel | clib.CR_EDGE | invert )
 
     trigger_args = ( clib.TRIG_INT, 0 )
-    if self.config['trigger']['enable']['value']:
+    if 'trigger' in self.config and self.config['trigger']['enable']['value']:
       #FIXME:  set this to correct mapped value
       channel = invert = 0
       if self.config['trigger']['edge']['value'] == 'falling':
@@ -264,7 +290,7 @@ class Subdevice(Base):
     self.cmd.scan_end_src   = clib.TRIG_COUNT
     self.cmd.scan_end_arg   = len( self.chanlist ) # iterate through all channels
     self.cmd.stop_src       = clib.TRIG_COUNT # accepts: TRIG_COUNT, TRIG_NONE
-    self.cmd.stop_arg       = 0 # we'll set this at the time of set_waveforms
+    self.cmd.stop_arg       = 0 # we'll set src/arg at the time of set_waveforms
     #### finished init of self.cmd ####
 
     #### start testing cmd ####
@@ -288,15 +314,23 @@ class Subdevice(Base):
 
 
   def get_channel(self, name):
-    return int( re.search('ao([0-9]*)$', name).group(1) )
+    return int( re.search(self.subdev_type + '([0-9]*)$', name).group(1) )
 
 
   def convert_data(self, chname, data):
     """
-    Takes data in physical units and converts it to lsampl_t data that comedi
+    Takes data in physical units and converts it to (l)sampl_t data that comedi
     needs.
+
+    This allows for arrays of data to be converted.
     """
-    return clib.comedi_from_phys(data,self.ranges[chname],self.maxdata[chname])
+    #return clib.comedi_from_phys(data,self.ranges[chname],self.maxdata[chname])
+    # implement comedi_from_phys here so that we can use arrays
+    rng = clib.comedi_get_range(
+            self.card, self.subdevice,
+            self.get_channel(chname), self.ranges[chname] ).contents
+    maxdata = self.maxdata[chname]
+    return np.clip( (data - rng.min) / ( rng.max - rng.min ) * maxdata, 0, maxdata ).astype( self.sampl_t )
 
 
   def cr_pack(self, chname, chinfo):
@@ -306,7 +340,7 @@ class Subdevice(Base):
     return clib.CR_PACK(
       self.get_channel(chname),
       self.ranges[chname],
-      self.get_config(reference_value),
+      self.get_config(self.reference_value),
     )
 
 
@@ -323,7 +357,7 @@ class Subdevice(Base):
     L = [ clib.lsampl_t() for i in xrange( len(data) ) ]
 
     for i, (chname, value), di in izip( insn_list, data, L ):
-      di.value = self.convert_data( chname, value )
+      di.value = self.convert_data( chname, value/unit.V )
 
       i.insn = clib.INSN_WRITE
       i.subdev = self.subdevice
@@ -358,8 +392,8 @@ class Subdevice(Base):
       2.  Sets triggering.
       3.  Writes data to hardware buffers without auto_start.
     """
-    assert not self.status.sample_bitwise, 'Please implement Bitwise cmd data'
-    assert not self.status.sample_16bit, 'Please implement 16bit cmd data'
+    S = self.status()
+    assert not S.sample_bitwise, 'Please implement Bitwise cmd data'
 
     if not self.clock_terminal:
       raise UserWarning('cannot start waveform without an output clock defined')
@@ -369,6 +403,17 @@ class Subdevice(Base):
     transitions = list( my_clock['transitions'] )
     transitions.sort()
 
+
+    # 1. Set (non)continuous mode and number of samples per channel
+
+    # Set output to either continuous or one-time
+    self.cmd.stop_src = clib.TRIG_NONE if continuous else clib.TRIG_COUNT
+
+    # should be samples_per_channel
+    self.cmd.stop_arg = len(transitions)
+
+
+
     # 3.  Data write
     # 3a.  Get data array
     # loop through each transition and accumulate a list of scans for each
@@ -376,10 +421,9 @@ class Subdevice(Base):
     # probably need to do some rounding to the nearest clock pulse to ensure
     # that we only have pulses matched to the correct transition
 
-    name = self.subdev_type
-
-
-    chlist = ['{}/{}'.format(name, str(ch)) for ch in xrange(clib.comedi_get_n_channels(self.card, self.subdevice))]
+    chlist = [ '{}{}'.format(self, clib.CR_CHAN(ch_info))
+      for ch_info in self.chanlist
+    ]
 
     assert set(chlist).issuperset( waveforms.keys() ), \
       'comedi.set_waveforms: mismatched channels'
@@ -387,7 +431,7 @@ class Subdevice(Base):
     # get all the waveform data into the scans array.  All remaining None values
     # mean that the prior value for the particular channels(s) should be kept
     # for that scan.
-    n_channels = len(waveforms)
+    n_channels = len(self.chanlist)
     scans = dict.fromkeys( transitions )
     nones = [None] * n_channels
     for i in xrange( n_channels ):
@@ -395,7 +439,6 @@ class Subdevice(Base):
         continue
       for g in waveforms[ chlist[i] ].items():
         for t,v in g[1]:
-
           if not scans[t]:
             scans[t] = copy.copy( nones )
           scans[t][i] = v
@@ -448,79 +491,62 @@ class Subdevice(Base):
         last = t_array
 
     # now, we finally build the actual data to send to the hardware
-    ##scans = [ scans[t]  for t in transitions ]
-
-
-    # Set output to either continuous or one-time
-    if continuous:
-      self.cmd.stop_arg = self.STOP_ARG_CONTINUOUS
-    else:
-      # should be (number repetitions)*(buffer len)
-      # for us, number repetitions == 1
-      self.cmd.stop_arg = len(data)
-
+    scans = [ scans[t]  for t in transitions ]
 
     # 3b.  Send data to hardware
+    debug( 'comedi: writing waveform data for channels: %s', chlist )
+    debug( 'comedi: len(transitions/in) = %s, len(scans/out) = %s',
+           len(transitions), len(scans) )
+    if rootlog.getEffectiveLevel() <= (DEBUG-1):
+      log(DEBUG-1, 'comedi: mmap.write(<data>)' )
+      log(DEBUG-1, '<data>:' )
+      for scan in scans:
+        log(DEBUG-1, '          %s', np.array(scan).astype(float).tolist())
 
-    self.start()
+    shape = ( len(transitions), len(self.chanlist) )
+    data = np.ndarray( shape=shape, dtype=self.sampl_t,
+                       buffer=self.mapped, order='C' )
 
-    print self.buf_size, "buf sz"
-    mapp = mmap.mmap(clib.comedi_fileno(self.card), self.buf_size, mmap.MAP_SHARED, mmap.PROT_WRITE, 0, 0)
-
-    npmap = np.ndarray(shape=((self.buf_size/2)), dtype=clib.sampl_t, buffer = mapp, offset=0, order='C')
-
-    rng = self.channels[self.channels.keys()[0]] #this assumes all chans on subdevice have the same range
-
-    rng = clib.comedi_range( rng['min'], rng['max'], 0 )
-
-    print len(scans), 'len scans'
-    for i in xrange((len(scans))):
-      #TO DO: implement calibration
-      ############################
-      #num = re.search('([0-9]*)$', data.keys()[i])
-      #chan = int(num.group())
-      #poly = clib.comedi_polynomial_t()
-
-      ##include findable rng integer PACK
-      #rng = 0
-
-      ##below is device dependenent, but can be discovered and selected using subdevice flag SDF_SOFT_CALIBRATED
-
-      #path = clib.comedi_get_default_calibration_path(self.card)
-
-      #path_point = comedi_
-      #calibration = clib.comedi_parse_calibration_file(path)
-      ##print calibration[0]
-      #clib.comedi_get_softcal_converter(self.subdevice,chan,rng, clib.COMEDI_FROM_PHYSICAL,calibration, poly)
-
-      #npmap[i] = clib.comedi_from_physical(data[data.keys()[i]], poly)
-      ############################
-
-      npmap[scans.keys()[i]:(self.buf_size/2)] = clib.comedi_from_phys(scans[scans.keys()[i]][0], rng, clib.lsampl_t(65535)) #max data will be device specific?
-      #need to account for multiple chans in 'scans'
-
-    print 'cmd: ', self.cmd
-    print len (mapp), len (npmap)
-    print clib.comedi_mark_buffer_written(self.card, self.subdevice, self.buf_size), "write"
-    print clib.comedi_internal_trigger(self.card, self.subdevice, 0), "trig"
-
-    while(0): #protects from buffer underwrite
-      print clib.comedi_get_buffer_contents(self.card, self.subdevice)
-
-      unmarked = self.buf_size - clib.comedi_get_buffer_contents(self.card, self.subdevice)
-      #print unmarked, 'A'
-      #if unmarked > 0:
-      #  clib.comedi_mark_buffer_written(self.card, self.subdevice, unmarked)
-      #  print unmarked, 'B'
-    #while loop should be unnecessary with TRIG_COUNT and stop_arg = 1
+    # this writes it to kernel memory
+    # FIXME:  this might not be right; might also exist much faster operation
+    # for this
+    data[:] = scans
+    # scale the data to sampl type.
+    for ch in chlist:
+      ch_i = self.get_channel(ch)
+      data[:,ch_i] = self.convert_data( ch, data[:,ch_i] )
 
     self.t_max = t_max
 
 
   def start(self):
     if not self.busy:
+      # 1. Start the command
       err = clib.comedi_command(self.card, self.cmd)
       raiserr(err)
+      # 2. Mark the already written buffer as written
+      # we have to mark this now, since comedi_command resets all the buffer
+      # counters.
+      output_size = self.cmd.stop_arg * self.cmd.chanlist_len \
+                  * ctypes.sizeof(self.sampl_t)
+      m = clib.comedi_mark_buffer_written( self.card, self.cmd.subdev,
+                                           output_size )
+      raiserr(m,'mark_buffer')
+      if m != output_size:
+        raise OSError('comedi: could not mark entire buffer')
+
+      # 3. trigger
+      self.trigger()
+
+
+  def trigger(self):
+    if self.cmd.start_src == clib.TRIG_INT:
+      debug('comedi: sending internal trigger signal')
+      ret = clib.comedi_internal_trigger(self.card, self.subdevice, 0)
+      raiserr(ret, 'internal_trigger')
+    else:
+      debug('comedi: waiting for external trigger')
+
 
 
   def wait(self):
@@ -546,41 +572,43 @@ class Subdevice(Base):
 
 
   def get_config_template(self):
-    return {
-      'trigger' : {
-        'enable' : {
-          'value' : False,
-          'type' : bool,
-          'range' : None,
-        },
-        'source' : {
-          'value' : '',
-          'type' : str,
-          'range' : self.trig_sources,
-        },
-        'edge' : {
-          'value' : 'rising',
-          'type' : str,
-          'range' : [
-            ('falling','Trigger on Falling Edge of Trigger'),
-            ('rising', 'Trigger on Rising Edge of Trigger'),
-          ],
-        },
+    return self.config_template.copy()
+
+  config_template = {
+    'trigger' : {
+      'enable' : {
+        'value' : False,
+        'type' : bool,
+        'range' : None,
       },
-      'clock' : {
+      'source' : {
         'value' : '',
         'type' : str,
-        'range' : self.clock_sources,
+        'range' : None,
       },
-      'clock-edge' : {
+      'edge' : {
         'value' : 'rising',
         'type' : str,
         'range' : [
-          ('falling','Sample on Falling Edge of Trigger'),
-          ('rising', 'Sample on Rising Edge of Trigger'),
+          ('falling','Trigger on Falling Edge of Trigger'),
+          ('rising', 'Trigger on Rising Edge of Trigger'),
         ],
       },
-    }
+    },
+    'clock' : {
+      'value' : '',
+      'type' : str,
+      'range' : None,
+    },
+    'clock-edge' : {
+      'value' : 'rising',
+      'type' : str,
+      'range' : [
+        ('falling','Sample on Falling Edge of Trigger'),
+        ('rising', 'Sample on Rising Edge of Trigger'),
+      ],
+    },
+  }
 
 
 

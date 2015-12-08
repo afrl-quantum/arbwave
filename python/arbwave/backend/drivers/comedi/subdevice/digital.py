@@ -2,7 +2,7 @@
 
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re
-from ctypes import c_uint, sizeof
+from ctypes import c_uint, sizeof, byref
 from itertools import izip
 from .. import ctypes_comedi as clib
 

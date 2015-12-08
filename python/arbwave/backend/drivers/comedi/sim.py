@@ -4,7 +4,7 @@ Simulated low-level comedilib library.
 """
 
 import ctypes_comedi as clib
-from ctypes import c_ubyte, cast, POINTER, addressof, c_uint, sizeof
+from ctypes import c_ubyte, cast, pointer, POINTER, addressof, c_uint, sizeof
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re, time
 from itertools import izip
@@ -47,6 +47,7 @@ def mk_crange(min,max,unit):
   return r
 
 class SimSubDev(dict):
+  SIMULATED_BUFFER_SIZE = 2**21 # in bytes
   def __init__(self, *a, **kw):
     super(SimSubDev,self).__init__(*a, **kw)
     self.__dict__ = self
@@ -62,7 +63,7 @@ class SimSubDev(dict):
     self.setdefault('ranges', dict())
     RI = self.ranges.items()
     self.ranges = list()
-    self.buffer = (c_ubyte*self.pop('buffer_sz', 1024))(0)
+    self.buffer = (c_ubyte*self.pop('buffer_sz', self.SIMULATED_BUFFER_SIZE))(0)
     self.buf_begin = self.buf_end = 0
     self.setdefault('max_buf_size', 2**20)
     for u,r in RI:
@@ -73,9 +74,10 @@ class SimSubDev(dict):
 
   def find_range(self, channel, unit, min, max):
     assert min <= max, 'comedi_find_range:  min > max'
-    ranges = ( r for r in self.ranges if r.unit == unit )
+    # self.ranges is sorted increasingly
+    ranges = [ r for r in self.ranges if r.unit == unit ]
     for i, r in izip( xrange(len(ranges)), ranges ):
-      if r.min < min and max < r.max:
+      if r.min <= min and max <= r.max:
         return i
     return -1
 
@@ -89,7 +91,10 @@ class SimSubDev(dict):
     return len( self.ranges ) # ignoring channel for now
 
   def get_range(self, channel, range):
-    return self.ranges[range] if range < len(self.ranges) else None
+    if range < len(self.ranges):
+      return pointer(self.ranges[range])
+    else:
+      return POINTER(clib.comedi_range)()# return null pointer
 
   def range_is_chan_specific(self):
     return 0
@@ -139,7 +144,9 @@ class SimSubDev(dict):
     return self.buf_begin
 
   def mark_buffer_read(self, num_bytes):
-    if self.type not in [clib.COMEDI_SUBD_AI, clib.COMEDI_SUBD_DI]:
+    if self.type not in [clib.COMEDI_SUBD_AI,
+                         clib.COMEDI_SUBD_DI,
+                         clib.COMEDI_SUBD_DIO]:
       return -1
     avail = self.get_buffer_contents()
     if num_bytes > avail:
@@ -148,7 +155,9 @@ class SimSubDev(dict):
     return num_bytes
 
   def mark_buffer_written(self, num_bytes):
-    if self.type not in [clib.COMEDI_SUBD_AO, clib.COMEDI_SUBD_DO]:
+    if self.type not in [clib.COMEDI_SUBD_AO,
+                         clib.COMEDI_SUBD_DO,
+                         clib.COMEDI_SUBD_DIO]:
       error('comedi.mark_buffer_written(%s): wrong buffer type', self.type )
       return -1
     avail = self.get_buffer_contents()
@@ -247,7 +256,7 @@ class SimCard(object):
     through the device device . If there is no such subdevice, -1 is returned.
     """
     return self.find_subdevice_by_type(
-      (clib.COMEDI_SUBD_AI, clib.COMEDI_SUBD_DI), 0,
+      (clib.COMEDI_SUBD_AI, clib.COMEDI_SUBD_DI, clib.COMEDI_SUBD_DIO), 0,
       flagmask=clib.SDF_CMD | clib.SDF_CMD_READ
     )
 
@@ -258,7 +267,7 @@ class SimCard(object):
     there is no such subdevice, -1 is returned.
     """
     return self.find_subdevice_by_type(
-      (clib.COMEDI_SUBD_AO, clib.COMEDI_SUBD_DO), 0,
+      (clib.COMEDI_SUBD_AO, clib.COMEDI_SUBD_DO, clib.COMEDI_SUBD_DIO), 0,
       flagmask=clib.SDF_CMD | clib.SDF_CMD_WRITE
     )
 
@@ -273,7 +282,6 @@ class PXI_6733(SimCard):
              clib.SDF_CMD_WRITE |
              clib.SDF_DEGLITCH  |
              clib.SDF_GROUND    |
-             clib.SDF_WRITABLE  |
              clib.SDF_WRITEABLE,
       cmd=dict(chanlist=None,
                chanlist_len=0,
@@ -287,7 +295,7 @@ class PXI_6733(SimCard):
                scan_end_arg=0,
                scan_end_src=32,
                start_arg=0,
-               start_src=192,
+               start_src=clib.TRIG_INT|clib.TRIG_EXT,
                stop_arg=0,
                stop_src=33,
                subdev=1,
@@ -313,7 +321,6 @@ class PCI_6229(SimCard):
              clib.SDF_CMD_WRITE |
              clib.SDF_DEGLITCH  |
              clib.SDF_GROUND    |
-             clib.SDF_WRITABLE  |
              clib.SDF_WRITEABLE |
              clib.SDF_SOFT_CALIBRATED,
       cmd=dict(chanlist=None,
@@ -328,11 +335,38 @@ class PCI_6229(SimCard):
                scan_end_arg=0,
                scan_end_src=32,
                start_arg=0,
-               start_src=192,
+               start_src=clib.TRIG_INT|clib.TRIG_EXT,
                stop_arg=0,
                stop_src=33,
                subdev=1,
       ),
+      ranges={ clib.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
+    ),
+    2 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=32,
+      bits=1,
+      flags= clib.SDF_CMD       |
+             clib.SDF_CMD_WRITE |
+             clib.SDF_READABLE  |
+             clib.SDF_WRITEABLE |
+             clib.SDF_LSAMPL,
+      cmd=dict(chanlist=None,
+               chanlist_len=0,
+               convert_arg=0,
+               convert_src=2,
+               data=None,
+               data_len=0,
+               flags=64,
+               scan_begin_arg=0,
+               scan_begin_src=80,
+               scan_end_arg=0,
+               scan_end_src=32,
+               start_arg=0,
+               start_src=clib.TRIG_INT,
+               stop_arg=0,
+               stop_src=33,
+               subdev=2,
+      ),
+      ranges={ clib.UNIT_volt : ( (0,5), ) },
     ),
   }
 
@@ -361,6 +395,9 @@ class ComediSim(object):
     import_funcs = [ f for f in dir(self) if f.startswith('comedi')]
     for f in import_funcs:
       setattr( clib, f, getattr(self,f) )
+
+    #store pointer to this simulation instance
+    clib.sim = self
 
   def remove_from_clib(self):
     if hasattr( comedi_t_ptr, '__int__' ):
@@ -488,6 +525,9 @@ class ComediSim(object):
 
   def comedi_cancel(self, fp, sub):
     debug('comedi_cancel(%d, %d)', fp, sub)
+    self[fp][sub].flags &= ~( clib.SDF_BUSY
+                            | clib.SDF_BUSY_OWNER
+                            | clib.SDF_RUNNING )
     return 0
 
   def comedi_lock(self, fp, sub):
@@ -616,7 +656,24 @@ class ComediSim(object):
     return successes if successes > 0 else -1
 
   def comedi_command(self, fp, command):
-    raise NotImplementedError('not simulated yet')
+    sdev = self[fp][command.subdev]
+    if sdev.flags & clib.SDF_BUSY:
+      return -1
+
+    # mark buffer end
+    sdev.buf_begin = 0
+    sdev.buf_end = len(sdev.buffer)
+
+    # make busy, make running, make self busy_owner
+    sdev.flags &= clib.SDF_BUSY        \
+                | clib.SDF_BUSY_OWNER  \
+                | clib.SDF_RUNNING
+    # if not continuous, wait a tad, then set not running
+    if command.stop_src != clib.TRIG_NONE:
+      time.sleep(10e-3)
+      sdev.flags &= ~clib.SDF_RUNNING
+    return 0
+
 
   def comedi_command_test(self, fp, command):
     warn('comedi,sim:  comedi_command_test not simulated yet')

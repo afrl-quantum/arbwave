@@ -10,60 +10,6 @@ from ....tools.path import collect_prefix
 from . import subdevice, channels, routes, signal_map
 
 
-def subdev_iterator(fp, typ):
-  i = 0
-  while True:
-    i = clib.comedi_find_subdevice_by_type(fp, typ, i)
-    if i < 0: break
-    yield i
-    i += 1
-
-klasses = {
-  clib.COMEDI_SUBD_AO      : subdevice.Analog,
-  clib.COMEDI_SUBD_DO      : subdevice.Digital,
-  clib.COMEDI_SUBD_DIO     : subdevice.Digital,
-  clib.COMEDI_SUBD_COUNTER : subdevice.Timing,
-}
-
-def get_useful_subdevices(route_loader, card, typ,
-                          restrictions=dict(
-                          start_src=clib.TRIG_FOLLOW|clib.TRIG_INT|clib.TRIG_EXT,),
-                          ret_index_list=False
-                         ):
-  L = list()
-  cmd = clib.comedi_cmd_struct()
-
-  klass = klasses[typ]
-  for index in subdev_iterator(card, typ):
-    if clib.comedi_get_cmd_src_mask(card, index, cmd) < 0:
-      # we only will look at those subdevs that can have asynchronous use
-      log(DEBUG-1, 'ignoring subdev without async mode: %s/%d', card, index)
-      continue
-    if not reduce( lambda x,y: x|y,
-                   [ getattr(cmd,n) & r for n,r in restrictions.items() ]):
-      # we only return unrestricted devs
-      debug( 'ignoring restricted subdev: %s/%s(%d)',
-             card, klass.subdev_type, index )
-      if logging.root.getEffectiveLevel() <= (DEBUG-1):
-        log(DEBUG-1, 'cmd restrictions: %s', restrictions)
-        log(DEBUG-1, 'cmd capabilities: %s',
-                     { n:getattr(cmd,n) for n in restrictions })
-      continue
-    L.append( (card, index) )
-  #del cmd # Syntax error to delete this!?!
-  subdevs = list()
-
-
-  nus = len(L) > 1
-  for li in L:
-    try: subdevs.append(klass( route_loader, name_uses_subdev=nus, *li))
-    except: pass
-  if ret_index_list: #added to collect subdev number
-    return L
-  else:
-    return subdevs
-
-
 class Card( POINTER(clib.comedi_t) ):
   _type_ = clib.comedi_t
 
@@ -106,15 +52,15 @@ class Card( POINTER(clib.comedi_t) ):
       raise NameError('could not open comedi device file: ' + self.device_file)
 
     self.device = 'Dev'+self.get_card_number(device_file)
-    self.rl = rl= routes.getRouteLoader(self.kernel) ( driver, self )
+    self.route_loader = rl= routes.getRouteLoader(self.kernel) ( driver, self )
     self.sig_map= signal_map.getSignalLoader(self.kernel) (self)
 
-    gus = get_useful_subdevices
-    self.ao_subdevices      = gus(rl, self, clib.COMEDI_SUBD_AO)
-    self.do_subdevices      = gus(rl, self, clib.COMEDI_SUBD_DO)
+    gus = subdevice.enum.get_useful_subdevices
+    self.ao_subdevices      = gus(self, clib.COMEDI_SUBD_AO)
+    self.do_subdevices      = gus(self, clib.COMEDI_SUBD_DO)
 
-    self.dio_subdevices     = gus(rl, self, clib.COMEDI_SUBD_DIO)
-    self.counter_subdevices = gus(rl, self, clib.COMEDI_SUBD_COUNTER)
+    self.dio_subdevices     = gus(self, clib.COMEDI_SUBD_DIO)
+    self.counter_subdevices = gus(self, clib.COMEDI_SUBD_COUNTER)
 
     self.subdevices = dict()
     self.subdevices.update( { str(ao):ao for ao in self.ao_subdevices } )
@@ -127,7 +73,7 @@ class Card( POINTER(clib.comedi_t) ):
     ]
 
 
-    List = gus(rl, self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
+    List = gus(self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
 
     self.backplane_subdevices = dict()
 
@@ -161,7 +107,7 @@ class Card( POINTER(clib.comedi_t) ):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue
 
-        s, d = self.rl.route_map[ route ]
+        s, d = self.route_loader.route_map[ route ]
 
         if d.find(str(self).rstrip(str(self.driver)))>-1:
           d = d.lstrip(str(self.driver)+str(self))
@@ -173,7 +119,7 @@ class Card( POINTER(clib.comedi_t) ):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue
 
-        s, d = self.rl.route_map[ route ]
+        s, d = self.route_loader.route_map[ route ]
         s = s.lstrip(str(self.driver)+str(self))
 
         if s is None or d is None:
@@ -220,8 +166,8 @@ class Card( POINTER(clib.comedi_t) ):
       subname, subdev = self.subdevices.popitem()
       del subdev
 
-    gus = get_useful_subdevices
-    List = gus(self.rl, self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
+    gus = subdevice.enum.get_useful_subdevices
+    List = gus(self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
 
     for device, index in List:
       chans = clib.comedi_get_n_channels(self, index)

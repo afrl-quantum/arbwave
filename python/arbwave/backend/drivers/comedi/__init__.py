@@ -93,23 +93,19 @@ class Driver(Base):
 
 
   def set_device_config( self, config, channels, shortest_paths ):
-    # FIXME:  This looks like it needs a bit of help
     debug('comedi.set_device_config')
-    subdev_chans = dict()
-    chans = dict()
+    chans = { k:dict() for k in config }
 
-    for s in self.subdevices.keys():
-        subdev_pre = re.search('(\w*/\w*/\D*)', s)
-        for c in channels:
-          chan_pre = re.search('(\w*/\w*/\w*)', c) #could be more specific
-          if subdev_pre.group() == chan_pre.group():
-            subdev_chans.update( {c:channels[c]} )
-            chans.update( {s:subdev_chans} )
+    # separate channels into subdevice groups.  We cannot use collect_prefix
+    # because some of the subdevice channel names have an extra slash.
+    for c, ci in channels.items():
+      for d in self.subdevices:
+        if c.startswith( d ):
+          chans[d][c] = ci
 
     for d, sdev in self.subdevices.items():
       if d in config or d in chans:
-        cheat = re.search('(\w*/\w*/\D*)', d) ## this is a cheating fix for mismatched subdevice naming conventions
-        sdev.set_config( config.get(cheat.group(),{}), chans.get(d,[]), shortest_paths )
+        sdev.set_config( config.get(d,{}), chans.get(d,[]), shortest_paths )
 
 
   def set_clocks( self, clocks ):
@@ -131,34 +127,32 @@ class Driver(Base):
 
   def set_static( self, analog, digital ):
     debug('comedi.set_static')
-    D = collect_prefix(digital, 0, 2, 2)
-    A = collect_prefix(analog, 0, 2, 2)
 
-    #selects all valid subdevices insead of arbitrary choice
-    #later we may want to select from available subdevices
-    for dev, data in D.items():
-      for i in self.subdevices.keys():
-        sdev = re.search(dev+"(/do[0-9]*)", i)
-        if sdev:
-          self.subdevices[ sdev.group() ].set_output( data )
+    # separate channels into subdevice groups.  We cannot use collect_prefix
+    # because some of the subdevice channel names have an extra slash.
+    sdev_data = dict()
+    for c, data in dict( analog, **digital ).viewitems():
+      for d in self.subdevices:
+        if c.startswith( d ):
+          sdev_data.setdefault( d, dict() )
+          sdev_data[d][c] = data
 
-    for dev, data in A.items():
-      for i in self.subdevices.keys():
-        sdev = re.search(dev+"(/ao[0-9]*)", i)
-        if sdev:
-          self.subdevices[ sdev.group() ].set_output( data )
+    for d, sdev in self.subdevices.items():
+      if d in sdev_data:
+        sdev.set_output( sdev_data[d] )
 
   def set_waveforms( self, analog, digital, transitions, t_max, continuous ):
     debug('comedi.set_waveforms')
 
-    D = collect_prefix( digital, 0, 2, 2 )
-    A = collect_prefix( analog, 0, 2, 2 )
-    C = collect_prefix( transitions, 0, 2, 2)
+    # separate channels into subdevice groups.  We cannot use collect_prefix
+    # because some of the subdevice channel names have an extra slash.
+    sdev_data = dict()
+    for c, data in dict( analog, **digital ).viewitems():
+      for d in self.subdevices:
+        if c.startswith( d ):
+          sdev_data.setdefault( d, dict() )
+          sdev_data[d][c] = data
 
-    #TO DO: select all valid subdevices as above.
-    for d,sdev in self.subdevices.items():
-      if d in D or d in C:
-        sdev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, continuous )
-
-    for dev in A.items():
-      self.subdevices[ dev[0]+'/ao1' ].set_waveforms( dev[1], transitions, t_max, continuous )
+    for d, sdev in self.subdevices.items():
+      if d in sdev_data:
+        sdev.set_waveforms( sdev_data[d], transitions, t_max, continuous )
