@@ -238,7 +238,7 @@ class Task(Base):
     px = self.prefix
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
     assert set(chlist).issuperset( waveforms.keys() ), \
-      'NIDAQmx.set_output: mismatched channels'
+      'NIDAQmx.set_waveforms: mismatched channels'
 
     # get all the waveform data into the scans array.  All remaining None values
     # mean that the prior value for the particular channels(s) should be kept

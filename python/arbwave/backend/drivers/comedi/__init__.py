@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import re, glob, traceback
-from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
+from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
 
 from ....tools.path import collect_prefix
 from ...driver import Driver as Base
@@ -54,7 +54,7 @@ class Driver(Base):
       self.counters += [ sub for sub in card.counter_subdevices  ] #don't collect counter channels
       self.signals  += [ so for  so in card.signals ]
 
-    print 'found {} comedi supported boards'.format(len(self.cards))
+    info('found %d comedi supported boards',len(self.cards))
 
 
 

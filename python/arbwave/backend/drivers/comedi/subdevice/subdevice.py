@@ -27,6 +27,11 @@ command_test_errors = {
 
 
 
+def raiserr(retval, msg='', exception=OSError):
+  if retval < 0:
+    err = clib.comedi_errno()
+    raise exception('comedi, {}: {}'.format(msg,clib.comedi_strerror(err)))
+
 class Subdevice(Base):
   """
   In the context of Arbwave, a comedi subdevice is actually a represetation of
@@ -74,8 +79,8 @@ class Subdevice(Base):
     trg = self.name + '/StartTrigger'
 
     if clk not in route_loader.dst_to_src:
-        error("No clocks found for clock-able device '%s' (%s)",
-              self, self.card.board)
+      error("No clocks found for clock-able device '%s' (%s)",
+            self, self.card.board)
 
     if trg not in route_loader.dst_to_src:
         warn ("No triggers found for triggerable(?) device '%s' (%s)",
@@ -92,7 +97,7 @@ class Subdevice(Base):
 
   def clear(self):
     debug( 'comedi: cancelling commands for comedi subdevice %s', self )
-    clib.comedi_cancel( self.card, self.subdevice )
+    raiserr( clib.comedi_cancel( self.card, self.subdevice ), 'cancel' )
     self.t_max = 0.0
     ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
     del self.cmd_chanlist
@@ -102,7 +107,7 @@ class Subdevice(Base):
   def get_config(self, L):
     """
     Simple accessor for configuration items.  This is primarily used so that
-    subclasses can have differnt names, or even static values, for similar
+    subclasses can have different names, or even static values, for similar
     config concepts.
     """
     if type(L) not in [list, tuple]:
@@ -136,7 +141,7 @@ class Subdevice(Base):
 
   #@property
   def status(self):
-    return clib.extentions.subdev_flags.to_dict( self.flags )
+    return clib.extensions.subdev_flags.to_dict( self.flags )
 
   @property
   def available_channels(self):
@@ -325,7 +330,8 @@ class Subdevice(Base):
       i.chanspec = self.cr_pack(chname, self.channels[chname])
       i.n = 1
       i.data = ctypes.pointer( di )
-    clib.comedi_do_insnlist( self.card, insn_list )
+    n = clib.comedi_do_insnlist( self.card, insn_list )
+    raiserr( n - len(data), 'insnlist not complete' )
 
 
   def get_min_period(self):
@@ -335,9 +341,11 @@ class Subdevice(Base):
 
     if self.subdev_type == 'to':
       chan = 0 #I think this is what we want
-      clock = clib.lsampl_t()
-      period = clib.lsampl_t()
-      clib.comedi_get_clock_source(self.card, self.subdevice, chan, clock, period)
+      clock = ctypes.c_uint()
+      period = ctypes.c_uint()
+      ret = clib.comedi_get_clock_source(self.card, self.subdevice,
+                                         chan, clock, period)
+      raiserr(ret, 'get_clock_source')
       print self.subdevice, "timing device"
       return int(period.value)*unit.ns
     else:
@@ -374,7 +382,7 @@ class Subdevice(Base):
     chlist = ['{}/{}'.format(name, str(ch)) for ch in xrange(clib.comedi_get_n_channels(self.card, self.subdevice))]
 
     assert set(chlist).issuperset( waveforms.keys() ), \
-      'NIDAQmx.set_output: mismatched channels'
+      'comedi.set_waveforms: mismatched channels'
 
     # get all the waveform data into the scans array.  All remaining None values
     # mean that the prior value for the particular channels(s) should be kept
@@ -420,7 +428,7 @@ class Subdevice(Base):
       min_transition = np.argmin( diff_transitions )
       if diff_transitions[min_transition] < round(min_dt/dt_clk):
         raise RuntimeError(
-          '{name}: Samples too small for NIDAQmx at t={tl}->{t}: {dt}<({m}/{clk})'
+          '{name}: Samples too small for comedi at t={tl}->{t}: {dt}<({m}/{clk})'
           .format(name=self.name,
                   tl=transitions[min_transition],
                   t=transitions[min_transition+1],
@@ -511,7 +519,8 @@ class Subdevice(Base):
 
   def start(self):
     if not self.busy:
-      clib.comedi_command(self.card, self.cmd)
+      err = clib.comedi_command(self.card, self.cmd)
+      raiserr(err)
 
 
   def wait(self):
@@ -533,10 +542,7 @@ class Subdevice(Base):
 
   def stop(self):
     if self.running:
-      clib.comedi_cancel(self.card, self.subdevice)
-      # # this seems a little drastic, but I think Ian found this necessary
-      # clib.comedi_close(self.card) #put in card.py?
-
+      raiserr( clib.comedi_cancel(self.card, self.subdevice), 'cancel' )
 
 
   def get_config_template(self):

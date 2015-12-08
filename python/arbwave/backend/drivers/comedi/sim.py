@@ -149,9 +149,11 @@ class SimSubDev(dict):
 
   def mark_buffer_written(self, num_bytes):
     if self.type not in [clib.COMEDI_SUBD_AO, clib.COMEDI_SUBD_DO]:
+      error('comedi.mark_buffer_written(%s): wrong buffer type', self.type )
       return -1
     avail = self.get_buffer_contents()
     if num_bytes > avail:
+      error('comedi.mark_buffer_written(%s): no mem available', self.type )
       return -1
     self.buf_begin += num_bytes
     return num_bytes
@@ -573,7 +575,7 @@ class ComediSim(object):
     return self[fp][subdev].get_cmd_src_mask(cmd)
 
   def comedi_internal_trigger(self, fp, subdevice, trig_num=0):
-    debug('comedi_internal_trigger(%d, %d, %s)', fp, subdev, trig_num)
+    debug('comedi_internal_trigger(%d, %d, %s)', fp, subdevice, trig_num)
     return 0
 
   def comedi_do_insn(self, fp, instruction):
@@ -617,7 +619,8 @@ class ComediSim(object):
     raise NotImplementedError('not simulated yet')
 
   def comedi_command_test(self, fp, command):
-    raise NotImplementedError('not simulated yet')
+    warn('comedi,sim:  comedi_command_test not simulated yet')
+    return 0
 
   def comedi_get_buffer_contents(self, fp, subdevice):
     """
