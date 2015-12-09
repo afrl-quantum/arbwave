@@ -275,12 +275,12 @@ class Subdevice(Base):
     #### Now set self.cmd ####
     channels = self.config_all_channels().items()
     channels.sort( key = lambda i : i[1]['order'] )
-    self.chanlist = create_chanlist(self.cr_pack, channels)
+    self.cmd_chanlist = create_chanlist(self.cr_pack, channels)
 
     self.cmd.subdev         = self.subdevice
     self.cmd.flags          = clib.TRIG_WRITE #bitwise or'd subdevice flags
     self.cmd.chanlist       = self.cmd_chanlist
-    self.cmd.chanlist_len   = len( self.chanlist )
+    self.cmd.chanlist_len   = len( self.cmd_chanlist )
     self.cmd.start_src      = trigger_args[0]
     self.cmd.start_arg      = trigger_args[1]
     self.cmd.scan_begin_src = clock_args[0]
@@ -288,7 +288,7 @@ class Subdevice(Base):
     self.cmd.convert_src    = clib.TRIG_NOW # accpets: TRIG_TIMER, TRIG_EXT, TRIG_NOW
     self.cmd.convert_arg    = 0
     self.cmd.scan_end_src   = clib.TRIG_COUNT
-    self.cmd.scan_end_arg   = len( self.chanlist ) # iterate through all channels
+    self.cmd.scan_end_arg   = len( self.cmd_chanlist ) # iterate through all channels
     self.cmd.stop_src       = clib.TRIG_COUNT # accepts: TRIG_COUNT, TRIG_NONE
     self.cmd.stop_arg       = 0 # we'll set src/arg at the time of set_waveforms
     #### finished init of self.cmd ####
@@ -422,7 +422,7 @@ class Subdevice(Base):
     # that we only have pulses matched to the correct transition
 
     chlist = [ '{}{}'.format(self, clib.CR_CHAN(ch_info))
-      for ch_info in self.chanlist
+      for ch_info in self.cmd_chanlist
     ]
 
     assert set(chlist).issuperset( waveforms.keys() ), \
@@ -431,7 +431,7 @@ class Subdevice(Base):
     # get all the waveform data into the scans array.  All remaining None values
     # mean that the prior value for the particular channels(s) should be kept
     # for that scan.
-    n_channels = len(self.chanlist)
+    n_channels = len(self.cmd_chanlist)
     scans = dict.fromkeys( transitions )
     nones = [None] * n_channels
     for i in xrange( n_channels ):
@@ -503,7 +503,7 @@ class Subdevice(Base):
       for scan in scans:
         log(DEBUG-1, '          %s', np.array(scan).astype(float).tolist())
 
-    shape = ( len(transitions), len(self.chanlist) )
+    shape = ( len(transitions), len(self.cmd_chanlist) )
     data = np.ndarray( shape=shape, dtype=self.sampl_t,
                        buffer=self.mapped, order='C' )
 
