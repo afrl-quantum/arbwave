@@ -23,6 +23,12 @@ class Device(object):
     """
     pass
 
+  def wait(self):
+    """
+    Waits on device task.  This should be overridden by inheriting classes.
+    """
+    pass
+
   def stop(self):
     """
     Stops a device.  This should be overridden by inheriting classes.
