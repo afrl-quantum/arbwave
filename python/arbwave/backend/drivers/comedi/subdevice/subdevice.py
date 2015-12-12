@@ -31,7 +31,7 @@ command_test_errors = {
 def raiserr(retval, msg='', exception=OSError):
   if retval < 0:
     err = clib.comedi_errno()
-    raise exception('comedi, {}: {}'.format(msg,clib.comedi_strerror(err)))
+    raise exception('comedi, {},{}/{}: {}'.format(msg,retval,err,clib.comedi_strerror(err)))
 
 class Subdevice(Base):
   """
