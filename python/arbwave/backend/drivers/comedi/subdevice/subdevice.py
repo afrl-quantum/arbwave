@@ -432,6 +432,11 @@ class Subdevice(Base):
     # mean that the prior value for the particular channels(s) should be kept
     # for that scan.
     n_channels = len(self.cmd_chanlist)
+
+    if n_channels == 0:
+      debug('comedi:  no channels for waveform output')
+      return
+
     scans = dict.fromkeys( transitions )
     nones = [None] * n_channels
     for i in xrange( n_channels ):
@@ -520,7 +525,7 @@ class Subdevice(Base):
 
 
   def start(self):
-    if not self.busy:
+    if not self.busy and len(self.cmd_chanlist) > 0:
       # 1. Start the command
       err = clib.comedi_command(self.card, self.cmd)
       raiserr(err)
