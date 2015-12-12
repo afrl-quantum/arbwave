@@ -572,7 +572,7 @@ class Subdevice(Base):
 
 
   def stop(self):
-    if self.running:
+    if self.busy:
       raiserr( clib.comedi_cancel(self.card, self.subdevice), 'cancel' )
 
 
