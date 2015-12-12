@@ -23,6 +23,11 @@ class Driver(Base):
     Timing(...)"""
     pass
 
+  def wait(self):
+    """Dummy wait function because we use this class as the device arg for
+    Timing(...)"""
+    pass
+
   def stop(self):
     """Dummy start function because we use this class as the device arg for
     Timing(...)"""
