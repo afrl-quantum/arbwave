@@ -721,7 +721,7 @@ class ComediSim(object):
     sdev.buf_end = len(sdev.buffer)
 
     # make busy, make running, make self busy_owner
-    sdev.flags &= clib.SDF_BUSY        \
+    sdev.flags |= clib.SDF_BUSY        \
                 | clib.SDF_BUSY_OWNER  \
                 | clib.SDF_RUNNING
     # if not continuous, wait a tad, then set not running
