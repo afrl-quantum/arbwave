@@ -155,11 +155,11 @@ class Subdevice(Base):
 
   @property
   def busy(self):
-    return self.flags & clib.SDF_BUSY
+    return bool( self.flags & clib.SDF_BUSY )
 
   @property
   def running(self):
-    return self.flags & clib.SDF_RUNNING
+    return bool( self.flags & clib.SDF_RUNNING )
 
   @property
   def buf_size(self):
