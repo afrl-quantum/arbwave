@@ -116,7 +116,7 @@ class Card( POINTER(clib.comedi_t) ):
           d = self.sig_map.ch_nums(d)
           clib.comedi_dio_config(self, d['subdev'], d['chan'], clib.COMEDI_INPUT) # an attempt to protect the dest terminal
 
-      # connect new routes routes no longer in use
+      # connect new routes routes
       for route in ( new - old ):
         if 'External/' in route[0] or 'External/' in route[1]:
           continue

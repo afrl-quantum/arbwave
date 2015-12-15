@@ -58,6 +58,12 @@ class SimSubDev(dict):
     self.setdefault('state', [0 for i in xrange(self.n_channels)])
     # for dio subdev:
     self.setdefault('ioconfig', [clib.COMEDI_INPUT for i in xrange(self.n_channels)])
+
+    # for PFI, TRIG
+    self.setdefault('routable', False)
+    if self.routable:
+      self.setdefault('routing', [-1 for i in xrange(self.n_channels)])
+
     self.setdefault('flags', 0)
     self.setdefault('cmd', dict())
     self.setdefault('ranges', dict())
@@ -127,6 +133,8 @@ class SimSubDev(dict):
 
   # CMD functions
   def get_cmd_src_mask(self, cmd):
+    if not self.flags & clib.SDF_CMD:
+      return -1
     for a,v in self.get('cmd',{}).items():
       setattr( cmd, a, v )
     return 0
@@ -201,6 +209,18 @@ class SimSubDev(dict):
     self.state[channel] = bit
     return 1
 
+
+  def set_routing(self, channel, routing):
+    if not self.routable:
+      return -1
+    self.routing[channel] = routing
+    return 0
+
+  def get_routing(self, channel, routing):
+    if (not self.routable) or self.routing[channel] < 0:
+      return -1
+    routing._obj.value = self.routing[channel]
+    return 0
 
 
 
@@ -302,6 +322,24 @@ class PXI_6733(SimCard):
       ),
       ranges={ clib.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
     ),
+    # subdev 7 represents PFI lines
+    7 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=10,
+      bits=1,
+      routable=True,
+      flags= clib.SDF_INTERNAL  |
+             clib.SDF_READABLE  |
+             clib.SDF_WRITEABLE,
+      ranges={ clib.UNIT_none : ( (0,1), )  },
+    ),
+    # subdev 10 represents RTSI lines
+    10 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=8,
+      bits=1,
+      routable=True,
+      flags= clib.SDF_INTERNAL  |
+             clib.SDF_READABLE  |
+             clib.SDF_WRITEABLE,
+      ranges={ clib.UNIT_none : ( (0,1), )  },
+    ),
   }
 
 def subdev_replace_n_channels(S, N):
@@ -367,6 +405,24 @@ class PCI_6229(SimCard):
                subdev=2,
       ),
       ranges={ clib.UNIT_volt : ( (0,5), ) },
+    ),
+    # subdev 7 represents PFI lines
+    7 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=10,
+      bits=1,
+      routable=True,
+      flags= clib.SDF_INTERNAL  |
+             clib.SDF_READABLE  |
+             clib.SDF_WRITEABLE,
+      ranges={ clib.UNIT_none : ( (0,1), )  },
+    ),
+    # subdev 10 represents RTSI lines
+    10 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=8,
+      bits=1,
+      routable=True,
+      flags= clib.SDF_INTERNAL  |
+             clib.SDF_READABLE  |
+             clib.SDF_WRITEABLE,
+      ranges={ clib.UNIT_none : ( (0,1), )  },
     ),
   }
 
@@ -775,9 +831,12 @@ class ComediSim(object):
 
   # Digital I/O
   def comedi_dio_bitfield2(self, fp, sub, write_mask, bits, base_channel):
+    debug( 'comedi_dio_bitfield2(%d, %d, %d, %s, %d)',
+           fp, sub, write_mask, bits, base_channel )
     return self[fp][sub].dio_bitfield2(write_mask, bits, base_channel)
 
   def comedi_dio_config(self, fp, sub, channel, direction):
+    debug('comedi_dio_config(%d, %d, %d, %d)', fp,sub,channel, direction)
     return self[fp][sub].dio_config(channel, direction)
 
   def comedi_dio_get_config(self, fp, sub, channel, direction):
@@ -808,7 +867,8 @@ class ComediSim(object):
     return self[fp][sub].comedi_get_hardware_buffer_size(direction)
 
   def comedi_get_routing(self, fp, sub, channel, routing):
-    return self[fp][sub].comedi_get_routing(channel, routing)
+    debug('comedi_get_routing(%d, %d, %d, %s)', fp, sub, channel, routing)
+    return self[fp][sub].get_routing(channel, routing)
 
   def comedi_reset(self, fp, sub):
     return self[fp][sub].comedi_reset()
@@ -830,4 +890,5 @@ class ComediSim(object):
     return self[fp][sub].comedi_set_other_source(channel, other, source)
 
   def comedi_set_routing(self, fp, sub, channel, routing):
-    return self[fp][sub].comedi_set_routing(channel, routing)
+    debug('comedi_set_routing(%d, %d, %d, %d)', fp, sub, channel, routing)
+    return self[fp][sub].set_routing(channel, routing)
