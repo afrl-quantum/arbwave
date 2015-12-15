@@ -99,6 +99,8 @@ class Card( POINTER(clib.comedi_t) ):
     Accesses sig_map to transform arbwave terminal/signal names into appropriate comedi ints
     '''
     if self.routed_signals != signals:
+      debug('comedi.card(%s).set_signals(signals=%s)', self, signals)
+
       old = set( self.routed_signals.keys() )
       new = set( signals.keys() )
 

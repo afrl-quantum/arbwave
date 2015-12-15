@@ -118,9 +118,10 @@ class Driver(Base):
 
 
   def set_signals( self, signals ):
-    debug('comedi.set_signals')
+    debug('comedi.set_signals(signals=%s)', signals)
+    C = collect_prefix( signals, prefix_len=2, prefix_list=self.cards.keys() )
     for d, dev in self.cards.items():
-      dev.set_signals(signals)
+      dev.set_signals( C.get(d,{}) )
 
 
 
