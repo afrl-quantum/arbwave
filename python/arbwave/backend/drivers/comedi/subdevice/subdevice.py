@@ -330,7 +330,9 @@ class Subdevice(Base):
             self.card, self.subdevice,
             self.get_channel(chname), self.ranges[chname] ).contents
     maxdata = self.maxdata[chname]
-    return np.clip( (data - rng.min) / ( rng.max - rng.min ) * maxdata, 0, maxdata ).astype( self.sampl_t )
+    return np.clip(           (data - rng.min*unit.V) *
+                    (maxdata / ( rng.max - rng.min ) / unit.V),
+                   0, maxdata ).astype( self.sampl_t )
 
 
   def cr_pack(self, chname, chinfo):
@@ -357,7 +359,7 @@ class Subdevice(Base):
     L = [ clib.lsampl_t() for i in xrange( len(data) ) ]
 
     for i, (chname, value), di in izip( insn_list, data, L ):
-      di.value = self.convert_data( chname, value/unit.V )
+      di.value = self.convert_data( chname, value )
 
       i.insn = clib.INSN_WRITE
       i.subdev = self.subdevice
@@ -496,7 +498,7 @@ class Subdevice(Base):
         last = t_array
 
     # now, we finally build the actual data to send to the hardware
-    scans = [ scans[t]  for t in transitions ]
+    scans = np.array([ scans[t]  for t in transitions ])
 
     # 3b.  Send data to hardware
     debug( 'comedi: writing waveform data for channels: %s', chlist )
@@ -515,11 +517,11 @@ class Subdevice(Base):
     # this writes it to kernel memory
     # FIXME:  this might not be right; might also exist much faster operation
     # for this
-    data[:] = scans
+    #data[:] = scans
     # scale the data to sampl type.
     for ch in chlist:
       ch_i = self.get_channel(ch)
-      data[:,ch_i] = self.convert_data( ch, data[:,ch_i] )
+      data[:,ch_i] = self.convert_data( ch, scans[:,ch_i] )
 
     self.t_max = t_max
 
