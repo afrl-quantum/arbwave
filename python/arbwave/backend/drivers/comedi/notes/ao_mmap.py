@@ -114,8 +114,19 @@ class Test(object):
     self.cmd.flags = clib.CMDF_WRITE
     self.cmd.start_src = clib.TRIG_INT
     self.cmd.start_arg = 0
-    self.cmd.scan_begin_src = clib.TRIG_TIMER
-    self.cmd.scan_begin_arg = int( 1e9 / options.freq )
+    if self.options.update_source == 'timer':
+      self.cmd.scan_begin_src = clib.TRIG_TIMER
+      self.cmd.scan_begin_arg = int( 1e9 / options.freq )
+    elif self.options.update_source.startswith('pfi'):
+      self.cmd.scan_begin_src = clib.TRIG_EXT
+      self.cmd.scan_begin_arg = clib.CR_EDGE | \
+        clib.NI_AO_SCAN_BEGIN_SRC_PFI( int( self.options.update_source[3:] ) )
+    elif self.options.update_source.startswith('trig'):
+      self.cmd.scan_begin_src = clib.TRIG_EXT
+      self.cmd.scan_begin_arg = clib.CR_EDGE | \
+        clib.NI_AO_SCAN_BEGIN_SRC_RTSI( int( self.options.update_source[4:] ) )
+    else:
+      raise RuntimeError('bad update source selection')
     self.cmd.convert_src = clib.TRIG_NOW
     self.cmd.convert_arg = 0
     self.cmd.scan_end_src = clib.TRIG_COUNT
@@ -167,7 +178,8 @@ class Test(object):
     self.cmd.stop_arg = self.samples_per_channel
 
     shape = ( self.samples_per_channel, len(options.channels) )
-    print 'shape: ', shape
+    if self.options.verbose:
+      print 'shape: ', shape
 
     #print 'BUF_LEN, samples_per_channel, n_chan, shape: ', \
     #  self.BUF_LEN, self.samples_per_channel, len(options.channels), shape
@@ -251,6 +263,11 @@ class Test(object):
       return 1
 
     self._dds()
+    if self.options.show_waveform:
+      import pylab
+      for i in xrange( len(self.options.channels) ):
+        pylab.plot( self.data[:,i] )
+      pylab.show()
 
     n = self.output_size
     m = self.write_data( self.data, n )
@@ -455,6 +472,12 @@ def process_args():
     help='set waveform frequency [default 10.0]' )
   parser.add_argument( '-F', '--freq', type=float, default=1000.,
     help='set update frequency [default 1000.]' )
+  parser.add_argument( '-U', '--update_source',
+    choices= ['timer']
+           + ['pfi'+str(i) for i in xrange(10)]
+           + ['trig'+str(i) for i in xrange(8)],
+    default='timer',
+    help='set update signal source' )
   parser.add_argument( '-w', '--waveform', type=int, default=0,
     help='\n\t'.join([ '{}: {}'.format(i,c.name)
            for i,c in zip(xrange(len(dds_list)), dds_list)]) )
@@ -463,6 +486,7 @@ def process_args():
   parser.add_argument( '--oswrite', action='store_true' )
   parser.add_argument( '--write_more', action='store_true' )
   parser.add_argument( '-L', '--waveform_len', type=int, default=1<<16 )
+  parser.add_argument( '-S', '--show-waveform', action='store_true' )
   return parser.parse_args()
 
 def main(args):
