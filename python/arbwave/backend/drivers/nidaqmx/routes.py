@@ -11,6 +11,7 @@ from ....tools.expand import expand_braces
 class ImplicitRoute(tuple): pass
 
 
+T5  = 'TRIG/{0..5}'
 T6  = 'TRIG/{0..6}'
 T7  = 'TRIG/{0..7}'
 Ti7 = 'TRIG/7'
@@ -27,7 +28,7 @@ di_SC = 'di/SampleClock'
 dio_SC = 'd{i,o}/SampleClock'
 
 Ext = ('External/', None)
-PXI6= '{PXI_Trig{0..5},PXI_Star}'
+PXI5= '{PXI_Trig{0..5}}'
 PXIi7 = 'PXI_Trig7'
 MTB = 'MasterTimebase'
 ao_SC = 'ao/SampleClock'
@@ -64,16 +65,16 @@ available = {
   'pxi-6733' : {
     Ext                   : { P9 },
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
-    (T6,PXI6)             : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
+    (T5,PXI5)             : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
     (Ti7,PXIi7)           : { ao_SCTB,              'Ctr{0,1}Source', MTB },
-    ao_SC                 : { 'PFI5', (T6,PXI6),                   dio_SC },
-    ao_ST                 : { 'PFI6', (T6,PXI6) },
+    ao_SC                 : { 'PFI5', (T5,PXI5),                   dio_SC },
+    ao_ST                 : { 'PFI6', (T5,PXI5) },
     '20MHzTimebase'       : { (Ti7,PXIi7), ao_SCTB, 'Ctr{0,1}Source', MTB },
     ao_SCTB               : { ao_SC },
-    'Ctr0Out'             : { (T6,PXI6) },
-    'Ctr0Gate'            : { 'PFI9', (T6,PXI6) },
-    'Ctr0Source'          : { 'PFI8', (T6,PXI6) },
-    Ctr0                  : { (T6,PXI6), 'Ctr0Out', 'Ctr1Gate' },
+    'Ctr0Out'             : { (T5,PXI5) },
+    'Ctr0Gate'            : { 'PFI9', (T5,PXI5) },
+    'Ctr0Source'          : { 'PFI8', (T5,PXI5) },
+    Ctr0                  : { (T5,PXI5), 'Ctr0Out', 'Ctr1Gate' },
     'Ctr1Gate'            : { 'PFI4' },
     'Ctr1Source'          : { 'PFI3' },
     Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
