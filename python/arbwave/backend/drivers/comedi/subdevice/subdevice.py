@@ -72,6 +72,17 @@ class Subdevice(Base):
     self.cmd = clib.comedi_cmd()
     self.cmd_chanlist = None
 
+    # lets get the src mask to see if we are always required to do internal
+    # trigger.  We are assuming that if a command cannot be started with
+    # TRIG_NOW, it must require some sort of two part setup regardless of
+    # whether it uses TRIG_INT or TRIG_EXT.  The NI cards are this way
+    # explicitly so that DMA transfers get primed--comedi_internal_trigger must
+    # be used whether we use TRIG_INT or TRIG_EXT.  For the case of TRIG_EXT, it
+    # will just wait for the actual trigger.
+    clib.comedi_get_cmd_src_mask(card, index, self.cmd)
+    self.trig_now_supported = bool( self.cmd.start_src & clib.TRIG_NOW )
+    ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
+
     sd_flags = self.status()
     self.sampl_t = clib.sampl_t if sd_flags.sample_16bit else clib.lsampl_t
 
@@ -547,7 +558,7 @@ class Subdevice(Base):
 
 
   def trigger(self):
-    if self.cmd.start_src == clib.TRIG_INT:
+    if (not self.trig_now_supported) or self.cmd.start_src == clib.TRIG_INT:
       debug('comedi: sending internal trigger signal')
       ret = clib.comedi_internal_trigger(self.card, self.subdevice, 0)
       raiserr(ret, 'internal_trigger')
