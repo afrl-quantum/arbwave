@@ -13,14 +13,15 @@ class TreeModelDispatcher(object):
   """
   Simple signal aggregation for any changes to a single 'changed' signal.
   """
-  def __init__( self, Model,
+  def __init__( self, model,
                 changed=None,
                 row_changed=None,
                 row_deleted=None,
                 row_inserted=None,
-                rows_reordered=None ):
+                rows_reordered=None, model_args=(), model_kwargs=dict() ):
+    super(TreeModelDispatcher,self).__init__(*model_args, **model_kwargs)
     self.cb = list()
-    self.Model = Model
+    self.Model = model
     if changed:
       self.connect( 'changed', *fixargs(changed) )
     if row_changed:

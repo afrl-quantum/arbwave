@@ -3,7 +3,7 @@
 Implements message dialogs for use in scripts.
 """
 
-import gtk
+from gi.repository import Gtk as gtk
 from ..tools.gui_callbacks import do_gui_operation
 
 main_window = None
@@ -13,32 +13,32 @@ def set_main_window( mw ):
   main_window = mw
 
 type_map = {
-  'info'    : gtk.MESSAGE_INFO,
-  'warn'    : gtk.MESSAGE_WARNING,
-  'warning' : gtk.MESSAGE_WARNING,
-  'error'   : gtk.MESSAGE_ERROR,
-  'ask'     : gtk.MESSAGE_QUESTION,
+  'info'    : gtk.MessageType.INFO,
+  'warn'    : gtk.MessageType.WARNING,
+  'warning' : gtk.MessageType.WARNING,
+  'error'   : gtk.MessageType.ERROR,
+  'ask'     : gtk.MessageType.QUESTION,
 }
 
 buttons_map = {
-  'ok-cancel' : gtk.BUTTONS_OK_CANCEL,
-  'ok'        : gtk.BUTTONS_OK,
-  'cancel'    : gtk.BUTTONS_CANCEL,
-  'close'     : gtk.BUTTONS_CLOSE,
-  'yes-no'    : gtk.BUTTONS_YES_NO,
-  None        : gtk.BUTTONS_NONE,
+  'ok-cancel' : gtk.ButtonsType.OK_CANCEL,
+  'ok'        : gtk.ButtonsType.OK,
+  'cancel'    : gtk.ButtonsType.CANCEL,
+  'close'     : gtk.ButtonsType.CLOSE,
+  'yes-no'    : gtk.ButtonsType.YES_NO,
+  None        : gtk.ButtonsType.NONE,
 }
 
 response_map = {
-  gtk.RESPONSE_ACCEPT : 'accept',
-  gtk.RESPONSE_APPLY  : 'apply',
-  gtk.RESPONSE_CANCEL : 'cancel',
-  gtk.RESPONSE_CLOSE  : 'close',
-  gtk.RESPONSE_NO     : 'no',
-  gtk.RESPONSE_OK     : 'ok',
-  gtk.RESPONSE_REJECT : 'reject',
-  gtk.RESPONSE_YES    : 'yes',
-  gtk.RESPONSE_NONE   : None,
+  gtk.ResponseType.ACCEPT : 'accept',
+  gtk.ResponseType.APPLY  : 'apply',
+  gtk.ResponseType.CANCEL : 'cancel',
+  gtk.ResponseType.CLOSE  : 'close',
+  gtk.ResponseType.NO     : 'no',
+  gtk.ResponseType.OK     : 'ok',
+  gtk.ResponseType.REJECT : 'reject',
+  gtk.ResponseType.YES    : 'yes',
+  gtk.ResponseType.NONE   : None,
 }
 
 import time
@@ -50,7 +50,7 @@ class Show:
 
   def __call__(self, msg, type, buttons):
     d = gtk.MessageDialog( main_window,
-      gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+      gtk.DialogFlags.MODAL | gtk.DialogFlags.DESTROY_WITH_PARENT,
       type_map[type], buttons_map[buttons] )
     d.set_markup( msg )
     try:

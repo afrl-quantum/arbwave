@@ -4,7 +4,7 @@ This was mostly stolen from a demo from the pygtk project."""
 
 import sys
 
-import gtk
+from gi.repository import Gtk as gtk, Gdk as gdk
 
 from ..packing import Args as PArgs, hpack, vpack, VBox
 
@@ -12,17 +12,17 @@ class Editor(gtk.Dialog):
   def __init__( self, title='Edit Script', parent=None, target=None,
                 modal=False, notebook = None):
     actions = [
-      gtk.STOCK_SAVE,   gtk.RESPONSE_OK,
-      gtk.STOCK_APPLY,  gtk.RESPONSE_APPLY,
-      gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL
+      gtk.STOCK_SAVE,   gtk.ResponseType.OK,
+      gtk.STOCK_APPLY,  gtk.ResponseType.APPLY,
+      gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL
     ]
-    flags = gtk.DIALOG_DESTROY_WITH_PARENT
+    flags = gtk.DialogFlags.DESTROY_WITH_PARENT
     if modal:
-      flags |= gtk.DIALOG_MODAL
+      flags |= gtk.DialogFlags.MODAL
       actions.pop(2)
       actions.pop(2)
 
-    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+    super(Editor,self).__init__( title, parent, flags, tuple(actions) )
     self.notebook = notebook
 
     # MECHANICS
@@ -35,42 +35,43 @@ class Editor(gtk.Dialog):
     self.set_border_width(10)
 
     table = gtk.Table(1, 3, False)
-    self.vbox.pack_start(table)
+    self.vbox.pack_start(table, True, True, 0)
 
-    ## Create document 
+    ## Create document
     sw = gtk.ScrolledWindow()
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.set_shadow_type(gtk.SHADOW_IN)
+    sw.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.AUTOMATIC)
+    sw.set_shadow_type(gtk.ShadowType.IN)
     table.attach(sw,
 		 # /* X direction */       /* Y direction */
                  0, 1,                   1, 2,
-                 gtk.EXPAND | gtk.FILL,  gtk.EXPAND | gtk.FILL,
+                 gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,
+                 gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,
                  0,                      0)
-  
+
     contents = gtk.TextView()
     contents.grab_focus()
     sw.add(contents)
 
     ## Create statusbar
-  
+
     self.statusbar = gtk.Statusbar()
     table.attach(self.statusbar,
 		 #/* X direction */       /* Y direction */
                  0, 1,                   2, 3,
-                 gtk.EXPAND | gtk.FILL,  0,
+                 gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,  0,
                  0,                      0);
-    
+
     ## Show text widget info in the statusbar */
     self.buf = contents.get_buffer()
     if self.target:
       self.set_text( self.target.get_text() )
-  
+
     self.buf.connect_object("changed", self.buffer_changed_callback, None)
     # cursor moved
     self.buf.connect_object("mark_set", self.mark_set_callback, None)
     self.connect_object("window_state_event", self.update_resize_grip, 0)
     self.connect('response', self.respond)
-  
+
     self.update_statusbar()
 
     self.present()
@@ -82,10 +83,10 @@ class Editor(gtk.Dialog):
         self.remove( self.vbox )
       button = gtk.Button('x')
       button.set_focus_on_click(False)
-      button.connect('clicked', self.respond, gtk.RESPONSE_CANCEL)
+      button.connect('clicked', self.respond, gtk.ResponseType.CANCEL)
       self.notebook.append_page(
         self.vbox,
-        hpack(gtk.Label(self.title), button, show_all=True)
+        hpack(gtk.Label(self.get_property('title')), button, show_all=True)
       )
       self.notebook.set_tab_reorderable(self.vbox, True)
       self.notebook.set_tab_detachable(self.vbox, True)
@@ -97,22 +98,22 @@ class Editor(gtk.Dialog):
     self._present_prep()
     if self.notebook:
       self.vbox.show()
-      self.notebook.set_page( self.notebook.page_num(self.vbox) )
+      self.notebook.set_current_page( self.notebook.page_num(self.vbox) )
     else:
       gtk.Dialog.present(self)
 
 
   def update_statusbar(self, other=''):
     self.statusbar.pop(0)
-    
+
     iter = self.buf.get_iter_at_mark(self.buf.get_insert())
-    
+
     row = iter.get_line()
     col = iter.get_line_offset()
-    
+
     msg = "%d, %d%s %s" % \
       (row, col, (self.file_changed and " - Modified" or ""), other )
-    
+
     self.statusbar.push(0, msg)
 
   def get_text(self):
@@ -121,14 +122,14 @@ class Editor(gtk.Dialog):
 
   def unset_changes(self):
     self.file_changed = False
-    self.set_response_sensitive(gtk.RESPONSE_OK, False)
-    self.set_response_sensitive(gtk.RESPONSE_APPLY, False)
+    self.set_response_sensitive(gtk.ResponseType.OK, False)
+    self.set_response_sensitive(gtk.ResponseType.APPLY, False)
 
 
   def set_changes(self):
     self.file_changed = True
-    self.set_response_sensitive(gtk.RESPONSE_OK, True)
-    self.set_response_sensitive(gtk.RESPONSE_APPLY, True)
+    self.set_response_sensitive(gtk.ResponseType.OK, True)
+    self.set_response_sensitive(gtk.ResponseType.APPLY, True)
 
   def set_text(self,text):
     self.buf.set_text(text)
@@ -144,15 +145,15 @@ class Editor(gtk.Dialog):
     self.update_statusbar()
 
   def update_resize_grip(self, widget, event):
-    if event.changed_mask & (gtk.gdk.WINDOW_STATE_MAXIMIZED | 
-                             gtk.gdk.WINDOW_STATE_FULLSCREEN):
-      maximized = event.new_window_state & (gtk.gdk.WINDOW_STATE_MAXIMIZED | 
-                                            gtk.gdk.WINDOW_STATE_FULLSCREEN)
+    if event.changed_mask & (gdk.WindowState.MAXIMIZED |
+                             gdk.WindowState.FULLSCREEN):
+      maximized = event.new_window_state & (gdk.WindowState.MAXIMIZED |
+                                            gdk.WindowState.FULLSCREEN)
       self.statusbar.set_has_resize_grip(not maximized)
 
 
   def respond(self, dialog, response_id):
-    if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_APPLY] and self.target:
+    if response_id in [gtk.ResponseType.OK, gtk.ResponseType.APPLY] and self.target:
       try:
         self.target.set_text( self.get_text() )
         self.unset_changes()
@@ -162,7 +163,7 @@ class Editor(gtk.Dialog):
         print e
         return
 
-    if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL] and self.target:
+    if response_id in [gtk.ResponseType.OK, gtk.ResponseType.CANCEL] and self.target:
       # hide both to account for either notebook or dialog view
       self.vbox.hide()
       self.hide()
@@ -174,7 +175,7 @@ def edit(title='Edit Script', parent=None, text=''):
   if text:
     ed.set_text(text)
   try:
-    if ed.run() in [ gtk.RESPONSE_OK, gtk.RESPONSE_APPLY ]:
+    if ed.run() in [ gtk.ResponseType.OK, gtk.ResponseType.APPLY ]:
       return True, ed.get_text()
     else:
       return False, text
@@ -185,7 +186,7 @@ def edit(title='Edit Script', parent=None, text=''):
 def main(argv):
   text='\n'.join(argv[1:])
   res = edit(text=text)
-  print res[0] == gtk.RESPONSE_OK
+  print res[0] == gtk.ResponseType.OK
   print res[1]
 
 if __name__ == '__main__':

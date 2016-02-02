@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk
 
 from dispatcher import TreeModelDispatcher
 
@@ -10,13 +10,15 @@ class Signals(TreeModelDispatcher, gtk.ListStore):
   INVERT  =2
 
   def __init__(self, **kwargs):
-    gtk.ListStore.__init__(self,
-      str,  # Source
-      str,  # Destination
-      bool, # invert-polarity
+    super(Signals,self).__init__(
+      model=gtk.ListStore,
+      model_args=(
+        str,  # Source
+        str,  # Destination
+        bool, # invert-polarity
+      ),
+      **kwargs
     )
-
-    TreeModelDispatcher.__init__(self, gtk.ListStore, **kwargs)
 
 
   def dict(self):

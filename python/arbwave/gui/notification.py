@@ -1,9 +1,9 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, gobject
+from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 
 class Notification(gtk.Window):
   def __init__( self, fade_dt=6, get_position=None,
-                parent=None, type=gtk.WINDOW_POPUP, *args, **kwargs):
+                parent=None, type=gtk.WindowType.POPUP, *args, **kwargs):
     gtk.Window.__init__(self, type, *args, **kwargs)
 
     self.pause_fadeout = False
@@ -19,14 +19,14 @@ class Notification(gtk.Window):
       self.set_destroy_with_parent(True)
 
     self.set_urgency_hint(True)
-    self.set_type_hint( gtk.gdk.WINDOW_TYPE_HINT_TOOLTIP )
+    self.set_type_hint( gdk.WindowTypeHint.TOOLTIP )
     self.set_app_paintable(True)
     self.set_resizable(False)
     self.set_name('gtk-tooltip')
 
     style = self.get_style()
 
-    a = gtk.Alignment(0.5,0.5,1.0,1.0)
+    a = gtk.Alignment.new(0.5,0.5,1.0,1.0)
     a.set_padding( style.ythickness,
                    style.ythickness,
                    style.xthickness,
@@ -48,8 +48,8 @@ class Notification(gtk.Window):
     b.set_spacing( 10*style.xthickness )
     # style.paint_flat_box(
     #   self.window,
-    #   gtk.STATE_NORMAL,
-    #   gtk.SHADOW_OUT,
+    #   gtk.StateType.NORMAL,
+    #   gtk.ShadowType.OUT,
     #   None, self, 'tooltip', 0, 0,
     #   self.allocation.width,
     #   self.allocation.height )

@@ -5,7 +5,8 @@ GUI main
 This import is supposed _after_ the options. module is modified
 """
 
-import os, gtk, gobject, time, sys, logging, threading
+from gi.repository import Gtk as gtk, GObject as gobject
+import os, time, sys, logging, threading
 from .tools.gui_callbacks import do_gui_operation
 
 def sleeper():

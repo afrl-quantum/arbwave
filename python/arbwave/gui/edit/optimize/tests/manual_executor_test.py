@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk
 from numpy.random import rand
 
 var0 = 0.4

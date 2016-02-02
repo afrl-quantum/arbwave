@@ -1,8 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import pygtk
-pygtk.require('2.0')
-import gtk
-import gobject
+from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 
 class keys:
   LEFT  = 65361
@@ -16,15 +13,15 @@ class keys:
   DEL   = 65535
   INSERT= 65379
 
-  n     = gtk.keysyms.n
-  p     = gtk.keysyms.p
-  f     = gtk.keysyms.f
-  b     = gtk.keysyms.b
-  k     = gtk.keysyms.k
+  n     = gdk.KEY_n
+  p     = gdk.KEY_p
+  f     = gdk.KEY_f
+  b     = gdk.KEY_b
+  k     = gdk.KEY_k
 
   emacs = {
     n : (ENTRY,0),
-    p : (ENTRY,gtk.gdk.SHIFT_MASK),
+    p : (ENTRY,gdk.ModifierType.SHIFT_MASK),
     f : (TAB,0),
     b : (RTAB,0),
   }
@@ -81,9 +78,9 @@ class Callbacks:
       self.add_row()
       path = (0,)
       column = self.treeview.get_column(0)
-    elif event.state & gtk.gdk.SHIFT_MASK and path[0]>0:
+    elif event.state & gdk.ModifierType.SHIFT_MASK and path[0]>0:
       path = (path[0]-1,)
-    elif not (event.state & gtk.gdk.SHIFT_MASK):
+    elif not (event.state & gdk.ModifierType.SHIFT_MASK):
       if path[0] < (len(model)-1):
         path = (path[0]+1,)
       elif self.default:
@@ -148,7 +145,7 @@ class Callbacks:
 
   def tv_keypress_cb(self, entry, event):
     if event.keyval in [ keys.p, keys.n, keys.f, keys.b ] and \
-         event.state & gtk.gdk.CONTROL_MASK:
+         event.state & gdk.ModifierType.CONTROL_MASK:
       change_event( event, keys.emacs )
 
     if event.keyval == keys.ENTRY:
@@ -160,7 +157,7 @@ class Callbacks:
       return True
 
     elif self.default and \
-         event.state & gtk.gdk.CONTROL_MASK and event.keyval == keys.k:
+         event.state & gdk.ModifierType.CONTROL_MASK and event.keyval == keys.k:
       if self.onclean:
         self.onclean['start'](*self.onclean['args'], **self.onclean['kwargs'])
       cleanlist = list()
@@ -281,8 +278,8 @@ def test():
       'col0' : gtk.TreeViewColumn('Col0', R['col0'], text=0, editable=2),
       'col1' : gtk.TreeViewColumn('Col1', R['col1'], text=1, editable=2),
     }
-    C['col0'].set_flags(gtk.CAN_FOCUS)
-    C['col1'].set_flags(gtk.CAN_FOCUS)
+    C['col0'].set_clickable(True)
+    C['col1'].set_clickable(True)
 
     treeView.append_column(C['col0'])
     treeView.append_column(C['col1'])

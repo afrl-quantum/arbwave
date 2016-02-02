@@ -1,16 +1,16 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, gobject
+from gi.repository import Gtk as gtk, GObject as gobject
 
 from matplotlib.figure import Figure
 
 # uncomment to select /GTK/GTKAgg/GTKCairo
-#from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
-from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
-#from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
+#from matplotlib.backends.backend_gtk3 import FigureCanvasGTK as FigureCanvas
+from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg as FigureCanvas
+#from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTKCairo as FigureCanvas
 
 # or NavigationToolbar for classic
-#from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
-from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as NavigationToolbar
+from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3 as NavigationToolbar
+#from matplotlib.backends.backend_gtk3agg import NavigationToolbar2GTK3Agg as NavigationToolbar
 
 import pylab
 
@@ -46,11 +46,11 @@ class Editor(gtk.Dialog):
     self.chan = None
 
 
-    flags = gtk.DIALOG_DESTROY_WITH_PARENT
+    flags = gtk.DialogFlags.DESTROY_WITH_PARENT
     if model:
-      flags |= gtk.DIALOG_MODAL
+      flags |= gtk.DialogFlags.MODAL
 
-    gtk.Dialog.__init__( self, title, parent, flags )
+    super(Editor,self).__init__( title, parent, flags )
 
     self.set_default_size(550, 600)
     self.set_border_width(10)
@@ -60,7 +60,7 @@ class Editor(gtk.Dialog):
 
     V = self.view = gtk.TreeView()
     V.set_property( 'rules-hint', True )
-    V.get_selection().set_mode( gtk.SELECTION_MULTIPLE )
+    V.get_selection().set_mode( gtk.SelectionMode.MULTIPLE )
 
     self.sheet_cb = spreadsheet.Callbacks( V, ('', '') )
     self.sheet_cb.connect('clean',
@@ -86,8 +86,8 @@ class Editor(gtk.Dialog):
 
     # create the scrolled window for the spreadsheet
     sw = gtk.ScrolledWindow()
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    sw.set_shadow_type(gtk.SHADOW_IN)
+    sw.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.AUTOMATIC)
+    sw.set_shadow_type(gtk.ShadowType.IN)
     sw.add( V )
 
     # Create the plotting canvas
@@ -97,13 +97,13 @@ class Editor(gtk.Dialog):
     self.canvas.set_size_request(300,100)
     toolbar = NavigationToolbar(self.canvas, self)
 
-    self.channel_select = gtk.ComboBox(channels)
+    self.channel_select = gtk.ComboBox.new_with_model(channels)
     cbr = gtk.CellRendererText()
     self.channel_select.clear()
-    self.channel_select.pack_start( cbr )
+    self.channel_select.pack_start( cbr, True )
     self.channel_select.add_attribute( cbr, 'text', channels.LABEL )
     self.channel_select.connect('changed',
-      lambda c: self._set_channel(c.get_active_text())
+      lambda c: self._set_channel(self.channels[c.get_active()])
     )
     # This ensures you can't select digital channels
     def is_sensitive(celllayout, cell, model, i, *user_args):
@@ -171,31 +171,31 @@ class Editor(gtk.Dialog):
 
 
     ubox = gtk.HBox()
-    ubox.pack_start( self.channel_select )
-    ubox.pack_start( gtk.Label('Output Scale/Units:  ') )
-    ubox.pack_start( self.units )
+    ubox.pack_start( self.channel_select, True, True, 0 )
+    ubox.pack_start( gtk.Label('Output Scale/Units:  '), True, True, 0 )
+    ubox.pack_start( self.units, True, True, 0 )
 
     pbox = gtk.HBox()
-    pbox.pack_start( gtk.Label('Interpolation:      Order:' ) )
-    pbox.pack_start( self.order )
-    pbox.pack_start( gtk.Label('Smoothing:' ) )
-    pbox.pack_start( self.smoothing )
+    pbox.pack_start( gtk.Label('Interpolation:      Order:' ), True, True, 0 )
+    pbox.pack_start( self.order, True, True, 0 )
+    pbox.pack_start( gtk.Label('Smoothing:' ), True, True, 0 )
+    pbox.pack_start( self.smoothing, True, True, 0 )
 
     obox = gtk.HBox()
-    obox.pack_start( gtk.Label('Output Offset (with units):') )
-    obox.pack_start( self.offset )
+    obox.pack_start( gtk.Label('Output Offset (with units):'), True, True, 0 )
+    obox.pack_start( self.offset, True, True, 0 )
 
     bottom = gtk.VBox()
-    bottom.pack_start(ubox, False, False)
-    bottom.pack_start(pbox, False, False)
-    bottom.pack_start(obox, False, False)
-    bottom.pack_start(sw)
+    bottom.pack_start(ubox, False, False, 0)
+    bottom.pack_start(pbox, False, False, 0)
+    bottom.pack_start(obox, False, False, 0)
+    bottom.pack_start(sw, True, True, 0)
 
     body = gtk.VPaned()
     body.pack1( self.canvas, True )
     body.pack2( bottom, True )
-    self.vbox.pack_start( toolbar, False, False )
-    self.vbox.pack_start( body )
+    self.vbox.pack_start( toolbar, False, False, 0 )
+    self.vbox.pack_start( body, True, True, 0 )
     self.show_all()
 
     # default to first channel
@@ -454,7 +454,7 @@ data = np.array([
     OFFSET           = 5
     DEVICE           = 6
     def __init__(self):
-      gtk.ListStore.__init__(self,
+      super(Channels,self).__init__(
         str, str, gtk.ListStore, int, float, str, str
       )
 

@@ -8,7 +8,7 @@ AUTHORS = [
   'Benjamin Stuhl (Space Dynamics Laboratory)',
 ]
 
-import gtk
+from gi.repository import Gtk as gtk
 from .. import version
 
 def show():

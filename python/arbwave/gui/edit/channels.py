@@ -1,5 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, gobject
+from gi.repository import Gtk as gtk, GObject as gobject
 
 from helpers import *
 import scaling

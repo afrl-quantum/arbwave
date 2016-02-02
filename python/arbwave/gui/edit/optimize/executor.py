@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk, Gdk as gdk
 
 import sys, re, pydoc
 
@@ -33,7 +33,7 @@ class Parameters(gtk.ListStore):
   DEFAULT = ('', '', '0.0', '1.0', '1.0', True)
 
   def __init__(self):
-    gtk.ListStore.__init__(self,
+    super(Parameters,self).__init__(
       str, #name
       str, #value
       str, #min
@@ -50,7 +50,7 @@ class Constraints(gtk.ListStore):
   DEFAULT = ('', True)
 
   def __init__(self):
-    gtk.ListStore.__init__(self,
+    super(Constraints,self).__init__(
       str, #constraint
       bool,#enable
     )
@@ -58,8 +58,8 @@ class Constraints(gtk.ListStore):
 
 def drag_motion(w, ctx, x, y, time):
   mask = w.window.get_pointer()[2]
-  if mask & gtk.gdk.CONTROL_MASK:
-    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+  if mask & gdk.ModifierType.CONTROL_MASK:
+    ctx.drag_status( gdk.DragAction.COPY, time )
 
 def set_item_name( cell, path, new_item, model, Globals, typ=str ):
   """
@@ -123,16 +123,16 @@ class OptimView(gtk.Dialog):
   def __init__(self, settings, Globals, title='Optimization Parameters',
                parent=None, target=None, modal=False):
     actions = [
-      gtk.STOCK_OK,     gtk.RESPONSE_OK,
-      gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+      gtk.STOCK_OK,     gtk.ResponseType.OK,
+      gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
     ]
-    flags = gtk.DIALOG_DESTROY_WITH_PARENT
+    flags = gtk.DialogFlags.DESTROY_WITH_PARENT
     if modal:
-      flags |= gtk.DIALOG_MODAL
+      flags |= gtk.DialogFlags.MODAL
       actions.pop(2)
       actions.pop(2)
 
-    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+    super(OptimView,self).__init__( title, parent, flags, tuple(actions) )
 
     self.set_default_size(550, 600)
     self.set_border_width(10)
@@ -163,8 +163,8 @@ class OptimView(gtk.Dialog):
 
     scroll = gtk.ScrolledWindow()
     scroll.set_size_request(-1,250)
-    scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+    scroll.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     scroll.add( GV.view )
     body.pack1(scroll)
 
@@ -261,8 +261,8 @@ class OptimView(gtk.Dialog):
 
     scroll = gtk.ScrolledWindow()
     scroll.set_size_request(-1,250)
-    scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+    scroll.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     scroll.add_with_viewport( vbox )
     body.pack2(scroll)
 
@@ -320,7 +320,7 @@ class Executor:
     opt = OptimView(settings, Globals, parent=parent)
     self.cancelled = False
     try:
-      if opt.run() not in [ gtk.RESPONSE_OK ]:
+      if opt.run() not in [ gtk.ResponseType.OK ]:
         print 'cancelled!'
         self.cancelled = True
         return

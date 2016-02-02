@@ -1,8 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg
+from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3 as _NavigationToolbar
 
-class NavigationToolbar(NavigationToolbar2GTKAgg):
+class NavigationToolbar(_NavigationToolbar):
   def __init__( self, canvas, window,
                 hspan_controls=None,
                 vspan_controls=None,
@@ -50,18 +50,18 @@ class NavigationToolbar(NavigationToolbar2GTKAgg):
 
   def zoom(self,*args):
     self.disable_all_span_controls()
-    NavigationToolbar2GTKAgg.zoom(self,*args)
+    _NavigationToolbar.zoom(self,*args)
 
 
   def pan(self,*args):
     self.disable_all_span_controls()
-    NavigationToolbar2GTKAgg.pan(self,*args)
+    _NavigationToolbar.pan(self,*args)
 
 
   def home(self,*args):
     """This version of 'home' resets the history, instead of just clipping it to
     this view"""
-    NavigationToolbar2GTKAgg.home(self,*args)
+    _NavigationToolbar.home(self,*args)
     self.set_max_ranges()
     self.update() # reset the history...
 

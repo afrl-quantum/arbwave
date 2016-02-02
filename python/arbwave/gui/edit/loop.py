@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk, Gdk as gdk
 
 import sys, re, pydoc
 
@@ -28,7 +28,7 @@ class Parameters(gtk.TreeStore):
   DEFAULT = ('i', 'range(0,10,2)', False, True)
 
   def __init__(self):
-    gtk.TreeStore.__init__(self,
+    super(Parameters,self).__init__(
       str, #name
       str, #iterable
       bool,#global
@@ -69,24 +69,24 @@ class Parameters(gtk.TreeStore):
 
 def drag_motion(w, ctx, x, y, time):
   mask = w.window.get_pointer()[2]
-  if mask & gtk.gdk.CONTROL_MASK:
-    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+  if mask & gdk.ModifierType.CONTROL_MASK:
+    ctx.drag_status( gdk.DragAction.COPY, time )
 
 
 class LoopView(gtk.Dialog):
   def __init__(self, settings, Globals, title='Loop Parameters',
                parent=None, target=None, modal=False):
     actions = [
-      gtk.STOCK_OK,     gtk.RESPONSE_OK,
-      gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+      gtk.STOCK_OK,     gtk.ResponseType.OK,
+      gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
     ]
-    flags = gtk.DIALOG_DESTROY_WITH_PARENT
+    flags = gtk.DialogFlags.DESTROY_WITH_PARENT
     if modal:
-      flags |= gtk.DIALOG_MODAL
+      flags |= gtk.DialogFlags.MODAL
       actions.pop(2)
       actions.pop(2)
 
-    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+    super(LoopView,self).__init__( title, parent, flags, tuple(actions) )
 
     self.set_default_size(750, 600)
     self.set_border_width(10)
@@ -136,8 +136,8 @@ class LoopView(gtk.Dialog):
 
     scroll = gtk.ScrolledWindow()
     scroll.set_size_request(-1,-1)
-    scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+    scroll.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     scroll.add( V )
     scroll.show()
     self.vbox.pack_start( scroll )
@@ -189,7 +189,7 @@ class Executor:
     loop = LoopView(settings, Globals, parent=parent)
     self.cancelled = False
     try:
-      if loop.run() not in [ gtk.RESPONSE_OK ]:
+      if loop.run() not in [ gtk.ResponseType.OK ]:
         print 'cancelled!'
         self.cancelled = True
         return

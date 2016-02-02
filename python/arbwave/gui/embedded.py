@@ -7,7 +7,11 @@ import sys, code, os
 import __builtin__
 
 
-import gtk, gobject, pango, glib
+from gi.repository import Gtk as gtk, \
+                          Gdk as gdk, \
+                          GObject as gobject, \
+                          Pango as pango, \
+                          GLib as glib
 import types, pydoc
 
 textDoc = pydoc.TextDoc()
@@ -160,10 +164,10 @@ class PopUp:
     
     self.list=list
     self.position=position
-    self.popup=gtk.Window(gtk.WINDOW_POPUP)
+    self.popup=gtk.Window(gtk.WindowType.POPUP)
     frame=gtk.Frame()
     sw=gtk.ScrolledWindow()
-    sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    sw.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.AUTOMATIC)
     model=gtk.ListStore(gobject.TYPE_STRING)
     for item in self.list:
        iter=model.append()
@@ -187,7 +191,7 @@ class PopUp:
     desc=contest.get_font_description()
     lang=contest.get_language()
     metrics= contest.get_metrics(desc, lang)
-    width= pango.PIXELS(metrics.get_approximate_char_width()* n_chars)
+    width= round(pango.units_to_double(metrics.get_approximate_char_width()* n_chars))
     if width>80:
       self.popup.set_size_request(width,200)
     else:
@@ -203,7 +207,7 @@ class PopUp:
     iter=buffer.get_iter_at_mark(buffer.get_insert())
     
     rectangle=self.text_view.get_iter_location(iter)
-    absX, absY=self.text_view.buffer_to_window_coords(gtk.TEXT_WINDOW_TEXT, 
+    absX, absY=self.text_view.buffer_to_window_coords(gtk.TextWindowType.TEXT, 
                                rectangle.x+rectangle.width+20 ,
                                rectangle.y+rectangle.height+50)
     parent=self.text_view.get_parent()
@@ -281,29 +285,29 @@ class Shell_Gui:
     box.set_border_width(4)
     box.set_spacing(4)
     sw=gtk.ScrolledWindow()
-    sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
+    sw.set_policy(gtk.PolicyType.AUTOMATIC,gtk.PolicyType.AUTOMATIC)
     t_table=gtk.TextTagTable()
     # creates three tags
-    tag_err=gtk.TextTag("error")
+    tag_err=gtk.TextTag.new("error")
     tag_err.set_property("foreground","red")
     tag_err.set_property("font","monospace 10")
     t_table.add(tag_err)
     
-    tag_out=gtk.TextTag("output")
+    tag_out=gtk.TextTag.new("output")
     tag_out.set_property("foreground","blue")
     tag_out.set_property("font","monospace 10")
     t_table.add(tag_out)
     
-    tag_in=gtk.TextTag("input")
+    tag_in=gtk.TextTag.new("input")
     tag_in.set_property("foreground","black")
     tag_in.set_property("font","monospace 10")
     t_table.add(tag_in)
 
-    tag_no_edit=gtk.TextTag("no_edit")
+    tag_no_edit=gtk.TextTag.new("no_edit")
     tag_no_edit.set_property("editable",False)
     t_table.add(tag_no_edit)
     
-    self.buffer=gtk.TextBuffer(t_table)
+    self.buffer=gtk.TextBuffer.new(t_table)
     #add the banner
     self.buffer.set_text(self.banner+PS1)
     start,end=self.buffer.get_bounds()
@@ -314,9 +318,9 @@ class Shell_Gui:
     self.view.set_buffer(self.buffer)
     self.view.connect("key-press-event", self.key_press)
     self.view.connect("drag_data_received",self.drag_data_received)
-    self.view.set_wrap_mode(gtk.WRAP_CHAR)
+    self.view.set_wrap_mode(gtk.WrapMode.CHAR)
     sw.add(self.view)
-    box.pack_start(sw)
+    box.pack_start(sw, True, True, 0)
 
     #creates  two dummy files
     self.dummy_out=Dummy_File(self.view, self.buffer, tag_out)
@@ -343,18 +347,31 @@ class Shell_Gui:
     
     #add buttons
     b_box=gtk.Toolbar()
-    b_box.set_orientation(gtk.ORIENTATION_VERTICAL)
-    b_box.set_style(gtk.TOOLBAR_ICONS)
-    b_box.insert_stock(gtk.STOCK_CLEAR,"Clear the output", None, self.clear_text, None,-1)
-    b_box.insert_stock(gtk.STOCK_SAVE,"Save the output", None, self.save_text, None,-1)
-    b_box.insert_stock(gtk.STOCK_PREFERENCES,"Preferences", None, None, None,-1)
+    b_box.set_orientation(gtk.Orientation.VERTICAL)
+    b_box.set_style(gtk.ToolbarStyle.ICONS)
+
+    self.clear_button = gtk.ToolButton(stock_id=gtk.STOCK_CLEAR,
+                                       tooltip_text='Clear the output')
+    self.save_button  = gtk.ToolButton(stock_id=gtk.STOCK_SAVE,
+                                       tooltip_text='Save the output')
+    self.prefs_button = gtk.ToolButton(stock_id=gtk.STOCK_PREFERENCES,
+                                       tooltip_text='Preferences')
+    self.clear_button.connect('clicked', self.clear_text)
+    self.save_button.connect('clicked', self.save_text)
+
+    b_box.insert(self.clear_button,-1)
+    b_box.insert(self.save_button,-1)
+    b_box.insert(self.prefs_button,-1)
     if with_window:
+      self.quit_button = gtk.ToolButton(stock_id=gtk.STOCK_QUIT,
+                                        tooltip_text='Close Shell')
+      self.quit_button.connect('clicked', self.quit)
       b_box.append_space()
-      b_box.insert_stock(gtk.STOCK_QUIT,"Close Shell", None, self.quit, None,-1)
+      b_box.insert(self.quit_button,-1)
     
     
-    box.pack_start(b_box,expand=False)
-    frame=gtk.Frame(label_text)
+    box.pack_start(b_box,expand=False,fill=True,padding=0)
+    frame=gtk.Frame.new(label_text)
     frame.show_all()
     frame.add(box)
     
@@ -375,29 +392,29 @@ class Shell_Gui:
   def key_press(self, view, event):
     if self.popup!=None:
       # handle maneuvering inside the completion popup 
-      if event.keyval == gtk.keysyms.Up or \
-         event.keyval == gtk.keysyms.ISO_Left_Tab or \
-        (event.keyval == gtk.keysyms.p and event.state & gtk.gdk.CONTROL_MASK):
+      if event.keyval == gdk.KEY_Up or \
+         event.keyval == gdk.KEY_ISO_Left_Tab or \
+        (event.keyval == gdk.KEY_p and event.state & gdk.ModifierType.CONTROL_MASK):
         self.popup.prev()
         return True 
-      elif event.keyval == gtk.keysyms.Page_Up:
+      elif event.keyval == gdk.KEY_Page_Up:
         self.popup.prev(page=True)
         return True
-      elif event.keyval == gtk.keysyms.Down or \
-           event.keyval == gtk.keysyms.Tab or \
-          (event.keyval == gtk.keysyms.n and event.state & gtk.gdk.CONTROL_MASK):
+      elif event.keyval == gdk.KEY_Down or \
+           event.keyval == gdk.KEY_Tab or \
+          (event.keyval == gdk.KEY_n and event.state & gdk.ModifierType.CONTROL_MASK):
         self.popup.next()
         return True 
-      elif event.keyval == gtk.keysyms.Page_Down:
+      elif event.keyval == gtk.KEY_Page_Down:
         self.popup.next(page=True)
         return True
-      elif event.keyval ==gtk.keysyms.Return:
+      elif event.keyval ==gtk.KEY_Return:
         self.popup.sel_confirmed()
         self.popup=None
         return True 
-      elif event.keyval in [ gtk.keysyms.Control_L, gtk.keysyms.Control_R,
-                             gtk.keysyms.Shift_L, gtk.keysyms.Shift_R,
-                             gtk.keysyms.Alt_L, gtk.keysyms.Alt_R ]:
+      elif event.keyval in [ gdk.KEY_Control_L, gdk.KEY_Control_R,
+                             gdk.KEY_Shift_L,   gdk.KEY_Shift_R,
+                             gdk.KEY_Alt_L,     gdk.KEY_Alt_R ]:
         return False
       else:
         self.popup.hide()
@@ -406,8 +423,8 @@ class Shell_Gui:
       end=self.buffer.get_end_iter()
       start=self.buffer.get_iter_at_line(end.get_line())
 
-      if event.keyval ==gtk.keysyms.Up or \
-        (event.keyval == gtk.keysyms.p and event.state & gtk.gdk.CONTROL_MASK):
+      if event.keyval ==gdk.KEY_Up or \
+        (event.keyval == gdk.KEY_p and event.state & gdk.ModifierType.CONTROL_MASK):
         # emacs style
         if self.history_pos>0:
           # remove text into the line...
@@ -418,12 +435,12 @@ class Shell_Gui:
           self.buffer.insert(pos, self.history[self.history_pos])
           self.history_pos-=1
         else:
-          gtk.gdk.beep()
+          gdk.beep()
         self.view.emit_stop_by_name("key-press-event")
         return True
         
-      elif event.keyval ==gtk.keysyms.Down or \
-          (event.keyval == gtk.keysyms.n and event.state & gtk.gdk.CONTROL_MASK):
+      elif event.keyval ==gdk.KEY_Down or \
+          (event.keyval == gdk.KEY_n and event.state & gdk.ModifierType.CONTROL_MASK):
         # emacs style
         if self.history_pos<len(self.history)-1:
           # remove text into the line...
@@ -435,18 +452,18 @@ class Shell_Gui:
           self.buffer.insert(pos, self.history[self.history_pos])
 
         else:
-          gtk.gdk.beep()
+          gdk.beep()
         self.view.emit_stop_by_name("key-press-event")
         return True
 
-      elif event.keyval ==gtk.keysyms.f and event.state & gtk.gdk.CONTROL_MASK:
+      elif event.keyval ==gdk.KEY_f and event.state & gdk.ModifierType.CONTROL_MASK:
         # emacs style
         iter=self.buffer.get_iter_at_mark(self.buffer.get_insert())
         iter.forward_cursor_position()
         self.buffer.place_cursor(iter)
         return True
 
-      elif event.keyval ==gtk.keysyms.b and event.state & gtk.gdk.CONTROL_MASK:
+      elif event.keyval ==gdk.KEY_b and event.state & gdk.ModifierType.CONTROL_MASK:
         # emacs style
         iter=self.buffer.get_iter_at_mark(self.buffer.get_insert())
         iter.backward_cursor_position()
@@ -454,26 +471,26 @@ class Shell_Gui:
           self.buffer.place_cursor(iter)
         return True
 
-      elif event.keyval == gtk.keysyms.Left:
+      elif event.keyval == gdk.KEY_Left:
         iter=self.buffer.get_iter_at_mark(self.buffer.get_insert())
         iter.backward_cursor_position()
         if not iter.editable(True):
           return True
         return False
 
-      elif event.keyval ==gtk.keysyms.a and event.state & gtk.gdk.CONTROL_MASK:
+      elif event.keyval ==gdk.KEY_a and event.state & gdk.ModifierType.CONTROL_MASK:
         # emacs style
         start,end=self.get_line_iters()
         self.buffer.place_cursor( start )
         return True
 
-      elif event.keyval ==gtk.keysyms.e and event.state & gtk.gdk.CONTROL_MASK:
+      elif event.keyval ==gdk.KEY_e and event.state & gdk.ModifierType.CONTROL_MASK:
         # emacs style
         start,end=self.get_line_iters()
         self.buffer.place_cursor( end )
         return True
 
-      elif event.keyval == gtk.keysyms.d and event.state & gtk.gdk.CONTROL_MASK:
+      elif event.keyval == gdk.KEY_d and event.state & gdk.ModifierType.CONTROL_MASK:
         # emacs style
         iter=self.buffer.get_iter_at_mark(self.buffer.get_insert())
         next_iter = iter.copy()
@@ -481,14 +498,14 @@ class Shell_Gui:
         self.buffer.delete(iter, next_iter)
         return True
 
-      elif event.keyval == gtk.keysyms.u and event.state & gtk.gdk.CONTROL_MASK:
+      elif event.keyval == gdk.KEY_u and event.state & gdk.ModifierType.CONTROL_MASK:
         # emacs style
         start,end=self.get_line_iters()
         iter=self.buffer.get_iter_at_mark(self.buffer.get_insert())
         self.buffer.delete(start, iter)
         return True
 
-      elif event.keyval ==gtk.keysyms.Tab:
+      elif event.keyval ==gdk.KEY_Tab:
         if not self.get_line().strip():
           iter=self.buffer.get_iter_at_mark(self.buffer.get_insert())
           self.buffer.insert(iter,TAB_WIDTH*" ")
@@ -496,7 +513,7 @@ class Shell_Gui:
           self.complete_text()
         return True
 
-      elif event.keyval ==gtk.keysyms.Return:
+      elif event.keyval ==gdk.KEY_Return:
         command=self.get_line()
         self.exec_code(command)
         start,end=self.buffer.get_bounds()
@@ -505,7 +522,7 @@ class Shell_Gui:
 
         return True
 
-      elif event.keyval ==gtk.keysyms.space and event.state & gtk.gdk.CONTROL_MASK:
+      elif event.keyval ==gdk.KEY_space and event.state & gdk.ModifierType.CONTROL_MASK:
         self.complete_text()
         return True
       
@@ -515,13 +532,13 @@ class Shell_Gui:
     dlg=gtk.Dialog("Clear")
     dlg.add_button("Clear",1)
     dlg.add_button("Reset",2)
-    dlg.add_button(gtk.STOCK_CLOSE,gtk.RESPONSE_CLOSE)
+    dlg.add_button(gtk.STOCK_CLOSE,gtk.ResponseType.CLOSE)
     dlg.set_default_size(250,150)
     hbox=gtk.HBox()
     #add an image
     img=gtk.Image()
-    img.set_from_stock(gtk.STOCK_CLEAR, gtk.ICON_SIZE_DIALOG)
-    hbox.pack_start(img)
+    img.set_from_stock(gtk.STOCK_CLEAR, gtk.IconSize.DIALOG)
+    hbox.pack_start(img, True, True, 0)
     
     #add text
     text="You have two options:\n"
@@ -529,10 +546,10 @@ class Shell_Gui:
     text+="   -reset the shell (also rerun global script)\n"
     text+="\n What do you want to do?"
     label=gtk.Label(text)
-    hbox.pack_start(label)
+    hbox.pack_start(label, True, True, 0)
     
     hbox.show_all()
-    dlg.vbox.pack_start(hbox)
+    dlg.vbox.pack_start(hbox, True, True, 0)
     
     ans=dlg.run()
     dlg.hide()
@@ -675,13 +692,13 @@ class Shell_Gui:
     dlg=gtk.Dialog("Save to file")
     dlg.add_button("Commands",1)
     dlg.add_button("All",2)
-    dlg.add_button(gtk.STOCK_CLOSE,gtk.RESPONSE_CLOSE)
+    dlg.add_button(gtk.STOCK_CLOSE,gtk.ResponseType.CLOSE)
     dlg.set_default_size(250,150)
     hbox=gtk.HBox()
     #add an image
     img=gtk.Image()
-    img.set_from_stock(gtk.STOCK_SAVE, gtk.ICON_SIZE_DIALOG)
-    hbox.pack_start(img)
+    img.set_from_stock(gtk.STOCK_SAVE, gtk.IconSize.DIALOG)
+    hbox.pack_start(img, True, True, 0)
     
     #add text
     text="You have two options:\n"
@@ -689,10 +706,10 @@ class Shell_Gui:
     text+="   -save all\n"
     text+="\n What do you want to save?"
     label=gtk.Label(text)
-    hbox.pack_start(label)
+    hbox.pack_start(label, True, True, 0)
     
     hbox.show_all()
-    dlg.vbox.pack_start(hbox)
+    dlg.vbox.pack_start(hbox, True, True, 0)
     
     ans=dlg.run()
     dlg.hide()
@@ -703,13 +720,13 @@ class Shell_Gui:
         name=win.get_filename()
         if os.path.isfile(name):
           box=gtk.MessageDialog(dlg,
-                            gtk.DIALOG_DESTROY_WITH_PARENT,
-                            gtk.MESSAGE_QUESTION,gtk.BUTTONS_YES_NO,
+                            gtk.DialogFlags.DESTROY_WITH_PARENT,
+                            gtk.MessageType.QUESTION,gtk.ButtonsType.YES_NO,
                           name+" already exists; do you want to overwrite it?"
                           )
           ans=box.run()
           box.hide()
-          if ans==gtk.RESPONSE_NO:
+          if ans==gtk.ResponseType.NO:
             return
         try:
           file=open(name,'w')
@@ -721,8 +738,8 @@ class Shell_Gui:
               
         except Exception, x:
           box=gtk.MessageDialog(dlg,
-                            gtk.DIALOG_DESTROY_WITH_PARENT,
-                            gtk.MESSAGE_ERROR,gtk.BUTTONS_CLOSE,
+                            gtk.DialogFlags.DESTROY_WITH_PARENT,
+                            gtk.MessageType.ERROR,gtk.ButtonsType.CLOSE,
                           "Unable to write \n"+
                           name+"\n on disk \n\n%s"%(x)
                           )
@@ -744,13 +761,13 @@ class Shell_Gui:
         name=win.get_filename()
         if os.path.isfile(name):
           box=gtk.MessageDialog(dlg,
-                            gtk.DIALOG_DESTROY_WITH_PARENT,
-                            gtk.MESSAGE_QUESTION,gtk.BUTTONS_YES_NO,
+                            gtk.DialogFlags.DESTROY_WITH_PARENT,
+                            gtk.MessageType.QUESTION,gtk.ButtonsType.YES_NO,
                           name+" already exists; do you want to overwrite it?"
                           )
           ans=box.run()
           box.hide()
-          if ans==gtk.RESPONSE_NO:
+          if ans==gtk.ResponseType.NO:
             return
         try:
           start,end=self.buffer.get_bounds()
@@ -761,8 +778,8 @@ class Shell_Gui:
           
         except Exception, x:
           box=gtk.MessageDialog(dlg,
-                            gtk.DIALOG_DESTROY_WITH_PARENT,
-                            gtk.MESSAGE_ERROR,gtk.BUTTONS_CLOSE,
+                            gtk.DialogFlags.DESTROY_WITH_PARENT,
+                            gtk.MessageType.ERROR,gtk.ButtonsType.CLOSE,
                           "Unable to write \n"+
                           name+"\n on disk \n\n%s"%(x)
                           )
@@ -825,10 +842,10 @@ class Shell_Gui:
           #show a popup 
           if isinstance(self.gui, gtk.Frame):
               rect=self.gui.get_allocation()
-              app=self.gui.window.get_root_origin()
+              app=self.gui.get_window().get_root_origin()
               position=(app[0]+rect.x,app[1]+rect.y)
           else:    
-              position=self.gui.window.get_root_origin()
+              position=self.gui.get_window().get_root_origin()
 
           self.popup=PopUp(self.view, completions, position) 
 
@@ -910,4 +927,4 @@ if __name__=='__main__':
   shell=Shell_Gui()
   w.add( shell.gui )
   w.show_all()
-  gtk.mainloop()
+  gtk.main()

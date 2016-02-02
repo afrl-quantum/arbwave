@@ -1,15 +1,15 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import traceback
-import gtk, gobject
+from gi.repository import Gtk as gtk, GObject as gobject
 import logging, re
 
 import numpy as np
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_gtkagg import \
-  FigureCanvasGTKAgg as FigCanvas
-from matplotlib.backends.backend_gtkagg import \
-  NavigationToolbar2GTKAgg as NavigationToolbar
+from matplotlib.backends.backend_gtk3agg import \
+  FigureCanvasGTK3Agg as FigCanvas
+from matplotlib.backends.backend_gtk3 import \
+  NavigationToolbar2GTK3 as NavigationToolbar
 
 from matplotlib.mlab import find
 
@@ -101,18 +101,18 @@ class Show(gtk.Dialog):
   def __init__(self, columns, title='Optimization Parameters/Results',
                parent=None, globals=globals()):
     actions = [
-    #  gtk.STOCK_OK,     gtk.RESPONSE_OK,
-    #  gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL
+    #  gtk.STOCK_OK,     gtk.ResponseType.OK,
+    #  gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL
     ]
-    flags = gtk.DIALOG_DESTROY_WITH_PARENT
-    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+    flags = gtk.DialogFlags.DESTROY_WITH_PARENT
+    super(Show,self).__init__( title, parent, flags, tuple(actions) )
 
     self.set_default_size(550, 600)
     self.set_border_width(10)
 
     # Set up the file menu
     merge = gtk.UIManager()
-    self.set_data("ui-manager", merge)
+    self.ui_manager = merge
     merge.insert_action_group(self.create_action_group(), 0)
     self.add_accel_group(merge.get_accel_group())
     try:
@@ -140,9 +140,12 @@ class Show(gtk.Dialog):
       self.update_plot()
 
     def mk_xy_combo(is_xaxis, text_column=0,model=None):
-      combo = gtk.ComboBox(model)
+      if model:
+        combo = gtk.ComboBox.new_with_model(model)
+      else:
+        combo = gtk.ComboBox()
       cell = gtk.CellRendererText()
-      combo.pack_start(cell, True)
+      combo.pack_start(cell, True )
       combo.add_attribute(cell, 'text', text_column)
       e = gtk.Entry()
       combo.connect('changed', set_predef, e, is_xaxis)
@@ -189,14 +192,14 @@ class Show(gtk.Dialog):
     self.vbox.pack_start( line_sel_box, False, False, 0 )
 
     body = gtk.VPaned()
-    self.vbox.pack_start(body)
+    self.vbox.pack_start(body, True, True, 0)
 
     # Set up the Body of the display
     V = self.view = gtk.TreeView()
     scroll = gtk.ScrolledWindow()
     scroll.set_size_request(-1,400)
-    scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+    scroll.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     scroll.add( V )
     body.pack1(scroll)
 

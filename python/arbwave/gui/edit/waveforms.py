@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, gobject, logging
+from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
+import logging
 
 from helpers import *
 from script import edit as do_script_edit
@@ -66,8 +67,9 @@ def load_channels_combobox( cell, editable, path, model, channels ):
   if callable(model): # allow for a callback to be used to get model
     model = model()
   # ensure that group-level items edit text and do not use drop down
-  if not( is_group(model, path) and type(editable.child) is gtk.Entry ):
-    editable.child.set_property('editable', False)
+  child = editable.get_child()
+  if not( is_group(model, path) and type(child) is gtk.Entry ):
+    child.set_property('editable', False)
     for i in iter(channels):
       chls.append([ i[channels.LABEL] ])
 
@@ -87,9 +89,9 @@ def begin_drag(w, ctx, parent):
   parent.pause()
 
 def drag_motion(w, ctx, x, y, time, parent):
-  mask = w.window.get_pointer()[2]
-  if mask & gtk.gdk.CONTROL_MASK:
-    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+  mask = w.get_window().get_pointer()[2]
+  if mask & gdk.ModifierType.CONTROL_MASK:
+    gdk.drag_status( ctx, gdk.DragAction.COPY, time )
 
 def end_drag(w, ctx, parent, wf):
   # unpause updates and force an update based on waveform changes

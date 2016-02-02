@@ -1,5 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, pango
+from gi.repository import Gtk as gtk, Pango as pango
 from helpers import *
 
 def create(hosts):
@@ -18,7 +18,7 @@ def create(hosts):
   R['host'   ].set_property( 'editable', True )
   R['default'].set_property( 'activatable', True )
   R['default'].set_property( 'radio', True )
-  R['host'   ].set_property( 'alignment', pango.ALIGN_CENTER )
+  R['host'   ].set_property( 'alignment', pango.Alignment.CENTER )
   R['prefix' ].connect( 'edited', set_item, hosts, hosts.PREFIX )
   R['host'   ].connect( 'edited', set_item, hosts, hosts.HOST )
   R['default'].connect( 'toggled', select_radio_item, hosts, hosts.DEFAULT )
