@@ -249,16 +249,19 @@ class ArbWave(gtk.Window):
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )
-    self.shell = embedded.Shell_Gui(
+    self.shell = embedded.IPython(
       ui=self,
       get_globals=self.processor.get_globals,
       reset = self.processor.reset,
     )
     self.processor.connect_listener( self.shell.update_globals )
+    shell_sb = gtk.ScrolledWindow()
+    shell_sb.add(self.shell)
+
     self.shell_notebook = gtk.Notebook()
     self.shell_notebook.set_property('border-width',0)
-    self.shell_notebook.append_page( self.shell.gui, gtk.Label('Shell') )
-    self.shell_notebook.set_tab_reorderable( self.shell.gui, True )
+    self.shell_notebook.append_page(shell_sb, gtk.Label('Arbwave Command Line'))
+    self.shell_notebook.set_tab_reorderable( shell_sb, True )
 
     def tab_tear( notebook, page, x, y ):
       notebook.remove_page( notebook.page_num(page) )
