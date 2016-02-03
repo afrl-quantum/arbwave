@@ -65,7 +65,8 @@ class Processor:
     try: self.Globals['__del__'](**kwargs)
     except: pass
     self.engine.clear_runnables()
-    self.Globals = default.get_globals() # reset the global environment
+    self.Globals.clear()
+    self.Globals.update( default.get_globals() ) # reset the global environment
     # ensure that the kwargs is not using the original dictionary
     self.Globals['kwargs'] = dict(self.Globals['_kwargs'], **kwargs )
     exec script in self.Globals
