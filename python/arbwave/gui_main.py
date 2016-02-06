@@ -5,7 +5,7 @@ GUI main
 This import is supposed _after_ the options. module is modified
 """
 
-from gi.repository import Gtk as gtk, GObject as gobject
+from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 import os, time, sys, logging, threading
 from .tools.gui_callbacks import do_gui_operation
 
@@ -16,6 +16,7 @@ def sleeper():
 def main(args):
   # this is necessary to ensure that threads can be launched!!!!
   gobject.threads_init()
+  gdk.threads_init()
 
   if sys.platform == 'win32':
     gobject.timeout_add(400, sleeper)
