@@ -5,6 +5,11 @@ Arbitrary waveform generator for digital and analog signals.
 
 import argparse, logging
 from . import version, options, backend
+from .runnable import Runnable
+
+__all__ = [
+  'version', 'options', 'backend', 'Runnable',
+]
 
 log_levels = {
   'ALL'   : 0,

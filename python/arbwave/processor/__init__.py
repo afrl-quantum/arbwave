@@ -14,12 +14,13 @@ class ModuleLike(object):
   def __init__(self, D):
     self.__dict__ = D
 
-class Processor:
+class Processor(object):
   def __init__(self, ui):
+    super(Processor,self).__init__()
     self.ui = ui
     self.script = ''
     self.Globals = default.get_globals()
-    self.engine = engine.Arbwave(self,ui)
+    self.engine = engine.Arbwave.instance(self,ui)
     self.engine.defaults = ModuleLike( default.registered_globals )
     sys.modules['Arbwave'] = self.engine # fake Arbwave module
     sys.modules['Arbwave.defaults'] = self.engine.defaults

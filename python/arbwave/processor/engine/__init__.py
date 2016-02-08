@@ -1,5 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+from ...runnable import Runnable
+
 from callfunc import CallFunc
 import send, compute
 
@@ -11,11 +13,21 @@ class StopGeneration(Exception):
 STOP    = 0x1
 RESTART = 0x2
 
-class Arbwave:
+class Arbwave(object):
   """
   Class for creating a fake Arbwave module to be accessed and used inside
   scripts.
   """
+
+  _instance = None
+  @classmethod
+  def instance(cls, *a, **kw):
+    """
+    Singleton access into Arbwave class.
+    """
+    if cls._instance is None and kw.pop('new',True):
+      cls._instance = Arbwave(*a, **kw)
+    return cls._instance
 
   # make class variables of these so that users can have them
   BEFORE  = 0x1
@@ -28,6 +40,7 @@ class Arbwave:
     """
     Initializes the fake Arbwave module.
     """
+    super(Arbwave,self).__init__()
     self._globals_source = globals_source
     self.ui = ui
     self.devcfg = None
@@ -36,31 +49,6 @@ class Arbwave:
     self.channels = None
     self.waveforms = None
     self.stop_request = False
-
-    class Runnable:
-      def extra_data_labels(self):
-        """
-        Returns list of names of extra results returned by self.run()
-        """
-        return list()
-
-      def onstart(rself):
-        """
-        Executed before the runnable is started.
-        """
-        pass
-
-      def onstop(rself):
-        """
-        Executed after the runnable is stopped.
-        """
-        pass
-
-      def run(rself):
-        """
-        The body of any inner loop.
-        """
-        self.update(continuous=True)
 
     self.Runnable = Runnable
     self.runnables = dict( Default = Runnable() )
@@ -74,7 +62,7 @@ class Arbwave:
 
 
   def clear_runnables(self):
-    self.runnables = dict( Default = self.Runnable() )
+    self.runnables = dict( Default = Runnable() )
 
 
   def dostop(self):
@@ -253,8 +241,9 @@ def waveform_find(elements, label, index, kind):
       i += 1
   raise KeyError('{l}[{i}] not found '.format(l=label,i=index))
 
-class WaveformNode:
+class WaveformNode(object):
   def __init__(self, node):
+    super(WaveformNode,self).__init__()
     self.node = node
 
   def __getitem__(self,i):
