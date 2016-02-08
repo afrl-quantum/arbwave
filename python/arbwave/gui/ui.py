@@ -240,7 +240,7 @@ class ArbWave(gtk.Window):
     )
 
 
-    self.plotter.canvas.set_size_request( 800, 200 )
+    self.plotter.canvas.set_size_request( -1, 200 )
 
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
@@ -271,8 +271,9 @@ class ArbWave(gtk.Window):
     self.shell_notebook.connect('create-window', tab_tear)
 
     bottom = gtk.HPaned()
-    bottom.pack1( self.shell_notebook )
-    bottom.pack2( self.plotter.canvas )
+    bottom.pack1( self.shell_notebook, resize=True )
+    bottom.pack2( self.plotter.canvas, resize=True )
+    bottom.set_position(182)
 
     body = gtk.VPaned()
     body.pack1( top, True )
