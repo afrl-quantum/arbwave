@@ -24,6 +24,7 @@ from .. import backend
 from .. import version
 from .. import options
 from . import hosts_changed
+from .dataviewer import DataViewer
 
 
 
@@ -115,12 +116,7 @@ def finished(ui, *args, **kwargs):
 
 
 def show_data_viewer(parent):
-  s = edit.optimize.show.Show(
-    columns=['Undefined'],
-    title='Data Viewer',
-    parent=parent,
-    globals=parent.processor.get_globals(),
-  )
+  s = DataViewer()
   s.show()
 
 

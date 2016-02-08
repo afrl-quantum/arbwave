@@ -10,12 +10,12 @@ from ..packing import Args as PArgs, hpack, vpack, VBox
 
 class Editor(gtk.Dialog):
   def __init__( self, title='Edit Script', parent=None, target=None,
-                modal=False, notebook = None):
-    actions = [
-      gtk.STOCK_SAVE,   gtk.ResponseType.OK,
-      gtk.STOCK_APPLY,  gtk.ResponseType.APPLY,
-      gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL
-    ]
+                modal=False, notebook = None, keep_open=False):
+    actions = \
+      ([] if keep_open else [gtk.STOCK_SAVE,   gtk.ResponseType.OK]) + \
+      [gtk.STOCK_APPLY,  gtk.ResponseType.APPLY] + \
+      ([] if keep_open else [gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL])
+
     flags = gtk.DialogFlags.DESTROY_WITH_PARENT
     if modal:
       flags |= gtk.DialogFlags.MODAL
@@ -24,6 +24,7 @@ class Editor(gtk.Dialog):
 
     super(Editor,self).__init__( title, parent, flags, tuple(actions) )
     self.notebook = notebook
+    self.keep_open = keep_open
 
     # MECHANICS
     self.unset_changes()
@@ -86,10 +87,13 @@ class Editor(gtk.Dialog):
       button.connect('clicked', self.respond, gtk.ResponseType.CANCEL)
       self.notebook.append_page(
         self.vbox,
-        hpack(gtk.Label(self.get_property('title')), button, show_all=True)
+        hpack(gtk.Label(self.get_property('title')),
+              button, border=0, show_all=True)
       )
       self.notebook.set_tab_reorderable(self.vbox, True)
       self.notebook.set_tab_detachable(self.vbox, True)
+      if self.keep_open:
+        button.hide()
 
     self.vbox.show_all()
 

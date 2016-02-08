@@ -3,7 +3,7 @@
 Arbitrary waveform generator for digital and analog signals.
 """
 
-import argparse, logging
+import sys, argparse, logging
 from . import version, options, backend
 from .runnable import Runnable
 
@@ -21,6 +21,12 @@ log_levels = {
 }
 
 def main():
+  if sys.platform != 'win32':
+    # until we get a better multiprocessing with set_start_method (by a backport
+    # or moving to python3), we need to use billiard on non-windows systems
+    import billiard as mp
+    mp.set_start_method('spawn')
+
   parser = argparse.ArgumentParser(prog=version.prefix())
   parser.add_argument( '--version', action='version',
     version='%(prog)s '+version.version() )

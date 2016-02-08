@@ -14,7 +14,7 @@ from ...tools.print_units import M
 import helpers
 from helpers import GTVC, GCRT
 
-import optimize.show as viewers
+from .. import dataviewer as viewers
 from spreadsheet import keys
 
 nan = float('nan')
@@ -140,7 +140,7 @@ class LoopView(gtk.Dialog):
     scroll.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     scroll.add( V )
     scroll.show()
-    self.vbox.pack_start( scroll )
+    self.vbox.pack_start( scroll, True, True, 0 )
 
 
   def view_keypress_cb(self, entry, event):
@@ -210,7 +210,6 @@ class Executor:
       columns=([ vi[0] for vi in V] \
               + ['Merit'] + self.runnable.extra_data_labels()),
       title='Loop Parameters/Results',
-      parent=parent, globals=Globals,
     )
 
 

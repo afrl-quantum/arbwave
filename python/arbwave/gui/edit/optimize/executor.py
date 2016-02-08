@@ -12,12 +12,12 @@ import physical
 from ....tools.print_units import M
 from ... import stores
 from ...packing import *
+from ...dataviewer import DataViewer
 from .. import generic
 from .. import helpers
 from ..helpers import GTVC, GCRT
 from ..spreadsheet import keys
 
-from show import Show
 from algorithms import algorithms
 
 FMAX = sys.float_info.max
@@ -358,7 +358,7 @@ class Executor:
         self.constraints.append( [c[EQ], lambda G : eval(c[EQ], G), Constraints.ENABLE] )
 
     if old_pnames is None or old_pnames != self.pnames:
-      self.show = Show(
+      self.show = DataViewer(
         columns=(self.pnames+['Merit']+self.runnable.extra_data_labels()),
         parent=parent, globals=Globals,
       )
