@@ -71,7 +71,7 @@ class Editor(object):
     }
 
     C['waveform'].set_cell_data_func( R['waveform'],
-      lambda tv, c, m, i: c.set_property('text', repr(m[i][ ws.WAVEFORMS])))
+      lambda tv, c, m, i, u: c.set_property('text', repr(m[i][ ws.WAVEFORMS])))
 
     V.append_column( C['label'] )
     V.append_column( C['waveform'] )
@@ -118,7 +118,7 @@ class Dialog(gtk.Dialog):
     self.set_default_size(300, 200)
     self.set_border_width(10)
     self.editor = Editor( waveforms_set, add_undo=add_undo )
-    self.vbox.pack_start( self.editor.view )
+    self.vbox.pack_start( self.editor.view, True, True, 0 )
     if dialog:
       self.connect('response', self.respond)
       self.editor.view.get_selection() \
