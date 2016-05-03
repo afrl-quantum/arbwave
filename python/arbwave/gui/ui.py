@@ -501,7 +501,7 @@ class ArbWave(gtk.Window):
     storage.gtk_tools.gtk_save_handler(None, self, *args)
 
   def select_waveform(self, action):
-    D = edit.waveformsset.Dialog( self.waveforms, parent=self, dialog=True )
+    D = edit.waveformsset.Dialog(self.waveforms, parent=self)
     D.show()
 
   def show_stopped(self):

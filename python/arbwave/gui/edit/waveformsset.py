@@ -101,17 +101,14 @@ class Editor(object):
 
 
 class Dialog(gtk.Dialog):
-  def __init__(self, waveforms_set, dialog=False,
+  def __init__(self, waveforms_set,
                title='Waveform Set Editor', parent=None, add_undo=None):
-    if dialog:
-      actions = [
-        gtk.STOCK_OK,     gtk.ResponseType.OK,
-        gtk.STOCK_APPLY,  gtk.ResponseType.APPLY,
-        gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
-      ]
+    actions = [
+      gtk.STOCK_OK,     gtk.ResponseType.OK,
+      gtk.STOCK_APPLY,  gtk.ResponseType.APPLY,
+      gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
+    ]
 
-    else:
-      actions = []
     flags = gtk.DialogFlags.DESTROY_WITH_PARENT
     super(Dialog,self).__init__( title, parent, flags, tuple(actions) )
 
@@ -119,10 +116,9 @@ class Dialog(gtk.Dialog):
     self.set_border_width(10)
     self.editor = Editor( waveforms_set, add_undo=add_undo )
     self.vbox.pack_start( self.editor.view, True, True, 0 )
-    if dialog:
-      self.connect('response', self.respond)
-      self.editor.view.get_selection() \
-          .select_iter( waveforms_set.get_current_iter() )
+    self.connect('response', self.respond)
+    self.editor.view.get_selection() \
+        .select_iter( waveforms_set.get_current_iter() )
 
 
   def respond(self, dialog, response_id):
