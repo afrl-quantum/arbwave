@@ -238,7 +238,7 @@ class Waveforms:
       for c in sub.get_children():
         sub.remove( c )
         del c
-      m.remove_submenu()
+      m.set_submenu(None)
       del sub, m, sep0, sep1
 
     header = gtk.MenuItem('Select Waveform:')
