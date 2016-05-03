@@ -59,7 +59,7 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
       D['duration'] = i[Waveforms.DURATION]
       D['enable'  ] = i[Waveforms.ENABLE]
       if store_path:
-        D['path'    ] = tuple(self.get_path( i.iter ).get_indices())
+        D['path'  ] = tuple(self.get_path( i.iter ).get_indices())
 
       if self.iter_has_child( i.iter ):
         # is group
