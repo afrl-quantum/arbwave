@@ -163,7 +163,7 @@ class Callbacks:
       cleanlist = list()
       def cleanup(model, path, iter):
         if tuple(model[iter]) == tuple(self.default):
-          cleanlist.append( gtk.TreeRowReference(model,path) )
+          cleanlist.append( gtk.TreeRowReference.new(model,path) )
 
       m = self.treeview.get_model()
       m.foreach( cleanup )
