@@ -209,7 +209,7 @@ class Editor(gtk.Dialog):
 
     if label == None:
       return
-    if label != self.channel_select.get_active_text():
+    if label != self.channels[self.channel_select.get_active()]:
       for i in xrange(len(self.channels)):
         if label == self.channels[i][self.channels.LABEL]:
           self.channel_select.set_active(i)
@@ -218,7 +218,7 @@ class Editor(gtk.Dialog):
       raise KeyError('Could not determine channel')
 
 
-  def _set_channel(self, label):
+  def _set_channel(self, chan):
     #disconnect handlers from old model
     if self.chan:
       for i in self.handlers['store']:
@@ -239,9 +239,6 @@ class Editor(gtk.Dialog):
     self.view.set_model( None )
 
     # set new model
-    for chan in self.channels:
-      if chan[self.channels.LABEL] == label:
-        break
     if chan[self.channels.SCALING] is None:
       chan[self.channels.SCALING] = gtk.ListStore(str,str)
     if not chan[self.channels.UNITS]:
