@@ -205,5 +205,6 @@ def popup_button_press_handler( treeview, event, do_popup, ui_manager, popup,
       if show:
         if callable(modify_popup):
           modify_popup(popup, row_popup)
-        popup.popup( None, None, None, event.button, time )
+        #popup(parent_menu_shell, parent_menu_item, func, data, button, activate_time)
+        popup.popup( None, None, None, None, event.button, time )
     return True
