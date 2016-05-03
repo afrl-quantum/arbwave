@@ -139,7 +139,8 @@ class IterableIPShell(object):
     self.history_level = 0
     self.complete_sep =  re.compile('[\s\{\}\[\]\(\)]')
     self.updateNamespace({'exit':lambda:None})
-    self.updateNamespace({'quit':lambda:None})
+    self.updateNamespace({'quit':gtk.main_quit})
+    self.updateNamespace({'self':self})
     self.IP.readline_startup_hook(self.IP.pre_readline)
     self.continuation = False
     # Workaround for updating namespace with sys.modules
