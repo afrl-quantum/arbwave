@@ -108,7 +108,9 @@ def gather_paths(channels, wvfms, i):
     if wvfms[i][wvfms.CHANNEL] == c[channels.LABEL]:
       dev = c[channels.DEVICE]
   if dev:
-    L.append( (wvfms.get_path(i), dev.partition('/')[-1]) )
+    # Gtk3 returns path as object type, we need it still as a tuple of indices
+    # for the cache lookup (and sorting the cache)...
+    L.append( (tuple(wvfms.get_path(i).get_indices()), dev.partition('/')[-1]) )
   if wvfms.iter_has_child(i):
     child = wvfms.iter_children(i)
     while child:
@@ -322,50 +324,54 @@ class Waveforms:
       self.eval_cache_lock.release()
 
   def query_tooltip(self, widget, x, y, keyboard_tip, tooltip):
-    try:
-      waveform, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
-      markup = ''
-      sep = ''
-      script, async = waveform.get(iter, waveform.SCRIPT, waveform.ASYNC)
+    is_row, x, y, waveform, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
+    if not is_row:
+      return False
 
-      if is_group( waveform, path ): # group-only information
-        if async is not None:
-          desc = {
-            True : 'will <u><b>not</b></u>',
-            False: '<b>will</b>',
-          }
-          markup += sep + \
-            '<b>Asynchronous:</b>  {a}\n' \
-            '    Group {d} be used for calculation of \n' \
-            "    natural time 't' for subsequent waveform groups" \
-            ''.format(a=async,d=desc[async])
-          sep = '\n'
-        if script:
-          markup += sep + \
-            '<b>Script:</b>\n' \
-            '<span size="small">{s}</span>' \
-            .format(s=script)
-          sep = '\n'
+    # Gtk3 returns path as object type, we need it still as a tuple of indices
+    # for the cache lookup (and sorting the cache)...
+    path_tuple = tuple(path.get_indices())
 
-      cache = self.get_eval_cache()
-      if path in cache:
-        C = cache[path]
-        tf = C['t'] + C['dt']
-        tf.fmt = C['t'].fmt = C['dt'].fmt = '{coeff} {units}'
+    markup = ''
+    sep = ''
+    script, async = waveform.get(iter, waveform.SCRIPT, waveform.ASYNC)
+
+    if is_group( waveform, path ): # group-only information
+      if async is not None:
+        desc = {
+          True : 'will <u><b>not</b></u>',
+          False: '<b>will</b>',
+        }
         markup += sep + \
-          '<b>time:</b>\n' \
-          '  {t} -&gt; {tf}  (dt = {dt})' \
-          .format(tf=tf, **C)
-        if 'val' in C:
-          markup += '\n<b>value:</b>  {}' \
-            .format( C['val'].replace('<', '&lt;').replace('>', '&gt;') )
+          '<b>Asynchronous:</b>  {a}\n' \
+          '    Group {d} be used for calculation of \n' \
+          "    natural time 't' for subsequent waveform groups" \
+          ''.format(a=async,d=desc[async])
+        sep = '\n'
+      if script:
+        markup += sep + \
+          '<b>Script:</b>\n' \
+          '<span size="small">{s}</span>' \
+          .format(s=script)
         sep = '\n'
 
-      tooltip.set_markup( markup )
-      widget.set_tooltip_row(tooltip, path)
-      return True
-    except:
-      return False
+    cache = self.get_eval_cache()
+    if path_tuple in cache:
+      C = cache[path_tuple]
+      tf = C['t'] + C['dt']
+      tf.fmt = C['t'].fmt = C['dt'].fmt = '{coeff} {units}'
+      markup += sep + \
+        '<b>time:</b>\n' \
+        '  {t} -&gt; {tf}  (dt = {dt})' \
+        .format(tf=tf, **C)
+      if 'val' in C:
+        markup += '\n<b>value:</b>  {}' \
+          .format( C['val'].replace('<', '&lt;').replace('>', '&gt;') )
+      sep = '\n'
+
+    tooltip.set_markup( markup )
+    widget.set_tooltip_row(tooltip, path)
+    return True
 
 
 
