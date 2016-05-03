@@ -281,6 +281,8 @@ class Waveforms:
 
   def select_waveform(self, item):
     wf = item.get_label()
+    if wf == self.waveforms.get_current() or not item.get_active():
+      return
     self.parent.pause()
     if wf != self.waveforms.get_current():
       self.waveforms.set_current(wf)
