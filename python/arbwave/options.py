@@ -4,3 +4,5 @@ Storage for persistent command-line options.
 """
 
 simulated = False
+
+ipython = False

@@ -4,6 +4,9 @@
 #
 
 try:
+  from .. import options
+  if not options.ipython:
+    raise
   import IPython
   assert IPython.version_info <= (2,0,0,''), ''
 

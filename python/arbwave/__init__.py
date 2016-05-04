@@ -38,9 +38,12 @@ def main():
   parser.add_argument( '--log-level', choices=log_levels, default='INFO' )
   parser.add_argument( '--service', action='store_true',
     help='Run headless backend service' )
+  parser.add_argument( '--ipython', action='store_true',
+    help='Attempt to use ipython as embedded shell' )
   args = parser.parse_args()
 
   options.simulated = args.simulated
+  options.ipython = args.ipython
   logging.root.setLevel( log_levels[ args.log_level ] )
 
   if   args.dataviewer:
