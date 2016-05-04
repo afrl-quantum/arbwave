@@ -141,7 +141,8 @@ class IterableIPShell(object):
     self.updateNamespace({'exit':lambda:None})
     self.updateNamespace({'quit':gtk.main_quit})
     self.updateNamespace({'self':self})
-    self.IP.readline_startup_hook(self.IP.pre_readline)
+    if self.IP.has_readline:
+      self.IP.readline_startup_hook(self.IP.pre_readline)
     self.continuation = False
     # Workaround for updating namespace with sys.modules
     #

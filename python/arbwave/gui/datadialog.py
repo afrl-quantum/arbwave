@@ -234,7 +234,7 @@ class DataDialog(gtk.Dialog):
 
     body.show_all()
 
-    self.shell = embedded.IPython(
+    self.shell = embedded.Python(
       get_globals=lambda : self.Globals,
       reset = self.exec_script,
     )

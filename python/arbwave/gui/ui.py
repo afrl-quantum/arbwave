@@ -8,7 +8,6 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 import logging
 
-import sys
 import traceback
 
 # local packages
@@ -247,7 +246,7 @@ class ArbWave(gtk.Window):
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )
-    self.shell = embedded.IPython(
+    self.shell = embedded.Python(
       ui=self,
       get_globals=self.processor.get_globals,
       reset = self.processor.reset,
