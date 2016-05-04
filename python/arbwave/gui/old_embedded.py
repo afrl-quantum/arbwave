@@ -389,10 +389,10 @@ class Python(gtk.Frame):
           (event.keyval == gdk.KEY_n and event.state & gdk.ModifierType.CONTROL_MASK):
         self.popup.next()
         return True 
-      elif event.keyval == gtk.KEY_Page_Down:
+      elif event.keyval == gdk.KEY_Page_Down:
         self.popup.next(page=True)
         return True
-      elif event.keyval ==gtk.KEY_Return:
+      elif event.keyval == gdk.KEY_Return:
         self.popup.sel_confirmed()
         self.popup=None
         return True 
