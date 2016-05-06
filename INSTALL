@@ -4,34 +4,108 @@ Installation Instructions
 This project depends on several other python-related projects and these must
 first be installed.
 
-Dependencies by S Olson:
-  physical
-    dimensional analysis
-    units and constants library (c++, python, octave, gnuplot)
-  viewpoint
-    python wrapper library (wraps Viewpoint dio64_32.dll c library)
+Windows Specific Instructions for establishing proper Python Environment:
+-------------------------------------------------------------------------
+  Note that you may need to specify a web proxy:
+    to get conda to use our web proxy, I had to do:
+    set http_proxy=http://proxy.server:port
+    set https_proxy=http://proxy.server:port
 
-Third-party dependencies:
+
+  This is how I did it:
+  1.  Install Anaconda python (2.7)
+  2.  install pygi-aio-3.x.x_ref<N>-setup.exe (available from pygnome project)
+    During the installation process, make at least the following choices:
+      GNOME libraries:
+        - Base packages
+        - GTK+ 3.x.x
+        - Pango 1.x.x
+      non-GNOME libraries:
+        none
+      development packages:
+        none
+  3. Install Pyro (v3)
+    by Anaconda (one way I used):
+      conda install -c david_baddeley pyro
+  4. Install python-graph
+    haven't yet found an easy way to do this.
+    This is available from http://github.com/pmatiello/python-graph
+
+  5. Do these
+    i.    Put all the other packages in your PYTHONPATH somehow
+    ii.   cd path/to/arbwave-project/arbwave/
+    iii.  ./run.py [options]
+      - use --help to see options
+
+
+
+Ubuntu Specific Instructions for establishing proper Python Environment:
+------------------------------------------------------------------------
+apt-get install \
+  python-matplotlib \
+  python-scipy \
+  python-pygraph \
+  pyro \
+  py-gi libgtk-3-dev libpango1.0-dev
+
+Do either of:
+  a.
+    i.    cd path/to/arbwave-project
+    ii.   Execute project-shell
+    iii.  cd arbwave/
+    iv.   ./run.py [options]
+      - use --help to see options
+  b.
+    i.    Put all the other packages in your PYTHONPATH somehow
+    ii.   cd path/to/arbwave-project/arbwave/
+    iii.  ./run.py [options]
+      - use --help to see options
+
+
+Dependencies:
+------------------------------
   Python packages:
-    python (2.X)
-    pygtk
-      - including of course the Gtk runtime.
-      provides pygtk, gtk, gobject imports
+    python (2.7)
+    pygi
+      - Gtk > 3.10
+      - Pango > 3.10
     matplotlib
       also provides mpl_toolkits import
     numpy
-      - generally included as part of scipy and required for matplotlib
+      generally included as part of scipy and required for matplotlib
     scipy
       provides scipy.interpolate imports
     python-graph (python-pygraph on ubuntu)
-      provides pygraph import
+      - provides pygraph import
+      - this will probably be replaced in the future by python-igraph
     pylibnidaqmx
-      must have modifications by S Olson
-      python wrapper library (wraps NI DAQmx nicaiu.dll c library)
+      - must have modifications by S Olson
+      - python wrapper library (wraps NI DAQmx nicaiu.dll c library)
+    Pyro
+      version 3, not 4
+    physical
+      - http://github.com/olsonse/physical
+      - dimensional analysis
+      - units and constants library (c++, python, octave, gnuplot)
+    viewpoint
+      - not yet openly available--get from S Olson
+      - python wrapper library (wraps Viewpoint dio64_32.dll c library)
+      - only required if using ViewpointUSA dio64 hardware
+    marvin
+      - not yet openly available--get from S Olson
+      - python wrapper library around MarvinTest c-libraries
+      - only required if using MarvinTest FPGA or analog output hardware
+    billiard
+      - must have modifications by S Olson
+      - Not required for Windows platforms
+      - backport of python3 multiprocessing library
+
 
   C Libraries (for hardware support in non-simulated mode):
     NI DAQmx (nicaiu.dll)
     Viewpoint DIO64 (dio64_32.dll)
+    Marvin GxFpga (libGxFpga.so, or GxFpga.dll)
+    Marvin GxAo (libGxAo.so, or GxAo.dll)
 
 
 Supported Hardware:
@@ -41,8 +115,5 @@ Supported Hardware:
   Supported:
     Viewpoint
     National Instruments NI-DAQmx
-    Comedi
-
-  Future support:
-    UEI?
-    FPGA/microcontroller?
+    Marvin Test, GxAo (analog output) and GxFpga (digital output)
+    Comedi (not yet complete)
