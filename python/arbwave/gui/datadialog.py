@@ -2,7 +2,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import traceback
-from gi.repository import Gtk as gtk, GObject as gobject
+from gi.repository import Gtk as gtk, GObject as gobject, GLib as glib
 import logging, re
 
 import numpy as np
@@ -276,14 +276,14 @@ class DataDialog(gtk.Dialog):
     self.notebook.connect('create-window', tab_tear)
 
     self.vbox.pack_start( self.notebook, True, True, 0 )
-    gobject.timeout_add(1, self.notebook.set_current_page, 0)
+    glib.timeout_add(1, self.notebook.set_current_page, 0)
 
 
     # ### DONE WITH GUI LAYOUT ###
     self.set_columns( columns )
     self.exec_script()
     # schedule the plotter
-    gobject.timeout_add( 100, self.plot_data )
+    glib.timeout_add( 100, self.plot_data )
     self.connect('destroy', lambda e: gtk.main_quit())
 
 
