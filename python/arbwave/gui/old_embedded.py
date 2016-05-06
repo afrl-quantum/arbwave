@@ -462,7 +462,9 @@ class Python(gtk.Frame):
           return True
         return False
 
-      elif event.keyval ==gdk.KEY_a and event.state & gdk.ModifierType.CONTROL_MASK:
+      elif event.keyval == gdk.KEY_Home or \
+          (event.keyval == gdk.KEY_a and
+           event.state & gdk.ModifierType.CONTROL_MASK):
         # emacs style
         start,end=self.get_line_iters()
         self.buffer.place_cursor( start )
