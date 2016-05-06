@@ -17,7 +17,7 @@ from matplotlib.mlab import find
 from ..tools.gui_callbacks import do_gui_operation
 from ..processor import default
 from .edit.helpers import GTVC, GCRT, toggle_item
-from .packing import hpack, vpack, Args as PArgs
+from .packing import hpack, vpack, Args as PArgs, VBox
 from .storage.gtk_tools import get_file, NoFileError
 from . import stores
 from . import embedded
@@ -102,7 +102,7 @@ class ComputeStats:
     exec 'self.{l}(ax,lt)'.format(l=label)
 
 
-class DataDialog(gtk.Dialog):
+class DataDialog(gtk.Window):
   FILTERS = [
     ('*.txt', 'ASCII Data file (*.txt)'),
     ('*',     'All files (*)'),
@@ -125,16 +125,18 @@ class DataDialog(gtk.Dialog):
         ],
         flags = gtk.DialogFlags.DESTROY_WITH_PARENT,
       )
-    super(DataDialog,self).__init__( title, **kwargs )
+    super(DataDialog,self).__init__( title=title, **kwargs )
 
     self.filename = None
     self.new_data = False
     self.default_globals = globals
     self.Globals = dict()
+    self.vbox = VBox()
 
     # BEGIN GUI LAYOUT
     self.set_default_size(550, 600)
     self.set_border_width(10)
+    super(DataDialog,self).add(self.vbox)
 
     # Set up the file menu
     merge = gtk.UIManager()
@@ -477,7 +479,7 @@ class DataDialog(gtk.Dialog):
         'Save to a file',                          # tooltip
         self.activate_action ),
       ( 'Close', gtk.STOCK_CLOSE,                   # name, stock id
-        '_Close', '<control>C',                     # label, accelerator
+        '_Close', '<control>W',                     # label, accelerator
         'Close',                                    # tooltip
         self.activate_action ),
     )
