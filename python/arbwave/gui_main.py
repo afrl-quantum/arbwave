@@ -5,6 +5,9 @@ GUI main
 This import is supposed _after_ the options. module is modified
 """
 
+import gi
+gi.require_version('Gtk', '3.0')
+
 from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 import os, time, sys, logging, threading
 from .tools.gui_callbacks import do_gui_operation
