@@ -18,7 +18,7 @@ We can also refer to a figure as Fig.~\ref{fig:intro:jdk_grid_example}.
 We just love to cite \citet{Rambo:1989}.
 
 
-\section{Supported Hardware}
+\section{Supported Hardware}\label{sec:hardware}
 \begin{center}
 \tablefirsthead{%
   \hline
@@ -50,13 +50,20 @@ We just love to cite \citet{Rambo:1989}.
 %
 %
 \begin{supertabular}{|l|c|l|r|}
+  NI & PCI-6221 & 16-bit Analog output, n-channel & NiDAQmx \\
+     &          &                                 & comedi (in progress) \\
+  NI & PCI-6225 & 16-bit Analog output, n-channel & NiDAQmx \\
+     &          &                                 & comedi (in progress) \\
+  NI & PCI-6229 & 16-bit Analog output, n-channel & NiDAQmx \\
+     &          &                                 & comedi (in progress) \\
+  NI & PCI-6723 & 12-bit Analog output, 32-channel & NiDAQmx \\
+     &          &                                 & comedi (in progress) \\
   NI & PCI-6733 & 16-bit Analog output, 8-channel & NiDAQmx \\
      &          &                                 & comedi (in progress) \\
-  NI & PCI-6729 & 8-bit Analog output, 32-channel & NiDAQmx \\
+  NI & PXI-6733 & 16-bit Analog output, 8-channel & NiDAQmx \\
      &          &                                 & comedi (in progress) \\
   Viewpoint & DIO-64 & Digital input/output, 64-channel & DIO64 \\
-  UEI & ? & ? & No (future?) \\
-  ? & ? & FPGA & No (future?) \\
-  ? & ? & Microcontroller & No (future?) \\
+  Marvin Test & GX164x & 16-bit Analog output, 64-channel & GxAo (in progress) \\
+  Marvin Test & GX3500 & FPGA based digital output, 120-channel & GxFpga \\
 \end{supertabular}
 \end{center}

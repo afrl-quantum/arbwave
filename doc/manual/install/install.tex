@@ -5,26 +5,85 @@
 This project depends on several other python-related projects and these must
 first be installed.
 
-\subsection{Third-party Dependencies}
+\subsection{Dependencies}
+Arbwave is dependent on various packages, both generally available and also
+several that are distributed with the arbwave project repository.  This list
+enumerate the various specific packages that Arbwave depends on.  Those
+distributed as a part of the Arbwave project repository are marked below.
+
 \begin{itemize}
   \item Python packages/libraries:
     \begin{itemize}
-    \item \textbf{python (2.X)} \\
-      Python version 3.X will not currently work.
-    \item \textbf{pygtk} \\
-      Including of course the Gtk runtime.
-      This package provides pygtk, gtk, and gobject imports.
-    \item \textbf{matplotlib} \\
-      This package also provides mpl\_toolkits import.
-    \item \textbf{numpy} \\
-      Generally, this is included as part of scipy and required for matplotlib.
-    \item \textbf{scipy} \\
-      scipy.interpolate imports are required for channel scaling/calibration.
-    \item \textbf{python-graph} \\
-      pygraph package is used for graph-analysis of connections between hardware
-      components.
-      On ubuntu, this package is named python-pygraph on ubuntu.
+      \item \textbf{python (2.7)} \\
+        Python version 3.X will not currently work.
+      \item \textbf{pygi} \\
+        \textbf{pygi} is the base package of the GObject instropsection library
+        interface.  This library provides dynamic access to various other
+        libraries, including the Gtk runtime.  In addition to installing
+        \textbf{pygi}, one must also have these installed (often already installed
+        on Gnome-based Linux systems):
+        \begin{itemize}
+          \item Gtk > 3.10
+          \item Pango > 3.10
+        \end{itemize}
+
+      \item \textbf{matplotlib} \\
+        This package also provides mpl\_toolkits import.
+      \item \textbf{numpy} \\
+        Generally, this is included as part of scipy and required for matplotlib.
+      \item \textbf{scipy} \\
+        scipy.interpolate imports are required for channel scaling/calibration.
+      \item \textbf{python-graph}
+        \begin{itemize}
+          \item used for graph-analysis of connections between hardware components
+          \item On ubuntu, this package is named python-pygraph.
+          \item Will probably be replaced in the future by python-igraph
+        \end{itemize}
+
+      \item \textbf{Pyro}; version 3, not 4
+
+      \item \textbf{pylibnidaqmx}
+        \begin{itemize}
+          \item \underline{Distributed as component of Arbwave project}
+          \item must have modifications by S Olson
+          \item Python wrapper library (wraps NI DAQmx nicaiu.dll c library)
+            provides actual linkage to the NIDAQmx drivers
+          \item Only needed if NIDAQmx relevant hardware is going to be used
+        \end{itemize}
+
+      \item \textbf{physical}
+        \begin{itemize}
+          \item \underline{Distributed as component of Arbwave project}
+          \item http://github.com/olsonse/physical
+          \item dimensional analysis
+          \item units and constants library (c++, python, octave, gnuplot)
+        \end{itemize}
+
+      \item \textbf{viewpoint}
+        \begin{itemize}
+          \item \underline{Distributed as component of Arbwave project}
+          \item not yet openly available--get from S Olson
+          \item python wrapper library (wraps Viewpoint dio64\_32.dll c library)
+          \item only required if using ViewpointUSA dio64 hardware
+        \end{itemize}
+
+      \item \textbf{marvin}
+        \begin{itemize}
+          \item \underline{Distributed as component of Arbwave project}
+          \item not yet openly available--get from S Olson
+          \item python wrapper library around MarvinTest c-libraries
+          \item only required if using MarvinTest FPGA or analog output hardware
+        \end{itemize}
+
+      \item \textbf{billiard}
+        \begin{itemize}
+          \item \underline{Distributed as component of Arbwave project}
+          \item must have modifications by S Olson
+          \item Not required for Windows platforms
+          \item backport of python3 multiprocessing library
+        \end{itemize}
     \end{itemize}
+
   \item C libraries:
     \begin{itemize}
     \item \textbf{NI DAQmx (nicaiu.dll)} \\
@@ -34,25 +93,106 @@ first be installed.
     \end{itemize}
 \end{itemize}
 
-\subsection{Dependencies by S. Olson}
-Most of the dependencies that are not satisfied by third-party vendors and/or
-projects are a part of the arbwave project and, as such, are easily obtained by
-downloading the entire project.  The project includes the following
-dependencies:
-\begin{itemize}
-\item \textbf{physical} \\
-  dimensional analysis
-  units and constants library (c++, python, octave, gnuplot).
-\item \textbf{viewpoint} \\
-  python wrapper library (wraps Viewpoint dio64\_32.dll c library)
-  Only needed if Viewpoint's DIO64 digital output/input board will be used.
-\item \textbf{pylibnidaqmx} \\
-  This python wrapper library (wraps NI DAQmx nicaiu.dll c library) provides
-  actual linkage to the NIDAQmx drivers.  Although this package is actually
-  developed by a third party, modifications by S. Olson must be included.  It is
-  therefore easiest to use the version that comes with the Arbwave project.
-  Only needed if NIDAQmx relevant hardware is going to be used.
-\end{itemize}
-
 \section{Installation\index{Installing Arbwave}}
+This is not necessarily a strict set of instructions for ``installing'' Arbwave,
+but rather a set of guidelines that might be used to get Arbwave operational.
 
+\subsection{Windows Platforms}
+
+Note that you may need to specify a web proxy:\\
+to get conda to use our web proxy, I had to do:
+\begin{verbatim}
+set http_proxy=http://proxy.server:port
+set https_proxy=http://proxy.server:port
+\end{verbatim}
+
+
+These are the steps I took to get Arbwave functional:
+\begin{enumerate}
+  \item Install Anaconda python (2.7)
+  \item install \verb|pygi-aio-3.x.x_ref<N>-setup.exe| \\
+    This is available from pygnome project.
+    During the installation process, make at least the following choices:
+    \begin{itemize}
+      \item GNOME libraries:
+        \begin{itemize}
+          \item Base packages
+          \item GTK+ 3.x.x
+          \item Pango 1.x.x
+        \end{itemize}
+      \item non-GNOME libraries:
+        \begin{itemize}
+          \item none
+        \end{itemize}
+      \item development packages:
+        \begin{itemize}
+          \item none
+        \end{itemize}
+    \end{itemize}
+
+  \item Install Pyro (v3) \\
+    I simply used Anaconda to install the latest version of Pyro.  Doing a
+    search, like, \verb|anaconda search -t conda pyro| yielded a source such
+    that I was able to install Pyro by doing:
+    \begin{verbatim}
+      conda install -c david_baddeley pyro
+    \end{verbatim}
+
+  \item Install python-graph\\
+    I haven't yet found an easy way to do this.
+    This is available from http://github.com/pmatiello/python-graph\\
+    One must make sure that the python-graph/core directory is added to the
+    \verb|PYTHONPATH| environment variable.
+
+  \item Do either of these:
+    \begin{enumerate}
+      \item  (start cmd.exe)
+        \begin{enumerate}
+          \item cd path/to/arbwave-project
+          \item Execute 'python project-shell'
+          \item cd arbwave/
+          \item 'python run.py [options]'\\
+            use --help to see options
+        \end{enumerate}
+      \item
+        \begin{enumerate}
+          \item Put all the other packages in your PYTHONPATH somehow
+          \item cd path/to/arbwave-project/arbwave/
+          \item 'python run.py [options]'\\
+            use --help to see options
+        \end{enumerate}
+    \end{enumerate}
+\end{enumerate}
+
+
+
+\subsection{Ubuntu}
+Ubuntu makes this very easy.  To install most of the non-project components, one
+simply does:
+
+\begin{verbatim}
+apt-get install \
+  python-matplotlib python-scipy python-pygraph pyro \
+  py-gi libgtk-3-dev libpango1.0-dev
+\end{verbatim}
+
+
+Then, very similar to the last part of the Windows guidelines: \\
+Do either of:
+\begin{enumerate}
+  \item
+    \begin{enumerate}
+      \item cd path/to/arbwave-project
+      \item Execute project-shell
+      \item cd arbwave/
+      \item ./run.py [options]\\
+        use --help to see options
+    \end{enumerate}
+  \item
+    \begin{enumerate}
+      \item Put all the other packages in your PYTHONPATH somehow
+      \item cd path/to/arbwave-project/arbwave/
+      \item ./run.py [options]\\
+        use --help to see options
+    \end{enumerate}
+\end{enumerate}

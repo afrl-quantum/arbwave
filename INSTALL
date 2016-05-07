@@ -82,11 +82,11 @@ Dependencies:
     python-graph (python-pygraph on ubuntu)
       - provides pygraph import
       - this will probably be replaced in the future by python-igraph
+    Pyro
+      version 3, not 4
     pylibnidaqmx
       - must have modifications by S Olson
       - python wrapper library (wraps NI DAQmx nicaiu.dll c library)
-    Pyro
-      version 3, not 4
     physical
       - http://github.com/olsonse/physical
       - dimensional analysis
