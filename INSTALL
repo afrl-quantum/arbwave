@@ -31,21 +31,25 @@ Windows Specific Instructions for establishing proper Python Environment:
     haven't yet found an easy way to do this.
     This is available from http://github.com/pmatiello/python-graph
 
-  5. Do these
-    i.    Put all the other packages in your PYTHONPATH somehow
-    ii.   cd path/to/arbwave-project/arbwave/
-    iii.  ./run.py [options]
-      - use --help to see options
+  5. Do either of these:
+    a.  (start cmd.exe)
+      i.    cd path/to/arbwave-project
+      ii.   Execute 'python project-shell'
+      iii.  cd arbwave/
+      iv.   'python run.py [options]'
+        - use --help to see options
+    b.
+      i.    Put all the other packages in your PYTHONPATH somehow
+      ii.   cd path/to/arbwave-project/arbwave/
+      iii.  'python run.py [options]'
+        - use --help to see options
 
 
 
 Ubuntu Specific Instructions for establishing proper Python Environment:
 ------------------------------------------------------------------------
 apt-get install \
-  python-matplotlib \
-  python-scipy \
-  python-pygraph \
-  pyro \
+  python-matplotlib python-scipy python-pygraph pyro \
   py-gi libgtk-3-dev libpango1.0-dev
 
 Do either of:
