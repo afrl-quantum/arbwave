@@ -347,26 +347,6 @@ class Python(gtk.Frame):
 
     self._reset(hard=2)
     
-    #add buttons
-    b_box=gtk.Toolbar()
-    b_box.set_orientation(gtk.Orientation.VERTICAL)
-    b_box.set_style(gtk.ToolbarStyle.ICONS)
-
-    self.clear_button = gtk.ToolButton(stock_id=gtk.STOCK_CLEAR,
-                                       tooltip_text='Clear the output')
-    self.save_button  = gtk.ToolButton(stock_id=gtk.STOCK_SAVE,
-                                       tooltip_text='Save the output')
-    self.prefs_button = gtk.ToolButton(stock_id=gtk.STOCK_PREFERENCES,
-                                       tooltip_text='Preferences')
-    self.clear_button.connect('clicked', self.clear_text)
-    self.save_button.connect('clicked', self.save_text)
-
-    b_box.insert(self.clear_button,-1)
-    b_box.insert(self.save_button,-1)
-    b_box.insert(self.prefs_button,-1)
-    
-    
-    box.pack_start(b_box,expand=False,fill=True,padding=0)
     self.show_all()
     self.add(box)
 
@@ -513,35 +493,6 @@ class Python(gtk.Frame):
         return True
       
   
-
-  def clear_text(self,*widget):
-    dlg=gtk.Dialog("Clear")
-    dlg.add_button("Clear",1)
-    dlg.add_button("Reset",2)
-    dlg.add_button(gtk.STOCK_CLOSE,gtk.ResponseType.CLOSE)
-    dlg.set_default_size(250,150)
-    hbox=gtk.HBox()
-    #add an image
-    img=gtk.Image()
-    img.set_from_stock(gtk.STOCK_CLEAR, gtk.IconSize.DIALOG)
-    hbox.pack_start(img, True, True, 0)
-    
-    #add text
-    text="You have two options:\n"
-    text+="   -clear only the output window\n"
-    text+="   -reset the shell (also rerun global script)\n"
-    text+="\n What do you want to do?"
-    label=gtk.Label(text)
-    hbox.pack_start(label, True, True, 0)
-    
-    hbox.show_all()
-    dlg.vbox.pack_start(hbox, True, True, 0)
-    
-    ans=dlg.run()
-    dlg.hide()
-    if ans in [1,2]:
-      self._reset(ans == 2, cmdline=True, from_gui=True)
-
   def _create_shell_cmds(self):
     def reset( **kwargs ):
       """
