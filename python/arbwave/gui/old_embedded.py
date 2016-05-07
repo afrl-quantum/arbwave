@@ -615,9 +615,9 @@ class Python(gtk.Frame):
 
     if cmdline:
       if from_gui:
-        self.buffer.set_text(self.banner+PS1)
+        self.buffer.set_text(PS1)
       else:
-        self.buffer.set_text(self.banner)
+        self.buffer.set_text('')
       start,end=self.buffer.get_bounds()
       self.buffer.apply_tag_by_name("output",start,end)
       self.buffer.apply_tag_by_name("no_edit",start,end)
