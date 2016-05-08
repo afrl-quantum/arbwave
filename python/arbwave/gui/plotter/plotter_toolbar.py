@@ -2,6 +2,15 @@
 
 from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3 as _NavigationToolbar
 
+from os import path
+
+THIS_DIR = path.dirname( __file__ )
+
+# this is a bit of a hack, since path.join gtk3 backend stuff will not actually
+# overwrite this path (since this one is already absolute)
+horiz_zoom_to_rect = path.abspath( path.join(THIS_DIR, 'icons', 'horiz_zoom_to_rect') )
+vert_zoom_to_rect = path.abspath( path.join(THIS_DIR, 'icons', 'vert_zoom_to_rect') )
+
 class NavigationToolbar(_NavigationToolbar):
   def __init__( self, canvas, window,
                 hspan_controls=None,
@@ -22,11 +31,11 @@ class NavigationToolbar(_NavigationToolbar):
       toolitems.append( (None, None, None, None) )
     if self.hspan_controls:
       toolitems.append(
-        ('HZoom', 'Zoom to horizontal span','zoom_to_rect', 'hspan'),
+        ('HZoom', 'Zoom to horizontal span',horiz_zoom_to_rect, 'hspan'),
       )
     if self.vspan_controls:
       toolitems.append(
-        ('VZoom', 'Zoom to vertical span','zoom_to_rect', 'vspan'),
+        ('VZoom', 'Zoom to vertical span',vert_zoom_to_rect, 'vspan'),
       )
 
     toolitems += [
