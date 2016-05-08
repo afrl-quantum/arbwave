@@ -33,6 +33,7 @@ PXI5= '{PXI_Trig{0..5}}'
 PXIi7 = 'PXI_Trig7'
 MTB = 'MasterTimebase'
 ao_SC = 'ao/SampleClock'
+ao_OC = ImplicitRoute( (ao_SC, NoDevTerminal('OnboardClock')) )
 ao_ST = 'ao/StartTrigger'
 ao_SCTB = 'ao/SampleClockTimebase'
 ai_SCTB = 'ai/SampleClockTimebase'
@@ -52,7 +53,7 @@ available = {
     ao_SC                 : { 'PFI5', (T6,R6) },
     ao_ST                 : { 'PFI6', (T6,R6) },
     '20MHzTimebase'       : { (Ti7,Ri7), ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_SCTB               : { ao_SC },
+    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
     'Ctr0Out'             : { (T6,R6) },
     'Ctr0Gate'            : { 'PFI9', (T6,R6) },
     'Ctr0Source'          : { 'PFI8', (T6,R6) },
@@ -71,7 +72,7 @@ available = {
     ao_SC                 : { 'PFI5', (T5,PXI5),                   dio_SC },
     ao_ST                 : { 'PFI6', (T5,PXI5) },
     '20MHzTimebase'       : { (Ti7,PXIi7), ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_SCTB               : { ao_SC },
+    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
     'Ctr0Out'             : { (T5,PXI5) },
     'Ctr0Gate'            : { 'PFI9', (T5,PXI5) },
     'Ctr0Source'          : { 'PFI8', (T5,PXI5) },
@@ -101,7 +102,7 @@ available = {
     'ao/PauseTrigger'     : { (T7,R7) },
     ai_CCTB               : { ai_CC },
     ai_SCTB               : { ai_SC, ai_CCTB },
-    ao_SCTB               : { ao_SC },
+    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
     'Ctr0Source'          : { P15, (T7,R7), 'Ctr1Gate', 'Ctr1Aux' },
     'Ctr1Source'          : { P15, (T7,R7), 'Ctr0Gate', 'Ctr0Aux' },
     'Ctr0Gate'            : { P15, (T7,R7), 'Ctr1Source', 'Ctr{0,1}Aux' },
