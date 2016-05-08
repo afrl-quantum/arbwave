@@ -145,7 +145,7 @@ class _FakeStuffCreator(object):
     A = self.signals.to_arrays(self.transitions, self.clocks, self.channels)
     f = self.StringIO()
     A.save( f )
-    print f.getvalue()
+    return f.getvalue()
     
 
 
@@ -197,4 +197,4 @@ def _create_fake_transitions(digital, analog):
 
 if __name__ == '__main__':
   fake = _FakeStuffCreator()
-  fake.test_gnuplot()
+  print fake.test_gnuplot()
