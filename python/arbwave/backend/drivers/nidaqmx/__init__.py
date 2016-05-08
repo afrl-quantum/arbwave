@@ -142,7 +142,7 @@ class Driver(Base):
     return self.signals
 
 
-  def set_device_config( self, config, channels, shortest_paths ):
+  def set_device_config( self, config, channels, signal_graph ):
     # we need to separate channels first by device
     # (configs are already naturally separated by device)
     chans = { k:dict()  for k in config }
@@ -155,7 +155,7 @@ class Driver(Base):
 
     for d,T in self.tasks.items():
       if d in config or d in chans:
-        T.set_config( config.get(d,{}), chans.get(d,{}), shortest_paths )
+        T.set_config( config.get(d,{}), chans.get(d,{}), signal_graph )
 
 
   def set_clocks( self, clocks ):

@@ -72,7 +72,7 @@ class Task(Base):
       self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
 
-  def set_config(self, config=None, channels=None, shortest_paths=None):
+  def set_config(self, config=None, channels=None, signal_graph=None):
     do_rebuild = False
     if channels and self.channels != channels:
       self.channels = channels
@@ -84,12 +84,12 @@ class Task(Base):
     if not self.config['clock']['value']:
       self.clock_terminal = None
     else:
-      if shortest_paths:
+      if signal_graph:
         self.clock_terminal = \
           self.sources_to_native[
             nearest_terminal( self.config['clock']['value'],
                               set(self.clock_sources),
-                              shortest_paths ) ]
+                              signal_graph ) ]
         do_rebuild = True
 
     if do_rebuild:

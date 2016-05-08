@@ -1,7 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import threading, logging
-from pygraph.algorithms.sorting import topological_sorting
 from ... import backend
 from ...tools.gui_callbacks import do_gui_operation
 from ...tools.path import collect_prefix
@@ -83,33 +82,32 @@ class ToDriver:
     """
     logging.info( 'sending go signal to all hardware for waveform output' )
     # 1.  Create a graph of signals and clocks; map 'name' to dev
-    graph = signal_graphs.build_graph( signals, *clocks )
+    graph = signal_graphs.build_graph(signals, *clocks)
     to_dev = backend.get_devices() # get_devices returns a new dict everytime
     to_dev.update({ clk[0]:clk[1].device
                     for clk in backend.get_timing_channels().items() })
 
 
     # 2.  Add each use device into the graph:
-    #   a.  add the device as a graph node
-    #   b.  get clock ranges from device.get_config_template
-    #   c.  determine the shortest connection to the device--we assume that this
+    #   a.  get clock ranges from device.get_config_template
+    #   b.  determine the shortest connection to the device--we assume that this
     #       is the connection made by the device to the clock
+    #   c.  add the device as a graph node
     #   d.  add a graph edge from this nearest connection to the device
-    shortest_paths = signal_graphs.shortest_paths_wgraph(graph, *clocks)
     for dev, cfg in devcfg.items():
-      graph.add_node( dev )
       term = signal_graphs.nearest_terminal(
         cfg['clock']['value'],
         set(to_dev[dev].get_config_template()['clock']['range']),
-        shortest_paths )
-      graph.add_edge( (term, dev) )
+        graph,
+      )
+      graph.add_node( dev )
+      graph.add_edge(term, dev)
 
 
     # 3.  Create a list of all devices, sorted by dependency
     #   a.  use a topological sort on the graph
-    #     (pygraph.algorithms.sorting.topological_sort)
     #   b.  loop through the sorted nodes to generate sorted list of devices
-    sorted_nodes = topological_sorting(graph)
+    sorted_nodes = graph.topological_sorted_nodes()
     self.sorted_device_list = list()
     for i in sorted_nodes:
       # only add nodes that correspond to devices and do not add devices
@@ -190,11 +188,15 @@ class ToDriver:
     # send in clocks since the clocks have already been configured.
     # We'll rely on engine.send.to_driver.config to send in a link to the
     # timing channels.
-    shortest_paths, graph = signal_graphs.shortest_paths( signals, *clocks )
+    graph = signal_graphs.build_graph(signals, *clocks)
 
-    num_node_incidences = [ len(i) for i in graph.node_incidence.values() ]
-    if num_node_incidences and max(num_node_incidences) > 1:
-      raise RuntimeError('Double driving a terminal/cable is not allowed!')
+    for vertex in graph.nodes():
+      if len(graph.predecessors(vertex)) > 1:
+        raise RuntimeError(
+          'Double driving terminal/cable ([{}]-->{}) is not allowed!'
+          .format(', '.join([v for v in graph.predecessors_iter(vertex)]),
+                  vertex)
+        )
 
     C = collect_prefix(config)
     CH= collect_prefix(
@@ -207,7 +209,7 @@ class ToDriver:
     )
 
     for D,driver in backend.all_drivers.items():
-      driver.set_device_config( C.get(D,{}), CH.get(D,{}), shortest_paths )
+      driver.set_device_config( C.get(D,{}), CH.get(D,{}), graph )
 
 
   def hosts(self, hosts):

@@ -88,7 +88,7 @@ class Driver(Base):
     return self.signals
 
 
-  def set_device_config( self, config, channels, shortest_paths ):
+  def set_device_config( self, config, channels, signal_graph ):
  
     debug('comedi.set_device_config')
     subdev_chans = dict()
@@ -106,7 +106,11 @@ class Driver(Base):
     for d, sdev in self.subdevices.items():
       if d in config or d in chans:
         cheat = re.search('(\w*/\w*/\D*)', d) ## this is a cheating fix for mismatched subdevice naming conventions
-        sdev.set_config( config.get(cheat.group(),{}), chans.get(d,[]), shortest_paths )
+        sdev.set_config(
+          config.get(cheat.group(),{}),
+          chans.get(d,[]),
+          signal_graph,
+        )
     
 
   def set_clocks( self, clocks ):

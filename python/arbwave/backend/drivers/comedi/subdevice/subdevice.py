@@ -272,7 +272,7 @@ class Subdevice(Base):
           continue
 
   
-  def set_config(self, config=None, channels=None, shortest_paths=None,
+  def set_config(self, config=None, channels=None, signal_graph=None,
                  force=False):
     debug('comedi[%s].set_config', self)
     
@@ -289,7 +289,7 @@ class Subdevice(Base):
       self.clock_terminal = \
           nearest_terminal( self.config['clock']['value'],
                               set(self.clock_sources),
-                              shortest_paths ) 
+                              signal_graph )
       
       force = True
     

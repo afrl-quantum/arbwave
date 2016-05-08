@@ -56,7 +56,7 @@ class Device(Base):
     self.stop()
 
 
-  def set_config(self, config, channels, shortest_paths):
+  def set_config(self, config, channels, signal_graph):
     C = self.board.configs
     old_config = deepcopy(C)
     N = config.copy()
@@ -70,7 +70,7 @@ class Device(Base):
       self.possible_clock_sources[
         nearest_terminal( clk,
                           set(self.possible_clock_sources.keys()),
-                          shortest_paths )
+                          signal_graph )
       ]
     # we'll not set the scan_rate:
     # If we are using an internal clock, this should have already been set
