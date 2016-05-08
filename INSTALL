@@ -111,14 +111,3 @@ Dependencies:
     Viewpoint DIO64 (dio64_32.dll)
     Marvin GxFpga (libGxFpga.so, or GxFpga.dll)
     Marvin GxAo (libGxAo.so, or GxAo.dll)
-
-
-Supported Hardware:
-  Drivers will automatically detect which underlying vendor-provided drivers are
-  available.
-
-  Supported:
-    Viewpoint
-    National Instruments NI-DAQmx
-    Marvin Test, GxAo (analog output) and GxFpga (digital output)
-    Comedi (not yet complete)

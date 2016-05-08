@@ -1,0 +1,13 @@
+Quick Start:
+In order to get at least a quick feel of what Arbwave is like, it can be very
+helpful to run in Simulated Mode with one of the packaged examples.
+
+To do this, use the '--simulated' command line.  There are two ways for you
+to load up one of the examples.
+  1.  Add the filename of one of the examples on the command line, such as:
+    run.py --simulated examples/simple_config.py
+    or perhaps:
+    run.py --simulated examples/simple_ni_only_config.py
+  2. Start Arbave up in simulated mode with 'run.py --simulated' and
+  then use the Open menu option.  Browse to 'examples/' and select one of
+  the included examples.
