@@ -23,22 +23,43 @@ waveforms = \
  'waveforms': {'Default': [{'asynchronous': False,
                             'duration': '100*ms',
                             'elements': [{'channel': 'ao0',
-                                          'duration': '',
+                                          'duration': 'dt/2',
                                           'enable': True,
                                           'time': 't',
                                           'value': '1*V'},
                                          {'channel': 'ao0',
-                                          'duration': '',
+                                          'duration': 'dt/2',
                                           'enable': True,
                                           'time': 't',
-                                          'value': 'ramp(5*V,steps=199)'},
+                                          'value': 'ramp(5*V,steps=99)'},
                                          {'channel': 'do0',
                                           'duration': '',
                                           'enable': True,
                                           'time': 't',
                                           'value': 'pulses(10)'}],
                             'enable': True,
-                            'group-label': '',
+                            'group-label': 'Group 0',
+                            'script': None,
+                            'time': 't'},
+                           {'asynchronous': False,
+                            'duration': '100*ms',
+                            'elements': [{'channel': 'ao0',
+                                          'duration': 'dt/2',
+                                          'enable': True,
+                                          'time': 't',
+                                          'value': '1*V'},
+                                         {'channel': 'ao0',
+                                          'duration': 'dt/2',
+                                          'enable': True,
+                                          'time': 't',
+                                          'value': 'sinpulse(5*V, 50*Hz)'},
+                                         {'channel': 'do0',
+                                          'duration': '',
+                                          'enable': True,
+                                          'time': 't',
+                                          'value': 'pulses(10)'}],
+                            'enable': True,
+                            'group-label': 'Group 1',
                             'script': None,
                             'time': 't'}]}}
 
@@ -49,7 +70,7 @@ hosts = \
 {'__default__': 'local', 'local': 'localhost'}
 
 version = \
-'0.1.9-80-g0999bdd'
+'0.1.9'
 
 signals = \
 {}
