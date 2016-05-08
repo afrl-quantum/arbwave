@@ -154,6 +154,10 @@ class Task(Base):
     return 0*unit.s
 
 
+  def get_clock_rate(self):
+    return self.task.get_sample_clock_max_rate()
+
+
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
     """
     Set up the hardware for waveform output.  This function does:
@@ -191,7 +195,7 @@ class Task(Base):
     else:
       mode = 'finite'
 
-    max_clock_rate = self.task.get_sample_clock_max_rate()
+    clock_rate = self.get_clock_rate()
     min_dt = self.get_min_period().coeff
 
     debug( 'nidaqmx: configuring task timing for waveform output: %s', self.task )
@@ -203,14 +207,14 @@ class Task(Base):
         'sample_mode'      '=%s,'
         'samples_per_channel=%s)',
         self.clock_terminal,
-        max_clock_rate,
+        clock_rate,
         self.config['clock-settings']['edge']['value'],
         mode,
         len(transitions),
       )
     self.task.configure_timing_sample_clock(
       source              = self.clock_terminal,
-      rate                = max_clock_rate, # Hz
+      rate                = clock_rate, # Hz
       active_edge         = self.config['clock-settings']['edge']['value'],
       sample_mode         = mode,
       samples_per_channel = len(transitions) )
