@@ -4,6 +4,8 @@
 Build the plotter gui and its interactions.
 """
 
+from gi.repository import Gdk
+
 import matplotlib
 from matplotlib.figure import Figure
 
@@ -155,6 +157,7 @@ def init_plot():
   #                                 frameon=True, subplotpars=None)
   fig = Figure(figsize=(3.0, 3.0), dpi=dpi)
   canvas = FigCanvas(fig)
+  canvas.add_events(Gdk.EventMask.SCROLL_MASK)
 
   rect = [.1, .01, .88, .85 ]
   horiz = [ Size.Scaled(1.0) ]
