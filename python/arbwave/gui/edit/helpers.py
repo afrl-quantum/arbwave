@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 import re
-import gtk
+from gi.repository import Gtk as gtk
 
 def GTVC(*args,**kwargs):
   c = gtk.TreeViewColumn(*args,**kwargs)
@@ -32,12 +32,12 @@ class Undo:
 
 
 def set_item( cell, path, new_item, model, ITEM, add_undo=None,
-              unique=False, type=str, valid_prefixes=[] ):
+              unique=False, init=str, valid_prefixes=[] ):
   """
     if unique is True, this searches through the immediate chlidren for
       duplicate names before allowing the edit.
   """
-  new_item = type(new_item)
+  new_item = init(new_item)
   if callable(model): # allow for a callback to be used to get model
     model = model()
   if unique:
@@ -162,7 +162,7 @@ def prep_combobox_for_tree(cbox,select_intermediate=False):
 
   renderer = gtk.CellRendererText()
   cbox.clear()
-  cbox.pack_start( renderer )
+  cbox.pack_start( renderer, True )
   cbox.add_attribute( renderer, 'text', 1 )
   if not select_intermediate:
     cbox.set_cell_data_func( renderer, is_sensitive )
@@ -205,5 +205,6 @@ def popup_button_press_handler( treeview, event, do_popup, ui_manager, popup,
       if show:
         if callable(modify_popup):
           modify_popup(popup, row_popup)
-        popup.popup( None, None, None, event.button, time )
+        #popup(parent_menu_shell, parent_menu_item, func, data, button, activate_time)
+        popup.popup( None, None, None, None, event.button, time )
     return True

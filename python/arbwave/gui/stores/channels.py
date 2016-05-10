@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk
 
 from dispatcher import TreeModelDispatcher
 
@@ -44,20 +44,22 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
   OFFSET  =8
 
   def __init__(self, **kwargs):
-    gtk.ListStore.__init__(self,
-      str,  # Label
-      str,  # device
-      str,  # value
-      object, # scaling
-      str,  # units
-      bool, # enable
-      int,  # interpolation order
-      float,# interpolation smoothing parameter
-      str,  # offset in correct units
+    super(Channels,self).__init__(
+      model=gtk.ListStore,
+      model_args=(
+        str,  # Label
+        str,  # device
+        str,  # value
+        object, # scaling
+        str,  # units
+        bool, # enable
+        int,  # interpolation order
+        float,# interpolation smoothing parameter
+        str,  # offset in correct units
+      ),
+      **kwargs
     )
     self._scaling_callbacks = dict()
-
-    TreeModelDispatcher.__init__(self, gtk.ListStore, **kwargs)
 
     self.connect('row-changed', check_add_scaling_cb)
     self.connect('row-deleted', rm_scaling_cb)

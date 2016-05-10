@@ -2,7 +2,7 @@
 
 from .. import edit
 
-class Undo:
+class Undo(object):
   """Script Undo class"""
   def __init__(self, old_text, new_text, script):
     self.old_text = old_text
@@ -18,7 +18,7 @@ class Undo:
     self.script.edit() # show the editor
 
 
-class Script:
+class Script(object):
   def __init__( self, text='', title='Script', parent=None,
                 add_undo=None,
                 changed=None, *changed_args, **changed_kwargs ):

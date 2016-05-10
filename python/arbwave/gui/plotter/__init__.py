@@ -35,7 +35,6 @@ class Plotter(object):
     self.axes['__scroll_master'].toolbar = self.toolbar
     self.ranges = dict( analog=(0,(0,0)), digital=(0,(0,0)) )
     self.vline = { 't':None, 'digital':None, 'analog':None }
-    self.lines = dict()
     self.highlighted = None
     self.group_lines = dict()
     self.highlighted_parts = list()
@@ -60,7 +59,6 @@ class Plotter(object):
       self.yview['analog'] = self.axes['analog'].get_ylim()
       self.yview['digital'] = self.axes['digital'].get_ylim()
     self.ranges = dict( analog=(0,0), digital=(0,0) )
-    self.lines = dict()
     self.group_lines = dict()
     self.names = names
     self.t_final = t_final
@@ -82,12 +80,9 @@ class Plotter(object):
   def plot_analog(self, signals, names=None, t_final=None, *args, **kwargs ):
     if names is not None:   self.names = names
     if t_final is not None: self.t_final=t_final
-    self.ranges['analog'], lines, group_lines = analog.plot(
+    self.ranges['analog'], group_lines = analog.plot(
       self.axes['analog'], signals, self.names, self.t_final, *args, **kwargs
     )
-    for l in lines.items():
-      # we add the analog prefix back on for ease later
-      self.lines[ l[0] ] = Highlighter( l[1] )
     self.group_lines.update(
       {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
 
@@ -101,12 +96,13 @@ class Plotter(object):
       {g[0]:Highlighter(g[1]) for g in group_lines.items()} )
 
   def highlight(self, physical_channel):
-    if self.highlighted:
-      self.highlighted.unhighlight()
-      self.highlighted = None
-    if physical_channel in self.lines:
-      self.lines[physical_channel].highlight()
-      self.highlighted = self.lines[physical_channel]
+    if self.highlighted_parts:
+      for hp in self.highlighted_parts: hp.unhighlight()
+      self.highlighted_parts = list()
+    for (wpath,phy),gl in self.group_lines.items():
+      if phy == physical_channel:
+        gl.highlight()
+        self.highlighted_parts.append( gl )
     self.canvas.draw()
 
   def highlight_parts(self, pkeys):

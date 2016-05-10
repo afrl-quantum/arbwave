@@ -92,7 +92,7 @@ class Driver(Base):
     return self.signals
 
 
-  def set_device_config( self, config, channels, shortest_paths ):
+  def set_device_config( self, config, channels, signal_graph ):
     debug('comedi.set_device_config')
     chans = { k:dict() for k in config }
 
@@ -105,7 +105,7 @@ class Driver(Base):
 
     for d, sdev in self.subdevices.items():
       if d in config or d in chans:
-        sdev.set_config( config.get(d,{}), chans.get(d,[]), shortest_paths )
+        sdev.set_config( config.get(d,{}), chans.get(d,[]), signal_graph )
 
 
   def set_clocks( self, clocks ):

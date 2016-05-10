@@ -8,30 +8,6 @@ FMAX = sys.float_info.max
 inf  = float('inf')
 
 algorithms = {
-  'Simulated Annealing' : {
-    'func' : lambda *a,**kw: opt.anneal(full_output=True, *a, **kw)[0:2],
-    'actual_func' : opt.anneal,
-    'enable' : False,
-    'order'  : 0,
-    'parameters' : {
-      'args'      : {'order':0, 'enable':False,'type':str,  'value':'()',  'range':None},
-      'schedule'  : {'order':1, 'enable':True, 'type':str,  'value':'fast','range':['fast','cauchy','boltzmann']},
-      'T0'        : {'order':2, 'enable':False,'type':float,'value':1,     'range':[0,FMAX,1,1],         'combo':False},
-      'Tf'        : {'order':3, 'enable':True, 'type':float,'value':1e-12, 'range':[0,FMAX,1e-12,1e-10], 'combo':False},
-      'maxeval'   : {'order':4, 'enable':False,'type':int,  'value':4000,  'range':[0,sys.maxint,10,100],'combo':False},
-      'maxaccept' : {'order':5, 'enable':False,'type':int,  'value':4000,  'range':[0,sys.maxint,10,100],'combo':False},
-      'maxiter'   : {'order':6, 'enable':True, 'type':int,  'value':400,   'range':[0,sys.maxint,10,100],'combo':False},
-      'boltzmann' : {'order':7, 'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
-      'learn_rate': {'order':8, 'enable':True, 'type':float,'value':0.5,   'range':[0,FMAX,.1,1],        'combo':False},
-      'feps'      : {'order':9, 'enable':True, 'type':float,'value':1e-6,  'range':[0,FMAX,1e-6,1e-5],   'combo':False},
-      'quench'    : {'order':10,'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
-      'm'         : {'order':11,'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
-      'n'         : {'order':12,'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
-      'lower'     : {'order':13,'enable':False,'type':float,'value':-100,  'range':[-FMAX,FMAX,1,1],     'combo':False},
-      'upper'     : {'order':14,'enable':False,'type':float,'value':100,   'range':[-FMAX,FMAX,1,1],     'combo':False},
-      'dwell'     : {'order':15,'enable':True, 'type':int,  'value':50,    'range':[0,sys.maxint,1,10],  'combo':False},
-    },
-  },
   'Powell'              : {
     'func' : lambda *a, **kw: opt.fmin_powell(full_output=True,*a,**kw)[0:2],
     'actual_func' : opt.fmin_powell,
@@ -102,6 +78,33 @@ algorithms = {
     },
   },
 }
+
+if hasattr(opt,'anneal'):
+  # this one did not show up on some windows versions for some reason...
+  algorithms['Simulated Annealing'] = {
+    'func' : lambda *a,**kw: opt.anneal(full_output=True, *a, **kw)[0:2],
+    'actual_func' : opt.anneal,
+    'enable' : False,
+    'order'  : 0,
+    'parameters' : {
+      'args'      : {'order':0, 'enable':False,'type':str,  'value':'()',  'range':None},
+      'schedule'  : {'order':1, 'enable':True, 'type':str,  'value':'fast','range':['fast','cauchy','boltzmann']},
+      'T0'        : {'order':2, 'enable':False,'type':float,'value':1,     'range':[0,FMAX,1,1],         'combo':False},
+      'Tf'        : {'order':3, 'enable':True, 'type':float,'value':1e-12, 'range':[0,FMAX,1e-12,1e-10], 'combo':False},
+      'maxeval'   : {'order':4, 'enable':False,'type':int,  'value':4000,  'range':[0,sys.maxint,10,100],'combo':False},
+      'maxaccept' : {'order':5, 'enable':False,'type':int,  'value':4000,  'range':[0,sys.maxint,10,100],'combo':False},
+      'maxiter'   : {'order':6, 'enable':True, 'type':int,  'value':400,   'range':[0,sys.maxint,10,100],'combo':False},
+      'boltzmann' : {'order':7, 'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
+      'learn_rate': {'order':8, 'enable':True, 'type':float,'value':0.5,   'range':[0,FMAX,.1,1],        'combo':False},
+      'feps'      : {'order':9, 'enable':True, 'type':float,'value':1e-6,  'range':[0,FMAX,1e-6,1e-5],   'combo':False},
+      'quench'    : {'order':10,'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
+      'm'         : {'order':11,'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
+      'n'         : {'order':12,'enable':True, 'type':float,'value':1.0,   'range':[0,FMAX,.1,1],        'combo':False},
+      'lower'     : {'order':13,'enable':False,'type':float,'value':-100,  'range':[-FMAX,FMAX,1,1],     'combo':False},
+      'upper'     : {'order':14,'enable':False,'type':float,'value':100,   'range':[-FMAX,FMAX,1,1],     'combo':False},
+      'dwell'     : {'order':15,'enable':True, 'type':int,  'value':50,    'range':[0,sys.maxint,1,10],  'combo':False},
+    },
+  }
 
 def safe_repr(x):
   if x in [ inf, -inf ]:

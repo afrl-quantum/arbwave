@@ -240,7 +240,7 @@ class Subdevice(Base):
     return self.cmd.stop_src == clib.TRIG_NONE
 
 
-  def set_config(self, config=None, channels=None, shortest_paths=None):
+  def set_config(self, config=None, channels=None, signal_graph=None):
     debug('comedi[%s].set_config', self)
 
     if channels is not None and self.channels != channels:
@@ -254,7 +254,7 @@ class Subdevice(Base):
       self.clock_terminal = \
           nearest_terminal( self.config['clock']['value'],
                               set(self.clock_sources),
-                              shortest_paths )
+                              signal_graph )
 
     if self.clock_terminal == 'internal':
       # FIXME:  implement this mapping and value

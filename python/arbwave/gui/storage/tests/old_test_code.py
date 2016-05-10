@@ -8,12 +8,12 @@
 import sys
 sys.path.append('../..')
 
-import gtk
+from gi.repository import Gtk as gtk
 from storage.gtk_tools import *
 
 class win(gtk.Window):
   def __init__(self, parent=None):
-    gtk.Window.__init__(self)
+    super(win,self).__init__()
     self.set_title("test")
     try:
       self.set_screen(parent.get_screen())

@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk, logging, sys
+from gi.repository import Gtk as gtk
+import logging, sys
 
 from dispatcher import TreeModelDispatcher
 
@@ -13,13 +14,16 @@ class WaveformsSet(TreeModelDispatcher, gtk.ListStore):
   DEFAULT = 'Default'
 
   def __init__(self, **kwargs):
-    gtk.ListStore.__init__(self,
-      str,    # Label
-      object, # waveforms
+    super(WaveformsSet,self).__init__(
+      model=gtk.ListStore,
+      model_args=(
+        str,    # Label
+        object, # waveforms
+      ),
+      # **kwargs
     )
     self.kwargs = kwargs
 
-    TreeModelDispatcher.__init__(self, gtk.ListStore)#, **kwargs)
     self.current_waveform = None
     self._changed_wf_cb = list()
     self._pause_cb = True

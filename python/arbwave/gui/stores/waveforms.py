@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk
 
 from dispatcher import TreeModelDispatcher
 
@@ -18,18 +18,21 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
   default_element=( '', 't', '', '', True, None, None  )
 
   def __init__(self, **kwargs):
-    gtk.TreeStore.__init__(self,
-      str,  # channel
-      str,  # Time
-      str,  # duration
-      str,  # value
-      bool, # enable
-      str,  # script
-      bool, # async
+    super(Waveforms,self).__init__(
+      model=gtk.TreeStore,
+      model_args=(
+        str,  # channel
+        str,  # Time
+        str,  # duration
+        str,  # value
+        bool, # enable
+        str,  # script
+        bool, # async
+      ),
+      **kwargs
     )
 
     self.kwargs = kwargs
-    TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
   def __del__(self):
@@ -56,7 +59,7 @@ class Waveforms(TreeModelDispatcher, gtk.TreeStore):
       D['duration'] = i[Waveforms.DURATION]
       D['enable'  ] = i[Waveforms.ENABLE]
       if store_path:
-        D['path'    ] = self.get_path( i.iter )
+        D['path'  ] = tuple(self.get_path( i.iter ).get_indices())
 
       if self.iter_has_child( i.iter ):
         # is group

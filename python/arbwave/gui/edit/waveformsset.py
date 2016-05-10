@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk, sys
+from gi.repository import Gtk as gtk, Gdk as gdk
+import sys
 from helpers import *
 from spreadsheet import keys
 
@@ -15,11 +16,11 @@ class Dragger(object):
 
   def drag_motion(self, w, ctx, x, y, time):
     mask = w.window.get_pointer()[2]
-    if mask & gtk.gdk.CONTROL_MASK:
-      ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+    if mask & gdk.ModifierType.CONTROL_MASK:
+      ctx.drag_status( gdk.DragAction.COPY, time )
 
   def drag_data_received(self, w, ctx, x, y, seldata, info, time):
-    if self.drop_started and ctx.action & gtk.gdk.ACTION_COPY:
+    if self.drop_started and ctx.action & gdk.DragAction.COPY:
       model, path = seldata.tree_get_row_drag_data()
       new_label = model[ path ][model.LABEL] + '-copy-'
       all_labels = [ l[model.LABEL] for l in model ]
@@ -41,7 +42,7 @@ class Dragger(object):
     self.drop_started = True
 
   def drag_end(self, w, ctx):
-    if ctx.action & gtk.gdk.ACTION_COPY:
+    if ctx.action & gdk.DragAction.COPY:
       # clean  up!
       del self.model[-1]
 
@@ -70,7 +71,7 @@ class Editor(object):
     }
 
     C['waveform'].set_cell_data_func( R['waveform'],
-      lambda tv, c, m, i: c.set_property('text', repr(m[i][ ws.WAVEFORMS])))
+      lambda tv, c, m, i, u: c.set_property('text', repr(m[i][ ws.WAVEFORMS])))
 
     V.append_column( C['label'] )
     V.append_column( C['waveform'] )
@@ -100,35 +101,31 @@ class Editor(object):
 
 
 class Dialog(gtk.Dialog):
-  def __init__(self, waveforms_set, dialog=False,
+  def __init__(self, waveforms_set,
                title='Waveform Set Editor', parent=None, add_undo=None):
-    if dialog:
-      actions = [
-        gtk.STOCK_OK,     gtk.RESPONSE_OK,
-        gtk.STOCK_APPLY,  gtk.RESPONSE_APPLY,
-        gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-      ]
+    actions = [
+      gtk.STOCK_OK,     gtk.ResponseType.OK,
+      gtk.STOCK_APPLY,  gtk.ResponseType.APPLY,
+      gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
+    ]
 
-    else:
-      actions = []
-    flags = gtk.DIALOG_DESTROY_WITH_PARENT
-    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+    flags = gtk.DialogFlags.DESTROY_WITH_PARENT
+    super(Dialog,self).__init__( title, parent, flags, tuple(actions) )
 
     self.set_default_size(300, 200)
     self.set_border_width(10)
     self.editor = Editor( waveforms_set, add_undo=add_undo )
-    self.vbox.pack_start( self.editor.view )
-    if dialog:
-      self.connect('response', self.respond)
-      self.editor.view.get_selection() \
-          .select_iter( waveforms_set.get_current_iter() )
+    self.vbox.pack_start( self.editor.view, True, True, 0 )
+    self.connect('response', self.respond)
+    self.editor.view.get_selection() \
+        .select_iter( waveforms_set.get_current_iter() )
 
 
   def respond(self, dialog, response_id):
-    if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_APPLY]:
+    if response_id in [gtk.ResponseType.OK, gtk.ResponseType.APPLY]:
       model, iter = self.editor.view.get_selection().get_selected()
       if iter:
         model.set_current( model[iter][model.LABEL] )
 
-    if response_id in [gtk.RESPONSE_OK, gtk.RESPONSE_CANCEL]:
+    if response_id in [gtk.ResponseType.OK, gtk.ResponseType.CANCEL]:
       self.destroy()

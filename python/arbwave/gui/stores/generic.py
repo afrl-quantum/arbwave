@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk
 
 from dispatcher import TreeModelDispatcher
 
@@ -27,15 +27,18 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
   default = (None, None, None, False, None, 0, 0.0)
 
   def __init__(self, store_range=False, use_enable=False, keep_order=False, **kwargs):
-    gtk.TreeStore.__init__(self,
-      *([ str,    # label
+    super(Generic,self).__init__(
+      model=gtk.TreeStore,
+      model_args=([ str,    # label
           object, # type
           object, # range
           bool,   # bool-value
           str,    # str-value
           int,    # int-value
           float,  # float-value
-        ] + ifthen(use_enable,[bool],[]))
+        ] + ifthen(use_enable,[bool],[])
+      ),
+      **kwargs
     )
     if use_enable:
       self.ENABLE = 7
@@ -44,8 +47,6 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
     self.use_enable = use_enable
     self.keep_order = keep_order
     self.store_range = store_range
-
-    TreeModelDispatcher.__init__(self, gtk.TreeStore, **kwargs)
 
 
   def _dict_recursive(self, iter, store_range=None):

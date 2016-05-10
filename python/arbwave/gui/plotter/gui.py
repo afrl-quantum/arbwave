@@ -4,11 +4,13 @@
 Build the plotter gui and its interactions.
 """
 
+from gi.repository import Gdk
+
 import matplotlib
 from matplotlib.figure import Figure
 
-from matplotlib.backends.backend_gtkagg import \
-  FigureCanvasGTKAgg as FigCanvas
+from matplotlib.backends.backend_gtk3agg import \
+  FigureCanvasGTK3Agg as FigCanvas
 
 from matplotlib.transforms import Bbox, TransformedBbox, \
      blended_transform_factory
@@ -155,6 +157,7 @@ def init_plot():
   #                                 frameon=True, subplotpars=None)
   fig = Figure(figsize=(3.0, 3.0), dpi=dpi)
   canvas = FigCanvas(fig)
+  canvas.add_events(Gdk.EventMask.SCROLL_MASK)
 
   rect = [.1, .01, .88, .85 ]
   horiz = [ Size.Scaled(1.0) ]
@@ -203,7 +206,7 @@ def init_plot():
   axes['vspan-controls'] = dict()
 
 
-  # set useblit True on gtkagg for enhanced performance
+  # set useblit True on gtk3agg for enhanced performance
   axes['hspan-controls']['analog'] = SpanSelector(
     axes['analog'],
     axes['__scroll_master'].onselect_horizontal,
@@ -224,7 +227,7 @@ def init_plot():
 
 
 
-  # set useblit True on gtkagg for enhanced performance
+  # set useblit True on gtk3agg for enhanced performance
   axes['hspan-controls']['digital'] = SpanSelector(
     axes['digital'],
     axes['__scroll_master'].onselect_horizontal,
@@ -245,7 +248,7 @@ def init_plot():
 
 
 
-  # set useblit True on gtkagg for enhanced performance
+  # set useblit True on gtk3agg for enhanced performance
   axes['hspan-controls']['t'] = SpanSelector(
     axes['t'],
     axes['__scroll_master'].onselect_horizontal,

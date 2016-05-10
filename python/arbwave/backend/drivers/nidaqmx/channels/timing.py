@@ -4,6 +4,9 @@ import sys
 from .....tools.float_range import float_range
 from ....channels import Timing as TBase, RecursiveMinPeriod
 from .base import Base
+from physical import unit
+
+__all__ = ['Timing', 'DOTiming', 'AO_OnboardClock']
 
 class Timing(Base, TBase):
   """NIDAQmx Timing channel class"""
@@ -54,27 +57,19 @@ class DOTiming(Base, TBase):
 
 
 
-class SCTB_Timing(Base, TBase):
+class AO_OnboardClock(Base, TBase):
   """
-  NIDAQmx Timing channel class for output channels timed from a division of the
-  ?/SampleClockTimebase.
+  NIDAQmx Timing channel class for onboard analog output timer.
   """
-
-  def _divider(self):
-    return self.device.clocks[ str(self) ]['divider']['value']
 
   def get_min_period(self):
-    """
-    Return a multiplication of the ?/SampleClockTimebase.
-    """
-    return RecursiveMinPeriod( self.device.config['clock-settings']['Timebase']['clock']['value'],
-                               self._divider() )
+    return unit.s / self.device.clocks['rate']['value']
 
   def get_config_template(self):
     return {
-      'divider' : {
-        'value' : 2,
-        'type'  : int,
-        'range' : xrange(2, sys.maxint),
+      'rate' : {
+        'value' : 1000,
+        'type'  : float,
+        'range' : float_range(0.0,1e6, include_beginning=False),
       }
     }

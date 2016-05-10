@@ -46,7 +46,6 @@ def plot( ax, signals, name_map=None, t_final=None ):
   ax.clear()
   labels = list()
   i = 0
-  lines = dict()
   group_lines = dict()
   ylim = None
   for c in channels:
@@ -60,15 +59,13 @@ def plot( ax, signals, name_map=None, t_final=None ):
     groups.sort( key = lambda v : v[0] )
     for g in groups:
       xg, yg = mkxy( g[1], Vi )
-      gcolor = list( cconv.to_rgba( fc(i) ) )
-      gcolor[3] = 0.0 # hide group lines
       if x:
         group_lines[(g[0],c[0])] = \
           ax.plot( xscale * np.array([x[-1]]+xg),
-                   [y[-1]]+yg, color=gcolor, linewidth=2 )[0]
+                   [y[-1]]+yg, color=fc(i), linewidth=2 )[0]
       else:
         group_lines[(g[0],c[0])] = \
-          ax.plot( xscale * np.array(xg), yg, color=gcolor, linewidth=2)[0]
+          ax.plot( xscale * np.array(xg), yg, color=fc(i), linewidth=2)[0]
       Vi = yg[-1]
       x += xg
       y += yg
@@ -85,7 +82,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
     else:
       ylim = min(y), max(y)
 
-    lines[c[0]] = ax.plot( xscale*np.array(x), y, color=fc(i), linewidth=2 )[0]
+    group_lines[((-1,), c[0])] = ax.plot( xscale*np.array(x[-2:]), y[-2:], color=fc(i), linewidth=2 )[0]
     i += 1
 
   #ax.set_xlabel('Time (s)')
@@ -95,7 +92,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
   dy = (ylim[1] - ylim[0]) * .1
   ax.set_ylim( float(ylim[0]-dy), float(ylim[1]+dy) )
   ax.grid(True)
-  return (t_final, ax.get_ylim()), lines, group_lines
+  return (t_final, ax.get_ylim()), group_lines
 
 
 # This should be conformant to the output that the arbwave.processor produces.

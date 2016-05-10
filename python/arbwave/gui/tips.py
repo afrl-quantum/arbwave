@@ -1,21 +1,22 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk, pydoc
+from gi.repository import Gtk as gtk
+import pydoc
 from ..processor import functions
 
 
 def show_generators(parent):
   dialog = gtk.Dialog( 'Value Generators',
-    parent, gtk.DIALOG_DESTROY_WITH_PARENT,
-    (gtk.STOCK_CLOSE, gtk.RESPONSE_OK) )
+    parent, gtk.DialogFlags.DESTROY_WITH_PARENT,
+    (gtk.STOCK_CLOSE, gtk.ResponseType.OK) )
 
   L = gtk.Label()
   scroll = gtk.ScrolledWindow()
   scroll.set_size_request(550,400)
-  scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+  scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
 
   scroll.add_with_viewport( L )
-  dialog.vbox.pack_start( scroll )
+  dialog.vbox.pack_start( scroll, True, True, 0 )
   dialog.show_all()
 
   td = pydoc.TextDoc()
@@ -37,16 +38,16 @@ def show_generators(parent):
 def show_arbwavefunctions(parent):
   from ..processor.engine import Arbwave
   dialog = gtk.Dialog( 'Arbwave functions',
-    parent, gtk.DIALOG_DESTROY_WITH_PARENT,
-    (gtk.STOCK_CLOSE, gtk.RESPONSE_OK) )
+    parent, gtk.DialogFlags.DESTROY_WITH_PARENT,
+    (gtk.STOCK_CLOSE, gtk.ResponseType.OK) )
 
   L = gtk.Label()
   scroll = gtk.ScrolledWindow()
   scroll.set_size_request(550,400)
-  scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+  scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
 
   scroll.add_with_viewport( L )
-  dialog.vbox.pack_start( scroll )
+  dialog.vbox.pack_start( scroll, True, True, 0 )
   dialog.show_all()
 
   td = pydoc.TextDoc()

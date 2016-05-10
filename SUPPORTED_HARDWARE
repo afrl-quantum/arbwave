@@ -1,0 +1,9 @@
+Supported Hardware:
+  Drivers will automatically detect which underlying vendor-provided drivers are
+  available.
+
+  Supported:
+    Viewpoint
+    National Instruments NI-DAQmx
+    Marvin Test, GxAo (analog output) and GxFpga (digital output)
+    Comedi (not yet complete)

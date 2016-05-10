@@ -1,5 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk
+from gi.repository import Gtk as gtk
 
 from dispatcher import TreeModelDispatcher
 
@@ -12,16 +12,18 @@ class Hosts(TreeModelDispatcher, gtk.ListStore):
 
   def __init__(self, **kwargs):
     # FIXME:  it will likely become necessary to also specify the base Pyro URI
-    gtk.ListStore.__init__(self,
-      str,  # prefix
-      str,  # host
-      bool, # default
-      #bool, # protected (default is False)
+    super(Hosts,self).__init__(
+      model=gtk.ListStore,
+      model_args=(
+        str,  # prefix
+        str,  # host
+        bool, # default
+        #bool, # protected (default is False)
+      ),
+      **kwargs
     )
 
     self.reset_to_default()
-
-    TreeModelDispatcher.__init__(self, gtk.ListStore, **kwargs)
 
   def reset_to_default(self):
     self.clear()

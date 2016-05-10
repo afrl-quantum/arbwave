@@ -1,5 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gtk
+from gi.repository import Gtk as gtk
 from helpers import *
 
 from ... import backend

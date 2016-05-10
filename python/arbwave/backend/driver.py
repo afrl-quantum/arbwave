@@ -76,7 +76,7 @@ class Driver(object):
     """
     return []
 
-  def set_device_config( self, config, channels, shortest_paths ):
+  def set_device_config( self, config, channels, signal_graph ):
     if config or channels:
       raise NotImplementedError('Drivers must implement set_device_config')
 

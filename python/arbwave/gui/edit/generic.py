@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk, Gdk as gdk
 from math import log10
 import spreadsheet
 import helpers
@@ -146,7 +146,7 @@ def load_combobox( cell, editable, path, model ):
   # set up to combo to display the label not the value
   editable.clear()
   renderer = gtk.CellRendererText()
-  editable.pack_start( renderer )
+  editable.pack_start( renderer, True )
   editable.add_attribute( renderer, 'text', 1 )
 
 
@@ -161,8 +161,8 @@ def get_config_path(path, model, CPath=None):
 
 def drag_motion(w, ctx, x, y, time):
   mask = w.window.get_pointer()[2]
-  if mask & gtk.gdk.CONTROL_MASK:
-    ctx.drag_status( gtk.gdk.ACTION_COPY, time )
+  if mask & gdk.ModifierType.CONTROL_MASK:
+    ctx.drag_status( gdk.DragAction.COPY, time )
 
 
 class Generic:
@@ -262,15 +262,15 @@ class Generic:
       'L' : GTVC('Parameter', R['label'], text=0),
       'V' : GTVC('Value'),
     }
-    C['L'].set_flags(gtk.CAN_FOCUS)
-    C['V'].set_flags(gtk.CAN_FOCUS)
-    C['V'].pack_start(R['val:bool'])
-    C['V'].pack_start(R['val:text'])
-    C['V'].pack_start(R['val:int'])
-    C['V'].pack_start(R['val:float'])
-    C['V'].pack_start(R['cmb:text'])
-    C['V'].pack_start(R['cmb:int'])
-    C['V'].pack_start(R['cmb:float'])
+    C['L'].set_clickable(True)
+    C['V'].set_clickable(True)
+    C['V'].pack_start(R['val:bool'],True)
+    C['V'].pack_start(R['val:text'],True)
+    C['V'].pack_start(R['val:int'],True)
+    C['V'].pack_start(R['val:float'],True)
+    C['V'].pack_start(R['cmb:text'],True)
+    C['V'].pack_start(R['cmb:int'],True)
+    C['V'].pack_start(R['cmb:float'],True)
     C['V'].set_attributes( R['val:bool'],   active=model.VAL_BOOL )
     C['V'].set_attributes( R['val:text'],   text=model.VAL_STR )
     C['V'].set_attributes( R['val:int'],    text=model.VAL_INT )
@@ -280,7 +280,7 @@ class Generic:
     C['V'].set_attributes( R['cmb:float'],  text=model.VAL_FLOAT )
 
 
-    def can_edit(treecol, cell, model, i ):
+    def can_edit(treecol, cell, model, i, data ):
       Ltxt = model[i][model.LABEL]
       if True in [ Ltxt.startswith(i) for i in self.editable_label_prefixes ]:
         cell.set_property('editable', True)

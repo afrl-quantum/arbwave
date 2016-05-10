@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk
+from gi.repository import Gtk as gtk
 import os, sys, traceback, logging
 
 from var_tools import *
@@ -12,17 +12,17 @@ class NoFileError(Exception):
 
 def get_file(doopen=True, filters=[('*.py', 'Python Files')]):
   info = {
-    True : { 'action':gtk.FILE_CHOOSER_ACTION_OPEN, 'stock':gtk.STOCK_OPEN },
-   False : { 'action':gtk.FILE_CHOOSER_ACTION_SAVE, 'stock':gtk.STOCK_SAVE },
+    True : { 'action':gtk.FileChooserAction.OPEN, 'stock':gtk.STOCK_OPEN },
+   False : { 'action':gtk.FileChooserAction.SAVE, 'stock':gtk.STOCK_SAVE },
   }
   filename = None
   chooser = gtk.FileChooserDialog(
     title='Choose file',
     action=info[doopen]['action'],
     buttons=( gtk.STOCK_CANCEL,
-              gtk.RESPONSE_CANCEL,
+              gtk.ResponseType.CANCEL,
               info[doopen]['stock'],
-              gtk.RESPONSE_OK )
+              gtk.ResponseType.OK )
   )
   for p, n in filters:
     filter = gtk.FileFilter()
@@ -34,9 +34,9 @@ def get_file(doopen=True, filters=[('*.py', 'Python Files')]):
   folder = os.path.expanduser( current_dir )
   chooser.set_current_folder(folder)
   response = chooser.run()
-  if response == gtk.RESPONSE_OK:
+  if response == gtk.ResponseType.OK:
     filename = chooser.get_filename()
-  elif response == gtk.RESPONSE_CANCEL:
+  elif response == gtk.ResponseType.CANCEL:
     pass
 
   chooser.destroy()

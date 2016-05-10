@@ -54,6 +54,11 @@ class Driver(Base):
         self.tasks[ str(t) ] = t
         self.analogs += available
 
+        # add the internal analog output timer
+        self.timing_channels.append(
+          channels.AO_OnboardClock('{}/{}/ao/SampleClock'.format(self.prefix,d), t)
+        )
+
 
       t = task.Digital(self, '{}/{}'.format(self.prefix,d))
       available = [ ( channels.Digital ('{}/{}'.format(self.prefix,do), t),
@@ -142,7 +147,7 @@ class Driver(Base):
     return self.signals
 
 
-  def set_device_config( self, config, channels, shortest_paths ):
+  def set_device_config( self, config, channels, signal_graph ):
     # we need to separate channels first by device
     # (configs are already naturally separated by device)
     chans = { k:dict()  for k in config }
@@ -155,7 +160,7 @@ class Driver(Base):
 
     for d,T in self.tasks.items():
       if d in config or d in chans:
-        T.set_config( config.get(d,{}), chans.get(d,{}), shortest_paths )
+        T.set_config( config.get(d,{}), chans.get(d,{}), signal_graph )
 
 
   def set_clocks( self, clocks ):
@@ -168,18 +173,27 @@ class Driver(Base):
     for dev, clks in clocks.items():
       ctr_timing = dict()
       do_timing = dict()
+      ao_timing = None
       for clk,conf in clks.items():
-        if   clk[len(dev)+1:].startswith('port'):
+        clk_local = clk[len(dev)+1:]
+
+        if   clk_local == 'ao/SampleClock':
+          ao_timing = conf
+        elif   clk_local.startswith('port'):
           do_timing[ clk ] = conf
-        elif clk[len(dev)+1:].startswith('ctr'):
+        elif clk_local.startswith('ctr'):
           ctr_timing[ clk ] = conf
         else:
-          raise RuntimeError('Expected clock on {}/do or {}/ctr*'.format(dev))
+          raise RuntimeError(
+            'Expected clock as {0}/ao/SampleClock, {0}/ctr*, '
+            'or on {0}/do'.format(dev))
 
       if do_timing:
         self.tasks[ dev+'/do' ].set_clocks( do_timing )
       if ctr_timing:
         self.tasks[ dev+'/to' ].set_clocks( ctr_timing )
+      if ao_timing:
+        self.tasks[ dev+'/ao' ].set_clocks( ao_timing )
 
 
   def set_signals( self, signals ):

@@ -5,7 +5,11 @@ GUI main
 This import is supposed _after_ the options. module is modified
 """
 
-import os, gtk, gobject, time, sys, logging, threading
+import gi
+gi.require_version('Gtk', '3.0')
+
+from gi.repository import Gtk as gtk, GLib as glib
+import os, time, sys, logging, threading
 from .tools.gui_callbacks import do_gui_operation
 
 def sleeper():
@@ -13,13 +17,9 @@ def sleeper():
   return 1 # necessary to ensure timeout is not removed
 
 def main(args):
-  # this is necessary to ensure that threads can be launched!!!!
-  gobject.threads_init()
-
   if sys.platform == 'win32':
-    gobject.timeout_add(400, sleeper)
+    glib.timeout_add(400, sleeper)
 
-  # this _might_ need to be done after the gobject.threads_init
   import gui
   from processor.default import get_globals
   prog = gui.ArbWave()

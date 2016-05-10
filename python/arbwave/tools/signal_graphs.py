@@ -1,49 +1,46 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from pygraph.classes.digraph import digraph
-from pygraph.algorithms.minmax import *
+from .graphs import DiGraph
 
 def build_graph( signals, *nodes ):
-  g = digraph()
-  g.add_nodes(nodes)
+  """
+  Create a graph from signals to terminals.
+  """
+  g = DiGraph()
+  g.add_nodes_from(tuple(set(nodes))) # just to make sure it is unique
 
-  for src, dst in signals.keys():
-    if src not in g:
+  for src, dst in signals:
+    if not g.has_node(src):
       g.add_node(src)
-    if dst not in g:
+    if not g.has_node(dst):
       g.add_node(dst)
-    g.add_edge( (src, dst) )
+    g.add_edge(src, dst)
 
   return g
 
 
 def accessible_clocks( terms, clocks, signals ):
-  T = set([ str(ti)  for ti in terms])
-  C = clocks.representation().keys()
+  """
+  Create a list of all clocks that are accessible by the given terminals through
+  the given signals.
+  """
+  C = clocks.representation()
   S = signals.representation()
-
   g = build_graph( S, *C )
-  short_paths = { clk:shortest_path(g,clk) for clk in C }
-  return [ clk for clk in C if T.intersection(short_paths[clk][0].keys()) ]
+  T = set([ str(ti)  for ti in terms]).intersection( g.nodes() )
+
+  valid_clocks = list()
+  for clk in C:
+    for term in T:
+      if g.has_path(clk, term):
+        valid_clocks.append( clk )
+        break
+  return valid_clocks
 
 
-def shortest_paths_wgraph( graph, *clocks ):
-  return { clk : shortest_path(graph,clk)  for clk in clocks }
-
-
-def shortest_paths( signals, *clocks ):
-  g = build_graph( signals, *clocks )
-  return shortest_paths_wgraph( g, *clocks ), g
-
-
-def nearest_terminal( clk, terms, shortest_paths ):
+def nearest_terminal( clk, terms, graph ):
   """
   We need to find the terminal that uses the shortest signal path from the clock
   """
-  nodes, dist = shortest_paths[clk]
-  t_dist = { k : dist[k]  for k in terms.intersection( nodes.keys() ) }
-  t_dist = t_dist.items()
-  t_dist.sort( key=lambda i:i[1] )
-  # elements in t_dist are like (<terminal-name>, <distance>)
-  # the first element is the best
-  return t_dist[0][0]
+  T = terms.intersection( graph.nodes() )
+  return graph.get_nearest_terminal(clk, T)

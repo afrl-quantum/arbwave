@@ -14,12 +14,13 @@ class ModuleLike(object):
   def __init__(self, D):
     self.__dict__ = D
 
-class Processor:
+class Processor(object):
   def __init__(self, ui):
+    super(Processor,self).__init__()
     self.ui = ui
     self.script = ''
     self.Globals = default.get_globals()
-    self.engine = engine.Arbwave(self,ui)
+    self.engine = engine.Arbwave.instance(self,ui)
     self.engine.defaults = ModuleLike( default.registered_globals )
     sys.modules['Arbwave'] = self.engine # fake Arbwave module
     sys.modules['Arbwave.defaults'] = self.engine.defaults
@@ -65,7 +66,8 @@ class Processor:
     try: self.Globals['__del__'](**kwargs)
     except: pass
     self.engine.clear_runnables()
-    self.Globals = default.get_globals() # reset the global environment
+    self.Globals.clear()
+    self.Globals.update( default.get_globals() ) # reset the global environment
     # ensure that the kwargs is not using the original dictionary
     self.Globals['kwargs'] = dict(self.Globals['_kwargs'], **kwargs )
     exec script in self.Globals

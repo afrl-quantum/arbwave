@@ -1,23 +1,26 @@
+#!/usr/bin/env python
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import traceback
-import gtk, gobject
+from gi.repository import Gtk as gtk, GObject as gobject, GLib as glib
 import logging, re
 
 import numpy as np
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_gtkagg import \
-  FigureCanvasGTKAgg as FigCanvas
-from matplotlib.backends.backend_gtkagg import \
-  NavigationToolbar2GTKAgg as NavigationToolbar
+from matplotlib.backends.backend_gtk3agg import \
+  FigureCanvasGTK3Agg as FigCanvas
+from matplotlib.backends.backend_gtk3 import \
+  NavigationToolbar2GTK3 as NavigationToolbar
 
 from matplotlib.mlab import find
 
-from ..helpers import GTVC, GCRT, toggle_item
-from ...packing import hpack, vpack, Args as PArgs
-from ...storage.gtk_tools import get_file, NoFileError
-from ....tools.gui_callbacks import do_gui_operation
-from ...plotter import common as plot_common
+from ..tools.gui_callbacks import do_gui_operation
+from ..processor import default
+from .edit.helpers import GTVC, GCRT, toggle_item
+from .packing import hpack, vpack, Args as PArgs, VBox
+from .storage.gtk_tools import get_file, NoFileError
+from . import stores
+from . import embedded
 
 ui_info = \
 """<ui>
@@ -31,6 +34,18 @@ ui_info = \
     </menu>
   </menubar>
 </ui>"""
+
+
+default_script = """\
+# This script sets global variables and/or functions that are useful for
+# plotting.  All other plotting scripts and processing will be done in this
+# context.
+from physical.unit import *
+from physical.constant import *
+from physical import unit
+import numpy as np
+from numpy import r_
+"""
 
 
 class ComputeStats:
@@ -87,32 +102,45 @@ class ComputeStats:
     exec 'self.{l}(ax,lt)'.format(l=label)
 
 
-DEFAULT_DATA_FUNCDTION = 'raw'
-
-class Show(gtk.Dialog):
+class DataDialog(gtk.Window):
   FILTERS = [
     ('*.txt', 'ASCII Data file (*.txt)'),
     ('*',     'All files (*)'),
   ]
-  COLPREFIX = '#Columns: '
-  ENABLED  = '<Enabled>'
-  DEFAULT_LINE_STYLE = 'o, ro--, kD'
+  COLPREFIX           = '#Columns: '
+  ENABLED             = '<Enabled>'
+  BEGIN_SCRIPT        = '#BEGIN-SCRIPT'
+  END_SCRIPT          = '#END_SCRIPT'
+  DEFAULT_LINE_STYLE  = 'o, ro--, kD'
 
-  def __init__(self, columns, title='Optimization Parameters/Results',
-               parent=None, globals=globals()):
-    actions = [
-    #  gtk.STOCK_OK,     gtk.RESPONSE_OK,
-    #  gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL
-    ]
-    flags = gtk.DIALOG_DESTROY_WITH_PARENT
-    gtk.Dialog.__init__( self, title, parent, flags, tuple(actions) )
+  def __init__(self, columns=['Undefined'], title='Data Viewer',
+               parent=None, globals=default.get_globals()):
+    kwargs = dict()
+    if parent is not None:
+      kwargs.update(
+        parent = parent,
+        actions = [
+        #  gtk.STOCK_OK,     gtk.ResponseType.OK,
+        #  gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL
+        ],
+        flags = gtk.DialogFlags.DESTROY_WITH_PARENT,
+      )
+    super(DataDialog,self).__init__( title=title, **kwargs )
 
+    self.filename = None
+    self.new_data = False
+    self.default_globals = globals
+    self.Globals = dict()
+    self.vbox = VBox()
+
+    # BEGIN GUI LAYOUT
     self.set_default_size(550, 600)
     self.set_border_width(10)
+    super(DataDialog,self).add(self.vbox)
 
     # Set up the file menu
     merge = gtk.UIManager()
-    self.set_data("ui-manager", merge)
+    self.ui_manager = merge
     merge.insert_action_group(self.create_action_group(), 0)
     self.add_accel_group(merge.get_accel_group())
     try:
@@ -140,9 +168,12 @@ class Show(gtk.Dialog):
       self.update_plot()
 
     def mk_xy_combo(is_xaxis, text_column=0,model=None):
-      combo = gtk.ComboBox(model)
+      if model:
+        combo = gtk.ComboBox.new_with_model(model)
+      else:
+        combo = gtk.ComboBox()
       cell = gtk.CellRendererText()
-      combo.pack_start(cell, True)
+      combo.pack_start(cell, True )
       combo.add_attribute(cell, 'text', text_column)
       e = gtk.Entry()
       combo.connect('changed', set_predef, e, is_xaxis)
@@ -182,47 +213,92 @@ class Show(gtk.Dialog):
         hpack(PArgs(gtk.Label('Style'),False,False,0), self.line_style) ),
     )
     col_sel_box.show_all()
-    self.vbox.pack_start( col_sel_box, False, False, 0 )
 
     line_sel_box = hpack( *self.line_selection.values() )
     line_sel_box.show_all()
-    self.vbox.pack_start( line_sel_box, False, False, 0 )
 
     body = gtk.VPaned()
-    self.vbox.pack_start(body)
 
     # Set up the Body of the display
     V = self.view = gtk.TreeView()
     scroll = gtk.ScrolledWindow()
-    scroll.set_size_request(-1,400)
-    scroll.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    scroll.set_size_request(-1,10)
+    scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+    scroll.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     scroll.add( V )
-    body.pack1(scroll)
+    body.pack1(scroll, resize=True)
 
 
     self.axes, self.canvas, toolbar = init_plot(self)
 
-    self.canvas.set_size_request(-1,150)
+    self.canvas.set_size_request(-1,50)
     body.pack2( vpack( PArgs(toolbar,False,False,0), self.canvas ) )
 
     body.show_all()
-    self.set_columns( columns )
 
-    self.filename = None
-    self.new_data = False
-    self.Globals = globals
+    self.shell = embedded.Python(
+      get_globals=lambda : self.Globals,
+      reset = self.exec_script,
+    )
+
+    self.script = stores.Script(
+      default_script,
+      title='Variables/Functions...',
+      changed=self.exec_script,
+    )
+
+    # pack the rest in
+    viewer = vpack(
+      PArgs( col_sel_box, False, False, 0 ),
+      PArgs( line_sel_box, False, False, 0 ),
+      body,
+    )
+
+    self.notebook = gtk.Notebook()
+    self.notebook.set_property('border-width',0)
+    self.notebook.append_page(viewer, gtk.Label('Data Viewer'))
+    self.notebook.set_tab_reorderable( viewer, True )
+
+    shell_sb = gtk.ScrolledWindow()
+    shell_sb.add(self.shell)
+    self.notebook.append_page(shell_sb, gtk.Label('Shell'))
+    self.notebook.set_tab_reorderable( shell_sb, True )
+
+    self.script.edit(notebook=self.notebook, keep_open=True)
+
+    def tab_tear( notebook, page, x, y ):
+      notebook.remove_page( notebook.page_num(page) )
+      if hasattr(page, 'orig_parent'):
+        w = page.orig_parent
+      else:
+        w = gtk.Window()
+      w.add( page )
+      w.show()
+
+    self.notebook.connect('create-window', tab_tear)
+
+    self.vbox.pack_start( self.notebook, True, True, 0 )
+    glib.timeout_add(1, self.notebook.set_current_page, 0)
+
+
+    # ### DONE WITH GUI LAYOUT ###
+    self.set_columns( columns )
+    self.exec_script()
+    # schedule the plotter
+    glib.timeout_add( 100, self.plot_data )
+    self.connect('destroy', lambda e: gtk.main_quit())
+
+
+  def exec_script(self, *a):
+    self.Globals.clear()
+    self.Globals.update( self.default_globals )
+    exec self.script.representation() in self.Globals
+    self.shell.update_globals()
+    self.Globals['data'] = self.get_all_data()
 
 
   def update_plot(self, *args, **kwargs):
     self.new_data = True
-
-
-  def show(self):
-    def do_show():
-      gobject.idle_add( self.plot_data )
-      gtk.Dialog.show(self)
-    do_gui_operation( do_show )
 
 
   def set_columns(self,columns):
@@ -256,11 +332,28 @@ class Show(gtk.Dialog):
 
 
   def add(self, *stuff):
+    # ensure we have string representations
+    stuff = tuple( str(i) for i in stuff )
     def do_append():
+      # if it is not visible, we do not add data!
+      if not self.is_drawable(): return
+
       self.params.append( (True,) + stuff )
+
+      if 'data' in self.Globals:
+        # only append the current new
+        new_row = [self.convert_row_data(stuff)]
+        D = self.Globals['data']
+        if len(D) == 0:
+          self.Globals['data'] = np.array(new_row, dtype=float)
+        else:
+          self.Globals['data'] = np.append(D, new_row, axis=0)
+      else:
+        # generate the missing data...
+        self.Globals['data'] = self.get_all_data()
+
       if self.autosave.get_sensitive() and self.autosave.get_active():
         self.gtk_save_handler()
-      if not self.is_drawable(): return
       self.new_data = True
     do_gui_operation( do_append )
 
@@ -300,18 +393,21 @@ class Show(gtk.Dialog):
         self.canvas.draw()
         return True # nothing to plot, clear plot and return
 
-      data = self.get_all_data()
-      if len(data) == 0:
+      if 'data' not in self.Globals:
+        # in case the user deleted it(?)
+        self.Globals['data'] = self.get_all_data()
+
+      if len(self.Globals['data']) == 0:
         return True
 
-      L = dict( data=data )
+      L = dict()
       y_data = eval( ytxt, self.Globals, L )
       L['y_data'] = y_data
       data = zip( eval( xtxt, self.Globals, L ), y_data )
       # reorder the data with respect to x-axis
       data.sort( key = lambda i : i[0] )
-      x_data = np.array([ i[0] for i in data ])
-      y_data = np.array([ i[1] for i in data ])
+      x_data = np.array([ i[0] for i in data ], dtype=float)
+      y_data = np.array([ i[1] for i in data ], dtype=float)
 
       self.axes.clear()
 
@@ -335,16 +431,18 @@ class Show(gtk.Dialog):
     return True
 
 
+  def convert_row_data(self, row):
+    return [ eval(str(col),self.Globals) for col in row ]
+
   def get_all_data(self, include_disabled=False):
     if include_disabled:
       return np.array([
-        [ eval(str(i),self.Globals) for i in row ] for row in self.params
-      ]).astype(float)
+        self.convert_row_data(row) for row in self.params
+      ], dtype=float)
     else:
       return np.array([
-        [ eval(row[i],self.Globals) for i in xrange(1,len(row)) ]
-        for row in self.params if row[0]
-      ]).astype(float)
+        self.convert_row_data(row[1:]) for row in self.params if row[0]
+      ], dtype=float)
 
 
   def set_all_data(self, data, has_enabled=False):
@@ -354,13 +452,13 @@ class Show(gtk.Dialog):
         raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
                             .format(n=(len(self.columns))) )
       for i in data:
-        self.params.append( i )
+        self.params.append( [i[0]] + [str(ii) for ii in i[1:]] )
     else:
       if len(data) > 0 and len(data[0]) != (len(self.columns)-1):
         raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
                             .format(n=(len(self.columns)-1)) )
       for i in data:
-        self.params.append( np.append([True] + i) )
+        self.params.append( [True] + [str(ii) for ii in i] )
     self.new_data = True
 
 
@@ -381,7 +479,7 @@ class Show(gtk.Dialog):
         'Save to a file',                          # tooltip
         self.activate_action ),
       ( 'Close', gtk.STOCK_CLOSE,                   # name, stock id
-        '_Close', '<control>C',                     # label, accelerator
+        '_Close', '<control>W',                     # label, accelerator
         'Close',                                    # tooltip
         self.activate_action ),
     )
@@ -419,26 +517,48 @@ class Show(gtk.Dialog):
 
   def gtk_open_handler(self, action=None):
     try:
-      config_file = get_file(filters=Show.FILTERS)
+      config_file = get_file(filters=self.FILTERS)
       F = open( config_file )
     except NoFileError:
       return # this happens when get_file returns None
 
-    firstline = F.readline()
+    # first work out column labels if supplied
+    line = F.readline()
     has_enabled = False
-    if firstline.startswith(Show.COLPREFIX):
-      cols = firstline[len(Show.COLPREFIX):].split('\t')
-      if cols[0].strip() == Show.ENABLED:
+    if line.startswith(self.COLPREFIX):
+      cols = line[len(self.COLPREFIX):].split('\t')
+      if cols[0].strip() == self.ENABLED:
         cols.pop(0)
         has_enabled = True
       self.set_columns( cols )
-    F.seek(0)
+      has_columns = True
 
+    # next, read in the script if supplied
+    script = []
+    line = F.readline().strip()
+    if line == self.BEGIN_SCRIPT:
+      line = F.readline()
+      while line.strip() != self.END_SCRIPT:
+        assert line[0] == '#', 'Expected # at beginning of stored script line'
+        script.append(line[1:])
+        line = F.readline()
+
+    # start file back at zero and use numpy to load the data
+    F.seek(0)
     try:
       data = np.loadtxt(F)
-      self.set_all_data( data, has_enabled )
     finally:
       F.close()
+
+    if not has_columns:
+      self.set_columns(['unknown'] * data.shape[1])
+    self.set_all_data( data, has_enabled )
+
+    if script:
+      self.script.set_text( ''.join(script) )
+    else:
+      self.script.set_text( default_script )
+
     self.filename = config_file
     self.autosave.set_sensitive(False)
 
@@ -448,7 +568,7 @@ class Show(gtk.Dialog):
       if (not force_new) and config_file:
         F = open( config_file, 'w' )
       else:
-        config_file = get_file(False, filters=Show.FILTERS)
+        config_file = get_file(False, filters=self.FILTERS)
         F = open( config_file, 'w' )
         self.filename = config_file
     except NoFileError:
@@ -459,33 +579,17 @@ class Show(gtk.Dialog):
       for i in xrange(start,len(m)):
         yield m[i][0]
 
-    F.write( Show.COLPREFIX + Show.ENABLED + '\t' + \
+    # save column info
+    F.write( self.COLPREFIX + self.ENABLED + '\t' + \
              '\t'.join([i for i in Y(self.columns)]) + '\n' )
+    # save the script
+    F.write( self.BEGIN_SCRIPT + '\n#' +
+             '\n#'.join( self.script.representation().strip().split('\n') ) +
+             '\n' + self.END_SCRIPT + '\n' )
+    # finally, save the data
     np.savetxt( F, self.get_all_data(True) )
     F.close()
     self.autosave.set_sensitive(True)
-
-
-class ViewerDB:
-  def __init__(self):
-    self.db = dict()
-
-  def get(self, columns, title=None, parent=None, globals=globals()):
-    key = ( tuple(columns), title, parent, id(globals) )
-    if key in self.db:
-      s = self.db[key]
-      if s.is_drawable() and s.reuse.get_active():
-        return s
-      else:
-        s.reuse.set_active(False)
-        s.reuse.set_sensitive(False)
-        self.db.pop(key)
-
-    s = Show(columns=columns, title=title, parent=parent, globals=globals)
-    self.db[key] = s
-    return s
-
-db = ViewerDB()
 
 
 def init_plot(win):

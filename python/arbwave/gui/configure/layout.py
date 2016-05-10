@@ -1,7 +1,9 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import gtk, sys
-import gobject
+from gi.repository import Gtk as gtk, \
+                          Gdk as gdk, \
+                          GObject as gobject
+import sys
 
 from ..packing import Args as PArgs, VBox, hpack, vpack
 from .. import edit
@@ -33,11 +35,11 @@ ui_info = \
 
 class ConfigDialog(gtk.Dialog):
   def __init__(self, win, store):
-    gtk.Dialog.__init__(self,
+    super(ConfigDialog,self).__init__(
       'Configure Signals/Triggers, ...',win,
-      gtk.DIALOG_DESTROY_WITH_PARENT,
-      (gtk.STOCK_OK, gtk.RESPONSE_OK,
-       gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+      gtk.DialogFlags.DESTROY_WITH_PARENT,
+      (gtk.STOCK_OK, gtk.ResponseType.OK,
+       gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL)
     )
 
 
@@ -54,7 +56,7 @@ class ConfigDialog(gtk.Dialog):
 
     # ###### SET UP THE PANEL ######
     merge = gtk.UIManager()
-    self.set_data("ui-manager", merge)
+    self.ui_manager = merge
     merge.insert_action_group(self.create_action_group(), 0)
     self.add_accel_group(merge.get_accel_group())
     try:
@@ -67,16 +69,16 @@ class ConfigDialog(gtk.Dialog):
       label = gtk.Label(label)
       label.set_property('angle', 90)
       tools = merge.get_widget(toolbar)
-      tools.set_property('orientation', gtk.ORIENTATION_VERTICAL)
-      tools.set_property('icon-size', gtk.ICON_SIZE_MENU)
-      tools.set_property('toolbar-style', gtk.TOOLBAR_ICONS)
+      tools.set_property('orientation', gtk.Orientation.VERTICAL)
+      tools.set_property('icon-size', gtk.IconSize.MENU)
+      tools.set_property('toolbar-style', gtk.ToolbarStyle.ICONS)
       w = gtk.ScrolledWindow()
       w.set_size_request(-1, -1)
-      w.set_shadow_type( gtk.SHADOW_ETCHED_IN )
-      w.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+      w.set_shadow_type( gtk.ShadowType.ETCHED_IN )
+      w.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
       w.add( editor )
       box = gtk.EventBox()
-      box.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16000,36000,65535))
+      box.modify_bg(gtk.StateType.NORMAL, gdk.Color(16000,36000,65535))
       box.set_size_request(sz_x,sz_y)
       box.add(hpack( PArgs(vpack(tools, PArgs(label, False)), False), w))
       return box
@@ -96,12 +98,12 @@ class ConfigDialog(gtk.Dialog):
     config.pack2( devbox )
 
     body = gtk.Notebook()
-    body.set_tab_border(0)
+    body.set_property('border_width', 0)
     body.append_page( config, gtk.Label('Signals/Triggers/Devices') )
     body.append_page( bkdbox, gtk.Label('Connections') )
     body.set_tab_reorderable( config, True )
 
-    self.vbox.pack_start( body )
+    self.vbox.pack_start( body, True, True, 0 )
 
     self.show_all()
     ## Close dialog on user response
@@ -362,27 +364,27 @@ def show(win, store):
 def do_popup_selection( parent, choices ):
   devs = gtk.TreeStore(str,str)
   edit.helpers.add_paths_to_combobox_tree( devs, choices )
-  menu_items = gtk.ComboBox( devs )
+  menu_items = gtk.ComboBox.new_with_model( devs )
   edit.helpers.prep_combobox_for_tree( menu_items )
   menu_items.show()
 
   menu = gtk.Dialog('Select Channel', parent,
-    gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL)
-  menu.set_position(position=gtk.WIN_POS_MOUSE)
+    gtk.DialogFlags.DESTROY_WITH_PARENT | gtk.DialogFlags.MODAL)
+  menu.set_position(position=gtk.WindowPosition.MOUSE)
   menu.set_decorated(False)
-  menu.vbox.pack_start( menu_items )
+  menu.vbox.pack_start( menu_items, True, True, 0 )
   menu_items.selected_device = None
 
   def respond(w):
     selection = w.get_model()[w.get_active_iter()][0]
     if selection is not None:
       w.selected_device = selection
-      menu.response(gtk.RESPONSE_OK)
+      menu.response(gtk.ResponseType.OK)
       return True
     return False
 
   def cancel(w):
-    menu.response(gtk.RESPONSE_CANCEL)
+    menu.response(gtk.ResponseType.CANCEL)
     return True
 
   menu_items.connect('changed', respond)
@@ -391,6 +393,6 @@ def do_popup_selection( parent, choices ):
   gobject.timeout_add( 100, menu_items.popup )
   res = menu.run()
   menu.hide()
-  if res != gtk.RESPONSE_OK:
+  if res != gtk.ResponseType.OK:
     return None
   return menu_items.selected_device

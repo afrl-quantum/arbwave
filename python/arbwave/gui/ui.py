@@ -3,10 +3,11 @@
 Arbitrary waveform generator for digital and analog signals.
 '''
 
-import gtk, gobject
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 import logging
 
-import sys
 import traceback
 
 # local packages
@@ -24,6 +25,7 @@ from .. import backend
 from .. import version
 from .. import options
 from . import hosts_changed
+from .dataviewer import DataViewer
 
 
 
@@ -115,12 +117,7 @@ def finished(ui, *args, **kwargs):
 
 
 def show_data_viewer(parent):
-  s = edit.optimize.show.Show(
-    columns=['Undefined'],
-    title='Data Viewer',
-    parent=parent,
-    globals=parent.processor.get_globals(),
-  )
+  s = DataViewer()
   s.show()
 
 
@@ -133,7 +130,7 @@ class ArbWave(gtk.Window):
     from ..processor import Processor
 
     #create the toplevel window
-    gtk.Window.__init__(self)
+    super(ArbWave,self).__init__()
     try:
       self.set_screen(parent.get_screen())
     except AttributeError:
@@ -189,7 +186,7 @@ class ArbWave(gtk.Window):
 
     #  ###### SET UP THE PANEL #######
     merge = gtk.UIManager()
-    self.set_data("ui-manager", merge)
+    self.ui_manager = merge
     merge.insert_action_group(self.create_action_group(), 0)
     self.add_accel_group(merge.get_accel_group())
     try:
@@ -200,16 +197,16 @@ class ArbWave(gtk.Window):
     chlabel = gtk.Label('Channels')
     chlabel.set_property('angle', 90)
     chtools = merge.get_widget('/ChannelToolBar')
-    chtools.set_property('orientation', gtk.ORIENTATION_VERTICAL )
-    chtools.set_property('icon-size', gtk.ICON_SIZE_MENU)
-    chtools.set_property('toolbar-style', gtk.TOOLBAR_ICONS)
+    chtools.set_property('orientation', gtk.Orientation.VERTICAL )
+    chtools.set_property('icon-size', gtk.IconSize.MENU)
+    chtools.set_property('toolbar-style', gtk.ToolbarStyle.ICONS)
     chew = gtk.ScrolledWindow()
     chew.set_size_request( -1, -1 )
-    chew.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-    chew.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    chew.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+    chew.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     chew.add( self.channel_editor.view )
     chbox = gtk.EventBox()
-    chbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
+    chbox.modify_bg(gtk.StateType.NORMAL, gdk.Color(16962,36237,65535))
     chbox.add(
       hpack(
         PArgs( vpack(chtools, PArgs(chlabel,False)), False),
@@ -221,16 +218,16 @@ class ArbWave(gtk.Window):
     wlabel = gtk.Label('Waveforms')
     wlabel.set_property('angle', 90)
     wtools = merge.get_widget('/WaveformToolBar')
-    wtools.set_property('orientation', gtk.ORIENTATION_VERTICAL )
-    wtools.set_property('icon-size', gtk.ICON_SIZE_MENU)
-    wtools.set_property('toolbar-style', gtk.TOOLBAR_ICONS)
+    wtools.set_property('orientation', gtk.Orientation.VERTICAL )
+    wtools.set_property('icon-size', gtk.IconSize.MENU)
+    wtools.set_property('toolbar-style', gtk.ToolbarStyle.ICONS)
     wew = gtk.ScrolledWindow()
     wew.set_size_request(-1,225)
-    wew.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-    wew.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+    wew.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+    wew.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.ALWAYS)
     wew.add( self.waveform_editor.view )
     wbox = gtk.EventBox()
-    wbox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(16962,36237,65535))
+    wbox.modify_bg(gtk.StateType.NORMAL, gdk.Color(16962,36237,65535))
     wbox.add(
       hpack(
         PArgs( vpack(wtools, PArgs(wlabel,False)), False),
@@ -244,21 +241,24 @@ class ArbWave(gtk.Window):
     )
 
 
-    self.plotter.canvas.set_size_request( 800, 200 )
+    self.plotter.canvas.set_size_request( -1, 200 )
 
     top = gtk.HPaned()
     top.pack1( chbox, True, False )
     top.pack2( wbox, True, False )
-    self.shell = embedded.Shell_Gui(
+    self.shell = embedded.Python(
       ui=self,
       get_globals=self.processor.get_globals,
       reset = self.processor.reset,
     )
     self.processor.connect_listener( self.shell.update_globals )
+    shell_sb = gtk.ScrolledWindow()
+    shell_sb.add(self.shell)
+
     self.shell_notebook = gtk.Notebook()
-    self.shell_notebook.set_tab_border(0)
-    self.shell_notebook.append_page( self.shell.gui, gtk.Label('Shell') )
-    self.shell_notebook.set_tab_reorderable( self.shell.gui, True )
+    self.shell_notebook.set_property('border-width',0)
+    self.shell_notebook.append_page(shell_sb, gtk.Label('Arbwave Command Line'))
+    self.shell_notebook.set_tab_reorderable( shell_sb, True )
 
     def tab_tear( notebook, page, x, y ):
       notebook.remove_page( notebook.page_num(page) )
@@ -272,8 +272,9 @@ class ArbWave(gtk.Window):
     self.shell_notebook.connect('create-window', tab_tear)
 
     bottom = gtk.HPaned()
-    bottom.pack1( self.shell_notebook )
-    bottom.pack2( self.plotter.canvas )
+    bottom.pack1( self.shell_notebook, resize=True )
+    bottom.pack2( self.plotter.canvas, resize=True )
+    bottom.set_position(182)
 
     body = gtk.VPaned()
     body.pack1( top, True )
@@ -283,7 +284,7 @@ class ArbWave(gtk.Window):
     self.runnable_settings = dict()
     self.runnables = set()
     self.runnable_tree = gtk.TreeStore(str,str)
-    self.run_combo = gtk.ComboBox(self.runnable_tree)
+    self.run_combo = gtk.ComboBox.new_with_model(self.runnable_tree)
     edit.helpers.prep_combobox_for_tree(self.run_combo,True)
     self.update_runnables([])
     self.run_combo.set_size_request(10,-1)
@@ -292,10 +293,10 @@ class ArbWave(gtk.Window):
     self.add( vpack(
         PArgs( merge.get_widget('/MenuBar'), False, False, 0 ),
         PArgs( # MENU BAR LOCATION
-          hpack( merge.get_widget('/ToolBar'),
+          hpack( PArgs(merge.get_widget('/ToolBar'),False),
                  PArgs(gtk.VSeparator(), False),
                  PArgs(gtk.VSeparator(), False),
-                 self.run_combo,
+                 PArgs(self.run_combo,   False),
                  PArgs(gtk.VSeparator(), False),
                  PArgs(gtk.VSeparator(), False),
                  self.plotter.toolbar,
@@ -499,7 +500,7 @@ class ArbWave(gtk.Window):
     storage.gtk_tools.gtk_save_handler(None, self, *args)
 
   def select_waveform(self, action):
-    D = edit.waveformsset.Dialog( self.waveforms, parent=self, dialog=True )
+    D = edit.waveformsset.Dialog(self.waveforms, parent=self)
     D.show()
 
   def show_stopped(self):
@@ -738,7 +739,7 @@ class ArbWave(gtk.Window):
 
   def do_keypress(self, widget, event):
     """Implement keypress handlers on the main window"""
-    if   event.state == gtk.gdk.CONTROL_MASK and event.keyval == 122:
+    if   event.state == gdk.ModifierType.CONTROL_MASK and event.keyval == 122:
       # Control-Z  :  UNDO
       try:
         change = self.undo.pop()
@@ -747,7 +748,7 @@ class ArbWave(gtk.Window):
       except IndexError:
         pass
       return True
-    elif event.state == gtk.gdk.CONTROL_MASK and event.keyval == 121:
+    elif event.state == gdk.ModifierType.CONTROL_MASK and event.keyval == 121:
       # Control-Y  :  REDO
       try:
         change = self.redo.pop()

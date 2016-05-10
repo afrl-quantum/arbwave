@@ -4,18 +4,14 @@ This package is responsible for the logic that converts waveforms descriptions
 to more explicit channel-specific full waveforms.
 """
 
-import gtk, gobject
+from gi.repository import GLib as glib
 
 def do_gui_operation(fun, *args, **kwargs):
   def idle_fun():
-    try:
-      gtk.threads_enter()
-      fun(*args, **kwargs)
-      return False
-    finally:
-      gtk.threads_leave()
+    fun(*args, **kwargs)
+    return False
 
-  gobject.idle_add(idle_fun)
+  glib.idle_add(idle_fun)
 
 
 def do_later(time, fun, *args, **kwargs):
@@ -23,4 +19,4 @@ def do_later(time, fun, *args, **kwargs):
     fun(*args, **kwargs)
     return False
 
-  gobject.timeout_add(time,idle_fun)
+  glib.timeout_add(time,idle_fun)

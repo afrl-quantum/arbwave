@@ -9,6 +9,7 @@ from ....tools.expand import expand_braces
 #from expand import expand_braces
 
 class ImplicitRoute(tuple): pass
+class NoDevTerminal(str): pass
 
 
 T5  = 'TRIG/{0..5}'
@@ -32,6 +33,7 @@ PXI5= '{PXI_Trig{0..5}}'
 PXIi7 = 'PXI_Trig7'
 MTB = 'MasterTimebase'
 ao_SC = 'ao/SampleClock'
+ao_OC = ImplicitRoute( (ao_SC, NoDevTerminal('OnboardClock')) )
 ao_ST = 'ao/StartTrigger'
 ao_SCTB = 'ao/SampleClockTimebase'
 ai_SCTB = 'ai/SampleClockTimebase'
@@ -51,7 +53,7 @@ available = {
     ao_SC                 : { 'PFI5', (T6,R6) },
     ao_ST                 : { 'PFI6', (T6,R6) },
     '20MHzTimebase'       : { (Ti7,Ri7), ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_SCTB               : { ao_SC },
+    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
     'Ctr0Out'             : { (T6,R6) },
     'Ctr0Gate'            : { 'PFI9', (T6,R6) },
     'Ctr0Source'          : { 'PFI8', (T6,R6) },
@@ -70,7 +72,7 @@ available = {
     ao_SC                 : { 'PFI5', (T5,PXI5),                   dio_SC },
     ao_ST                 : { 'PFI6', (T5,PXI5) },
     '20MHzTimebase'       : { (Ti7,PXIi7), ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_SCTB               : { ao_SC },
+    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
     'Ctr0Out'             : { (T5,PXI5) },
     'Ctr0Gate'            : { 'PFI9', (T5,PXI5) },
     'Ctr0Source'          : { 'PFI8', (T5,PXI5) },
@@ -100,7 +102,7 @@ available = {
     'ao/PauseTrigger'     : { (T7,R7) },
     ai_CCTB               : { ai_CC },
     ai_SCTB               : { ai_SC, ai_CCTB },
-    ao_SCTB               : { ao_SC },
+    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
     'Ctr0Source'          : { P15, (T7,R7), 'Ctr1Gate', 'Ctr1Aux' },
     'Ctr1Source'          : { P15, (T7,R7), 'Ctr0Gate', 'Ctr0Aux' },
     'Ctr0Gate'            : { P15, (T7,R7), 'Ctr1Source', 'Ctr{0,1}Aux' },
@@ -121,6 +123,11 @@ available['pci-6229'] = available['pci-6221'].copy()
 available['pci-6229']['port{1..3}/line{0..7}'] = Ext # 32 channels for 6229
 
 
+def prefix_terminal(prefix, dev, terminal):
+  if type(terminal) is NoDevTerminal:
+    return terminal
+  return '{}/{}/{}'.format(prefix,dev,terminal)
+
 def format_terminals(dev, dest, host_prefix='', prefix=''):
   # for some terminals, we must use a non ni-formatted path to work with
   # the other devices.  An example is 'TRIG/0'.
@@ -132,7 +139,7 @@ def format_terminals(dev, dest, host_prefix='', prefix=''):
     # a host prefix, or like External/ which does _not_ need host_prefix
     if dest[1]:
       D  = expand_braces('{}{}'.format(host_prefix, dest[0]))
-      ND = expand_braces('{}/{}/{}'.format(prefix,dev,dest[1]))
+      ND = expand_braces(prefix_terminal(prefix,dev,dest[1]))
       assert len(D) == len(ND), \
         'NIDAQmx: {} has mismatch terminals to native terminals: {}' \
         .format(dev,repr(dest))
@@ -142,8 +149,8 @@ def format_terminals(dev, dest, host_prefix='', prefix=''):
   elif type(dest) is ImplicitRoute:
     # used for implicit routes that exist, for example ctr0 is routed to
     # Ctr0InternalOutput by default
-    D  = expand_braces('{}/{}/{}'.format(prefix,dev,dest[0]))
-    ND = expand_braces('{}/{}/{}'.format(prefix,dev,dest[1]))
+    D  = expand_braces(prefix_terminal(prefix,dev,dest[0]))
+    ND = expand_braces(prefix_terminal(prefix,dev,dest[1]))
   else:
     # only native terminal formats
     D = expand_braces('{}/{}/{}'.format(prefix,dev,dest))
@@ -151,7 +158,7 @@ def format_terminals(dev, dest, host_prefix='', prefix=''):
   return D, ND
 
 def strip_prefix( s, prefix='' ):
-  if s:
+  if s and '/' in s:
     # strip off the 'ni' part but leave the leading '/' since terminals appear
     # to require the leading '/'
     return s[len(prefix):]
@@ -178,7 +185,7 @@ class RouteLoader(object):
       ni_dest = list()
       for dest_i in self.available[product][sources]:
         D, ND = format_terminals(device, dest_i, self.host_prefix, self.prefix)
-        dest        += D
+        dest    += D
         ni_dest += ND
       src, ni_src = format_terminals( device, sources,
                                       self.host_prefix, self.prefix )

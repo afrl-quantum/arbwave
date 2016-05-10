@@ -95,14 +95,14 @@ class Driver(Base):
         """
         return self.signals
 
-    def set_device_config( self, config, channels, shortest_paths ):
+    def set_device_config( self, config, channels, signal_graph ):
         """
         Set the device configurations for all devices controlled by this
         driver.
 
         :param config: a dict of {'device/path': config_dict }
         :param channels: ??
-        :param shortest_paths: ??
+        :param signal_graph: directed igraph.Graph of signal routing
         """
         for d,dev in self.devices.items():
             if d in config:
