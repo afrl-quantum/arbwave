@@ -321,7 +321,7 @@ class PulseTrain(ScaledFunction):
   Generate a train of pulses over the duration of a waveform element.
   """
   name = 'pulses'
-  def __init__(self, n, duty=0.5, high=True, low=None, dt=None):
+  def __init__(self, n, duty=0.5, high=True, low=None):
     """
     Usage:  pulses(n, duty=0.5, high=True, low=False, dt=None)
 
@@ -334,13 +334,10 @@ class PulseTrain(ScaledFunction):
             will be set to its logical complement.  Otherwise, if low is not
             set, it will be set to whatever the channel is at prior to this
             pulse.
-    dt    : On width of a single pulse in the pulse train
-            [Default:  not set].
    """
     ScaledFunction.__init__(self)
     self.n        = n
     self.duty     = duty
-    self.dt_on    = dt
     self.high     = high
     self.low      = low
     self._from    = None
@@ -348,9 +345,9 @@ class PulseTrain(ScaledFunction):
     self.duration = None
 
   def __repr__(self):
-    return '{}({}, {}, {}, {}, {})' \
+    return '{}({}, {}, {}, {})' \
       .format(self.name, self.n, self.duty,
-              self.ufmt(self.high), self.ufmt(self.low), self.dt_on)
+              self.ufmt(self.high), self.ufmt(self.low))
 
   def set_vars(self, _from, t, duration, dt_clk):
     """
@@ -366,21 +363,16 @@ class PulseTrain(ScaledFunction):
 
     self.pulse_period = int(duration / self.n)
     max_dt_on = self.pulse_period - 1
-    if self.dt_on is None:
-      # use duty cycle by default
-      if self.duty is None or self.duty < 0 or self.duty > 1:
-        raise RuntimeError('pulses:  duty cycle _must_ be between 0 and 1')
 
-      if self.duty == 0:
-        self.dt_on = 1
-      else:
-        self.dt_on = int( round(max_dt_on * self.duty) )
+    if self.duty < 0 or self.duty > 1:
+      raise RuntimeError('pulses:  duty cycle _must_ be between 0 and 1')
+    elif self.duty == 0:
+      self.dt_on = 1
+    elif self.duty == 1:
+      self.dt_on = max_dt_on - 1
     else:
-      self.dt_on = int(round( self.dt_on / dt_clk ))
-      if self.dt_on > max_dt_on:
-        raise RuntimeError(
-          'pulses:  cannot make pulse train where dt > duration/n-dt_clk'
-        )
+      self.dt_on = int( round(max_dt_on * self.duty) )
+
     self.dt_off = self.pulse_period - self.dt_on
 
   def __iter__(self):
