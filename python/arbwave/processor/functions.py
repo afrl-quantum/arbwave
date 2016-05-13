@@ -11,6 +11,7 @@ from scipy.interpolate import interp1d
 import numpy as np
 import math
 import physical
+from physical import unit
 machine_arch = np.MachAr()
 from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 
@@ -102,8 +103,8 @@ class SinPulse(ScaledFunction):
     self.duration = None
 
   def __repr__(self):
-    return '{}({}, {}, {}, {}, {})' \
-      .format(self.name, self.ufmt(self.A), self.F, self.ufmt(self.average),
+    return '{}({}, {}*Hz, {}, {}, {})' \
+      .format(self.name, self.ufmt(self.A), self.F/unit.Hz, self.ufmt(self.average),
               self.phase_shift, self.steps_per_cycle)
 
   def __call__(self, t):
@@ -166,7 +167,7 @@ class Ramp(ScaledFunction):
   def __init__(self, to, exponent=1.0, steps=None, _from=None,
                dt=None, duration=None):
     """
-    Usage:  ramp(to, exponent=1.0, steps=20, _from=None, dt=None)
+    Usage:  ramp(to, exponent=1.0, steps=20, _from=None, dt=None, duration=None)
 
     to      : final value to which to ramp
     _from   : initial value from which to ramp
@@ -198,9 +199,9 @@ class Ramp(ScaledFunction):
     self.tf_clk = None # final time of ramp functional form in dt_clk units
 
   def __repr__(self):
-    return '{}({}, {}, {}, {}, {}, {})' \
+    return '{}({}, {}, {}, {}, {}, {}*s)' \
       .format(self.name, self.ufmt(self.to), self.exponent,
-              self.steps, self.ufmt(self._from), self.dt_input, self.tf)
+              self.steps, self.ufmt(self._from), self.dt_input, self.tf/unit.s)
 
   def __call__(self, t):
     """
