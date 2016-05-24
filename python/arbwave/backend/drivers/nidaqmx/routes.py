@@ -64,6 +64,25 @@ available = {
     "{"+MTB+",100kHzTimebase}" : { ao_SCTB,       'Ctr{0,1}Source' },
   },
 
+  'pci-6733' : {
+    Ext                   : { P9 },
+    P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
+    (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
+    (Ti7,Ri7)             : { ao_SCTB,              'Ctr{0,1}Source', MTB },
+    ao_SC                 : { 'PFI5', (T6,R6),                     dio_SC },
+    ao_ST                 : { 'PFI6', (T6,R6) },
+    '20MHzTimebase'       : { (Ti7,Ri7),   ao_SCTB, 'Ctr{0,1}Source', MTB },
+    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
+    'Ctr0Out'             : { (T6,R6) },
+    'Ctr0Gate'            : { 'PFI9', (T6,R6) },
+    'Ctr0Source'          : { 'PFI8', (T6,R6) },
+    Ctr0                  : { (T6,R6), 'Ctr0Out', 'Ctr1Gate' },
+    'Ctr1Gate'            : { 'PFI4' },
+    'Ctr1Source'          : { 'PFI3' },
+    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
+    "{"+MTB+",100kHzTimebase}" : { ao_SCTB,         'Ctr{0,1}Source' },
+  },
+
   'pxi-6733' : {
     Ext                   : { P9 },
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
@@ -116,7 +135,6 @@ available = {
   },
 }
 
-available['pci-6733'] = available['pci-6723']
 available['pxi-6723'] = available['pxi-6733']
 available['pci-6225'] = available['pci-6221']
 available['pci-6229'] = available['pci-6221'].copy()
