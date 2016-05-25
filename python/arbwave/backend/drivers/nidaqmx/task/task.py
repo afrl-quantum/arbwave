@@ -134,7 +134,9 @@ class Task(Base):
     self.task.set_sample_timing( timing_type='on_demand',
                                  mode='finite',
                                  samples_per_channel=1 )
-    self.task.configure_trigger_disable_start()
+    if self.trig_sources:
+      # this device _does_ accept triggers
+      self.task.configure_trigger_disable_start()
     # get the data
     px = self.prefix
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
@@ -219,7 +221,9 @@ class Task(Base):
       sample_mode         = mode,
       samples_per_channel = len(transitions) )
     # 2.  Triggering
-    if self.config['trigger']['enable']['value']:
+    if not self.trig_sources:
+      pass # this device does not accept triggers
+    elif self.config['trigger']['enable']['value']:
       debug( 'nidaqmx: configuring task trigger for waveform output: %s', self.task )
       if rootlog.getEffectiveLevel() <= (DEBUG-1):
         log(DEBUG-1, 'self.task.configure_trigger_digital_edge_start('
@@ -345,31 +349,11 @@ class Task(Base):
 
 
   def get_config_template(self):
-    return {
+    C = {
       'use-only-onboard-memory' : {
         'value' : True,
         'type'  : bool,
         'range' : None,
-      },
-      'trigger' : {
-        'enable' : {
-          'value' : False,
-          'type' : bool,
-          'range' : None,
-        },
-        'source' : {
-          'value' : '',
-          'type' : str,
-          'range' : self.trig_sources,
-        },
-        'edge' : {
-          'value' : 'rising',
-          'type' : str,
-          'range' : [
-            ('falling','Trigger on Falling Edge of Trigger'),
-            ('rising', 'Trigger on Rising Edge of Trigger'),
-          ],
-        },
       },
       'clock' : {
         'value' : '',
@@ -403,3 +387,28 @@ class Task(Base):
         },
       },
     }
+
+    if self.trig_sources:
+      C.update(
+        trigger  = {
+          'enable' : {
+            'value' : False,
+            'type' : bool,
+            'range' : None,
+          },
+          'source' : {
+            'value' : '',
+            'type' : str,
+            'range' : self.trig_sources,
+          },
+          'edge' : {
+            'value' : 'rising',
+            'type' : str,
+            'range' : [
+              ('falling','Trigger on Falling Edge of Trigger'),
+              ('rising', 'Trigger on Rising Edge of Trigger'),
+            ],
+          },
+        },
+      )
+    return C

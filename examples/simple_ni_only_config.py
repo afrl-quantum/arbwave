@@ -121,8 +121,5 @@ devices = \
                                    'edge': {'type': str, 'value': 'rising'},
                                    'mode': {'type': str,
                                             'value': 'continuous'}},
-                'trigger': {'edge': {'type': str, 'value': 'rising'},
-                            'enable': {'type': bool, 'value': False},
-                            'source': {'type': str, 'value': ''}},
                 'use-only-onboard-memory': {'type': bool, 'value': True}}}
 
