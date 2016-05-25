@@ -49,7 +49,7 @@ available = {
     Ext                   : { P9 },
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
     (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}' },
-    (Ti7,Ri7)             : { ao_SCTB,            'Ctr{0,1}Source', MTB },
+    (Ti7,Ri7)             : {            ao_SCTB, 'Ctr{0,1}Source', MTB },
     ao_SC                 : { 'PFI5', (T6,R6) },
     ao_ST                 : { 'PFI6', (T6,R6) },
     '20MHzTimebase'       : { (Ti7,Ri7), ao_SCTB, 'Ctr{0,1}Source', MTB },
@@ -61,14 +61,14 @@ available = {
     'Ctr1Gate'            : { 'PFI4' },
     'Ctr1Source'          : { 'PFI3' },
     Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
-    "{"+MTB+",100kHzTimebase}" : { ao_SCTB,       'Ctr{0,1}Source' },
+    "{"+MTB+",100kHzTimebase}" : {       ao_SCTB, 'Ctr{0,1}Source' },
   },
 
   'pci-6733' : {
     Ext                   : { P9 },
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
     (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
-    (Ti7,Ri7)             : { ao_SCTB,              'Ctr{0,1}Source', MTB },
+    (Ti7,Ri7)             : {              ao_SCTB, 'Ctr{0,1}Source', MTB },
     ao_SC                 : { 'PFI5', (T6,R6),                     dio_SC },
     ao_ST                 : { 'PFI6', (T6,R6) },
     '20MHzTimebase'       : { (Ti7,Ri7),   ao_SCTB, 'Ctr{0,1}Source', MTB },
@@ -80,14 +80,14 @@ available = {
     'Ctr1Gate'            : { 'PFI4' },
     'Ctr1Source'          : { 'PFI3' },
     Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
-    "{"+MTB+",100kHzTimebase}" : { ao_SCTB,         'Ctr{0,1}Source' },
+    "{"+MTB+",100kHzTimebase}" : {         ao_SCTB, 'Ctr{0,1}Source' },
   },
 
   'pxi-6733' : {
     Ext                   : { P9 },
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
     (T5,PXI5)             : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
-    (Ti7,PXIi7)           : { ao_SCTB,              'Ctr{0,1}Source', MTB },
+    (Ti7,PXIi7)           : {              ao_SCTB, 'Ctr{0,1}Source', MTB },
     ao_SC                 : { 'PFI5', (T5,PXI5),                   dio_SC },
     ao_ST                 : { 'PFI6', (T5,PXI5) },
     '20MHzTimebase'       : { (Ti7,PXIi7), ao_SCTB, 'Ctr{0,1}Source', MTB },
@@ -99,7 +99,7 @@ available = {
     'Ctr1Gate'            : { 'PFI4' },
     'Ctr1Source'          : { 'PFI3' },
     Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
-    "{"+MTB+",100kHzTimebase}" : { ao_SCTB,         'Ctr{0,1}Source' },
+    "{"+MTB+",100kHzTimebase}" : {         ao_SCTB, 'Ctr{0,1}Source' },
   },
 
   'pci-6221' : {
