@@ -90,6 +90,10 @@ class Task(Base):
             nearest_terminal( self.config['clock']['value'],
                               set(self.clock_sources),
                               signal_graph ) ]
+        if self.clock_terminal == self.format_ni_terminal_name('SampleClock'):
+          # this certainly works for NI analog devices.  Not sure when this
+          # would break.
+          self.clock_terminal = 'OnboardClock'
         do_rebuild = True
 
     if do_rebuild:

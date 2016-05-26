@@ -50,7 +50,7 @@ available = {
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
     (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}' },
     (Ti7,Ri7)             : {            ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_OC                 : { ao_SC, 'PFI5', (T6,R6) },
+    ao_SC                 : { ao_SC, 'PFI5', (T6,R6) },
        # above allows OnboardClock --> ao_SC
     ao_ST                 : { 'PFI6', (T6,R6) },
     '20MHzTimebase'       : { (Ti7,Ri7), ao_SCTB, 'Ctr{0,1}Source', MTB },
@@ -69,7 +69,7 @@ available = {
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
     (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
     (Ti7,Ri7)             : {              ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_OC                 : { ao_SC, 'PFI5', (T6,R6),              dio_SC },
+    ao_SC                 : { ao_SC, 'PFI5', (T6,R6),              dio_SC },
        # above allows OnboardClock --> ao_SC
     ao_ST                 : { 'PFI6', (T6,R6) },
     '20MHzTimebase'       : { (Ti7,Ri7),   ao_SCTB, 'Ctr{0,1}Source', MTB },
@@ -88,7 +88,7 @@ available = {
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
     (T5,PXI5)             : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
     (Ti7,PXIi7)           : {              ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_OC                 : { ao_SC, 'PFI5', (T5,PXI5),            dio_SC },
+    ao_SC                 : { ao_SC, 'PFI5', (T5,PXI5),            dio_SC },
        # above allows OnboardClock --> ao_SC
     ao_ST                 : { 'PFI6', (T5,PXI5) },
     '20MHzTimebase'       : { (Ti7,PXIi7), ao_SCTB, 'Ctr{0,1}Source', MTB },
@@ -108,7 +108,7 @@ available = {
     'PFI{6..15}'          : {          ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}', Ext },
     (T7,R7)               : { P15,     ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}' },
     ai_SC                 : { P15, (T7,R7), dio_SC },
-    ao_OC                 : { ao_SC, P15, (T7,R7),     dio_SC },
+    ao_SC                 : { ao_SC, P15, (T7,R7),     dio_SC },
        # above allows OnboardClock --> ao_SC
     ai_CC                 : { P15, (T7,R7),            dio_SC },
     ai_ST                 : { P15, (T7,R7), ao_ST, 'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
