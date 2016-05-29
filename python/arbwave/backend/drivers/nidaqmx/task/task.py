@@ -5,6 +5,7 @@ from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 from ....device import Device as Base
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
+from .....tools import cached
 from physical import unit
 import nidaqmx
 import numpy as np
@@ -71,11 +72,11 @@ class Task(Base):
       warn( 'creating unknown NIDAQmx task/channel: %s/%s', self.task, c )
       self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
-  @property
+  @cached.property
   def has_onboardclock(self):
     return self.onboardclock_name in self.clock_sources
 
-  @property
+  @cached.property
   def onboardclock_name(self):
     return self.name + '/' + 'SampleClock'
 
@@ -167,12 +168,18 @@ class Task(Base):
 
 
   def get_min_period(self):
-    if self.task and self.channels:
+    if self.has_onboardclock and self.task and self.channels:
       return unit.s / self.task.get_sample_clock_max_rate()
     return 0*unit.s
 
 
   def get_clock_rate(self):
+    if not self.has_onboardclock:
+      # It seems that if a device does not have an onboard clock, the call to
+      # get_sample_clock_max_rate fails.
+      # If this is ever an analog output device, this will probably fail since
+      # the max-rate must be specified to program the DAC settling time.
+      return 0
     if self.clock_terminal == 'OnboardClock':
       return self.clocks[ self.onboardclock_name ]['rate']['value']
     return self.task.get_sample_clock_max_rate()
