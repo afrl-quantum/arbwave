@@ -93,15 +93,16 @@ class Task(Base):
       self.clock_terminal = None
     else:
       if signal_graph:
-        self.clock_terminal = \
-          self.sources_to_native[
-            nearest_terminal( self.config['clock']['value'],
-                              set(self.clock_sources),
-                              signal_graph ) ]
-        if self.clock_terminal == self.format_ni_terminal_name('SampleClock'):
-          # this certainly works for NI analog devices.  Not sure when this
-          # would break.
+        if self.config['clock']['value'] == self.onboardclock_name:
+          # don't have to lookup anymore, since we know it is already the
+          # onboard clock
           self.clock_terminal = 'OnboardClock'
+        else:
+          self.clock_terminal = \
+            self.sources_to_native[
+              nearest_terminal( self.config['clock']['value'],
+                                set(self.clock_sources),
+                                signal_graph ) ]
         do_rebuild = True
 
     if do_rebuild:
