@@ -46,6 +46,37 @@ Ctr0  = ImplicitRoute( ('Ctr0', 'Ctr0InternalOutput') )
 Ctr1  = ImplicitRoute( ('Ctr1', 'Ctr1InternalOutput') )
 
 available = {
+  'pci-6221' : {
+    Ext                   : { P15 },
+    'PFI{0..5}'           : { (T7,R7), ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}', Ext },
+    'PFI{6..15}'          : {          ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}', Ext },
+    (T7,R7)               : { P15,     ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}' },
+    ai_SC                 : { P15, (T7,R7), dio_SC },
+    ao_SC                 : { ao_SC, P15, (T7,R7),     dio_SC },
+       # above allows OnboardClock --> ao_SC
+    ai_CC                 : { P15, (T7,R7),            dio_SC },
+    ai_ST                 : { P15, (T7,R7), ao_ST, 'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
+    'ai/ReferenceTrigger' : { P15, (T7,R7),        'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
+    ao_ST                 : { P15, (T7,R7) },
+    dio_SC                : { P15 },
+    '20MHzTimebase'       : { ai_CCTB, ai_SCTB, ao_SCTB, 'Ctr{0,1}Source' },
+    '80MHzTimebase'       : {                            'Ctr{0,1}Source' },
+    '10MHzRefClock'       : { (T7,R7) },
+    'ai/PauseTrigger'     : { (T7,R7) },
+    'ao/PauseTrigger'     : { (T7,R7) },
+    ai_CCTB               : { ai_CC },
+    ai_SCTB               : { ai_SC, ai_CCTB },
+    'Ctr0Source'          : { P15, (T7,R7), 'Ctr1Gate', 'Ctr1Aux' },
+    'Ctr1Source'          : { P15, (T7,R7), 'Ctr0Gate', 'Ctr0Aux' },
+    'Ctr0Gate'            : { P15, (T7,R7), 'Ctr1Source', 'Ctr{0,1}Aux' },
+    'Ctr1Gate'            : { P15, (T7,R7), 'Ctr0Source', 'Ctr{0,1}Aux' },
+    Ctr0                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr1Gate', 'Ctr1Aux', 'Ctr1ArmStartTrigger' },
+    Ctr1                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr0Gate', 'Ctr0Aux', 'Ctr0ArmStartTrigger' },
+    'FrequencyOutput'     : { P15, (T7,R7), dio_SC },
+    '100kHzTimebase'      : { ai_SCTB, ao_SCTB, 'Ctr{0,1}Source' },
+    'ChangeDetectionEvent': { P15, (T7,R7), dio_SC },
+    'port0/line{0..7}'    : { Ext },
+  },
 
   'pci-6534' : {
     Ext                   : { P7 },
@@ -152,38 +183,6 @@ available = {
     Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
     "{"+MTB+",100kHzTimebase}" : {         ao_SCTB, 'Ctr{0,1}Source' },
   },
-
-  'pci-6221' : {
-    Ext                   : { P15 },
-    'PFI{0..5}'           : { (T7,R7), ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}', Ext },
-    'PFI{6..15}'          : {          ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}', Ext },
-    (T7,R7)               : { P15,     ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}' },
-    ai_SC                 : { P15, (T7,R7), dio_SC },
-    ao_SC                 : { ao_SC, P15, (T7,R7),     dio_SC },
-       # above allows OnboardClock --> ao_SC
-    ai_CC                 : { P15, (T7,R7),            dio_SC },
-    ai_ST                 : { P15, (T7,R7), ao_ST, 'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
-    'ai/ReferenceTrigger' : { P15, (T7,R7),        'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
-    ao_ST                 : { P15, (T7,R7) },
-    dio_SC                : { P15 },
-    '20MHzTimebase'       : { ai_CCTB, ai_SCTB, ao_SCTB, 'Ctr{0,1}Source' },
-    '80MHzTimebase'       : {                            'Ctr{0,1}Source' },
-    '10MHzRefClock'       : { (T7,R7) },
-    'ai/PauseTrigger'     : { (T7,R7) },
-    'ao/PauseTrigger'     : { (T7,R7) },
-    ai_CCTB               : { ai_CC },
-    ai_SCTB               : { ai_SC, ai_CCTB },
-    'Ctr0Source'          : { P15, (T7,R7), 'Ctr1Gate', 'Ctr1Aux' },
-    'Ctr1Source'          : { P15, (T7,R7), 'Ctr0Gate', 'Ctr0Aux' },
-    'Ctr0Gate'            : { P15, (T7,R7), 'Ctr1Source', 'Ctr{0,1}Aux' },
-    'Ctr1Gate'            : { P15, (T7,R7), 'Ctr0Source', 'Ctr{0,1}Aux' },
-    Ctr0                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr1Gate', 'Ctr1Aux', 'Ctr1ArmStartTrigger' },
-    Ctr1                  : { P15, (T7,R7), ai_SC, ai_ST, ao_SC, dio_SC, ai_CC, 'Ctr0Gate', 'Ctr0Aux', 'Ctr0ArmStartTrigger' },
-    'FrequencyOutput'     : { P15, (T7,R7), dio_SC },
-    '100kHzTimebase'      : { ai_SCTB, ao_SCTB, 'Ctr{0,1}Source' },
-    'ChangeDetectionEvent': { P15, (T7,R7), dio_SC },
-    'port0/line{0..7}'    : { Ext },
-  },
 }
 
 available['pxi-6723'] = available['pxi-6733']
@@ -268,5 +267,11 @@ class RouteLoader(object):
 
   def __call__(self, device, product):
     agg_map, route_map = self.mk_signal_route_map(device, product)
-    self.aggregate_map.update( agg_map )
     self.signal_route_map.update( route_map )
+    # for the aggregate map, we'll need to loop through each key to update the
+    # target list if the key already has an existing target list.
+    for k,v in agg_map.iteritems():
+      if k in self.aggregate_map:
+        self.aggregate_map[k].extend( v )
+      else:
+        self.aggregate_map[k] = v
