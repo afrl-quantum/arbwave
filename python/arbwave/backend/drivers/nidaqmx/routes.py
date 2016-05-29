@@ -19,6 +19,7 @@ Ti7 = 'TRIG/7'
 R6  = 'RTSI{0..6}'
 R7  = 'RTSI{0..7}'
 Ri7 = 'RTSI7'
+P7  = 'PFI{0..7}'
 P9  = 'PFI{0..9}'
 P15 = 'PFI{0..15}'
 ao_sig = 'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}'
@@ -45,6 +46,56 @@ Ctr0  = ImplicitRoute( ('Ctr0', 'Ctr0InternalOutput') )
 Ctr1  = ImplicitRoute( ('Ctr1', 'Ctr1InternalOutput') )
 
 available = {
+
+  'pci-6534' : {
+    Ext                   : { P7 },
+    'PFI0'                : { (T6,R6), 'Dig0/ReferenceTrigger', Ext },
+    'PFI1'                : { (T6,R6), 'Dig1/ReferenceTrigger', Ext },
+    'PFI{2,6}'            : { (T6,R6), 'Dig0/{SampleClock,PauseTrigger,StartTrigger}', do_SC, Ext },
+    'PFI{3,7}'            : { (T6,R6), 'Dig1/{SampleClock,PauseTrigger,StartTrigger}', do_SC, Ext },
+    'PFI4'                : { (T6,R6), 'Dig0/SampleClockTimebase', Ext },
+    'PFI5'                : { (T6,R6), 'Dig1/SampleClockTimebase', Ext },
+    ('TRIG/0','RTSI/0')   : { P7, ('TRIG/{1..6}', 'RTSI{1..6}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/1','RTSI/1')   : { P7, ('TRIG/{{0..0},{2..6}}', 'RTSI{{0..0},{2..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/2','RTSI/2')   : { P7, ('TRIG/{{0..1},{3..6}}', 'RTSI{{0..1},{3..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/3','RTSI/3')   : { P7, ('TRIG/{{0..2},{4..6}}', 'RTSI{{0..2},{4..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/4','RTSI/4')   : { P7, ('TRIG/{{0..3},{5..6}}', 'RTSI{{0..3},{5..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/5','RTSI/5')   : { P7, ('TRIG/{{0..4},{6..6}}', 'RTSI{{0..4},{6..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/6','RTSI/6')   : { P7, ('TRIG/{0..5}', 'RTSI{0..5}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/7','RTSI/7')   : {            'Dig{0,1}/SampleClockTimebase', MTB },
+    '20MHzTimebase'       : { (Ti7,Ri7), 'Dig{0,1}/SampleClockTimebase', MTB },
+    MTB                   : {            'Dig{0,1}/SampleClockTimebase' },
+    # These are the real names of the clock devices.  It seems that NIDAQmx only
+    # allows us to specify these as clock sources implicitly through the
+    # "OnboardClock" name.
+    'Dig0/SampleClockTimebase' : { 'PFI4', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig0/{SampleClock,PauseTrigger}'},
+    'Dig0/SampleClock'    : {                                                          'Dig0/PauseTrigger'},
+    'Dig0/ReadyForTransfer':{ 'PFI{2,6}', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig0/{SampleClock,PauseTrigger,StartTrigger}'},
+    'Dig1/SampleClockTimebase' : { 'PFI5', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig1/{SampleClock,PauseTrigger}'},
+    'Dig1/SampleClock'    : {                                                          'Dig1/PauseTrigger'},
+    'Dig1/ReadyForTransfer':{ 'PFI{3,7}', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig1/{SampleClock,PauseTrigger,StartTrigger}'},
+    # This is the fake name of the implicit clock(s) used by this digital
+    # device.  This just ensures that the OnboardClock can be used properly.
+    # Any desired routing from the actual clock used depends on which
+    # configuration of ports is used.  According to the 653x user manual
+    # (371464d), the actual clock used is given (limited) by:
+    #   port/lines used      Timing Group (Dig0 or Dig1)
+    # --------------------------------------------------
+    #   port 0                  Group 0
+    #   port 2                  Group 1
+    #   port 0..1               Group 0
+    #   port 2..3               Group 1
+    #   port 0..3               Group 0
+    do_SC                 : { do_SC },
+  },
+
   'pci-6723' : {
     Ext                   : { P9 },
     P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
