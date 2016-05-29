@@ -21,7 +21,7 @@ class Task(Base):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
     self.task = None
     self.channels = dict()
-    self.clocks = None
+    self.clocks = dict()
     self.clock_terminal = None
     self.use_case = None
     self.t_max = 0.0
@@ -71,6 +71,13 @@ class Task(Base):
       warn( 'creating unknown NIDAQmx task/channel: %s/%s', self.task, c )
       self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
+  @property
+  def has_onboardclock(self):
+    return self.onboardclock_name in self.clock_sources
+
+  @property
+  def onboardclock_name(self):
+    return self.name + '/' + 'SampleClock'
 
   def set_config(self, config=None, channels=None, signal_graph=None):
     do_rebuild = False
@@ -117,9 +124,14 @@ class Task(Base):
 
   def set_clocks(self, clocks):
     """
-    Implemented by Timing channel
+    If this is an analog device, this must be the onboard clock only.
+    If this is a digital device, either an Onboard timer for the digital device
+    (if supported) or aperiodic clock implemented by a digital line of a digital
+    device.
+    If this is a timing device, this must be one of the counters.
     """
-    raise NotImplementedError('only the Timing task can implement clocks')
+    if self.clocks != clocks:
+      self.clocks = clocks
 
 
   def set_output(self, data):
@@ -161,6 +173,8 @@ class Task(Base):
 
 
   def get_clock_rate(self):
+    if self.clock_terminal == 'OnboardClock':
+      return self.clocks[ self.onboardclock_name ]['rate']['value']
     return self.task.get_sample_clock_max_rate()
 
 

@@ -6,7 +6,7 @@ from ....channels import Timing as TBase, RecursiveMinPeriod
 from .base import Base
 from physical import unit
 
-__all__ = ['Timing', 'DOTiming', 'AO_OnboardClock']
+__all__ = ['Timing', 'DOTiming', 'OnboardClock']
 
 class Timing(Base, TBase):
   """NIDAQmx Timing channel class"""
@@ -57,19 +57,23 @@ class DOTiming(Base, TBase):
 
 
 
-class AO_OnboardClock(Base, TBase):
+class OnboardClock(Base, TBase):
   """
-  NIDAQmx Timing channel class for onboard analog output timer.
+  NIDAQmx Timing channel class for onboard output timer.
   """
 
   def get_min_period(self):
-    return unit.s / self.device.clocks['rate']['value']
+    OC = self.device.onboardclock_name
+    return unit.s / self.device.clocks[OC]['rate']['value']
 
   def get_config_template(self):
     return {
       'rate' : {
         'value' : 1000,
         'type'  : float,
-        'range' : float_range(0.0,1e6, include_beginning=False),
+        # FIXME:  find a way of knowing/determining the maximum rate for a
+        # particular device.  For right now, I'm selecting the maximum I know
+        # (which is for the PCI-6534 device).
+        'range' : float_range(0.0,20e6, include_beginning=False),
       }
     }

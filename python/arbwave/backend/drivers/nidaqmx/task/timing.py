@@ -7,11 +7,6 @@ class Timing(Base):
   task_type = 'to'
   task_class = nidaqmx.CounterOutputTask
 
-  def set_clocks(self, clocks):
-    if self.clocks != clocks:
-      self.clocks = clocks
-
-
   def add_channels(self):
     for c in self.clocks.items():
       name = c[0].partition('/')[-1] # cut off the prefix
