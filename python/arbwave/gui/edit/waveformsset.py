@@ -5,7 +5,8 @@ from helpers import *
 from spreadsheet import keys
 
 class Dragger(object):
-  def __init__(self, V):
+  def __init__(self, V, ui):
+    self.ui = ui
     self.drop_started = False
     V.connect('drag-motion', self.drag_motion)
     V.connect('drag-data-received', self.drag_data_received)
@@ -20,41 +21,53 @@ class Dragger(object):
       gdk.drag_status( ctx, gdk.DragAction.COPY, time )
 
   def drag_data_received(self, w, ctx, x, y, seldata, info, time):
-    if self.drop_started and ctx.action & gdk.DragAction.COPY:
-      model, path = seldata.tree_get_row_drag_data()
+    if self.drop_started:
+      ok, self.model, path = gtk.tree_get_row_drag_data(seldata)
+      if not ok:
+        raise RuntimeError('could not get tree drag data!')
+      self.drop_info = w.get_dest_row_at_pos(x, y)
+
+  def drag_begin(self, w, ctx):
+    print 'begin'
+    # pause updates because of waveform updates
+    self.ui.pause()
+    self.drop_started = False
+
+  def drag_drop(self, w,ctx,x,y,time):
+    print 'drop'
+    self.drop_started = True
+
+  def drag_end(self, w, ctx):
+    if self.drop_started and ctx.get_selected_action() & gdk.DragAction.COPY:
+      model = self.model
+      path = -1
+      if self.drop_info:
+        path, position_ignore = self.drop_info
+
       new_label = model[ path ][model.LABEL] + '-copy-'
       all_labels = [ l[model.LABEL] for l in model ]
       for i in xrange(sys.maxint):
         if new_label + str(i) not in all_labels:
           break
-      # now make a new row that gets moved
-      # FIXME
-      model.append(
-        (new_label + str(i), model[path][model.WAVEFORMS].copy()) )
-      seldata.tree_set_row_drag_data(model, model[-1].path)
-      self.model = model
-      return False
 
-  def drag_begin(self, w, ctx):
+      model[path][model.LABEL] = new_label + str(i)
+      model[path][model.WAVEFORMS] = model[path][model.WAVEFORMS].copy()
+
+    print 'end'
     self.drop_started = False
-
-  def drag_drop(self, w,ctx,x,y,time):
-    self.drop_started = True
-
-  def drag_end(self, w, ctx):
-    if ctx.action & gdk.DragAction.COPY:
-      # clean  up!
-      del self.model[-1]
+    # unpause updates, no need to trigger update unless waveform changes
+    self.ui.unpause()
 
 class Editor(object):
-  def __init__(self, waveforms_set, add_undo=None):
-    self.add_undo = add_undo
+  def __init__(self, waveforms_set, ui, add_undo=None):
     self.waveforms_set = waveforms_set
+    self.add_undo = add_undo
+    self.ui = ui
     ws = waveforms_set
 
     V = self.view = gtk.TreeView( ws )
     V.set_reorderable(True)
-    self.drag_response = Dragger( V )
+    self.drag_response = Dragger( V, ui )
     V.connect('key-press-event', self.view_keypress_cb)
     R = {
       'label'   : GCRT(),
@@ -93,7 +106,7 @@ class Editor(object):
     elif event.keyval == keys.DEL:
       model, rows = self.view.get_selection().get_selected_rows()
       # we convert paths to row references so that references are persistent
-      rows = [ gtk.TreeRowReference(model, p)  for p in rows ]
+      rows = [ gtk.TreeRowReference.new(model, p)  for p in rows ]
       for r in rows:
         model.remove( model.get_iter( r.get_path() ) )
       return True
@@ -114,7 +127,7 @@ class Dialog(gtk.Dialog):
 
     self.set_default_size(300, 200)
     self.set_border_width(10)
-    self.editor = Editor( waveforms_set, add_undo=add_undo )
+    self.editor = Editor( waveforms_set, ui=parent, add_undo=add_undo )
     self.vbox.pack_start( self.editor.view, True, True, 0 )
     self.connect('response', self.respond)
     self.editor.view.get_selection() \
