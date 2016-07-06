@@ -19,6 +19,7 @@ Ti7 = 'TRIG/7'
 R6  = 'RTSI{0..6}'
 R7  = 'RTSI{0..7}'
 Ri7 = 'RTSI7'
+P7  = 'PFI{0..7}'
 P9  = 'PFI{0..9}'
 P15 = 'PFI{0..15}'
 ao_sig = 'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}'
@@ -45,52 +46,15 @@ Ctr0  = ImplicitRoute( ('Ctr0', 'Ctr0InternalOutput') )
 Ctr1  = ImplicitRoute( ('Ctr1', 'Ctr1InternalOutput') )
 
 available = {
-  'pci-6723' : {
-    Ext                   : { P9 },
-    P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
-    (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}' },
-    (Ti7,Ri7)             : { ao_SCTB,            'Ctr{0,1}Source', MTB },
-    ao_SC                 : { 'PFI5', (T6,R6) },
-    ao_ST                 : { 'PFI6', (T6,R6) },
-    '20MHzTimebase'       : { (Ti7,Ri7), ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
-    'Ctr0Out'             : { (T6,R6) },
-    'Ctr0Gate'            : { 'PFI9', (T6,R6) },
-    'Ctr0Source'          : { 'PFI8', (T6,R6) },
-    Ctr0                  : { (T6,R6), 'Ctr0Out', 'Ctr1Gate' },
-    'Ctr1Gate'            : { 'PFI4' },
-    'Ctr1Source'          : { 'PFI3' },
-    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
-    "{"+MTB+",100kHzTimebase}" : { ao_SCTB,       'Ctr{0,1}Source' },
-  },
-
-  'pxi-6733' : {
-    Ext                   : { P9 },
-    P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
-    (T5,PXI5)             : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
-    (Ti7,PXIi7)           : { ao_SCTB,              'Ctr{0,1}Source', MTB },
-    ao_SC                 : { 'PFI5', (T5,PXI5),                   dio_SC },
-    ao_ST                 : { 'PFI6', (T5,PXI5) },
-    '20MHzTimebase'       : { (Ti7,PXIi7), ao_SCTB, 'Ctr{0,1}Source', MTB },
-    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
-    'Ctr0Out'             : { (T5,PXI5) },
-    'Ctr0Gate'            : { 'PFI9', (T5,PXI5) },
-    'Ctr0Source'          : { 'PFI8', (T5,PXI5) },
-    Ctr0                  : { (T5,PXI5), 'Ctr0Out', 'Ctr1Gate' },
-    'Ctr1Gate'            : { 'PFI4' },
-    'Ctr1Source'          : { 'PFI3' },
-    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
-    "{"+MTB+",100kHzTimebase}" : { ao_SCTB,         'Ctr{0,1}Source' },
-  },
-
   'pci-6221' : {
     Ext                   : { P15 },
     'PFI{0..5}'           : { (T7,R7), ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}', Ext },
     'PFI{6..15}'          : {          ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}', Ext },
     (T7,R7)               : { P15,     ai_sig, ao_sig, dio_SC, 'Ctr{0,1}{Gate,Source,Aux,ArmStartTrigger,A,B,Z}' },
     ai_SC                 : { P15, (T7,R7), dio_SC },
-    ao_SC                 : { P15, (T7,R7), dio_SC },
-    ai_CC                 : { P15, (T7,R7), dio_SC },
+    ao_SC                 : { ao_SC, P15, (T7,R7),     dio_SC },
+       # above allows OnboardClock --> ao_SC
+    ai_CC                 : { P15, (T7,R7),            dio_SC },
     ai_ST                 : { P15, (T7,R7), ao_ST, 'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
     'ai/ReferenceTrigger' : { P15, (T7,R7),        'Ctr{0,1}{Gate,Aux,ArmStartTrigger}' },
     ao_ST                 : { P15, (T7,R7) },
@@ -102,7 +66,6 @@ available = {
     'ao/PauseTrigger'     : { (T7,R7) },
     ai_CCTB               : { ai_CC },
     ai_SCTB               : { ai_SC, ai_CCTB },
-    ao_OC                 : { ao_SC }, # means OnboardClock --> ao_SC
     'Ctr0Source'          : { P15, (T7,R7), 'Ctr1Gate', 'Ctr1Aux' },
     'Ctr1Source'          : { P15, (T7,R7), 'Ctr0Gate', 'Ctr0Aux' },
     'Ctr0Gate'            : { P15, (T7,R7), 'Ctr1Source', 'Ctr{0,1}Aux' },
@@ -114,9 +77,114 @@ available = {
     'ChangeDetectionEvent': { P15, (T7,R7), dio_SC },
     'port0/line{0..7}'    : { Ext },
   },
+
+  'pci-6534' : {
+    Ext                   : { P7 },
+    'PFI0'                : { (T6,R6), 'Dig0/ReferenceTrigger', Ext },
+    'PFI1'                : { (T6,R6), 'Dig1/ReferenceTrigger', Ext },
+    'PFI{2,6}'            : { (T6,R6), 'Dig0/{SampleClock,PauseTrigger,StartTrigger}', do_SC, Ext },
+    'PFI{3,7}'            : { (T6,R6), 'Dig1/{SampleClock,PauseTrigger,StartTrigger}', do_SC, Ext },
+    'PFI4'                : { (T6,R6), 'Dig0/SampleClockTimebase', Ext },
+    'PFI5'                : { (T6,R6), 'Dig1/SampleClockTimebase', Ext },
+    ('TRIG/0','RTSI0')    : { P7, ('TRIG/{1..6}', 'RTSI{1..6}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/1','RTSI1')    : { P7, ('TRIG/{{0..0},{2..6}}', 'RTSI{{0..0},{2..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/2','RTSI2')    : { P7, ('TRIG/{{0..1},{3..6}}', 'RTSI{{0..1},{3..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/3','RTSI3')    : { P7, ('TRIG/{{0..2},{4..6}}', 'RTSI{{0..2},{4..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/4','RTSI4')    : { P7, ('TRIG/{{0..3},{5..6}}', 'RTSI{{0..3},{5..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/5','RTSI5')    : { P7, ('TRIG/{{0..4},{6..6}}', 'RTSI{{0..4},{6..6}}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/6','RTSI6')    : { P7, ('TRIG/{0..5}', 'RTSI{0..5}'), do_SC,
+                              'Dig{0,1}/{SampleClockTimebase,SampleClock,PauseTigger,StartTrigger,ReferenceTrigger}' },
+    ('TRIG/7','RTSI7')    : {            'Dig{0,1}/SampleClockTimebase', MTB },
+    '20MHzTimebase'       : { (Ti7,Ri7), 'Dig{0,1}/SampleClockTimebase', MTB },
+    MTB                   : {            'Dig{0,1}/SampleClockTimebase' },
+    # These are the real names of the clock devices.  It seems that NIDAQmx only
+    # allows us to specify these as clock sources implicitly through the
+    # "OnboardClock" name.
+    'Dig0/SampleClockTimebase' : { 'PFI4', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig0/{SampleClock,PauseTrigger}'},
+    'Dig0/SampleClock'    : {                                                          'Dig0/PauseTrigger'},
+    'Dig0/ReadyForTransfer':{ 'PFI{2,6}', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig0/{SampleClock,PauseTrigger,StartTrigger}'},
+    'Dig1/SampleClockTimebase' : { 'PFI5', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig1/{SampleClock,PauseTrigger}'},
+    'Dig1/SampleClock'    : {                                                          'Dig1/PauseTrigger'},
+    'Dig1/ReadyForTransfer':{ 'PFI{3,7}', ('TRIG/{0..6}', 'RTSI{0..6}'), 'Dig1/{SampleClock,PauseTrigger,StartTrigger}'},
+    # This is the fake name of the implicit clock(s) used by this digital
+    # device.  This just ensures that the OnboardClock can be used properly.
+    # Any desired routing from the actual clock used depends on which
+    # configuration of ports is used.  According to the 653x user manual
+    # (371464d), the actual clock used is given (limited) by:
+    #   port/lines used      Timing Group (Dig0 or Dig1)
+    # --------------------------------------------------
+    #   port 0                  Group 0
+    #   port 2                  Group 1
+    #   port 0..1               Group 0
+    #   port 2..3               Group 1
+    #   port 0..3               Group 0
+    do_SC                 : { do_SC },
+  },
+
+  'pci-6723' : {
+    Ext                   : { P9 },
+    P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
+    (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}' },
+    (Ti7,Ri7)             : {            ao_SCTB, 'Ctr{0,1}Source', MTB },
+    ao_SC                 : { ao_SC, 'PFI5', (T6,R6) },
+       # above allows OnboardClock --> ao_SC
+    ao_ST                 : { 'PFI6', (T6,R6) },
+    '20MHzTimebase'       : { (Ti7,Ri7), ao_SCTB, 'Ctr{0,1}Source', MTB },
+    'Ctr0Out'             : { (T6,R6) },
+    'Ctr0Gate'            : { 'PFI9', (T6,R6) },
+    'Ctr0Source'          : { 'PFI8', (T6,R6) },
+    Ctr0                  : { (T6,R6), 'Ctr0Out', 'Ctr1Gate' },
+    'Ctr1Gate'            : { 'PFI4' },
+    'Ctr1Source'          : { 'PFI3' },
+    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
+    "{"+MTB+",100kHzTimebase}" : {       ao_SCTB, 'Ctr{0,1}Source' },
+  },
+
+  'pci-6733' : {
+    Ext                   : { P9 },
+    P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
+    (T6,R6)               : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
+    (Ti7,Ri7)             : {              ao_SCTB, 'Ctr{0,1}Source', MTB },
+    ao_SC                 : { ao_SC, 'PFI5', (T6,R6),              dio_SC },
+       # above allows OnboardClock --> ao_SC
+    ao_ST                 : { 'PFI6', (T6,R6) },
+    '20MHzTimebase'       : { (Ti7,Ri7),   ao_SCTB, 'Ctr{0,1}Source', MTB },
+    'Ctr0Out'             : { (T6,R6) },
+    'Ctr0Gate'            : { 'PFI9', (T6,R6) },
+    'Ctr0Source'          : { 'PFI8', (T6,R6) },
+    Ctr0                  : { (T6,R6), 'Ctr0Out', 'Ctr1Gate' },
+    'Ctr1Gate'            : { 'PFI4' },
+    'Ctr1Source'          : { 'PFI3' },
+    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
+    "{"+MTB+",100kHzTimebase}" : {         ao_SCTB, 'Ctr{0,1}Source' },
+  },
+
+  'pxi-6733' : {
+    Ext                   : { P9 },
+    P9                    : { ao_sig, 'Ctr{0,1}{Gate,Source}', Ext },
+    (T5,PXI5)             : { ao_sig, 'Ctr{0,1}{Out,Gate,Source}', dio_SC },
+    (Ti7,PXIi7)           : {              ao_SCTB, 'Ctr{0,1}Source', MTB },
+    ao_SC                 : { ao_SC, 'PFI5', (T5,PXI5),            dio_SC },
+       # above allows OnboardClock --> ao_SC
+    ao_ST                 : { 'PFI6', (T5,PXI5) },
+    '20MHzTimebase'       : { (Ti7,PXIi7), ao_SCTB, 'Ctr{0,1}Source', MTB },
+    'Ctr0Out'             : { (T5,PXI5) },
+    'Ctr0Gate'            : { 'PFI9', (T5,PXI5) },
+    'Ctr0Source'          : { 'PFI8', (T5,PXI5) },
+    Ctr0                  : { (T5,PXI5), 'Ctr0Out', 'Ctr1Gate' },
+    'Ctr1Gate'            : { 'PFI4' },
+    'Ctr1Source'          : { 'PFI3' },
+    Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
+    "{"+MTB+",100kHzTimebase}" : {         ao_SCTB, 'Ctr{0,1}Source' },
+  },
 }
 
-available['pci-6733'] = available['pci-6723']
 available['pxi-6723'] = available['pxi-6733']
 available['pci-6225'] = available['pci-6221']
 available['pci-6229'] = available['pci-6221'].copy()
@@ -199,5 +267,11 @@ class RouteLoader(object):
 
   def __call__(self, device, product):
     agg_map, route_map = self.mk_signal_route_map(device, product)
-    self.aggregate_map.update( agg_map )
     self.signal_route_map.update( route_map )
+    # for the aggregate map, we'll need to loop through each key to update the
+    # target list if the key already has an existing target list.
+    for k,v in agg_map.iteritems():
+      if k in self.aggregate_map:
+        self.aggregate_map[k].extend( v )
+      else:
+        self.aggregate_map[k] = v

@@ -68,9 +68,9 @@ class Parameters(gtk.TreeStore):
 
 
 def drag_motion(w, ctx, x, y, time):
-  mask = w.window.get_pointer()[2]
+  mask = w.get_window().get_pointer()[2]
   if mask & gdk.ModifierType.CONTROL_MASK:
-    ctx.drag_status( gdk.DragAction.COPY, time )
+    gdk.drag_status( ctx, gdk.DragAction.COPY, time )
 
 
 class LoopView(gtk.Dialog):

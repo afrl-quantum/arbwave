@@ -1,7 +1,28 @@
 % vim: ts=2:sw=2:tw=80:et
 \section{Global Script}
-  \subsection{Variables}
     Some automatic variables are \symb{duration} and \symb{natural_time}.
+
+  \subsection{Variables} \label{script:variables}
+    If you want to use a variable in the waveform element lines, you should
+    probably define that variable in the global variables/functions script.  By
+    doing so, these variables will be available everywhere and also at any time.
+    You can then modify these variables by specifying them as loop variables in
+    the loop editor and selecting ``Global''.
+
+    Any valid python expression that can be assigned can be used as a loop
+    variable.  For instance, consider the following variables initialized in the
+    global script:
+
+    \begin{verbatim}
+    Bfield = [0*Gauss, 10*Gauss, 123*Gauss]
+    CoilCurrent = 4.2*A
+    Frequency = dict( mot = -10*MHz, pgc = -40*MHz, image=0*MHz )
+    \end{verbatim}
+
+    These expressions and any valid Python expression involving these variables
+    can be used anywhere in Arbwave.
+
+  \subsection{\textbf{Arbwave} Module (virtual)}
   \subsection{\textbf{arbwave} Module}
   \subsection{Connecting to Callbacks}
 

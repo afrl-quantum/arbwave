@@ -1,0 +1,50 @@
+% vim: ts=2:sw=2:tw=80:et
+\section{Loops}
+  \subsection{Variables}
+
+  You will find in multiple places that the "insert" key does special things
+  like inserting another loop variable.  You can sibling loops, or nested loops.
+  You can reorder these by dragging the loop variables.  You can also nest loops
+  by dragging/dropping loop variables on top of each other.  Furthermore, while
+  dragging, if you press the Control key, the item being dragged will be copied
+  instead of moved.  This is also a common interface for editing waveform
+  elements.
+  Feature request could be:  (1) add some documentation :-) or (2) add a tooltip
+  that says to use the insert key to insert a new variable. 
+
+
+
+  The insert key is also helpful if you want to define multiple waveforms (when
+  you push the button below the "delete waveform element" button or select from
+  the waveform popup menu).
+
+
+  \subsubsection{Using Global Variables}
+  You can use any of the variables defined like in Sec.~\ref{script:variables}
+  in appropriate waveform elements or even any other place you wish.  In fact,
+  you can also use these expressions as loop variables if you select "Global" in
+  the loop editor.  As some examples:
+
+  \begin{table}[ht!]
+    \center
+    \begin{tabular}{p{5cm} m{6cm}c}
+    Variable                  &                iterable            &   Global\\
+    \hline \hline
+    \verb|Bfield[0]|          &       \verb|r_[0:5:3j] * Gauss|      &    X \\
+    \verb|Bfield[1]|          &       \verb|r_[5:15:5j] * Gauss|     &    X \\
+    \verb|Bfield[2]|          &       \verb|r_[110:130:10j] * Gauss| &    X \\
+    \verb|CoilCurrent|        &       \verb|r_[4:5:20j] * A|         &    X \\
+    \verb|Frequency['mot']|   &       \verb|r_[-5:-20:5j] * MHz|   &      X \\
+    \verb|Frequency['pgc']|   &       \verb|r_[-20:-80:10j] * MHz| &      X \\
+    \verb|Frequency['image']| &       \verb|r_[-5:5:10j] * MHz|    &      X \\
+    \end{tabular}
+
+    \caption{
+      Example of some valid loop variables.
+    }
+  \end{table}
+
+
+
+
+\section{Optimization}

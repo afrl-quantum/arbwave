@@ -39,4 +39,7 @@ def main(args):
     t.daemon = True # exit if the main thread has exited
     t.start()
 
+  # for whatever reason, there appears to be a race condition in setting up the
+  # Gtk3 windows.  This small pause seems to work around this.
+  time.sleep(.1)
   gtk.main()

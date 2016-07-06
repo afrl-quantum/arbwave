@@ -5,6 +5,7 @@ from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 from ....device import Device as Base
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
+from .....tools import cached
 from physical import unit
 import nidaqmx
 import numpy as np
@@ -21,7 +22,7 @@ class Task(Base):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
     self.task = None
     self.channels = dict()
-    self.clocks = None
+    self.clocks = dict()
     self.clock_terminal = None
     self.use_case = None
     self.t_max = 0.0
@@ -71,6 +72,13 @@ class Task(Base):
       warn( 'creating unknown NIDAQmx task/channel: %s/%s', self.task, c )
       self.task.create_channel(c.partition('/')[-1]) # cut off the prefix
 
+  @cached.property
+  def has_onboardclock(self):
+    return self.onboardclock_name in self.clock_sources
+
+  @cached.property
+  def onboardclock_name(self):
+    return self.name + '/' + 'SampleClock'
 
   def set_config(self, config=None, channels=None, signal_graph=None):
     do_rebuild = False
@@ -85,11 +93,16 @@ class Task(Base):
       self.clock_terminal = None
     else:
       if signal_graph:
-        self.clock_terminal = \
-          self.sources_to_native[
-            nearest_terminal( self.config['clock']['value'],
-                              set(self.clock_sources),
-                              signal_graph ) ]
+        if self.config['clock']['value'] == self.onboardclock_name:
+          # don't have to lookup anymore, since we know it is already the
+          # onboard clock
+          self.clock_terminal = 'OnboardClock'
+        else:
+          self.clock_terminal = \
+            self.sources_to_native[
+              nearest_terminal( self.config['clock']['value'],
+                                set(self.clock_sources),
+                                signal_graph ) ]
         do_rebuild = True
 
     if do_rebuild:
@@ -113,9 +126,14 @@ class Task(Base):
 
   def set_clocks(self, clocks):
     """
-    Implemented by Timing channel
+    If this is an analog device, this must be the onboard clock only.
+    If this is a digital device, either an Onboard timer for the digital device
+    (if supported) or aperiodic clock implemented by a digital line of a digital
+    device.
+    If this is a timing device, this must be one of the counters.
     """
-    raise NotImplementedError('only the Timing task can implement clocks')
+    if self.clocks != clocks:
+      self.clocks = clocks
 
 
   def set_output(self, data):
@@ -134,7 +152,9 @@ class Task(Base):
     self.task.set_sample_timing( timing_type='on_demand',
                                  mode='finite',
                                  samples_per_channel=1 )
-    self.task.configure_trigger_disable_start()
+    if self.trig_sources:
+      # this device _does_ accept triggers
+      self.task.configure_trigger_disable_start()
     # get the data
     px = self.prefix
     chlist = ['{}/{}'.format(px,c) for c in self.task.get_names_of_channels()]
@@ -149,12 +169,20 @@ class Task(Base):
 
 
   def get_min_period(self):
-    if self.task and self.channels:
+    if self.has_onboardclock and self.task and self.channels:
       return unit.s / self.task.get_sample_clock_max_rate()
     return 0*unit.s
 
 
   def get_clock_rate(self):
+    if not self.has_onboardclock:
+      # It seems that if a device does not have an onboard clock, the call to
+      # get_sample_clock_max_rate fails.
+      # If this is ever an analog output device, this will probably fail since
+      # the max-rate must be specified to program the DAC settling time.
+      return 0
+    if self.clock_terminal == 'OnboardClock':
+      return self.clocks[ self.onboardclock_name ]['rate']['value']
     return self.task.get_sample_clock_max_rate()
 
 
@@ -219,7 +247,9 @@ class Task(Base):
       sample_mode         = mode,
       samples_per_channel = len(transitions) )
     # 2.  Triggering
-    if self.config['trigger']['enable']['value']:
+    if not self.trig_sources:
+      pass # this device does not accept triggers
+    elif self.config['trigger']['enable']['value']:
       debug( 'nidaqmx: configuring task trigger for waveform output: %s', self.task )
       if rootlog.getEffectiveLevel() <= (DEBUG-1):
         log(DEBUG-1, 'self.task.configure_trigger_digital_edge_start('
@@ -345,31 +375,11 @@ class Task(Base):
 
 
   def get_config_template(self):
-    return {
+    C = {
       'use-only-onboard-memory' : {
         'value' : True,
         'type'  : bool,
         'range' : None,
-      },
-      'trigger' : {
-        'enable' : {
-          'value' : False,
-          'type' : bool,
-          'range' : None,
-        },
-        'source' : {
-          'value' : '',
-          'type' : str,
-          'range' : self.trig_sources,
-        },
-        'edge' : {
-          'value' : 'rising',
-          'type' : str,
-          'range' : [
-            ('falling','Trigger on Falling Edge of Trigger'),
-            ('rising', 'Trigger on Rising Edge of Trigger'),
-          ],
-        },
       },
       'clock' : {
         'value' : '',
@@ -403,3 +413,28 @@ class Task(Base):
         },
       },
     }
+
+    if self.trig_sources:
+      C.update(
+        trigger  = {
+          'enable' : {
+            'value' : False,
+            'type' : bool,
+            'range' : None,
+          },
+          'source' : {
+            'value' : '',
+            'type' : str,
+            'range' : self.trig_sources,
+          },
+          'edge' : {
+            'value' : 'rising',
+            'type' : str,
+            'range' : [
+              ('falling','Trigger on Falling Edge of Trigger'),
+              ('rising', 'Trigger on Rising Edge of Trigger'),
+            ],
+          },
+        },
+      )
+    return C

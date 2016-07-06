@@ -55,9 +55,10 @@ class Driver(Base):
         self.analogs += available
 
         # add the internal analog output timer
-        self.timing_channels.append(
-          channels.AO_OnboardClock('{}/{}/ao/SampleClock'.format(self.prefix,d), t)
-        )
+        if t.has_onboardclock:
+          self.timing_channels.append(
+            channels.OnboardClock(t.onboardclock_name, t)
+          )
 
 
       t = task.Digital(self, '{}/{}'.format(self.prefix,d))
@@ -71,6 +72,12 @@ class Driver(Base):
         self.tasks[ str(t) ] = t
         self.lines            += available[0]
         self.timing_channels  += available[1]
+
+        # add the internal analog output timer
+        if t.has_onboardclock:
+          self.timing_channels.append(
+            channels.OnboardClock(t.onboardclock_name, t)
+          )
 
 
       t = task.Timing(self, '{}/{}'.format(self.prefix,d))
@@ -173,20 +180,20 @@ class Driver(Base):
     for dev, clks in clocks.items():
       ctr_timing = dict()
       do_timing = dict()
-      ao_timing = None
+      ao_timing = dict()
       for clk,conf in clks.items():
         clk_local = clk[len(dev)+1:]
 
         if   clk_local == 'ao/SampleClock':
-          ao_timing = conf
-        elif   clk_local.startswith('port'):
+          ao_timing[ clk ] = conf
+        elif clk_local == 'do/SampleClock' or clk_local.startswith('port'):
           do_timing[ clk ] = conf
         elif clk_local.startswith('ctr'):
           ctr_timing[ clk ] = conf
         else:
           raise RuntimeError(
-            'Expected clock as {0}/ao/SampleClock, {0}/ctr*, '
-            'or on {0}/do'.format(dev))
+            'Expected clock as {0}/[ad]o/SampleClock, {0}/ctr*, '
+            'or on {0}/do lines'.format(dev))
 
       if do_timing:
         self.tasks[ dev+'/do' ].set_clocks( do_timing )

@@ -29,17 +29,6 @@ class Analog(Base):
         min_val=mn, max_val=mx )
 
 
-  def set_clocks(self, clocks):
-    """Onboard Analog timer"""
-    if self.clocks != clocks:
-      self.clocks = clocks
-
-  def get_clock_rate(self):
-    if self.clock_terminal == 'OnboardClock':
-      return self.clocks['rate']['value']
-    return super(Analog,self).get_clock_rate()
-
-
   def get_min_period(self):
     if self.task and self.channels:
       # this is kind of hackish and might be wrong for other hardware (that is

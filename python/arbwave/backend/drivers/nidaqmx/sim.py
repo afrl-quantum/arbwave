@@ -67,28 +67,104 @@ class Task:
     self.channels.append( ch )
 
 
+DEVICE_CAPABILITIES = {
+  'pci-6229': {
+  },
+  'pci-6733': {
+  },
+}
+
+class Dict(dict):
+  def __init__(self, *a, **kw):
+    super(Dict,self).__init__(*a, **kw)
+    self.__dict__ = self
+
 
 class NiDAQmx:
+  # not too ambitious on my versions :-)
+  MAJOR_VERSION = 8
+  MINOR_VERSION = 0
+
   def __init__(self):
     self.last_task = 0
     self.tasks = dict()
 
+    self.devices = dict(
+      Dev1 = Dict(
+        board = 'PCI-6229',
+        product_number = 0x2A, # ???
+        serial = 0xdeadbeef,
+        num_ao_channels = 4, # we might just want to make this big for fun
+        num_do_ports = 6,
+        port_size = 8, # number of lines per port
+        num_counters = 2,
+        ao_sample_clock_supported = True,
+        do_sample_clock_supported = True,
+      ),
+      Dev2 = Dict(
+        board = 'PCI-6733',
+        product_number = 0x2B, # ???
+        serial = 0xbeefdead,
+        num_ao_channels = 8, # we might just want to make this big for fun
+        num_do_ports = 1,
+        port_size = 8, # number of lines per port
+        num_counters = 2,
+        ao_sample_clock_supported = True,
+        do_sample_clock_supported = True,
+      ),
+      Dev3 = Dict(
+        board = 'PCI-6733',
+        product_number = 0x2B, # ???
+        serial = 0xbeefdeed,
+        num_ao_channels = 8, # we might just want to make this big for fun
+        num_do_ports = 1,
+        port_size = 8, # number of lines per port
+        num_counters = 2,
+        ao_sample_clock_supported = True,
+        do_sample_clock_supported = True,
+      ),
+      Dev4 = Dict(
+        board = 'PCI-6723',
+        product_number = 0x2C, # ???
+        serial = 0xfeedbeef,
+        num_ao_channels = 32, # we might just want to make this big for fun
+        num_do_ports = 1,
+        port_size = 8, # number of lines per port
+        num_counters = 2,
+        ao_sample_clock_supported = True,
+        do_sample_clock_supported = False,
+      ),
+      Dev5 = Dict(
+        board = 'PCI-6534',
+        product_number = 0x2D, # ???
+        serial = 0xfeeedfad,
+        num_ao_channels = 0, # we might just want to make this big for fun
+        num_do_ports = 4,
+        port_size = 8, # number of lines per port
+        num_counters = 0,
+        ao_sample_clock_supported = False,
+        do_sample_clock_supported = True,
+      ),
+    )
+
 
   #   SYSTEM INFORMATION
   def DAQmxGetSysNIDAQMajorVersion(self, retval_ref):
-    retval_ref._obj.value = 8
+    retval_ref._obj.value = self.MAJOR_VERSION
     log(DEBUG-1, 'DAQmxGetSysNIDAQMajorVersion() = %s', retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysNIDAQMinorVersion(self, retval_ref):
-    retval_ref._obj.value = 0
+    retval_ref._obj.value = self.MINOR_VERSION
     log(DEBUG-1, 'DAQmxGetSysNIDAQMinorVersion() = %s', retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysDevNames(self,buf_ref,bufsize):
-    buf_ref._obj.value = 'Dev1, Dev2, Dev3'[:bufsize]
+    devices = self.devices.keys()
+    devices.sort()
+    buf_ref._obj.value = ', '.join(devices)[:bufsize]
     log(DEBUG-1, 'DAQmxGetSysDevNames() = %s', buf_ref._obj.value)
     return 0
 
@@ -108,8 +184,9 @@ class NiDAQmx:
 
   # PHYSICAL CHANNEL INFORMATION
   def DAQmxGetPhysicalChanDOSampClkSupported(self, chan, retval_ref):
+    D = self.devices[ chan.partition('/')[0] ]
+    retval_ref._obj.value = int( D.do_sample_clock_supported )
     log(DEBUG-1, 'DAQmxGetPhysicalChanDOSampClkSupported(%s) = %s', chan, retval_ref._obj.value)
-    retval_ref._obj.value = 0x1 # false for PCI-6723, but let's set true anyway
     return 0
 
 
@@ -135,35 +212,45 @@ class NiDAQmx:
   #   DEVICE INFORMATION
   def DAQmxGetDevProductType(self, dev, buf_ref, bufsize):
     # for now, we will default to simulating a PCI-6723 ao card
-    buf_ref._obj.value = 'PCI-6229'[:bufsize]
+    buf_ref._obj.value = self.devices[str(dev)].board[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevProductType(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevProductNum(self, dev, retval_ref):
-    retval_ref._obj.value = 0x2A
+    retval_ref._obj.value = self.devices[str(dev)].product_number
     log(DEBUG-1, 'DAQmxGetDevProductNum(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevSerialNum(self, dev, retval_ref):
-    retval_ref._obj.value = 0xDEADBEEF
+    retval_ref._obj.value = self.devices[str(dev)].serial
     log(DEBUG-1, 'DAQmxGetDevSerialNum(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevAOPhysicalChans(self, dev, buf_ref, bufsize):
-    chans = ','.join([ '{}/ao{}'.format(dev,i) for i in xrange(32) ])
+    chans = ','.join([ '{}/ao{}'.format(dev,i)
+      for i in xrange(self.devices[str(dev)].num_ao_channels) ])
     buf_ref._obj.value = chans[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevAOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
+  def DAQmxGetDevDOPorts(self, dev, buf_ref, bufsize):
+    chans = ','.join([ '{}/port{}'.format(dev,i)
+      for i in xrange(self.devices[str(dev)].num_do_ports) ])
+    buf_ref._obj.value = chans[:bufsize]
+    log(DEBUG-1, 'DAQmxGetDevDOPorts(%s) = %s', dev, buf_ref._obj.value)
+    return 0
+
+
   def DAQmxGetDevDOLines(self, dev, buf_ref, bufsize):
     # this is not really consistent right now, but we're simulating 32 lines
+    D = self.devices[str(dev)]
     chans = ','.join( chain(* [
-      [ '{}/port{}/line{}'.format(dev,pi,li) for li in xrange(8) ]
-      for pi in xrange(4)
+      [ '{}/port{}/line{}'.format(dev,pi,li) for li in xrange(D.port_size) ]
+      for pi in xrange(D.num_do_ports)
     ]) )
     buf_ref._obj.value = chans[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevDOLines(%s) = %s', dev, buf_ref._obj.value)
@@ -171,13 +258,15 @@ class NiDAQmx:
 
 
   def DAQmxGetDevCOPhysicalChans(self, dev, buf_ref, bufsize):
-    buf_ref._obj.value = '{0}/ctr0,{0}/ctr1'.format(dev)[:bufsize]
+    buf_ref._obj.value = ','.join([
+      '{}/ctr{}'.format(dev,i) for i in xrange(self.devices[str(dev)].num_counters)
+    ])[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevCOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevAOSampClkSupported(self, dev, retval_ref):
-    retval_ref._obj.value = 0x1
+    retval_ref._obj.value = int( self.devices[str(dev)].ao_sample_clock_supported )
     log(DEBUG-1, 'DAQmxGetDevAOSampClkSupported(%s) = %s', dev, retval_ref._obj.value)
     return 0
 

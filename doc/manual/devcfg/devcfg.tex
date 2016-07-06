@@ -37,5 +37,50 @@ There will be two types of sample- or update-rates permissible.
 
 
 \section{Clocks}
+In order to select a clock, you have to:
+\begin{enumerate}
+  \item define a clock in the clocks section (either by defining a
+    counter--which does not work yet, or through an \signal{ao/SampleClock}, or something
+    else)
+  \item ensure that a route is defined from that clock to something that a
+    particular device can connect to
+    \begin{itemize}
+      \item for instance, you can still define the \signal{ao/SampleClock} as your base
+      clock
+      \item then, in the routes section, define a route from
+      \signal{$<$device-prefix$>$/ao/SampleClock} $\rightarrow$ \signal{TRIG/x}
+    \end{itemize}
+  \item Then, if Arbwave knows about how to make connections from the any of the
+    defined clocks (either directly or through the information in the routes
+    pane), you will be able to select one of the clocks that you defined in the
+    clocks section.
+\end{enumerate}
+
+In other words, you would never really select any of the RTSI lines (aliased as
+\signal{TRIG/0}--\signal{TRIG/7}) directly when you select a clock.
+\textbf{But} you would probably need to define the routes properly so that
+Arbwave knows it can use a given clock (and likely the actual RTSI line as the
+physical connection).
+
+For example, given that you have these devices:
+\begin{itemize}
+  \item \device{ni/Dev1/ao}  (the first PCI-6733 board)
+  \item \device{ni/Dev2/ao}  (the second PCI-6733 board)
+  \item \device{ni/Dev3/do}  (the PCI-6534 board)
+\end{itemize}
+Until we can get the counters working, you should be able to do:
+\begin{enumerate}
+  \item Define this clock and specify its rate as 1kHz for instance:\\
+          \signal{ni/Dev1/ao/SampleClock}
+          \begin{itemize}
+            \item rate : 1000
+          \end{itemize}
+  \item Define a route from our clock to one of the RTSI lines:
+         \signal{ni/Dev1/ao/SampleClock} $\rightarrow$ \signal{TRIG/0}
+  \item Select \signal{ni/Dev1/ao/SampleClock} clock for all devices in the
+    device pane.
+\end{enumerate}
+
+
 \section{Signal Routes}
 \section{Clock Sources for Devices}
