@@ -3,7 +3,7 @@
 Simulated low-level comedilib library.
 """
 
-import ctypes_comedi as clib
+import comedi as clib
 from ctypes import c_ubyte, cast, pointer, POINTER, addressof, c_uint, sizeof
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re, time
@@ -40,7 +40,7 @@ def comedi_t_pointer(value):
 
 
 def mk_crange(min,max,unit):
-  r = clib.comedi_range()
+  r = clib.range()
   r.min = min
   r.max = max
   r.unit = unit
@@ -52,12 +52,12 @@ class SimSubDev(dict):
     super(SimSubDev,self).__init__(*a, **kw)
     self.__dict__ = self
     # ensure that ranges are sorted correctly
-    self.setdefault('type', clib.COMEDI_SUBD_UNUSED)
+    self.setdefault('type', clib.SUBD_UNUSED)
     self.setdefault('n_channels', 0)
     # FIXME:  replace this with a non static digital/analog representation
     self.setdefault('state', [0 for i in xrange(self.n_channels)])
     # for dio subdev:
-    self.setdefault('ioconfig', [clib.COMEDI_INPUT for i in xrange(self.n_channels)])
+    self.setdefault('ioconfig', [clib.INPUT for i in xrange(self.n_channels)])
 
     # for PFI, TRIG
     self.setdefault('routable', False)
@@ -100,7 +100,7 @@ class SimSubDev(dict):
     if range < len(self.ranges):
       return pointer(self.ranges[range])
     else:
-      return POINTER(clib.comedi_range)()# return null pointer
+      return POINTER(clib.range)()# return null pointer
 
   def range_is_chan_specific(self):
     return 0
@@ -152,9 +152,9 @@ class SimSubDev(dict):
     return self.buf_begin
 
   def mark_buffer_read(self, num_bytes):
-    if self.type not in [clib.COMEDI_SUBD_AI,
-                         clib.COMEDI_SUBD_DI,
-                         clib.COMEDI_SUBD_DIO]:
+    if self.type not in [clib.SUBD_AI,
+                         clib.SUBD_DI,
+                         clib.SUBD_DIO]:
       return -1
     avail = self.get_buffer_contents()
     if num_bytes > avail:
@@ -163,9 +163,9 @@ class SimSubDev(dict):
     return num_bytes
 
   def mark_buffer_written(self, num_bytes):
-    if self.type not in [clib.COMEDI_SUBD_AO,
-                         clib.COMEDI_SUBD_DO,
-                         clib.COMEDI_SUBD_DIO]:
+    if self.type not in [clib.SUBD_AO,
+                         clib.SUBD_DO,
+                         clib.SUBD_DIO]:
       error('comedi.mark_buffer_written(%s): wrong buffer type', self.type )
       return -1
     avail = self.get_buffer_contents()
@@ -276,7 +276,7 @@ class SimCard(object):
     through the device device . If there is no such subdevice, -1 is returned.
     """
     return self.find_subdevice_by_type(
-      (clib.COMEDI_SUBD_AI, clib.COMEDI_SUBD_DI, clib.COMEDI_SUBD_DIO), 0,
+      (clib.SUBD_AI, clib.SUBD_DI, clib.SUBD_DIO), 0,
       flagmask=clib.SDF_CMD | clib.SDF_CMD_READ
     )
 
@@ -287,7 +287,7 @@ class SimCard(object):
     there is no such subdevice, -1 is returned.
     """
     return self.find_subdevice_by_type(
-      (clib.COMEDI_SUBD_AO, clib.COMEDI_SUBD_DO, clib.COMEDI_SUBD_DIO), 0,
+      (clib.SUBD_AO, clib.SUBD_DO, clib.SUBD_DIO), 0,
       flagmask=clib.SDF_CMD | clib.SDF_CMD_WRITE
     )
 
@@ -296,7 +296,7 @@ class PXI_6733(SimCard):
   driver = 'ni_pcimio'
   board = 'pxi-6733'
   subdevs = {
-    1 : dict( type=clib.COMEDI_SUBD_AO, n_channels=8,
+    1 : dict( type=clib.SUBD_AO, n_channels=8,
       bits=16,
       flags= clib.SDF_CMD       |
              clib.SDF_CMD_WRITE |
@@ -323,7 +323,7 @@ class PXI_6733(SimCard):
       ranges={ clib.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
     ),
     # subdev 7 represents PFI lines
-    7 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=10,
+    7 : dict( type=clib.SUBD_DIO, n_channels=10,
       bits=1,
       routable=True,
       flags= clib.SDF_INTERNAL  |
@@ -332,7 +332,7 @@ class PXI_6733(SimCard):
       ranges={ clib.UNIT_none : ( (0,1), )  },
     ),
     # subdev 10 represents RTSI lines
-    10 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=8,
+    10 : dict( type=clib.SUBD_DIO, n_channels=8,
       bits=1,
       routable=True,
       flags= clib.SDF_INTERNAL  |
@@ -353,7 +353,7 @@ class PCI_6229(SimCard):
   driver = 'ni_pcimio'
   board = 'pci-6229'
   subdevs = {
-    1 : dict( type=clib.COMEDI_SUBD_AO, n_channels=4,
+    1 : dict( type=clib.SUBD_AO, n_channels=4,
       bits=16,
       flags= clib.SDF_CMD       |
              clib.SDF_CMD_WRITE |
@@ -380,7 +380,7 @@ class PCI_6229(SimCard):
       ),
       ranges={ clib.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
     ),
-    2 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=32,
+    2 : dict( type=clib.SUBD_DIO, n_channels=32,
       bits=1,
       flags= clib.SDF_CMD       |
              clib.SDF_CMD_WRITE |
@@ -407,7 +407,7 @@ class PCI_6229(SimCard):
       ranges={ clib.UNIT_volt : ( (0,5), ) },
     ),
     # subdev 7 represents PFI lines
-    7 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=10,
+    7 : dict( type=clib.SUBD_DIO, n_channels=10,
       bits=1,
       routable=True,
       flags= clib.SDF_INTERNAL  |
@@ -416,7 +416,7 @@ class PCI_6229(SimCard):
       ranges={ clib.UNIT_none : ( (0,1), )  },
     ),
     # subdev 10 represents RTSI lines
-    10 : dict( type=clib.COMEDI_SUBD_DIO, n_channels=8,
+    10 : dict( type=clib.SUBD_DIO, n_channels=8,
       bits=1,
       routable=True,
       flags= clib.SDF_INTERNAL  |

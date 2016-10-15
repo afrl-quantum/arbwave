@@ -2,7 +2,7 @@
 
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re
-from .. import ctypes_comedi as clib
+import comedi
 
 from .....tools.float_range import float_range
 from .subdevice import Subdevice as Base
@@ -33,13 +33,13 @@ class Analog(Base):
       },
 
       'reference' : {
-        'value' : clib.AREF_COMMON,
+        'value' : comedi.AREF_COMMON,
         'type' : int,
         'range' : [
-          (clib.AREF_GROUND, 'Referenced to ground'),
-          (clib.AREF_COMMON, 'Referenced to isolated \'common\' potential'),
-          (clib.AREF_DIFF, 'Differential inputs/outputs (?)'),
-          (clib.AREF_OTHER, 'Other reference (?: see comedi docs)'),
+          (comedi.AREF_GROUND, 'Referenced to ground'),
+          (comedi.AREF_COMMON, 'Referenced to isolated \'common\' potential'),
+          (comedi.AREF_DIFF, 'Differential inputs/outputs (?)'),
+          (comedi.AREF_OTHER, 'Other reference (?: see comedi docs)'),
         ],
       },
     } )

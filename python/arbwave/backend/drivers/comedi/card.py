@@ -2,7 +2,7 @@
 
 import logging, re
 from logging import log, debug, DEBUG
-import ctypes_comedi as clib
+import comedi
 from ctypes import cast, pointer, POINTER, c_void_p
 
 from ....tools import cached
@@ -10,8 +10,8 @@ from ....tools.path import collect_prefix
 from . import subdevice, channels, routes, signal_map
 
 
-class Card( POINTER(clib.comedi_t) ):
-  _type_ = clib.comedi_t
+class Card( POINTER(comedi.comedi_t) ):
+  _type_ = comedi.comedi_t
 
   def _assign(self, other):
     """
@@ -28,7 +28,7 @@ class Card( POINTER(clib.comedi_t) ):
     """
     low level direct assignment of the value of this pointer object.
 
-    This function call should only really be used after comedi_close.
+    This function call should only really be used after comedi.close.
     """
     self_ptr = cast( pointer(self), POINTER(c_void_p) )
     self_ptr.contents.value = value
@@ -47,7 +47,7 @@ class Card( POINTER(clib.comedi_t) ):
     self.routed_signals = dict()
     self.prefix = '' # shouldn't need this because of defaults in ni_routes
 
-    self._assign( clib.comedi_open(self.device_file) )
+    self._assign( comedi.open(self.device_file) )
     if not self:
       raise NameError('could not open comedi device file: ' + self.device_file)
 
@@ -56,11 +56,11 @@ class Card( POINTER(clib.comedi_t) ):
     self.sig_map= signal_map.getSignalLoader(self.kernel) (self)
 
     gus = subdevice.enum.get_useful_subdevices
-    self.ao_subdevices      = gus(self, clib.COMEDI_SUBD_AO)
-    self.do_subdevices      = gus(self, clib.COMEDI_SUBD_DO)
+    self.ao_subdevices      = gus(self, comedi.SUBD_AO)
+    self.do_subdevices      = gus(self, comedi.SUBD_DO)
 
-    self.dio_subdevices     = gus(self, clib.COMEDI_SUBD_DIO)
-    self.counter_subdevices = gus(self, clib.COMEDI_SUBD_COUNTER)
+    self.dio_subdevices     = gus(self, comedi.SUBD_DIO)
+    self.counter_subdevices = gus(self, comedi.SUBD_COUNTER)
 
     self.subdevices = dict()
     self.subdevices.update( { str(ao):ao for ao in self.ao_subdevices } )
@@ -73,7 +73,7 @@ class Card( POINTER(clib.comedi_t) ):
     ]
 
 
-    List = gus(self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
+    List = gus(self, comedi.SUBD_DIO, ret_index_list=True)
 
     self.backplane_subdevices = dict()
 
@@ -114,7 +114,7 @@ class Card( POINTER(clib.comedi_t) ):
         if d.find(str(self).rstrip(str(self.driver)))>-1:
           d = d.lstrip(str(self.driver)+str(self))
           d = self.sig_map.ch_nums(d)
-          clib.comedi_dio_config(self, d['subdev'], d['chan'], clib.COMEDI_INPUT) # an attempt to protect the dest terminal
+          comedi.dio_config(self, d['subdev'], d['chan'], comedi.INPUT) # an attempt to protect the dest terminal
 
       # connect new routes routes
       for route in ( new - old ):
@@ -146,12 +146,12 @@ class Card( POINTER(clib.comedi_t) ):
 
           if d['kind'] =='PFI':
             s =  self.sig_map.sig_nums_PFI[s]
-            clib.comedi_dio_config(self, d['subdev'], d['chan'], clib.COMEDI_OUTPUT)
-            clib.comedi_set_routing(self,  d['subdev'], d['chan'], s)
+            comedi.dio_config(self, d['subdev'], d['chan'], comedi.OUTPUT)
+            comedi.set_routing(self,  d['subdev'], d['chan'], s)
           if d['kind'] =='RTSI':
             s =  self.sig_map.sig_nums_RTSI[s]
-            clib.comedi_dio_config(self, d['subdev'], d['chan'], clib.COMEDI_OUTPUT)
-            clib.comedi_set_routing(self,  d['subdev'], d['chan'], s)
+            comedi.dio_config(self, d['subdev'], d['chan'], comedi.OUTPUT)
+            comedi.set_routing(self,  d['subdev'], d['chan'], s)
           #TODO: GPCT config/routing, CDIO clocks?
     self.routed_signals = signals
 
@@ -163,17 +163,17 @@ class Card( POINTER(clib.comedi_t) ):
   def __del__(self):
     # first instruct each one of the subdevs to be deleted
     # the intent is that this will (for each subdevice):
-    #   - cancel all running jobs ( comedi_cancel )
+    #   - cancel all running jobs ( comedi.cancel )
     while self.subdevices:
       subname, subdev = self.subdevices.popitem()
       del subdev
 
     gus = subdevice.enum.get_useful_subdevices
-    List = gus(self, clib.COMEDI_SUBD_DIO, ret_index_list=True)
+    List = gus(self, comedi.SUBD_DIO, ret_index_list=True)
 
     for device, index in List:
-      chans = clib.comedi_get_n_channels(self, index)
-      clib.comedi_dio_config(self, index, chans, clib.COMEDI_INPUT)
+      chans = comedi.get_n_channels(self, index)
+      comedi.dio_config(self, index, chans, comedi.INPUT)
 
 
     # Fixed?
@@ -185,7 +185,7 @@ class Card( POINTER(clib.comedi_t) ):
     # # FIXME:  properly close/delete all "Signal" subdevices (like PFI and RTSI)
 
     # now close the comedi device handle
-    clib.comedi_close(self)
+    comedi.close(self)
     self._zero() # zero the address of this device pointer
 
 
@@ -198,8 +198,8 @@ class Card( POINTER(clib.comedi_t) ):
 
   @cached.property
   def board(self):
-    return clib.comedi_get_board_name(self).lower()
+    return comedi.get_board_name(self).lower()
 
   @cached.property
   def kernel(self):
-    return clib.comedi_get_driver_name(self).lower()
+    return comedi.get_driver_name(self).lower()

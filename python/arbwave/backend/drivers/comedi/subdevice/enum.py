@@ -5,7 +5,7 @@ Some tools to help enumerate subdevices.
 
 import logging
 from logging import log, debug, DEBUG
-from .. import ctypes_comedi as clib
+import comedi
 
 from .analog  import Analog
 from .digital import Digital
@@ -15,29 +15,31 @@ from .timing  import Timing
 def subdev_iterator(fp, typ):
   i = 0
   while True:
-    i = clib.comedi_find_subdevice_by_type(fp, typ, i)
+    i = comedi.find_subdevice_by_type(fp, typ, i)
     if i < 0: break
     yield i
     i += 1
 
 
 klasses = {
-  clib.COMEDI_SUBD_AO      : Analog,
-  clib.COMEDI_SUBD_DO      : Digital,
-  clib.COMEDI_SUBD_DIO     : Digital,
-  clib.COMEDI_SUBD_COUNTER : Timing,
+  comedi.SUBD_AO      : Analog,
+  comedi.SUBD_DO      : Digital,
+  comedi.SUBD_DIO     : Digital,
+  comedi.SUBD_COUNTER : Timing,
 }
 
 
 def get_useful_subdev_list(card, typ,
-    restrictions=dict( start_src=clib.TRIG_FOLLOW|clib.TRIG_INT|clib.TRIG_EXT ),
+    restrictions=dict(start_src=comedi.TRIG_FOLLOW
+                               |comedi.TRIG_INT
+                               |comedi.TRIG_EXT),
   ):
   klass = klasses[typ]
 
   L = list()
-  cmd = clib.comedi_cmd_struct()
+  cmd = comedi.cmd()
   for index in subdev_iterator(card, typ):
-    if clib.comedi_get_cmd_src_mask(card, index, cmd) < 0:
+    if comedi.get_cmd_src_mask(card, index, cmd) < 0:
       # we only will look at those subdevs that can have asynchronous use
       log(DEBUG-1, 'ignoring subdev without async mode: %s/%d', card, index)
       continue

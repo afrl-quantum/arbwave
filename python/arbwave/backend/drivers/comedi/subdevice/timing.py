@@ -3,7 +3,6 @@
 import numpy as np
 
 from .subdevice import Subdevice as Base
-from .. import ctypes_comedi as clib
 
 class Timing(Base):
   subdev_type = 'to'

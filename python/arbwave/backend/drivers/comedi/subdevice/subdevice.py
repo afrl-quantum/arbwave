@@ -9,7 +9,7 @@ from itertools import izip
 
 from physical import unit
 
-from .. import ctypes_comedi as clib
+import comedi
 
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
@@ -30,8 +30,8 @@ command_test_errors = {
 
 def raiserr(retval, msg='', exception=OSError):
   if retval < 0:
-    err = clib.comedi_errno()
-    raise exception('comedi, {},{}/{}: {}'.format(msg,retval,err,clib.comedi_strerror(err)))
+    err = comedi.errno()
+    raise exception('comedi, {},{}/{}: {}'.format(msg,retval,err,comedi.strerror(err)))
 
 class Subdevice(Base):
   """
@@ -40,7 +40,7 @@ class Subdevice(Base):
   """
 
   subdev_type         = None  # changed by inheriting device types
-  units               = clib.UNIT_volt
+  units               = comedi.UNIT_volt
   default_range_min   = 0
   default_range_max   = 1
 
@@ -69,35 +69,35 @@ class Subdevice(Base):
     self.clock_terminal = None
     self.use_case = None
     self.t_max = 0.0
-    self.cmd = clib.comedi_cmd()
+    self.cmd = comedi.cmd()
     self.cmd_chanlist = None
 
     # lets get the src mask to see if we are always required to do internal
     # trigger.  We are assuming that if a command cannot be started with
     # TRIG_NOW, it must require some sort of two part setup regardless of
     # whether it uses TRIG_INT or TRIG_EXT.  The NI cards are this way
-    # explicitly so that DMA transfers get primed--comedi_internal_trigger must
+    # explicitly so that DMA transfers get primed--comedi.internal_trigger must
     # be used whether we use TRIG_INT or TRIG_EXT.  For the case of TRIG_EXT, it
     # will just wait for the actual trigger.
-    clib.comedi_get_cmd_src_mask(card, index, self.cmd)
-    self.trig_now_supported = bool( self.cmd.start_src & clib.TRIG_NOW )
+    comedi.get_cmd_src_mask(card, index, self.cmd)
+    self.trig_now_supported = bool( self.cmd.start_src & comedi.TRIG_NOW )
     ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
 
     sd_flags = self.status()
-    self.sampl_t = clib.sampl_t if sd_flags.sample_16bit else clib.lsampl_t
+    self.sampl_t = comedi.sampl_t if sd_flags.sample_16bit else comedi.lsampl_t
 
     assert not sd_flags.flags_per_channel, 'flags per channel!'
 
-    size = clib.comedi_get_buffer_size( self.card, self.subdevice )
+    size = comedi.get_buffer_size( self.card, self.subdevice )
     # The c version; we can cast directly
-    #data = mmap(NULL, size, PROT_WRITE, MAP_SHARED, comedi_fileno(dev), 0)
+    #data = mmap(NULL, size, PROT_WRITE, MAP_SHARED, comedi.fileno(dev), 0)
 
     # the python version;  we must cast using ctypes/numpy
     if not self.card.driver.simulated:
-      self.mapped = mmap( clib.comedi_fileno(self.card), size,
+      self.mapped = mmap( comedi.fileno(self.card), size,
                           prot=PROT_WRITE, flags=MAP_SHARED, offset=0 )
     else:
-      self.mapped = clib.sim.cards[self.card].subdevs[self.subdevice].buffer
+      self.mapped = comedi.sim.cards[self.card].subdevs[self.subdevice].buffer
     if not self.mapped:
       raise OSError( 'mmap: error!' ) # probably will already be raised
 
@@ -134,7 +134,7 @@ class Subdevice(Base):
 
   def clear(self):
     debug( 'comedi: cancelling commands for comedi subdevice %s', self )
-    raiserr( clib.comedi_cancel( self.card, self.subdevice ), 'cancel' )
+    raiserr( comedi.cancel( self.card, self.subdevice ), 'cancel' )
     self.t_max = 0.0
     ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
     del self.cmd_chanlist
@@ -162,23 +162,23 @@ class Subdevice(Base):
 
   @property
   def flags(self):
-    return clib.comedi_get_subdevice_flags(self.card, self.subdevice)
+    return comedi.get_subdevice_flags(self.card, self.subdevice)
 
   @property
   def busy(self):
-    return bool( self.flags & clib.SDF_BUSY )
+    return bool( self.flags & comedi.SDF_BUSY )
 
   @property
   def running(self):
-    return bool( self.flags & clib.SDF_RUNNING )
+    return bool( self.flags & comedi.SDF_RUNNING )
 
   @property
   def buf_size(self):
-    return clib.comedi_get_buffer_size(self.card, self.subdevice)
+    return comedi.get_buffer_size(self.card, self.subdevice)
 
   #@property
   def status(self):
-    return clib.extensions.subdev_flags.to_dict( self.flags )
+    return comedi.extensions.subdev_flags.to_dict( self.flags )
 
   @property
   def available_channels(self):
@@ -186,7 +186,7 @@ class Subdevice(Base):
 
     return [
       klass('{}{}'.format(self, i), self)
-      for i in xrange(clib.comedi_get_n_channels( self.card, self.subdevice ))
+      for i in xrange(comedi.get_n_channels( self.card, self.subdevice ))
     ]
 
 
@@ -214,8 +214,8 @@ class Subdevice(Base):
       mn = chinfo.get('min', dflt_mn)
       ch = self.get_channel(chname)
 
-      self.ranges[chname]=r=clib.comedi_find_range(C, S, ch, self.units, mn, mx)
-      self.maxdata[chname]= clib.comedi_get_maxdata(C, S, ch)
+      self.ranges[chname]=r=comedi.find_range(C, S, ch, self.units, mn, mx)
+      self.maxdata[chname]= comedi.get_maxdata(C, S, ch)
 
       assert r >= 0, 'comedi: Could not identify output range for '+chname
 
@@ -224,8 +224,8 @@ class Subdevice(Base):
 
       # simple find did not work, try harder (?)
       #ch_ranges = [
-      #  ( i, clib.comedi_get_range(C, S, ch, i) )
-      #  for i in xrange( comedi.comedi_get_n_ranges( C, S, ch ) )
+      #  ( i, comedi.get_range(C, S, ch, i) )
+      #  for i in xrange( comedi.get_n_ranges( C, S, ch ) )
       #]
 
       #ch_ranges.sort(key = lambda ri : ri[1].contents.max - ri[1].contents.min)
@@ -235,9 +235,9 @@ class Subdevice(Base):
 
   def cmd_is_continuous(self):
     """
-    Tests the comedi_cmd to see if it was configured for continuous mode.
+    Tests the comedi.cmd to see if it was configured for continuous mode.
     """
-    return self.cmd.stop_src == clib.TRIG_NONE
+    return self.cmd.stop_src == comedi.TRIG_NONE
 
 
   def set_config(self, config=None, channels=None, signal_graph=None):
@@ -258,22 +258,22 @@ class Subdevice(Base):
 
     if self.clock_terminal == 'internal':
       # FIXME:  implement this mapping and value
-      clock_args   = ( clib.TRIG_TIMER, internal_clock_value )
+      clock_args   = ( comedi.TRIG_TIMER, internal_clock_value )
     else:
       #FIXME:  set this to correct mapped value
       channel = invert = 0
       if config['clock-edge']['value'] == 'falling':
-        invert = clib.CR_INVERT
+        invert = comedi.CR_INVERT
       #ian's claim:  if digital scan_begin_arg ==> cant have CR_EDGE
-      clock_args = ( clib.TRIG_EXT, channel | clib.CR_EDGE | invert )
+      clock_args = ( comedi.TRIG_EXT, channel | comedi.CR_EDGE | invert )
 
-    trigger_args = ( clib.TRIG_INT, 0 )
+    trigger_args = ( comedi.TRIG_INT, 0 )
     if 'trigger' in self.config and self.config['trigger']['enable']['value']:
       #FIXME:  set this to correct mapped value
       channel = invert = 0
       if self.config['trigger']['edge']['value'] == 'falling':
-        invert = clib.CR_INVERT
-      trigger_args = ( clib.TRIG_EXT, channel | clib.CR_EDGE | invert )
+        invert = comedi.CR_INVERT
+      trigger_args = ( comedi.TRIG_EXT, channel | comedi.CR_EDGE | invert )
 
 
 
@@ -289,26 +289,26 @@ class Subdevice(Base):
     self.cmd_chanlist = create_chanlist(self.cr_pack, channels)
 
     self.cmd.subdev         = self.subdevice
-    self.cmd.flags          = clib.TRIG_WRITE #bitwise or'd subdevice flags
+    self.cmd.flags          = comedi.TRIG_WRITE #bitwise or'd subdevice flags
     self.cmd.chanlist       = self.cmd_chanlist
     self.cmd.chanlist_len   = len( self.cmd_chanlist )
     self.cmd.start_src      = trigger_args[0]
     self.cmd.start_arg      = trigger_args[1]
     self.cmd.scan_begin_src = clock_args[0]
     self.cmd.scan_begin_arg = clock_args[1]
-    self.cmd.convert_src    = clib.TRIG_NOW # accpets: TRIG_TIMER, TRIG_EXT, TRIG_NOW
+    self.cmd.convert_src    = comedi.TRIG_NOW # accpets: TRIG_TIMER, TRIG_EXT, TRIG_NOW
     self.cmd.convert_arg    = 0
-    self.cmd.scan_end_src   = clib.TRIG_COUNT
+    self.cmd.scan_end_src   = comedi.TRIG_COUNT
     self.cmd.scan_end_arg   = len( self.cmd_chanlist ) # iterate through all channels
-    self.cmd.stop_src       = clib.TRIG_COUNT # accepts: TRIG_COUNT, TRIG_NONE
+    self.cmd.stop_src       = comedi.TRIG_COUNT # accepts: TRIG_COUNT, TRIG_NONE
     self.cmd.stop_arg       = 0 # we'll set src/arg at the time of set_waveforms
     #### finished init of self.cmd ####
 
     #### start testing cmd ####
     # FIXME:  should probably check to see if/how much the test is changing cmd
     for  i in xrange(2):
-      # recommended number of times to call comedi_command_test is: 2
-      test = clib.comedi_command_test(self.card, self.cmd)
+      # recommended number of times to call comedi.command_test is: 2
+      test = comedi.command_test(self.card, self.cmd)
 
       if test < 0:
         error ('invalid comedi command for %s', self)
@@ -335,9 +335,9 @@ class Subdevice(Base):
 
     This allows for arrays of data to be converted.
     """
-    #return clib.comedi_from_phys(data,self.ranges[chname],self.maxdata[chname])
-    # implement comedi_from_phys here so that we can use arrays
-    rng = clib.comedi_get_range(
+    #return comedi.from_phys(data,self.ranges[chname],self.maxdata[chname])
+    # implement comedi.from_phys here so that we can use arrays
+    rng = comedi.get_range(
             self.card, self.subdevice,
             self.get_channel(chname), self.ranges[chname] ).contents
     maxdata = self.maxdata[chname]
@@ -350,7 +350,7 @@ class Subdevice(Base):
     """
     Packs data properly whether this is digital or analog
     """
-    return clib.CR_PACK(
+    return comedi.CR_PACK(
       self.get_channel(chname),
       self.ranges[chname],
       self.get_config(self.reference_value),
@@ -364,20 +364,20 @@ class Subdevice(Base):
     data = data.items()
     data.sort( key = lambda i : self.channels[i[0]]['order'] )
 
-    insn_list = clib.comedi_insnlist()
+    insn_list = comedi.insnlist()
     insn_list.set_length( len(data) )
     # we allocate the data to ensure it does not get garbage collected too soon
-    L = [ clib.lsampl_t() for i in xrange( len(data) ) ]
+    L = [ comedi.lsampl_t() for i in xrange( len(data) ) ]
 
     for i, (chname, value), di in izip( insn_list, data, L ):
       di.value = self.convert_data( chname, value )
 
-      i.insn = clib.INSN_WRITE
+      i.insn = comedi.INSN_WRITE
       i.subdev = self.subdevice
       i.chanspec = self.cr_pack(chname, self.channels[chname])
       i.n = 1
       i.data = ctypes.pointer( di )
-    n = clib.comedi_do_insnlist( self.card, insn_list )
+    n = comedi.do_insnlist( self.card, insn_list )
     raiserr( n - len(data), 'insnlist not complete' )
 
 
@@ -390,7 +390,7 @@ class Subdevice(Base):
       chan = 0 #I think this is what we want
       clock = ctypes.c_uint()
       period = ctypes.c_uint()
-      ret = clib.comedi_get_clock_source(self.card, self.subdevice,
+      ret = comedi.get_clock_source(self.card, self.subdevice,
                                          chan, clock, period)
       raiserr(ret, 'get_clock_source')
       print self.subdevice, "timing device"
@@ -420,7 +420,7 @@ class Subdevice(Base):
     # 1. Set (non)continuous mode and number of samples per channel
 
     # Set output to either continuous or one-time
-    self.cmd.stop_src = clib.TRIG_NONE if continuous else clib.TRIG_COUNT
+    self.cmd.stop_src = comedi.TRIG_NONE if continuous else comedi.TRIG_COUNT
 
     # should be samples_per_channel
     self.cmd.stop_arg = len(transitions)
@@ -434,7 +434,7 @@ class Subdevice(Base):
     # probably need to do some rounding to the nearest clock pulse to ensure
     # that we only have pulses matched to the correct transition
 
-    chlist = [ '{}{}'.format(self, clib.CR_CHAN(ch_info))
+    chlist = [ '{}{}'.format(self, comedi.CR_CHAN(ch_info))
       for ch_info in self.cmd_chanlist
     ]
 
@@ -540,14 +540,14 @@ class Subdevice(Base):
   def start(self):
     if not self.busy and len(self.cmd_chanlist) > 0:
       # 1. Start the command
-      err = clib.comedi_command(self.card, self.cmd)
+      err = comedi.command(self.card, self.cmd)
       raiserr(err)
       # 2. Mark the already written buffer as written
-      # we have to mark this now, since comedi_command resets all the buffer
+      # we have to mark this now, since comedi.command resets all the buffer
       # counters.
       output_size = self.cmd.stop_arg * self.cmd.chanlist_len \
                   * ctypes.sizeof(self.sampl_t)
-      m = clib.comedi_mark_buffer_written( self.card, self.cmd.subdev,
+      m = comedi.mark_buffer_written( self.card, self.cmd.subdev,
                                            output_size )
       raiserr(m,'mark_buffer')
       if m != output_size:
@@ -558,9 +558,9 @@ class Subdevice(Base):
 
 
   def trigger(self):
-    if (not self.trig_now_supported) or self.cmd.start_src == clib.TRIG_INT:
+    if (not self.trig_now_supported) or self.cmd.start_src == comedi.TRIG_INT:
       debug('comedi: sending internal trigger signal')
-      ret = clib.comedi_internal_trigger(self.card, self.subdevice, 0)
+      ret = comedi.internal_trigger(self.card, self.subdevice, 0)
       raiserr(ret, 'internal_trigger')
     else:
       debug('comedi: waiting for external trigger')
@@ -586,7 +586,7 @@ class Subdevice(Base):
 
   def stop(self):
     if self.busy:
-      raiserr( clib.comedi_cancel(self.card, self.subdevice), 'cancel' )
+      raiserr( comedi.cancel(self.card, self.subdevice), 'cancel' )
 
 
   def get_config_template(self):

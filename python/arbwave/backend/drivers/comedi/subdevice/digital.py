@@ -4,7 +4,7 @@ from logging import log, debug, info, warn, error, critical, DEBUG
 import re
 from ctypes import c_uint, sizeof, byref
 from itertools import izip
-from .. import ctypes_comedi as clib
+import comedi
 
 from .....tools.float_range import float_range
 from .subdevice import Subdevice as Base
@@ -14,7 +14,7 @@ class Digital(Base):
 
   default_range_min   = 0
   default_range_max   = 1
-  reference_value     = clib.AREF_GROUND
+  reference_value     = comedi.AREF_GROUND
 
   # FIXME:  create another device interface class that implements most of the
   # DOTiming clocks stuff that this _and_ NI implement.  Then, inherit from that
@@ -34,7 +34,7 @@ class Digital(Base):
 
     for chname in channels:
       ch = self.get_channel( chname )
-      clib.comedi_dio_config(self.card, self.subdevice, ch, clib.COMEDI_OUTPUT)
+      comedi.dio_config(self.card, self.subdevice, ch, comedi.OUTPUT)
 
     return self._config_all_channels( channels )
 
@@ -60,7 +60,7 @@ class Digital(Base):
       bits.value |= bool(value) << ch
       write_mask |= 1 << ch
 
-    clib.comedi_dio_bitfield2(
+    comedi.dio_bitfield2(
       self.card,
       self.subdevice,
       write_mask,

@@ -6,9 +6,9 @@ Test subdevice.enum module
 import unittest
 from os import path
 from physical import unit
+import comedi
 
 from ... import sim
-from ... import ctypes_comedi as clib
 from .. import enum
 
 THIS_DIR = path.dirname( __file__ )
@@ -32,12 +32,12 @@ class EnumBase(unittest.TestCase):
   # just make sure that this matches the simulated hardware for Dev0
   subdev_iterator_answer = ([1], [], [], [])
   def test_subdev_iterator(self):
-    d0 = clib.comedi_open( '/dev/comedi0' )
-    self.assertEqual( clib.comedi_get_board_name(d0), 'pxi-6733' )
-    L = ( list( enum.subdev_iterator( d0, clib.COMEDI_SUBD_AO ) ),
-          list( enum.subdev_iterator( d0, clib.COMEDI_SUBD_DO ) ),
-          list( enum.subdev_iterator( d0, clib.COMEDI_SUBD_DIO ) ),
-          list( enum.subdev_iterator( d0, clib.COMEDI_SUBD_COUNTER ) ),
+    d0 = comedi.open( '/dev/comedi0' )
+    self.assertEqual( comedi.get_board_name(d0), 'pxi-6733' )
+    L = ( list( enum.subdev_iterator( d0, comedi.SUBD_AO ) ),
+          list( enum.subdev_iterator( d0, comedi.SUBD_DO ) ),
+          list( enum.subdev_iterator( d0, comedi.SUBD_DIO ) ),
+          list( enum.subdev_iterator( d0, comedi.SUBD_COUNTER ) ),
         )
     self.assertEqual(L,self.subdev_iterator_answer)
 
@@ -48,18 +48,18 @@ class EnumBase(unittest.TestCase):
   useful_subdev_answer_DO = [ ]
   useful_subdev_answer_DIO= [ ('comedi_t_ptr(2)',2) ]
   def test_get_useful_subdev_list(self):
-    d0 = clib.comedi_open( '/dev/comedi2' ) # simulate for 6229 for diversity
-    self.assertEqual( clib.comedi_get_board_name(d0), 'pci-6229' )
+    d0 = comedi.open( '/dev/comedi2' ) # simulate for 6229 for diversity
+    self.assertEqual( comedi.get_board_name(d0), 'pci-6229' )
 
-    ret = enum.get_useful_subdev_list( d0, clib.COMEDI_SUBD_AO )
+    ret = enum.get_useful_subdev_list( d0, comedi.SUBD_AO )
     ret = [ (str(i[0]), i[1])  for i in ret ]
     self.assertEqual( ret, self.useful_subdev_answer_AO )
 
-    ret = enum.get_useful_subdev_list( d0, clib.COMEDI_SUBD_DO )
+    ret = enum.get_useful_subdev_list( d0, comedi.SUBD_DO )
     ret = [ (str(i[0]), i[1])  for i in ret ]
     self.assertEqual( ret, self.useful_subdev_answer_DO )
 
-    ret = enum.get_useful_subdev_list( d0, clib.COMEDI_SUBD_DIO )
+    ret = enum.get_useful_subdev_list( d0, comedi.SUBD_DIO )
     ret = [ (str(i[0]), i[1])  for i in ret ]
     self.assertEqual( ret, self.useful_subdev_answer_DIO )
 

@@ -7,10 +7,10 @@ import unittest
 from os import path
 import copy
 from physical import unit
+import comedi
 
 from .. import sim
 from .. import card
-from .. import ctypes_comedi as clib
 
 THIS_DIR = path.dirname( __file__ )
 
