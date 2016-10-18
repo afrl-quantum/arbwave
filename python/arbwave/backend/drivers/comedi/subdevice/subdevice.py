@@ -79,7 +79,7 @@ class Subdevice(Base):
     # explicitly so that DMA transfers get primed--comedi.internal_trigger must
     # be used whether we use TRIG_INT or TRIG_EXT.  For the case of TRIG_EXT, it
     # will just wait for the actual trigger.
-    comedi.get_cmd_src_mask(card, subdevice, self.cmd)
+    comedi.get_cmd_src_mask(card, subdevice, ctypes.byref(self.cmd))
     self.trig_now_supported = bool( self.cmd.start_src & comedi.TRIG_NOW )
     ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
 
@@ -315,7 +315,7 @@ class Subdevice(Base):
     # FIXME:  should probably check to see if/how much the test is changing cmd
     for  i in xrange(2):
       # recommended number of times to call comedi.command_test is: 2
-      test = comedi.command_test(self.card, self.cmd)
+      test = comedi.command_test(self.card, ctypes.byref(self.cmd))
 
       if test < 0:
         error ('invalid comedi command for %s', self)
@@ -384,7 +384,7 @@ class Subdevice(Base):
       i.chanspec = self.cr_pack(chname, self.channels[chname])
       i.n = 1
       i.data = ctypes.pointer( di )
-    n = comedi.do_insnlist( self.card, insn_list )
+    n = comedi.do_insnlist( self.card, ctypes.byref(insn_list) )
     raiserr( n - len(data), 'insnlist not complete' )
 
 
@@ -547,7 +547,7 @@ class Subdevice(Base):
   def start(self):
     if not self.busy and len(self.cmd_chanlist) > 0:
       # 1. Start the command
-      err = comedi.command(self.card, self.cmd)
+      err = comedi.command(self.card, ctypes.byref(self.cmd))
       raiserr(err)
       # 2. Mark the already written buffer as written
       # we have to mark this now, since comedi.command resets all the buffer

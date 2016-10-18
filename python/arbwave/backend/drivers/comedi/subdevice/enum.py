@@ -5,6 +5,7 @@ Some tools to help enumerate subdevices.
 
 import logging
 from logging import log, debug, DEBUG
+import ctypes
 import comedi
 
 from .analog  import Analog
@@ -39,7 +40,7 @@ def get_useful_subdev_list(card, typ,
   L = list()
   cmd = comedi.cmd()
   for index in subdev_iterator(card, typ):
-    if comedi.get_cmd_src_mask(card, index, cmd) < 0:
+    if comedi.get_cmd_src_mask(card, index, ctypes.byref(cmd)) < 0:
       # we only will look at those subdevs that can have asynchronous use
       log(DEBUG-1, 'ignoring subdev without async mode: %s/%d', card, index)
       continue
