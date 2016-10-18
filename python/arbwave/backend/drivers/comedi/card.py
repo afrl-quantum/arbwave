@@ -7,7 +7,7 @@ from ctypes import cast, pointer, POINTER, c_void_p
 
 from ....tools import cached
 from ....tools.path import collect_prefix
-from . import subdevice, channels, routes, signal_map
+from . import subdevice, channels, names
 
 
 class Card( POINTER(comedi.comedi_t) ):
@@ -45,15 +45,12 @@ class Card( POINTER(comedi.comedi_t) ):
     self.driver = driver
     self.device_file    = device_file
     self.routed_signals = dict()
-    self.prefix = '' # shouldn't need this because of defaults in ni_routes
 
     self._assign( comedi.open(self.device_file) )
     if not self:
       raise NameError('could not open comedi device file: ' + self.device_file)
 
     self.device = 'Dev'+self.get_card_number(device_file)
-    self.route_loader = rl= routes.getRouteLoader(self.kernel) ( driver, self )
-    self.sig_map= signal_map.getSignalLoader(self.kernel) (self)
 
     gus = subdevice.enum.get_useful_subdevices
     self.ao_subdevices      = gus(self, comedi.SUBD_AO)
@@ -67,36 +64,57 @@ class Card( POINTER(comedi.comedi_t) ):
     self.subdevices.update( { str(do):do for do in self.do_subdevices } )
     self.subdevices.update( { str(dio):dio for dio in self.dio_subdevices } )
     self.subdevices.update( { str(co):co for co in self.counter_subdevices } )
-    self.signals = [
-      channels.Backplane(src,destinations=dest,invertible=True)
-      for src,dest in rl.src_to_dst.iteritems()
+
+
+    #List = gus(self, comedi.SUBD_DIO, ret_index_list=True)
+    #self.backplane_subdevices = dict()
+    #for dev, index in List:
+    #  sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
+    #  if subdevice.Subdevice.status(sdev)['internal']:
+    #    self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev
+
+  @cached.property
+  def signal_names(self):
+    return names.get_signal_names(self.kernel, self.driver.host_prefix, str(self))
+
+  @cached.property
+  def name_table(self):
+    return { v['arbwave']:k for k,v in self.signal_names.iteritems() }
+
+  @cached.property
+  def available_routes(self):
+    # first generate all external-cable routes
+    D = self.signal_names
+    R = list()
+    for n in D.itervalues():
+      if n['external_in']:
+        R.append(('External/', n['arbwave']))
+      if n['external_out']:
+        R.append((n['arbwave'], 'External/'))
+
+    # next, collect names of all routes that do not involve external cables
+    count = comedi.get_routes(self, None, 0)
+    pairs = (comedi.route_pair * count)()
+    comedi.get_routes(self, pairs, count)
+    R += [(D[r.source]['arbwave'],D[r.destination]['arbwave']) for r in pairs]
+    return R
+
+  @cached.property
+  def signals(self):
+    return [
+      channels.Backplane(src,destinations=dest,invertible=False)
+      for src,dest in self.available_routes
     ]
 
 
-    List = gus(self, comedi.SUBD_DIO, ret_index_list=True)
-
-    self.backplane_subdevices = dict()
-
-    for dev, index in List:
-      sdev = subdevice.Digital(routes.getRouteLoader(dev.kernel) ( driver, dev ), dev, index, name_uses_subdev=False)
-      if subdevice.Subdevice.status(sdev)['internal']:
-        self.backplane_subdevices[str(sdev)+str(sdev.subdevice)] = sdev
-
-    #Fixed? But not implemented
-    # #if self.driver.startswith('ni_'):
-    # #  FIXME:  we should not need to use ni_ specifically here.  that should be
-    # #  taken care of in RouteLoader
-    # #  # for now, we only know how to deal with NI devices (that have the
-    # #  # backplane on subdevice 10)
-    # #  self.backplane_subdevice = subdevice.Backplane(self, 10, self.prefix)
-    # # *** actually, as Ian has found, subdevice=7 is also special as it
-    # # represents the PFI I/O lines.
-
+  nlkup = lambda self, *a: [self.name_table[i] for i in a]
 
 
   def set_signals(self, signals):
     '''
-    Accesses sig_map to transform arbwave terminal/signal names into appropriate comedi ints
+    Comedi signal router.
+
+    Uses new interface to route signals.
     '''
     if self.routed_signals != signals:
       debug('comedi.card(%s).set_signals(signals=%s)', self, signals)
@@ -105,54 +123,23 @@ class Card( POINTER(comedi.comedi_t) ):
       new = set( signals.keys() )
 
       # disconnect routes no longer in use
+      ext_len = len('External/')
       for route in ( old - new ):
-        if 'External/' in route[0] or 'External/' in route[1]:
+        if 'External/' in [route[0][:ext_len], route[1][:ext_len]]:
           continue
-
-        s, d = self.route_loader.route_map[ route ]
-
-        if d.find(str(self).rstrip(str(self.driver)))>-1:
-          d = d.lstrip(str(self.driver)+str(self))
-          d = self.sig_map.ch_nums(d)
-          comedi.dio_config(self, d['subdev'], d['chan'], comedi.INPUT) # an attempt to protect the dest terminal
+        if comedi.disconnect_route(self, *self.nlkup(*route)):
+          raise OSError('comedi: Could not unroute signal {}-->{}'.format(*route))
 
       # connect new routes routes
       for route in ( new - old ):
-        if 'External/' in route[0] or 'External/' in route[1]:
+        if 'External/' in [route[0][:ext_len], route[1][:ext_len]]:
           continue
 
-        s, d = self.route_loader.route_map[ route ]
-        s = s.lstrip(str(self.driver)+str(self))
+        if None in route:
+          continue # None means an incomplete connection(?)
+        if comedi.connect_route(self, *self.nlkup(*route)):
+          raise OSError('comedi: Could not route signal {}-->{}'.format(*route))
 
-        if s is None or d is None:
-          continue # None means an external connection
-
-        if d.find(str(self).lstrip(str(self.driver)))>-1:
-          d_dev = d.lstrip(str(self.driver)+str(self))
-
-          d =  self.sig_map.ch_nums[d_dev]
-
-          if d['kind'] == 'ao_clock':
-            AO_CLOCK = {d_dev:self.sig_map.sig_nums_AO_CLOCK[s]}
-            return AO_CLOCK
-             #Ctr0InternalOutput is listed as routing to the ao clock, but I've found no way to do this.
-
-             #fixed. found separate clock sig_num function. no longer driver dependent.
-             ##plus one to reflect ni driver offset? TODO: make this make sense. edit driver?
-
-          if d['kind'] == 'trigger':
-            TRIGGER = {d_dev:self.sig_map.sig_nums_EXT[s]}
-            return TRIGGER
-
-          if d['kind'] =='PFI':
-            s =  self.sig_map.sig_nums_PFI[s]
-            comedi.dio_config(self, d['subdev'], d['chan'], comedi.OUTPUT)
-            comedi.set_routing(self,  d['subdev'], d['chan'], s)
-          if d['kind'] =='RTSI':
-            s =  self.sig_map.sig_nums_RTSI[s]
-            comedi.dio_config(self, d['subdev'], d['chan'], comedi.OUTPUT)
-            comedi.set_routing(self,  d['subdev'], d['chan'], s)
-          #TODO: GPCT config/routing, CDIO clocks?
     self.routed_signals = signals
 
 

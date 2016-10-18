@@ -7,8 +7,10 @@ import comedi as clib
 from ctypes import c_ubyte, cast, pointer, POINTER, addressof, c_uint, sizeof
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re, time
-from itertools import izip
+from itertools import izip, chain
 from ....tools.expand import expand_braces
+
+from . import sim_device_routes
 
 
 comedi_t_ptr = POINTER(clib.comedi_t)
@@ -233,6 +235,8 @@ class SimCard(object):
     super(SimCard,self).__init__()
     # initialize subdevs...
     self.subdevs = { i:SimSubDev(D) for i,D in self.subdevs.items() }
+    self.routes = sim_device_routes.get(self.board)
+    self.current_routes = set()
 
   def __getitem__(self,i):
     """Quick method of indexing the subdevice"""
@@ -291,6 +295,37 @@ class SimCard(object):
       flagmask=clib.SDF_CMD | clib.SDF_CMD_WRITE
     )
 
+  def test_route(self, source, destination):
+    if source in self.routes and destination in self.routes[source]:
+      if (source,destination) in self.current_routes:
+        return 1
+      return 0
+    return -1
+
+  def connect_route(self, source, destination):
+    test = self.test_route(source, destination)
+    if test in [-1, 1]:
+      return -1
+    self.current_routes.add((source,destination))
+    return 0
+
+  def disconnect_route(self, source, destination):
+    test = self.test_route(source, destination)
+    if test in [-1, 0]:
+      return -1
+    self.current_routes.remove((source,destination))
+    return 0
+
+  def get_routes(self, routelist, len_routelist):
+    if (not routelist) or len_routelist == 0:
+      # just return the number of routes
+      return sum([len(v) for k,v in self.routes.iteritems()])
+
+    S = set(chain(*[{(k,vi) for vi in v} for k,v in self.routes.iteritems()]))
+    for route,p in izip(S,routelist[:len_routelist]):
+      p.source, p.destination = route
+    return min(len(S), len(routelist), len_routelist)
+
 
 class PXI_6733(SimCard):
   driver = 'ni_pcimio'
@@ -345,8 +380,9 @@ class PXI_6733(SimCard):
 def subdev_replace_n_channels(S, N):
   S[1]['n_channels'] = N
   return S
+
 class PXI_6723(PXI_6733):
-  board = 'pxi-6723'
+  board = 'pci-6723'
   subdevs = subdev_replace_n_channels(PXI_6733.subdevs.copy(), 32)
 
 class PCI_6229(SimCard):
@@ -448,9 +484,10 @@ class ComediSim(object):
     assert -1 not in [ int(i) for i in self.cards ]
 
     debug( 'comedi.sim:  injecting simulated library into c-interface' )
-    import_funcs = [ f for f in dir(self) if f.startswith('comedi')]
+    import_funcs = [ f for f in dir(self) if f.startswith('comedi_')]
     for f in import_funcs:
-      setattr( clib, f, getattr(self,f) )
+      setattr( clib, f, getattr(self,f) ) # set full name
+      setattr( clib, f[len('comedi_'):], getattr(self,f) ) # set shortened name
 
     #store pointer to this simulation instance
     clib.sim = self
@@ -892,3 +929,23 @@ class ComediSim(object):
   def comedi_set_routing(self, fp, sub, channel, routing):
     debug('comedi_set_routing(%d, %d, %d, %d)', fp, sub, channel, routing)
     return self[fp][sub].set_routing(channel, routing)
+
+  def comedi_test_route(self, fp, source, destination):
+    debug('comedi_test_route(%d, %d, %d)', fp, source, destination)
+    return self[fp].test_route(source, destination)
+
+  def comedi_test_route(self, fp, source, destination):
+    debug('comedi_test_route(%d, %d, %d)', fp, source, destination)
+    return self[fp].test_route(source, destination)
+
+  def comedi_connect_route(self, fp, source, destination):
+    debug('comedi_connect_route(%d, %d, %d)', fp, source, destination)
+    return self[fp].connect_route(source, destination)
+
+  def comedi_disconnect_route(self, fp, source, destination):
+    debug('comedi_disconnect_route(%d, %d, %d)', fp, source, destination)
+    return self[fp].disconnect_route(source, destination)
+
+  def comedi_get_routes(self, fp, routelist, len_routelist):
+    debug('comedi_get_routes(%d, [..], %d)', fp, len_routelist)
+    return self[fp].get_routes(routelist, len_routelist)

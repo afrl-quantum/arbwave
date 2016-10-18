@@ -44,7 +44,7 @@ class Subdevice(Base):
   default_range_min   = 0
   default_range_max   = 1
 
-  def __init__(self, route_loader, card, subdevice, name_uses_subdev=False):
+  def __init__(self, card, subdevice, name_uses_subdev=False):
     """
     parameter:  name_uses_subdev
       If there are more than one device on this card that performs the same
@@ -79,7 +79,7 @@ class Subdevice(Base):
     # explicitly so that DMA transfers get primed--comedi.internal_trigger must
     # be used whether we use TRIG_INT or TRIG_EXT.  For the case of TRIG_EXT, it
     # will just wait for the actual trigger.
-    comedi.get_cmd_src_mask(card, index, self.cmd)
+    comedi.get_cmd_src_mask(card, subdevice, self.cmd)
     self.trig_now_supported = bool( self.cmd.start_src & comedi.TRIG_NOW )
     ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
 
@@ -105,21 +105,28 @@ class Subdevice(Base):
                          buffer=self.mapped, order='C' )
     memory[:] = 0 # zero the buffer to begin
 
+    # create and easy lookup from destination to list of sources
+    dst_to_src = dict()
+    for src,dst in self.card.available_routes:
+      D = dst_to_src.setdefault(dst, list())
+      D.append(src)
 
     #first find the possible trigger and clock sources
     clk = self.name + '/SampleClock'
     trg = self.name + '/StartTrigger'
 
-    self.clock_sources = route_loader.dst_to_src.get(clk, list())
-    self.trig_sources  = route_loader.dst_to_src.get(trg, list())
+    self.clock_sources = dst_to_src.get(clk, list())
+    self.trig_sources  = dst_to_src.get(trg, list())
+    self.clock_sources.sort()
+    self.trig_sources.sort()
 
-    if clk not in route_loader.dst_to_src:
+    if not self.clock_sources:
       error("No clocks found for clock-able device '%s' (%s)",
             self, self.card.board)
     else:
       self.config_template['clock']['range'] = self.clock_sources
 
-    if trg not in route_loader.dst_to_src:
+    if not self.trig_sources:
       # internal trigger only
       self.config_template = self.config_template.copy()
       self.config_template.pop('trigger')

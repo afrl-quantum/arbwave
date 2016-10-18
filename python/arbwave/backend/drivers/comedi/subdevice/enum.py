@@ -53,7 +53,7 @@ def get_useful_subdev_list(card, typ,
         log(DEBUG-1, 'cmd capabilities: %s',
                      { n:getattr(cmd,n) for n in restrictions })
       continue
-    L.append( (card, index) )
+    L.append(index)
   return L
 
 
@@ -65,8 +65,8 @@ def get_useful_subdevices(card, typ, ret_index_list=False, **kwargs):
   nus = len(L) > 1
 
   subdevs = list()
-  for li in L:
-    try: subdevs.append(klass( card.route_loader, name_uses_subdev=nus, *li))
+  for index in L:
+    try: subdevs.append( klass(card, index, name_uses_subdev=nus) )
     except: pass
   if ret_index_list: #added to collect subdev number
     return L
