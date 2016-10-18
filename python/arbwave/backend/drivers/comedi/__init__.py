@@ -16,7 +16,10 @@ class Driver(Base):
   @staticmethod
   def glob_comedi_device_files():
     """creates a list of all comedi device files"""
-    return glob.glob('/dev/comedi*')
+    pat0, pat1 = '/dev/comedi*', '/dev/comedi[0-9]*$'
+    L = [ p for p in glob.glob(pat0) if re.match(pat1, p)]
+    L.sort()
+    return L
 
 
   def __init__(self, *a, **kw):
