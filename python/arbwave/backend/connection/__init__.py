@@ -17,6 +17,13 @@ __all__=['Local', 'Remote']
 
 PYRO_MAXCONNECTIONS = 1024
 LOCALHOST = 'localhost'
+DRIVER_DIR = path.join( path.dirname( __file__ ), path.pardir, 'drivers' )
+
+def get_driver_list():
+  return [
+    P for P in os.listdir(DRIVER_DIR)
+    if path.isdir( path.join(DRIVER_DIR,P) )
+  ]
 
 class Local(object):
   def __init__(self, prefix, remote_backend=False):
@@ -25,31 +32,29 @@ class Local(object):
     self.drivers  = dict()
     self.prefix   = prefix
 
-    DRIVERS = path.join( path.dirname( __file__ ), path.pardir, 'drivers' )
-    for P in os.listdir(DRIVERS):
-      if remote_backend and P == 'external':
+    for P in get_driver_list():
+      if remote_backend and P == 'external' or P in options.disabled_drivers:
         # we only let the external driver be service by a pure Local instance
         continue
 
-      if path.isdir( path.join(DRIVERS,P) ):
-        try:
-          # do an explicit relative import of driver
-          m = importlib.import_module('..drivers.'+P, THISPACKAGE)
-          D = m.Driver
-          if D.prefix in self.klasses:
-            raise NameError("Prefix of driver already used: '"+D.prefix+"'")
+      try:
+        # do an explicit relative import of driver
+        m = importlib.import_module('..drivers.'+P, THISPACKAGE)
+        D = m.Driver
+        if D.prefix in self.klasses:
+          raise NameError("Prefix of driver already used: '"+D.prefix+"'")
 
-          if options.simulated and not D.has_simulated_mode:
-            raise NotImplementedError(
-              'Cannot load driver in simulated mode: ' + D.prefix
-            )
+        if options.simulated and not D.has_simulated_mode:
+          raise NotImplementedError(
+            'Cannot load driver in simulated mode: ' + D.prefix
+          )
 
-          self.klasses[D.prefix] = D
-        except Exception, e:
-          print "could not import backend '" + P + "'"
-          if logging.root.getEffectiveLevel() <= (DEBUG-1):
-            debug( e )
-            debug( traceback.format_exc() )
+        self.klasses[D.prefix] = D
+      except Exception, e:
+        print "could not import backend '" + P + "'"
+        if logging.root.getEffectiveLevel() <= (DEBUG-1):
+          debug( e )
+          debug( traceback.format_exc() )
 
   def __del__(self):
     self.close()
