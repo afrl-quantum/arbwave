@@ -6,7 +6,7 @@ Simulated low-level comedilib library.
 import comedi as clib
 from ctypes import c_ubyte, cast, pointer, POINTER, addressof, c_uint, sizeof
 from logging import log, debug, info, warn, error, critical, DEBUG
-import re, time
+import os, re, time, tempfile
 from itertools import izip, chain
 from ....tools.expand import expand_braces
 
@@ -71,14 +71,29 @@ class SimSubDev(dict):
     self.setdefault('ranges', dict())
     RI = self.ranges.items()
     self.ranges = list()
-    self.buffer = (c_ubyte*self.pop('buffer_sz', self.SIMULATED_BUFFER_SIZE))(0)
+
+    # set the buffer file
+    self.setdefault('max_buf_size', 2*self.SIMULATED_BUFFER_SIZE)
+    if not self.flags & clib.SDF_CMD:
+      # This subdevice is not for streaming--no buffer
+      self.buf_file = self.buf_name = None
+    else:
+      buf_fd, self.buf_name = tempfile.mkstemp('.comedi_simbuf')
+      self.buf_file = os.fdopen(buf_fd, 'rw')
+      self.set_buffer_size(self.pop('buffer_sz', self.SIMULATED_BUFFER_SIZE))
+
     self.buf_begin = self.buf_end = 0
-    self.setdefault('max_buf_size', 2**20)
     for u,r in RI:
       r = list(r)
       r.sort( key=lambda v : abs(v[0]) ) # sort ranges increasingly
       self.ranges += [ mk_crange(mn,mx,u) for mn,mx in r ]
     self.ranges = tuple( self.ranges ) # make immutable
+
+  def fileno(self):
+    if not self.flags & clib.SDF_CMD:
+      return -1
+    else:
+      return self.buf_file.fileno()
 
   def find_range(self, channel, unit, min, max):
     assert min <= max, 'comedi_find_range:  min > max'
@@ -141,19 +156,31 @@ class SimSubDev(dict):
       setattr( cmd, a, v )
     return 0
 
+  def get_buffer_size(self):
+    if not self.flags & clib.SDF_CMD:
+      return -1
+    return os.path.getsize(self.buf_name)
+
   def set_buffer_size( self, size ):
-    old = self.buffer
-    self.buffer = (c_ubyte*size)( *old[:min(len(old),size)] )
-    del old
+    if not self.flags & clib.SDF_CMD:
+      return -1
+    size =  min(size, self.max_buf_size)
+    self.buf_file.truncate( size )
     return size
 
   def get_buffer_contents(self):
+    if not self.flags & clib.SDF_CMD:
+      return -1
     return self.buf_end - self.buf_begin
 
   def get_buffer_offset(self):
+    if not self.flags & clib.SDF_CMD:
+      return -1
     return self.buf_begin
 
   def mark_buffer_read(self, num_bytes):
+    if not self.flags & clib.SDF_CMD:
+      return -1
     if self.type not in [clib.SUBD_AI,
                          clib.SUBD_DI,
                          clib.SUBD_DIO]:
@@ -165,6 +192,8 @@ class SimSubDev(dict):
     return num_bytes
 
   def mark_buffer_written(self, num_bytes):
+    if not self.flags & clib.SDF_CMD:
+      return -1
     if self.type not in [clib.SUBD_AO,
                          clib.SUBD_DO,
                          clib.SUBD_DIO]:
@@ -238,6 +267,23 @@ class SimCard(object):
     self.routes = sim_device_routes.get(self.board)
     self.current_routes = set()
 
+    # set the current streaming read subdevice to the first one
+    self.current_read_subdevice = self.find_subdevice_by_type(
+      (clib.SUBD_AI, clib.SUBD_DI, clib.SUBD_DIO), 0,
+      flagmask=clib.SDF_CMD | clib.SDF_CMD_READ,
+    )
+
+    # set the current streaming write subdevice to the first one
+    self.current_write_subdevice = self.find_subdevice_by_type(
+      (clib.SUBD_AO, clib.SUBD_DO, clib.SUBD_DIO), 0,
+      flagmask=clib.SDF_CMD | clib.SDF_CMD_WRITE,
+    )
+
+    # set the current subdevice (a hack for fileno)
+    if self.current_read_subdevice >= 0:
+      self.current_subdevice = self.current_read_subdevice
+    else:
+      self.current_subdevice = self.current_write_subdevice
   def __getitem__(self,i):
     """Quick method of indexing the subdevice"""
     return self.subdevs[i]
@@ -276,24 +322,77 @@ class SimCard(object):
   def get_read_subdevice(self):
     """
     The function comedi_get_read_subdevice() returns the index of the subdevice
-    whose streaming input buffer is accessible
-    through the device device . If there is no such subdevice, -1 is returned.
+    whose streaming input buffer is currently accessible through the device
+    device . If there is no such subdevice, -1 is returned.
     """
-    return self.find_subdevice_by_type(
-      (clib.SUBD_AI, clib.SUBD_DI, clib.SUBD_DIO), 0,
-      flagmask=clib.SDF_CMD | clib.SDF_CMD_READ
+    self.current_subdevice = self.current_read_subdevice
+    return self.current_read_subdevice
+
+  def set_read_subdevice(self, subdevice):
+    """
+    The function comedi_set_read_subdevice() sets subdevice as the current
+    "read" subdevice if the subdevice supports streaming input commands.
+    No action is performed if subdevice is already the current "read" subdevice.
+    Changes are local to the open file description for this device and have no
+    effect on other open file descriptions for the underlying
+    device node.
+
+    On success, 0 is returned. On failure, -1 is returned.
+    """
+    # We'll simply search from the specified subdev and test if we found it
+    read_subdevice = self.find_subdevice_by_type(
+      (clib.SUBD_AI, clib.SUBD_DI, clib.SUBD_DIO), subdevice,
+      flagmask=clib.SDF_CMD | clib.SDF_CMD_READ,
     )
+    if read_subdevice == subdevice:
+      self.current_subdevice = self.current_read_subdevice = read_subdevice
+      return 0
+    return -1
 
   def get_write_subdevice(self):
     """
     The function comedi_get_write_subdevice() returns the index of the subdevice
-    whose streaming output buffer is accessible through this (simulated) card. If
-    there is no such subdevice, -1 is returned.
+    whose streaming output buffer is currently accessible through this
+    (simulated) card. If there is no such subdevice, -1 is returned.
     """
-    return self.find_subdevice_by_type(
-      (clib.SUBD_AO, clib.SUBD_DO, clib.SUBD_DIO), 0,
-      flagmask=clib.SDF_CMD | clib.SDF_CMD_WRITE
+    self.current_subdevice = self.current_write_subdevice
+    return self.current_write_subdevice
+
+  def set_write_subdevice(self, subdevice):
+    """
+    The function comedi_set_write_subdevice() sets subdevice as the current
+    "write" subdevice if the subdevice supports streaming output commands.
+    No action is performed if subdevice is already the current "write"
+    subdevice.
+    Changes are local to the open file description for this device and have no
+    effect on other open file descriptions for the underlying device node.
+
+    On success, 0 is returned. On failure, -1 is returned.
+    """
+    # We'll simply search from the specified subdev and test if we found it
+    write_subdevice = self.find_subdevice_by_type(
+      (clib.SUBD_AO, clib.SUBD_DO, clib.SUBD_DIO), subdevice,
+      flagmask=clib.SDF_CMD | clib.SDF_CMD_WRITE,
     )
+    if write_subdevice == subdevice:
+      self.current_subdevice = self.current_write_subdevice = write_subdevice
+      return 0
+    return -1
+
+  def fileno(self):
+    """
+    get file descriptor for open Comedilib device.
+
+    This simulated interface returns the filepointer to the current write/read
+    subdevice.  Which one is returned is somewhat arbitrary, but will be the
+    last one that was set explicitly through comedi_set_[read|write]_subdevice,
+    or the read subdevice.
+    This operates in this fashion since we cannot hijack mmap or os.write like
+    comedi actually does.
+    """
+    if self.current_subdevice not in self.subdevs:
+      return -1
+    return self.subdevs[self.current_subdevice].fileno()
 
   def test_route(self, source, destination):
     if source in self.routes and destination in self.routes[source]:
@@ -511,7 +610,7 @@ class ComediSim(object):
     return self.cards[i]
 
   def glob_device_files(self):
-    dev_numbers = [ self.comedi_fileno(p) for p in self.cards ]
+    dev_numbers = [ int(p) for p in self.cards ]
     mn,mx = min(dev_numbers), max(dev_numbers)
     return expand_braces('/dev/comedi{{{}..{}}}'.format(mn,mx))
 
@@ -545,13 +644,17 @@ class ComediSim(object):
     """
     get file descriptor for open Comedilib device.
 
-    This simulated interface simply returns the input _if_ the input corresponds
-    to the one of the simualted card numbers.
+    This simulated interface returns the filepointer to the current write/read
+    subdevice.  Which one is returned is somewhat arbitrary, but will be the
+    last one that was set explicitly through comedi_set_[read|write]_subdevice,
+    or the read subdevice.
+    This operates in this fashion since we cannot hijack mmap or os.write like
+    comedi actually does.
     """
     debug('comedi_fileno(%d)', fp)
     if not fp or fp not in self.cards:
       return -1
-    return int(fp)
+    return self[fp].fileno()
 
 
   def comedi_get_version_code(self, fp):
@@ -567,8 +670,8 @@ class ComediSim(object):
   def comedi_get_read_subdevice(self, fp):
     """
     The function comedi_get_read_subdevice() returns the index of the subdevice
-    whose streaming input buffer is accessible through the (simulated) card . If
-    there is no such subdevice, -1 is returned.
+    whose streaming input buffer is currently accessible through the (simulated)
+    card . If there is no such subdevice, -1 is returned.
     """
     debug('comedi_get_read_subdevice(%d)', fp)
     return self[fp].get_read_subdevice()
@@ -577,8 +680,8 @@ class ComediSim(object):
   def comedi_get_write_subdevice(self, fp):
     """
     The function comedi_get_write_subdevice() returns the index of the subdevice
-    whose streaming output buffer is accessible through the (simulated) card. If
-    there is no such subdevice, -1 is returned.
+    whose streaming output buffer is currently accessible through the
+    (simulated) card. If there is no such subdevice, -1 is returned.
     """
     debug('comedi_get_write_subdevice(%d)', fp)
     return self[fp].get_write_subdevice()
@@ -755,7 +858,7 @@ class ComediSim(object):
 
     # mark buffer end
     sdev.buf_begin = 0
-    sdev.buf_end = len(sdev.buffer)
+    sdev.buf_end = sdev.get_buffer_size()
 
     # make busy, make running, make self busy_owner
     sdev.flags |= clib.SDF_BUSY        \
@@ -798,7 +901,7 @@ class ComediSim(object):
     error, -1 is returned.
     """
     debug('comedi_get_buffer_size(%d, %d)', fp, subdevice)
-    return len( self[fp][subdevice].buffer )
+    return self[fp][subdevice].get_buffer_size()
 
   def comedi_set_buffer_size(self, fp, subdevice, size):
     debug('comedi_set_buffer_size(%d, %d, %d)', fp, subdevice, size)

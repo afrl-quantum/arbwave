@@ -93,12 +93,12 @@ class Subdevice(Base):
     # The c version; we can cast directly
     #data = mmap(NULL, size, PROT_WRITE, MAP_SHARED, comedi.fileno(dev), 0)
 
+    # Set the current write device so that the mmap will be correct
+    comedi.set_write_subdevice( self.card, self.subdevice )
+
     # the python version;  we must cast using ctypes/numpy
-    if not self.card.driver.simulated:
-      self.mapped = mmap( comedi.fileno(self.card), size,
-                          prot=PROT_WRITE, flags=MAP_SHARED, offset=0 )
-    else:
-      self.mapped = comedi.sim.cards[self.card].subdevs[self.subdevice].buffer
+    self.mapped = mmap( comedi.fileno(self.card), size,
+                        prot=PROT_WRITE, flags=MAP_SHARED, offset=0 )
     if not self.mapped:
       raise OSError( 'mmap: error!' ) # probably will already be raised
 
