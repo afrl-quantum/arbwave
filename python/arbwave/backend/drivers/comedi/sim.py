@@ -818,6 +818,8 @@ class ComediSim(object):
     """
     tell driver which channel/range/aref you are going to read from next
     """
+    debug('comedi_data_read_hint(%d, %d, %d, %d, %d)',
+          fp, subdev, channel, range, aref)
     return self[fp][subdev].data_read_hint(channel, range, aref)
 
 
@@ -886,6 +888,7 @@ class ComediSim(object):
     return successes if successes > 0 else -1
 
   def comedi_command(self, fp, command):
+    debug('comedi_command(%d, %s)', fp, command)
     sdev = self[fp][command.subdev]
     if sdev.flags & clib.SDF_BUSY:
       return -1
@@ -1014,12 +1017,15 @@ class ComediSim(object):
     return self[fp][sub].dio_config(channel, direction)
 
   def comedi_dio_get_config(self, fp, sub, channel, direction):
+    debug('comedi_dio_get_config(%d, %d, %d, %d)', fp, sub, channel, direction)
     return self[fp][sub].dio_get_config(channel, direction)
 
   def comedi_dio_read(self, fp, sub, channel, bit):
+    debug('comedi_dio_read(%d, %d, %d, %d)', fp, sub, channel, bit)
     return self[fp][sub].dio_read(channel, bit)
 
   def comedi_dio_write(self, fp, sub, channel, bit):
+    debug('comedi_dio_write(%d, %d, %d, %d)', fp, sub, channel, bit)
     return self[fp][sub].dio_write(channel, bit)
 
 
@@ -1031,13 +1037,18 @@ class ComediSim(object):
     return 0
 
   def comedi_get_clock_source(self, fp, sub, channel, clock, period_ns):
+    debug('comedi_get_clock_source(%d, %d, %d, %d, %d)', fp, sub, channel,
+          clock, period_ns)
     return self[fp][sub].comedi_get_clock_source(channel, clock, period_ns)
 
   def comedi_get_gate_source(self, fp, sub, channel, gate_index,
                              gate_source):
+    debug('comedi_get_gate_source(%d, %d, %d, %d, %d)', fp, sub, channel,
+          gate_index, gate_source)
     return self[fp][sub].comedi_get_gate_source(channel, gate_index, gate_source)
 
   def comedi_get_hardware_buffer_size(self, fp, sub, direction):
+    debug('comedi_get_hardware_buffer_size(%d, %d, %d)', fp, sub, direction)
     return self[fp][sub].comedi_get_hardware_buffer_size(direction)
 
   def comedi_get_routing(self, fp, sub, channel, routing):
@@ -1045,22 +1056,31 @@ class ComediSim(object):
     return self[fp][sub].get_routing(channel, routing)
 
   def comedi_reset(self, fp, sub):
+    debug('comedi_reset(%d, %d)', fp, sub)
     return self[fp][sub].comedi_reset()
 
   def comedi_set_clock_source(self, fp, sub, channel, clock, period_ns):
+    debug('comedi_set_clock_source(%d, %d, %d, %d, %d)', fp, sub, channel,
+          clock, period_ns)
     return self[fp][sub].comedi_set_clock_source(channel, clock, period_ns)
 
   def comedi_set_counter_mode(self, fp, sub, channel, mode):
+    debug('comedi_set_counter_mode(%d, %d, %d, %d)', fp, sub, channel, mode)
     return self[fp][sub].comedi_set_counter_mode(channel, mode)
 
   def comedi_set_filter(self, fp, sub, channel, filter):
+    debug('comedi_set_filter(%d, %d, %d, %d)', fp, sub, channel, filter)
     return self[fp][sub].comedi_set_filter(channel, filter)
 
   def comedi_set_gate_source(self, fp, sub, channel, gate_index,
                              gate_source):
+    debug('comedi_set_gate_source(%d, %d, %d, %d, %d)', fp, sub, channel,
+          gate_index, gate_source)
     return self[fp][sub].comedi_set_gate_source(channel, gate_index, gate_source)
 
   def comedi_set_other_source(self, fp, sub, channel, other, source):
+    debug('comedi_set_other_source(%d, %d, %d, %d, %d)', fp, sub, channel,
+          other, source)
     return self[fp][sub].comedi_set_other_source(channel, other, source)
 
   def comedi_set_routing(self, fp, sub, channel, routing):
