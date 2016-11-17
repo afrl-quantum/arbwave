@@ -40,10 +40,14 @@ def main():
     help='Run headless backend service' )
   parser.add_argument( '--ipython', action='store_true',
     help='Attempt to use ipython as embedded shell' )
+  parser.add_argument( '--disable', action='append', default=[],
+    choices=backend.connection.get_driver_list(),
+    help='Disable specific driver' )
   args = parser.parse_args()
 
   options.simulated = args.simulated
   options.ipython = args.ipython
+  options.disabled_drivers = set(args.disable)
   logging.root.setLevel( log_levels[ args.log_level ] )
 
   if   args.dataviewer:
