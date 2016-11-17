@@ -89,6 +89,19 @@ class SimSubDev(dict):
       self.ranges += [ mk_crange(mn,mx,u) for mn,mx in r ]
     self.ranges = tuple( self.ranges ) # make immutable
 
+  def __del__(self):
+    self.cleanup()
+
+  def cleanup(self):
+    # clean up the buffer
+    if self.buf_file:
+      # must import these to make sure they exist upon exit
+      import os, logging
+      logging.debug('unlink(%s)', self.buf_name)
+      self.buf_file.close()
+      os.unlink(self.buf_name)
+      self.buf_file = None
+
   def fileno(self):
     if not self.flags & clib.SDF_CMD:
       return -1
@@ -284,6 +297,17 @@ class SimCard(object):
       self.current_subdevice = self.current_read_subdevice
     else:
       self.current_subdevice = self.current_write_subdevice
+
+  def __del__(self):
+    self.cleanup()
+
+  def cleanup(self):
+    # must import to make sure it exists upon exit
+    import logging
+    for k, s in self.subdevs.iteritems():
+      logging.debug('cleanup subdev %d', k)
+      s.cleanup()
+
   def __getitem__(self,i):
     """Quick method of indexing the subdevice"""
     return self.subdevs[i]
@@ -564,7 +588,7 @@ class PCI_6229(SimCard):
 
 class ComediSim(object):
   def __init__(self, auto_inject=True):
-    self.cards = None
+    self.cards = dict()
     if auto_inject:
       self.inject_into_clib()
 
@@ -593,7 +617,17 @@ class ComediSim(object):
 
   def remove_from_clib(self):
     if hasattr( comedi_t_ptr, '__int__' ):
-      debug( 'comedi.sim:  removing injected simulated library from c-interface' )
+      # must import this to make sure it exists upon exit
+      import logging
+      logging.debug('comedi.sim:  removing injected simulated library from c-interface')
+      # delete cards and associated buffers
+      for k, c in self.cards.iteritems():
+        logging.debug('comedi.sim: cleaning up card(%d)', k)
+        c.cleanup()
+      del self.cards
+      self.cards = dict()
+
+      # delete hacks to comedi_t_ptr type
       del comedi_t_ptr.__int__
       del comedi_t_ptr.__hash__
       del comedi_t_ptr.__repr__
