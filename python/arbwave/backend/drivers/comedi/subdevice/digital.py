@@ -2,7 +2,7 @@
 
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re
-from ctypes import c_uint, sizeof, byref
+from ctypes import c_uint, sizeof
 from itertools import izip
 import comedi
 
@@ -20,17 +20,21 @@ class Digital(Base):
   # DOTiming clocks stuff that this _and_ NI implement.  Then, inherit from that
   # so that we don't have to implement it twice.
 
+  def _get_all_channels(self):
+    OC = self.onboardclock_name
+    channels = self.channels.copy()
+    if self.clocks:
+      # add DOTiming clock channels
+      lc = len(self.channels)
+      channels.update( (clk,dict(order=lc)) for clk in self.clocks if clk != OC)
+    return channels
 
   def config_all_channels(self):
     """
     For digital channels, we must first configure the IO pins to be for OUTPUT.
     Furthermore, we need to ensure that DOTiming channels are also included.
     """
-    channels = self.channels.copy()
-    if self.clocks:
-      # add DOTiming clock channels
-      lc = len(self.channels)
-      channels.update( (clk,dict(order=lc)) for clk in self.clocks )
+    channels = self._get_all_channels()
 
     for chname in channels:
       ch = self.get_channel( chname )
@@ -40,19 +44,21 @@ class Digital(Base):
 
 
   def set_output(self, data):
-    # this specialization is probably not so necessary since the standard
-    # subdevice.set_output will probably also work
+    # this entire specialization is probably not so necessary since the standard
+    # subdevice.set_output will probably also work (as long as the channels are
+    # passed in as below)
     bits = c_uint(0)
 
+    OC = self.onboardclock_name
     if self.clocks:
       data = data.copy()
       # we just set all DOTiming clock lines to zero for static output
-      data.update( { clk:0 for clk in self.clocks } )
+      data.update( {clk:0 for clk in self.clocks if clk != OC} )
 
     if (8*sizeof(bits)) < max( len(data), len(self.channels) ):
       # I don't believe this should ever be the case, but just in case, we'll
       # use the more generic insnslist based version in subdevice.set_output
-      super(Digital,self).set_output(data)
+      return super(Digital,self)._set_output(data, self._get_all_channels())
 
     write_mask = 0
     for chname, value in data.items():
@@ -64,7 +70,7 @@ class Digital(Base):
       self.card,
       self.subdevice,
       write_mask,
-      byref(bits),
+      bits,
       base_channel=0,
     )
     return bits.value

@@ -6,6 +6,7 @@ from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
 from ....tools.path import collect_prefix
 from ...driver import Driver as Base
 from .card import Card
+from . import channels
 
 
 class Driver(Base):
@@ -57,6 +58,19 @@ class Driver(Base):
       self.counters += [ sub for sub in card.counter_subdevices  ] #don't collect counter channels
       self.signals  += [ so for  so in card.signals ]
 
+    # add all the counters as timing sources
+    self.timing_channels = [
+      channels.Timing(str(ctr), ctr) for ctr in self.counters
+    ]
+
+    # add all the onboardclocks that are available
+    self.timing_channels += [
+      channels.OnboardClock(subd.onboardclock_name, subd)
+      for subd in self.subdevices.values() if subd.has_onboardclock
+    ]
+
+    # FIXME:  add in DOTiming channels
+
     info('found %d comedi supported boards',len(self.cards))
 
 
@@ -88,8 +102,7 @@ class Driver(Base):
     return self.lines
 
   def get_timing_channels(self):
-    # FIXME:  add in DOTiming channels
-    return self.counters
+    return self.timing_channels
 
   def get_routeable_backplane_signals(self):
     return self.signals

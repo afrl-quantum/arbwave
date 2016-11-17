@@ -5,6 +5,7 @@ from mmap import mmap, PROT_WRITE, MAP_SHARED
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 import numpy as np
 import ctypes
+from ctypes import memset, sizeof
 from itertools import izip
 
 from physical import unit
@@ -13,12 +14,12 @@ import comedi
 
 from .....tools.signal_graphs import nearest_terminal
 from .....tools.cmp import cmpeps
+from .....tools import cached
 from ....device import Device as Base
 from .. import channels
 
 
 command_test_errors = {
-  0: 'invalid comedi command',
   1: 'unsupported trigger in ..._src setting of comedi command, setting zeroed',
   2: '..._src setting not supported by driver',
   3: 'TRIG argument of comedi command outside accepted range',
@@ -79,9 +80,9 @@ class Subdevice(Base):
     # explicitly so that DMA transfers get primed--comedi.internal_trigger must
     # be used whether we use TRIG_INT or TRIG_EXT.  For the case of TRIG_EXT, it
     # will just wait for the actual trigger.
-    comedi.get_cmd_src_mask(card, subdevice, ctypes.byref(self.cmd))
+    comedi.get_cmd_src_mask(card, subdevice, self.cmd)
     self.trig_now_supported = bool( self.cmd.start_src & comedi.TRIG_NOW )
-    ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
+    memset( self.cmd, 0, sizeof(self.cmd) )
 
     sd_flags = self.status()
     self.sampl_t = comedi.sampl_t if sd_flags.sample_16bit else comedi.lsampl_t
@@ -143,7 +144,7 @@ class Subdevice(Base):
     debug( 'comedi: cancelling commands for comedi subdevice %s', self )
     raiserr( comedi.cancel( self.card, self.subdevice ), 'cancel' )
     self.t_max = 0.0
-    ctypes.memset( ctypes.byref(self.cmd), 0, ctypes.sizeof(self.cmd) )
+    memset( self.cmd, 0, sizeof(self.cmd) )
     del self.cmd_chanlist
     self.cmd_chanlist = None
 
@@ -162,6 +163,13 @@ class Subdevice(Base):
       C = C[li]
     return C
 
+  @cached.property
+  def has_onboardclock(self):
+    return self.onboardclock_name in self.clock_sources
+
+  @cached.property
+  def onboardclock_name(self):
+    return self.card.signal_names['onboardclock'].format(dev=self.name)
 
   @property
   def prefix(self):
@@ -258,29 +266,37 @@ class Subdevice(Base):
     if not self.config['clock']['value']:
       self.clock_terminal = None
     else:
-      self.clock_terminal = \
-          nearest_terminal( self.config['clock']['value'],
-                              set(self.clock_sources),
-                              signal_graph )
+      if signal_graph:
+        if self.has_onboardclock and \
+           self.config['clock']['value'] == self.onboardclock_name:
+          # don't have to lookup anymore, since we know it is already the
+          # onboard clock
+          self.clock_terminal = 'internal'
+        else:
+          self.clock_terminal = \
+              nearest_terminal( self.config['clock']['value'],
+                                  set(self.clock_sources),
+                                  signal_graph )
 
     if self.clock_terminal == 'internal':
-      # FIXME:  implement this mapping and value
-      clock_args   = ( comedi.TRIG_TIMER, internal_clock_value )
+      frequency = self.clocks[ self.onboardclock_name ]['rate']['value']
+      clock_args   = (comedi.TRIG_TIMER, int(1e9 / frequency))
     else:
-      #FIXME:  set this to correct mapped value
-      channel = invert = 0
+      channel = self.card.name_table[self.clock_terminal]
+      invert = 0
       if config['clock-edge']['value'] == 'falling':
         invert = comedi.CR_INVERT
-      #ian's claim:  if digital scan_begin_arg ==> cant have CR_EDGE
-      clock_args = ( comedi.TRIG_EXT, channel | comedi.CR_EDGE | invert )
+      clock_args = (comedi.TRIG_EXT,
+                    comedi.CR_PACK_FLAGS(channel, 0, 0, comedi.CR_EDGE | invert))
 
     trigger_args = ( comedi.TRIG_INT, 0 )
     if 'trigger' in self.config and self.config['trigger']['enable']['value']:
-      #FIXME:  set this to correct mapped value
-      channel = invert = 0
+      channel = self.card.name_table[self.clock_terminal]
+      invert = 0
       if self.config['trigger']['edge']['value'] == 'falling':
         invert = comedi.CR_INVERT
-      trigger_args = ( comedi.TRIG_EXT, channel | comedi.CR_EDGE | invert )
+      trigger_args = (comedi.TRIG_EXT,
+                      comedi.CR_PACK_FLAGS(channel, 0, 0, comedi.CR_EDGE | invert))
 
 
 
@@ -288,7 +304,7 @@ class Subdevice(Base):
     # start with a clean slate:
     self.clear()
 
-    debug( 'comedi: creating command:  %s', self.name )
+    debug('comedi: creating command:  %s', self.name)
 
     #### Now set self.cmd ####
     channels = self.config_all_channels().items()
@@ -311,24 +327,23 @@ class Subdevice(Base):
     self.cmd.stop_arg       = 0 # we'll set src/arg at the time of set_waveforms
     #### finished init of self.cmd ####
 
-    #### start testing cmd ####
-    # FIXME:  should probably check to see if/how much the test is changing cmd
-    for  i in xrange(2):
-      # recommended number of times to call comedi.command_test is: 2
-      test = comedi.command_test(self.card, ctypes.byref(self.cmd))
-
-      if test < 0:
-        error ('invalid comedi command for %s', self)
-      elif test > 0:
-        warn( 'comedi[%s]: %s', self, command_test_errors[test] )
-        continue
+    #### testing cmd ####
+    err = comedi.command_test(self.card, self.cmd)
+    if err in [1, 2, 3, 5]:
+      raise RuntimeError('comedi[{}]: ' + command_test_errors[err])
+    if err == 4:
+      warn('comedi[%s]: %s', self, command_test_errors[err])
 
 
   def set_clocks(self, clocks):
     """
-    Implemented by Timing channel
+    If this is an analog device, this must be the onboard clock only.
+    If this is a digital device, either an Onboard timer for the digital device
+    (if supported) or aperiodic clock implemented by a digital line of a digital
+    device.  If this is a timing device, this must be one of the counters.
     """
-    raise NotImplementedError('only the Timing task can implement clocks')
+    if self.clocks != clocks:
+      self.clocks = clocks
 
 
   def get_channel(self, name):
@@ -368,8 +383,16 @@ class Subdevice(Base):
     """
     Sets a static value on each output channel of this task.
     """
+    return self._set_output(data, self.channels)
+
+  def _set_output(self, data, channels):
+    """
+    Sets a static value on each output channel of this task.
+
+    This version allows the caller to add items to the channel list.
+    """
     data = data.items()
-    data.sort( key = lambda i : self.channels[i[0]]['order'] )
+    data.sort( key = lambda i : channels[i[0]]['order'] )
 
     insn_list = comedi.insnlist()
     insn_list.set_length( len(data) )
@@ -381,10 +404,10 @@ class Subdevice(Base):
 
       i.insn = comedi.INSN_WRITE
       i.subdev = self.subdevice
-      i.chanspec = self.cr_pack(chname, self.channels[chname])
+      i.chanspec = self.cr_pack(chname, channels[chname])
       i.n = 1
       i.data = ctypes.pointer( di )
-    n = comedi.do_insnlist( self.card, ctypes.byref(insn_list) )
+    n = comedi.do_insnlist( self.card, insn_list )
     raiserr( n - len(data), 'insnlist not complete' )
 
 
@@ -397,8 +420,8 @@ class Subdevice(Base):
       chan = 0 #I think this is what we want
       clock = ctypes.c_uint()
       period = ctypes.c_uint()
-      ret = comedi.get_clock_source(self.card, self.subdevice,
-                                         chan, clock, period)
+      ret = comedi.get_clock_source(self.card, self.subdevice, chan, clock,
+                                    period)
       raiserr(ret, 'get_clock_source')
       print self.subdevice, "timing device"
       return int(period.value)*unit.ns
@@ -547,13 +570,13 @@ class Subdevice(Base):
   def start(self):
     if not self.busy and len(self.cmd_chanlist) > 0:
       # 1. Start the command
-      err = comedi.command(self.card, ctypes.byref(self.cmd))
+      err = comedi.command(self.card, self.cmd)
       raiserr(err)
       # 2. Mark the already written buffer as written
       # we have to mark this now, since comedi.command resets all the buffer
       # counters.
       output_size = self.cmd.stop_arg * self.cmd.chanlist_len \
-                  * ctypes.sizeof(self.sampl_t)
+                  * sizeof(self.sampl_t)
       m = comedi.mark_buffer_written( self.card, self.cmd.subdev,
                                            output_size )
       raiserr(m,'mark_buffer')

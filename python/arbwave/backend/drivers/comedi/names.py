@@ -60,7 +60,10 @@ def ni_names(host, dev):
     if (k.startswith('NI_') and
         comedi.NI_COUNTER_NAMES_MAX < v < (comedi.NI_NAMES_BASE + comedi.NI_NUM_NAMES))
   })
-  return name_dict
+  return dict(
+    signals = name_dict,
+    onboardclock = '{dev}/SampleClockTimebase'
+  )
 
 
 kernel_module_to_namefunc = {

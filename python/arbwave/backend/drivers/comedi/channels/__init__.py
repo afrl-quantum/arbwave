@@ -2,7 +2,7 @@
 
 
 from .base import Base
-from .timing      import Timing
+from .timing      import *
 from ....channels import Analog as ABase
 from ....channels import Digital as DBase
 from ....channels import Backplane as BBase
