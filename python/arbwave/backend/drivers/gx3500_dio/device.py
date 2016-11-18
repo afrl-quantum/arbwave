@@ -98,6 +98,9 @@ class Device(Base):
         self.set_output({}) # write the port values to the hardware
 
     def __del__(self):
+      self.close()
+
+    def close(self):
         """
         Final cleanup.
         """

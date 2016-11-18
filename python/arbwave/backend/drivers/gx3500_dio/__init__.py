@@ -61,7 +61,10 @@ class Driver(Base):
         """
         Close all the devices and uninitialize.
         """
-        del self.devices
+        while self.devices:
+          k, dev = self.devices.popitem()
+          dev.close()
+          del dev
 
     def get_devices(self):
         """
