@@ -701,6 +701,21 @@ class ComediSim(object):
     return 0x1
 
 
+  def comedi_set_read_subdevice(self, subdevice):
+    """
+    The function comedi_set_read_subdevice() sets subdevice as the current
+    "read" subdevice if the subdevice supports streaming input commands.
+    No action is performed if subdevice is already the current "read" subdevice.
+    Changes are local to the open file description for this device and have no
+    effect on other open file descriptions for the underlying
+    device node.
+
+    On success, 0 is returned. On failure, -1 is returned.
+    """
+    debug('comedi_set_read_subdevice(%d, %d)', fp, subdevice)
+    return self[fp].set_read_subdevice(subdevice)
+
+
   def comedi_get_read_subdevice(self, fp):
     """
     The function comedi_get_read_subdevice() returns the index of the subdevice
@@ -709,6 +724,21 @@ class ComediSim(object):
     """
     debug('comedi_get_read_subdevice(%d)', fp)
     return self[fp].get_read_subdevice()
+
+
+  def comedi_set_write_subdevice(self, fp, subdevice):
+    """
+    The function comedi_set_write_subdevice() sets subdevice as the current
+    "write" subdevice if the subdevice supports streaming output commands.
+    No action is performed if subdevice is already the current "write"
+    subdevice.
+    Changes are local to the open file description for this device and have no
+    effect on other open file descriptions for the underlying device node.
+
+    On success, 0 is returned. On failure, -1 is returned.
+    """
+    debug('comedi_set_write_subdevice(%d, %d)', fp, subdevice)
+    return self[fp].set_write_subdevice(subdevice)
 
 
   def comedi_get_write_subdevice(self, fp):
