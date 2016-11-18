@@ -64,6 +64,7 @@ class Local(object):
       prefix, driver = self.drivers.popitem()
       debug('closing driver: %s', prefix)
       try:
+        driver.close() # explicitly close to avoid garbage collector problems
         del driver
       except:
         traceback.print_exc()
