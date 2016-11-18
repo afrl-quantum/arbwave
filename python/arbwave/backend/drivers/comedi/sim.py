@@ -478,7 +478,7 @@ class PXI_6733(SimCard):
                stop_src=33,
                subdev=1,
       ),
-      ranges={ clib.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
+      ranges={ clib.UNIT_volt : ( (-10,10), )  },
     ),
     # subdev 7 represents PFI lines
     7 : dict( type=clib.SUBD_DIO, n_channels=10,
@@ -811,7 +811,7 @@ class ComediSim(object):
     return self[fp][sub].get_n_ranges(channel)
 
   def comedi_get_range(self, fp, sub, channel, range):
-    debug('comedi_get_ranges(%d,%d,%d,%s)', fp,sub,channel, range)
+    debug('comedi_get_range(%d,%d,%d,%s)', fp,sub,channel, range)
     return self[fp][sub].get_range(channel, range)
 
   def comedi_maxdata_is_chan_specific(self, fp, sub):
