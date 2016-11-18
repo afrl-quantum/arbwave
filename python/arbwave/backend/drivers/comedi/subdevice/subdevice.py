@@ -5,7 +5,7 @@ from mmap import mmap, PROT_WRITE, MAP_SHARED
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 import numpy as np
 import ctypes
-from ctypes import memset, sizeof
+from ctypes import memset, sizeof, byref
 from itertools import izip
 
 from physical import unit
@@ -82,7 +82,7 @@ class Subdevice(Base):
     # will just wait for the actual trigger.
     comedi.get_cmd_src_mask(card, subdevice, self.cmd)
     self.trig_now_supported = bool( self.cmd.start_src & comedi.TRIG_NOW )
-    memset( self.cmd, 0, sizeof(self.cmd) )
+    memset( byref(self.cmd), 0, sizeof(self.cmd) )
 
     sd_flags = self.status()
     self.sampl_t = comedi.sampl_t if sd_flags.sample_16bit else comedi.lsampl_t
@@ -144,7 +144,7 @@ class Subdevice(Base):
     debug( 'comedi: cancelling commands for comedi subdevice %s', self )
     raiserr( comedi.cancel( self.card, self.subdevice ), 'cancel' )
     self.t_max = 0.0
-    memset( self.cmd, 0, sizeof(self.cmd) )
+    memset( byref(self.cmd), 0, sizeof(self.cmd) )
     del self.cmd_chanlist
     self.cmd_chanlist = None
 
