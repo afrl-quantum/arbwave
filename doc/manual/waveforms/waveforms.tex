@@ -1,5 +1,18 @@
 % vim: ts=2:sw=2:tw=80:et
 \section{Natural Time and Duration}
+
+\subsection{Automatically defined local waveform variables}
+\begin{tabular}{|l | c | c | c |}
+  \hline
+  Variable Name  & Description  & Group Scope & Waveform Element Scope \\
+  \hline
+  t     & Currently progressed natural time & X & X \\
+  dt    & Duration of current group & X & X \\
+ dt\_clk& Minimum clock period of channel &  & X \\
+ \hline
+\end{tabular}
+
+
 \section{Groups}
 \section{Subgroups}
 \section{Waveform Elements}

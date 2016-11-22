@@ -55,6 +55,7 @@ ui_info = \
     </menu>
     <menu action='HelpMenu'>
       <menuitem action='About'/>
+      <menuitem action='autovars'/>
       <menuitem action='VGens'/>
       <menuitem action='arbhelp'/>
     </menu>
@@ -419,6 +420,10 @@ class ArbWave(gtk.Window):
         '_About', '<shift><control>A',             # label, accelerator
         'About',                                   # tooltip
         self.activate_action ),
+      ( 'autovars', None,                          # name, stock id
+        'Automatic Waveform _Varaibles', '',       # label, accelerator
+        'Automatically generated local waveform variables', # tooltip
+        self.activate_action ),
       ( 'VGens', None,                             # name, stock id
         'Value _Generators', '<control>G',         # label, accelerator
         'Known value generator functions',         # tooltip
@@ -485,6 +490,7 @@ class ArbWave(gtk.Window):
       'Run'       : lambda a: self.update(toggle_run=True),
       'ViewData'  : lambda a: show_data_viewer(self),
       'About'     : lambda a: about.show(),
+      'autovars'  : lambda a: tips.show_autovars(self),
       'VGens'     : lambda a: tips.show_generators(self),
       'arbhelp'   : lambda a: tips.show_arbwavefunctions(self),
       'CH:Add'    : lambda a: self.channel_editor.insert_row(),

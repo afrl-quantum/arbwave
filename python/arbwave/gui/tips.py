@@ -5,6 +5,38 @@ import pydoc
 from ..processor import functions
 
 
+def show_autovars(parent):
+  dialog = gtk.Dialog( 'Automatically Generated Local Waveform Variables',
+    parent, gtk.DialogFlags.DESTROY_WITH_PARENT,
+    (gtk.STOCK_CLOSE, gtk.ResponseType.OK) )
+
+  L = gtk.Label()
+  scroll = gtk.ScrolledWindow()
+  scroll.set_size_request(550,400)
+  scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+
+  scroll.add_with_viewport( L )
+  dialog.vbox.pack_start( scroll, True, True, 0 )
+  dialog.show_all()
+
+  L.set_markup("""\
+Arbwave develops the complete timing diagram of a waveform using a concept known
+known as <i>Natural Time</i>.
+<i>Natural Time</i> is defined as the time that a waveform group or element
+begins based upon the preceding sibling groups or preceding waveform elements
+of the same Arbwave channel.
+In order to make the use of natural time more convenient, Arbwave automatically
+generates and provides the following variables:
+  <b>t</b>: Local time (units: time)
+  <b>dt</b>: Duration of parent group (units: time)
+  <b>dt_clk</b>: Minimum clock period of a waveform element (units: time)
+  """)
+
+  # Close dialog on user response
+  dialog.connect ("response", lambda d, r: d.destroy())
+  dialog.show()
+
+
 def show_generators(parent):
   dialog = gtk.Dialog( 'Value Generators',
     parent, gtk.DialogFlags.DESTROY_WITH_PARENT,
