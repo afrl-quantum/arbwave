@@ -81,6 +81,8 @@ class SimSubDev(dict):
       buf_fd, self.buf_name = tempfile.mkstemp('.comedi_simbuf')
       self.buf_file = os.fdopen(buf_fd, 'rw')
       self.set_buffer_size(self.pop('buffer_sz', self.SIMULATED_BUFFER_SIZE))
+      self.setdefault('convert_rng_ns',     (1000,0xffffffff))
+      self.setdefault('scan_begin_rng_ns',  (1000,0xffffffff))
 
     self.buf_begin = self.buf_end = 0
     for u,r in RI:
@@ -101,6 +103,53 @@ class SimSubDev(dict):
       self.buf_file.close()
       os.unlink(self.buf_name)
       self.buf_file = None
+
+  def get_cmd_timing_constraints(self, scan_begin_src, scan_begin_min,
+                                       convert_src, convert_min,
+                                       chanlist, chanlist_len):
+    if not self.flags & clib.SDF_CMD:
+      return -1
+    # our simulated hardware does not care how many channels or which trigger
+    # modes are used
+    scan_begin_min._obj.value = self.scan_begin_rng_ns[0]
+    convert_min._obj.value    = self.convert_rng_ns[0]
+    return 0
+
+  def command_test(self, command):
+    if not self.flags & clib.SDF_CMD:
+      return -1
+    warn('comedi,sim:  comedi_command_test not simulated yet')
+    return 0
+    ## step 1: check if triggers are trivially valid
+    #if (not command.start_src & self.cmd.start_src) or \
+    #   (not command.scan_begin_src & self.cmd.scan_begin_src) or \
+    #   (not command.convert_src & self.cmd.convert_src) or \
+    #   (not command.scan_end_src & self.cmd.scan_end_src) or \
+    #   (not command.stop_src & self.cmd.stop_src):
+    #   return 1
+    ## step 2: make sure trigger sources are unique and compatible
+    #uniq = lambda x : (x and (x & (x-1)))
+    #if not uniq(command.start_src) or \
+    #   not uniq(command.scan_begin_src) or \
+    #   not uniq(command.convert_src) or \
+    #   not uniq(command.scan_end_src) or \
+    #   not uniq(command.stop_src):
+
+    ## step 3: check if arguments are valid
+    #def lim(err, x, rng):
+    #  x0 = min(rng[1], max(rng[0], x))
+    #  return err | (x0!=x), x0
+    #err, command.start_arg       = lim(0,  command.start_arg, self.start_rng_ns)
+    #err, command.scan_begin_arg  = lim(err,command.scan_begin_arg, self.scan_begin_rng_ns)
+    #err, command.convert_arg     = lim(err,command.convert_arg, self.convert_rng_ns)
+    #err, command.scan_end_arg    = lim(err,command.scan_end_arg, self.scan_end_rng_ns)
+    #err, command.stop_arg        = lim(err,command.stop_arg, self.stop_rng_ns)
+    ## step 4: tweak arguments as necessary
+    ## pass (not bothering with this)
+    ## step 5: check if channels work together properly
+    ## pass
+    ## success:
+    #return 0
 
   def fileno(self):
     if not self.flags & clib.SDF_CMD:
@@ -165,7 +214,7 @@ class SimSubDev(dict):
   def get_cmd_src_mask(self, cmd):
     if not self.flags & clib.SDF_CMD:
       return -1
-    for a,v in self.get('cmd',{}).items():
+    for a,v in self.cmd.items():
       setattr( cmd, a, v )
     return 0
 
@@ -464,20 +513,22 @@ class PXI_6733(SimCard):
       cmd=dict(chanlist=None,
                chanlist_len=0,
                convert_arg=0,
-               convert_src=2,
+               convert_src=clib.TRIG_NOW,
                data=None,
                data_len=0,
-               flags=64,
+               flags=clib.CMDF_WRITE,
                scan_begin_arg=0,
-               scan_begin_src=80,
+               scan_begin_src=clib.TRIG_TIMER|clib.TRIG_EXT,
                scan_end_arg=0,
-               scan_end_src=32,
+               scan_end_src=clib.TRIG_COUNT,
                start_arg=0,
                start_src=clib.TRIG_INT|clib.TRIG_EXT,
                stop_arg=0,
-               stop_src=33,
+               stop_src=clib.TRIG_COUNT|clib.TRIG_NONE,
                subdev=1,
       ),
+      convert_rng_ns      = (0,0),
+      scan_begin_rng_ns   = (1000,0xffffffff),
       ranges={ clib.UNIT_volt : ( (-10,10), )  },
     ),
     # subdev 7 represents PFI lines
@@ -523,20 +574,22 @@ class PCI_6229(SimCard):
       cmd=dict(chanlist=None,
                chanlist_len=0,
                convert_arg=0,
-               convert_src=2,
+               convert_src=clib.TRIG_NOW,
                data=None,
                data_len=0,
-               flags=64,
+               flags=clib.CMDF_WRITE,
                scan_begin_arg=0,
-               scan_begin_src=80,
+               scan_begin_src=clib.TRIG_TIMER|clib.TRIG_EXT,
                scan_end_arg=0,
-               scan_end_src=32,
+               scan_end_src=clib.TRIG_COUNT,
                start_arg=0,
                start_src=clib.TRIG_INT|clib.TRIG_EXT,
                stop_arg=0,
-               stop_src=33,
+               stop_src=clib.TRIG_COUNT|clib.TRIG_NONE,
                subdev=1,
       ),
+      convert_rng_ns      = (0,0),
+      scan_begin_rng_ns   = (1200,0xffffffff),
       ranges={ clib.UNIT_volt : ( (-10,10), (-2,2), (-1,1) )  },
     ),
     2 : dict( type=clib.SUBD_DIO, n_channels=32,
@@ -549,20 +602,22 @@ class PCI_6229(SimCard):
       cmd=dict(chanlist=None,
                chanlist_len=0,
                convert_arg=0,
-               convert_src=2,
+               convert_src=clib.TRIG_NOW,
                data=None,
                data_len=0,
-               flags=64,
+               flags=clib.CMDF_WRITE,
                scan_begin_arg=0,
-               scan_begin_src=80,
+               scan_begin_src=clib.TRIG_TIMER|clib.TRIG_EXT,
                scan_end_arg=0,
-               scan_end_src=32,
+               scan_end_src=clib.TRIG_COUNT,
                start_arg=0,
                start_src=clib.TRIG_INT,
                stop_arg=0,
-               stop_src=33,
+               stop_src=clib.TRIG_COUNT|clib.TRIG_NONE,
                subdev=2,
       ),
+      convert_rng_ns      = (0,0),
+      scan_begin_rng_ns   = (1000,0xffffffff),
       ranges={ clib.UNIT_volt : ( (0,5), ) },
     ),
     # subdev 7 represents PFI lines
@@ -939,8 +994,22 @@ class ComediSim(object):
 
 
   def comedi_command_test(self, fp, command):
-    warn('comedi,sim:  comedi_command_test not simulated yet')
-    return 0
+    """
+    Tests the command structure pointed to by the parameter command and returns
+    an integer describing the testing stages that were successfully passed. In
+    addition, if elements of the comedi_cmd structure are invalid, they may be
+    modified. Source elements are modified to remove invalid source triggers.
+    Argument elements are adjusted or rounded to the nearest valid value.
+    """
+    # This function is necessary to simulate in order to provide a means for
+    # arbwave to discover the limits on clocked devices.  It might be
+    # preferable, in the future, to implement a specific function in the comedi
+    # kernel drivers to return the limits.
+    debug('comedi_command_test(%d, %s)', fp, command)
+    if command.subdev not in self[fp].subdevs:
+      return -1;
+    return self[fp][command.subdev].command_test(command)
+
 
   def comedi_get_buffer_contents(self, fp, subdevice):
     """
@@ -1121,10 +1190,6 @@ class ComediSim(object):
     debug('comedi_test_route(%d, %d, %d)', fp, source, destination)
     return self[fp].test_route(source, destination)
 
-  def comedi_test_route(self, fp, source, destination):
-    debug('comedi_test_route(%d, %d, %d)', fp, source, destination)
-    return self[fp].test_route(source, destination)
-
   def comedi_connect_route(self, fp, source, destination):
     debug('comedi_connect_route(%d, %d, %d)', fp, source, destination)
     return self[fp].connect_route(source, destination)
@@ -1136,3 +1201,21 @@ class ComediSim(object):
   def comedi_get_routes(self, fp, routelist, len_routelist):
     debug('comedi_get_routes(%d, [..], %d)', fp, len_routelist)
     return self[fp].get_routes(routelist, len_routelist)
+
+  def comedi_get_cmd_timing_constraints(self, fp, subdevice,
+                                        scan_begin_src,
+                                        scan_begin_min, #ptr
+                                        convert_src,
+                                        convert_min,    #ptr
+                                        chanlist,       #ptr
+                                        chanlist_len):
+    debug('comedi_get_cmd_timing_constraints(%d, %d, %d, 0x%x, %d, 0x%x, 0x%x, %d)',
+          fp, subdevice,
+          scan_begin_src, scan_begin_min,
+          convert_src, convert_min,
+          chanlist, chanlist_len)
+    return self[fp][subdevice].get_cmd_timing_constraints(
+      scan_begin_src, scan_begin_min,
+      convert_src, convert_min,
+      chanlist, chanlist_len
+    )

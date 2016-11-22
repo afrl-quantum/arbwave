@@ -426,7 +426,14 @@ class Subdevice(Base):
       print self.subdevice, "timing device"
       return int(period.value)*unit.ns
     else:
-      return 0*unit.ns
+      # we use the new comedi facility to query async subdevice speeds
+      scan_begin_min, convert_min = ctypes.c_uint(), ctypes.c_uint()
+      if comedi.get_cmd_timing_constraints(self.card, self.subdevice,
+            self.cmd.scan_begin_src, byref(scan_begin_min),
+            self.cmd.convert_src,    byref(convert_min),
+            self.cmd.chanlist, self.cmd.chanlist_len) < 0:
+        raise RuntimeError('comedi.get_min_period: get_cmd_timing_constraints failed')
+      return scan_begin_min.value*unit.ns
 
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
     """
