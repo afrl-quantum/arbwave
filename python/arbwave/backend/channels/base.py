@@ -5,13 +5,13 @@ from physical import unit
 class Base(object):
   """Base channel class"""
   _pyro_ = True # For remote connections, this class must use pyro
+  _padded_timing   = True
+  _finite_end_clock = False
 
-  def __init__(self, name, dev=None, explicit_timing=True, finite_end_clock=True):
+  def __init__(self, name, dev=None):
     super(Base,self).__init__()
     self.name = name
     self.dev = dev
-    self._explicit_timing = explicit_timing
-    self._finite_end_clock = finite_end_clock
 
   def __str__(self):
     return self.name
@@ -27,8 +27,14 @@ class Base(object):
   def device(self):
     return self.dev
 
-  def explicit_timing(self):
-    return self._explicit_timing
+  def padded_timing(self):
+    """
+    Identifies a channel that simply writes an output value for every clock.
+    This type requires padding, for when a clock must occur but an output is not
+    requested to change.  This is typical for hardware like NI hardware that
+    uses a simple FIFO style buffer for generating output on every clock.
+    """
+    return self._padded_timing
 
   def get_min_period(self):
     """

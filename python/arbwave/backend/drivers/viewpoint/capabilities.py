@@ -3,7 +3,7 @@
 Set of capabilities that each driver may support.
 """
 
-import channels
+from . import channels
 
 def get_channels(devices, C, *args, **kwargs):
   retval = list()
@@ -18,7 +18,7 @@ def get_channels(devices, C, *args, **kwargs):
   return retval
 
 def get_digital_channels(devices):
-  return get_channels(devices, channels.Digital, explicit_timing=False)
+  return get_channels(devices, channels.Digital)
 
 def get_timing_channels(devices):
   tlist = get_channels(devices, channels.Timing)

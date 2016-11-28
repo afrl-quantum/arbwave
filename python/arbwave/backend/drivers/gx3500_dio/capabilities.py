@@ -36,7 +36,7 @@ def get_digital_channels(devices):
   :param devices: the devices map
   :return: a list of Digital channels
   """
-  return get_channels(devices, channels.Digital, explicit_timing=False)
+  return get_channels(devices, channels.Digital)
 
 def get_timing_channels(devices):
   """
