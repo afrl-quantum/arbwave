@@ -459,7 +459,7 @@ class Subdevice(Base):
     transitions = list( my_clock['transitions'] )
     transitions.sort()
 
-    if self.finite_end_clock and not continous:
+    if self.finite_end_clock and not continuous:
       # This subdevice requires an additional clock pulse at the end of the
       # sequence in order for the hardware to properly notify the software of
       # completion.  It is the responsibility of each driver to ensure that the
