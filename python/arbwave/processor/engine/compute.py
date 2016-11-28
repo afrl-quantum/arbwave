@@ -430,7 +430,9 @@ class WaveformEvalulator:
       # has completed the waveform.
 
       for clk in self.finite_mode_end_clocks_required:
-        self.transitions[clk].add( max(self.transitions[clk]) + 1 )
+        end_clk_t = max(self.transitions[clk]) + 1
+        debug('add end clock for %s at %s', clk, end_clk_t)
+        self.transitions[clk].add(end_clk_t)
 
       # for simplicity, we just assume that the largest clock was needed.
       self.t_max += max( self.min_periods.viewvalues() )

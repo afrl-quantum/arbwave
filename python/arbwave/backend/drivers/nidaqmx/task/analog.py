@@ -10,6 +10,9 @@ class Analog(Base):
   task_type = 'ao'
   task_class = nidaqmx.AnalogOutputTask
 
+  # Refer to the NI documentation, DAQ-STC, Section 3.4.5.1 "Single-Buffer Mode"
+  finite_end_clock = True
+
 
   def add_channels(self):
     # populate the task with output channels and accumulate the data
