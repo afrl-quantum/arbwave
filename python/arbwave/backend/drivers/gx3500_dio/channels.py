@@ -6,11 +6,17 @@ Channel definitions for the GX3500 timing/DIO board driver.
 @author: bks
 """
 
-from ...channels import Digital, Backplane
+from ...channels import Digital as DBase
+from ...channels import Backplane as BBase
 from ...channels import Timing as BaseTiming
 
 from physical import unit
 import sys
+
+class Digital(DBase):
+  _padded_timing = False
+
+class Backplane(BBase): pass
 
 class Timing(BaseTiming):
   """

@@ -17,6 +17,7 @@ class Task(Base):
   STATIC              = 0
   WAVEFORM_SINGLE     = 1
   WAVEFORM_CONTINUOUS = 2
+  finite_end_clock = True # whether this task requires end-clock (see analog.py)
 
   def __init__(self, driver, device):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
@@ -216,6 +217,14 @@ class Task(Base):
     dt_clk = my_clock['dt']
     transitions = list( my_clock['transitions'] )
     transitions.sort()
+
+    if self.finite_end_clock and not continous:
+      # This task requires an additional clock pulse at the end of the sequence
+      # in order for the hardware to properly notify the software of completion.
+      # It is the responsibility of each driver to ensure that the last clock
+      # transitions is ignored if the driver has already indicated to arbwave
+      # that an extra clock pulse is required.
+      transitions = transitions[:-1]
 
     # 1.  Sample clock
     if continuous:

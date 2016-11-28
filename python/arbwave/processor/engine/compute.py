@@ -147,7 +147,9 @@ class WaveformEvalulator:
     self.do_ao_channels.update( backend.get_digital_channels() )
 
     self.transitions = dict()
-    self.explicit_timing = dict()
+    # dictionary of clocks that serve channels that require padding (like NI
+    # hardware)
+    self.padded_timing = dict()
     self.finite_mode_end_clocks_required = set()
     self.channel_info = make_channel_info(channels)
     self.t_max = 0.0*unit.s
@@ -176,11 +178,11 @@ class WaveformEvalulator:
 
       if clk not in self.transitions:
         self.transitions[ clk ] = set()
-        self.explicit_timing[ clk ] = False
+        self.padded_timing[ clk ] = False
 
       # determine if the channel needs explicit timing (in case its clock
       # source is not aperiodic)
-      self.explicit_timing[clk] |= chan_dev.explicit_timing()
+      self.padded_timing[clk] |= chan_dev.padded_timing()
 
       # sets ci['units'], ci['scaling'], etc
       # units and scaling only get to refer to globals
@@ -428,7 +430,9 @@ class WaveformEvalulator:
       # has completed the waveform.
 
       for clk in self.finite_mode_end_clocks_required:
-        self.transitions[clk].add( max(self.transitions[clk]) + 1 )
+        end_clk_t = max(self.transitions[clk]) + 1
+        debug('add end clock for %s at %s', clk, end_clk_t)
+        self.transitions[clk].add(end_clk_t)
 
       # for simplicity, we just assume that the largest clock was needed.
       self.t_max += max( self.min_periods.viewvalues() )
@@ -448,10 +452,10 @@ class WaveformEvalulator:
     # ensure that we have a unique set of transitions
     clock_transitions = dict()
     for i in self.transitions:
-      if (not self.timing_channels[i].is_aperiodic()) and self.explicit_timing[i]:
+      if (not self.timing_channels[i].is_aperiodic()) and self.padded_timing[i]:
         # for these types of clocks, we will just use an xrange, since every
         # possible clock cycle must be used.
-        # NOTE:  explicit_timing is the notion that an output device must be
+        # NOTE:  padded_timing is the notion that an output device must be
         # programmed for every single clock it receives.  This is generally true
         # for devices like national instruments, but not true for devices such
         # as the viewpoint card where each output transition is timed with a
