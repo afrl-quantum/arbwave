@@ -17,7 +17,7 @@ class Task(Base):
   STATIC              = 0
   WAVEFORM_SINGLE     = 1
   WAVEFORM_CONTINUOUS = 2
-  finite_end_clock = True # whether this task requires end-clock (see analog.py)
+  finite_end_clock = False # whether this task requires end-clock (see analog.py)
 
   def __init__(self, driver, device):
     Base.__init__(self, name='{d}/{tt}'.format(d=device,tt=self.task_type))
