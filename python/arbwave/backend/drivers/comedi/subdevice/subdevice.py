@@ -17,6 +17,7 @@ from .....tools.cmp import cmpeps
 from .....tools import cached
 from ....device import Device as Base
 from .. import channels
+from . import capabilities
 
 
 command_test_errors = {
@@ -435,6 +436,11 @@ class Subdevice(Base):
         raise RuntimeError('comedi.get_min_period: get_cmd_timing_constraints failed')
       return scan_begin_min.value*unit.ns
 
+  @cached.property
+  def finite_end_clock(self):
+    C = capabilities.get(self.card.kernel, self.card.board, self.subdev_type)
+    return C['finite_end_clock']
+
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
     """
     Set up the hardware for waveform output.  This function does:
@@ -452,6 +458,15 @@ class Subdevice(Base):
     dt_clk = my_clock['dt']
     transitions = list( my_clock['transitions'] )
     transitions.sort()
+
+    if self.finite_end_clock and not continous:
+      # This subdevice requires an additional clock pulse at the end of the
+      # sequence in order for the hardware to properly notify the software of
+      # completion.  It is the responsibility of each driver to ensure that the
+      # last clock transitions is ignored if the driver has already indicated to
+      # arbwave that an extra clock pulse is required.
+      transitions = transitions[:-1]
+
 
 
     # 1. Set (non)continuous mode and number of samples per channel
