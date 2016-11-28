@@ -16,6 +16,9 @@ class Base(object):
   def __str__(self):
     return self.name
 
+  def __repr__(self):
+    return str(self)
+
   def get_config_template(self):
     return dict()
 
