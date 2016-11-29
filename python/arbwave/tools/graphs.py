@@ -15,8 +15,13 @@ try:
   inf = float('inf')
 
   class DiGraph(igraph.Graph):
-    def __init__(self):
-      igraph.Graph.__init__(self, directed=True)
+    def __init__(self, *a, **kw):
+      super(DiGraph,self).__init__(*a, **kw)
+      if not self.is_directed():
+        if a or kw:
+          # This should only occur if a pickling did not complete correctly
+          raise RuntimeError('Graph not initialized as directed')
+        self.to_directed()
 
     def add_node(self, *a, **kw):
       return self.add_vertex(*a, **kw)
