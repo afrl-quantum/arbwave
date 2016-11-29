@@ -14,9 +14,9 @@ try:
   import igraph
   inf = float('inf')
 
-  class DiGraph(igraph.Graph):
+  class DiGraph_igraph(igraph.Graph):
     def __init__(self, *a, **kw):
-      super(DiGraph,self).__init__(*a, **kw)
+      super(DiGraph_igraph,self).__init__(*a, **kw)
       if not self.is_directed():
         if a or kw:
           # This should only occur if a pickling did not complete correctly
@@ -69,11 +69,16 @@ try:
       for vi in self.predecessors(vertex):
         yield self.vs[vi]['name']
 
-
+  default_DiGraph = 'igraph'
 except:
+  DiGraph_igraph = None
+  default_DiGraph = 'networkx'
+
+
+try:
   import networkx
 
-  class DiGraph(networkx.DiGraph):
+  class DiGraph_networkx(networkx.DiGraph):
     def has_path(self, source, target):
       try:
         return bool( networkx.shortest_path(self, source, target) )
@@ -98,3 +103,48 @@ except:
 
     def topological_sorted_nodes(self):
       return networkx.topological_sort(self)
+
+except:
+  DiGraph_networkx = None
+
+
+DiGraph = None
+
+def get_valid():
+  retval = set()
+  if DiGraph_igraph is not None:
+    retval.add('igraph')
+  if DiGraph_networkx is not None:
+    retval.add('networkx')
+  return retval
+
+def negotiate(other):
+  valid = get_valid().intersection(other)
+  if not valid:
+    raise RuntimeError(
+      'Could not negotiate a common directional graph format.\n'
+      'Install python-igraph (preferable) or python-networkx in both places'
+    )
+  if default_DiGraph in valid:
+    version = default_DiGraph
+  else:
+    # if our default is not available, just return any random valid class
+    # if we implement more than two classes, perhaps we would order these by
+    # priority and return the highest priority...
+    version = valid.pop()
+  assign(version)
+  return version
+
+def assign(version = default_DiGraph):
+  global DiGraph
+  if   version == 'igraph' and DiGraph_igraph is not None:
+    DiGraph = DiGraph_igraph
+  elif version == 'networkx' and DiGraph_networkx is not None:
+    DiGraph = DiGraph_networkx
+  else:
+    raise RuntimeError(
+      'Could not assign a common directional graph format: '+version
+    )
+
+# assign the default version at module load
+assign()

@@ -1,12 +1,15 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from .graphs import DiGraph
+# IMPORTANT:  Our access to DiGraph _MUST_ be used by referencing the graphs
+# module.  The actual class version can be dynamically assigned based on the
+# mutual capabilities of the frontend and backend.
+from . import graphs
 
 def build_graph( signals, *nodes ):
   """
   Create a graph from signals to terminals.
   """
-  g = DiGraph()
+  g = graphs.DiGraph()
   g.add_nodes_from(tuple(set(nodes))) # just to make sure it is unique
 
   for src, dst in signals:
