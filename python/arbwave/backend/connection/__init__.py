@@ -62,12 +62,14 @@ class Local(object):
   def close(self):
     while self.drivers:
       prefix, driver = self.drivers.popitem()
-      debug('closing driver: %s', prefix)
+      try: debug('closing driver: %s', prefix)
+      except: pass # sometimes fails on exit
       try:
         driver.close() # explicitly close to avoid garbage collector problems
         del driver
       except:
-        traceback.print_exc()
+        try: traceback.print_exc()
+        except: pass
         print 'driver not cleanly closed: ', prefix
 
   def open(self):
