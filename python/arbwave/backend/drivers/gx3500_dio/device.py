@@ -87,7 +87,7 @@ class Device(Base):
 
         self.board_config = {
             'use_10_MHz': False,
-            'external_trigger': True
+            'external_trigger': False,
         }
 
         self.clocks = None
@@ -116,12 +116,12 @@ class Device(Base):
         """
         return {
             'clock': {
-                'value': '{dev}/Internal_XO'.format(dev=self),
+                'value': '',
                 'type': str,
                 'range': self.possible_clock_sources
             },
             'hw_trigger': {
-                'value': True,
+                'value': False,
                 'type': bool,
                 'range': None
             }

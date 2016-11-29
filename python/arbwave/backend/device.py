@@ -15,6 +15,10 @@ class Device(object):
 
   @property
   def prefix(self):
+    """
+    Parse the name of the device to return the prefix of the device.  The prefix
+    is composed of [host_prefix:]driver_prefix
+    """
     return self.name.partition('/')[0]
 
   def start(self):
