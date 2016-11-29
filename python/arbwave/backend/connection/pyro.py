@@ -93,7 +93,7 @@ class Wrapper(Pyro.core.ObjBase):
     Tests an object to see whether an automatic pyro served recursion should
     occur.
     """
-    if hasattr(obj, '_pyro_') and obj._pyro_:
+    if getattr(obj, '_pyro_', False):
       name = '{}.{}/{}'.format(obj.__module__, obj.__class__.__name__, str(obj))
       D = {name:klass for klass,name in self.daemon.implementations.values()}
       if name not in D:
@@ -102,7 +102,8 @@ class Wrapper(Pyro.core.ObjBase):
         self.daemon.connect(wrapper, name)
       elif D[name].obj != obj:
         # this obviously assumes that the object is a Wrapper
-        raise RuntimeError('two objects with same descriptor?: '+name)
+        raise RuntimeError('two objects ({},{}) with same descriptor? {}: '
+          .format(repr(D[name].obj), repr(obj), name))
       return PyroResponse( name )
     else:
       # we just return the raw object--no pyro wrapping
@@ -150,6 +151,10 @@ class Proxy(object):
   @property
   def _callables(self):
     return self.obj._callables()
+
+  def __dir__(self):
+    """provice (some) support for auto completion"""
+    return self._attribs + self._callables
 
   def __str__(self):
     return Exec(self, '__str__')()

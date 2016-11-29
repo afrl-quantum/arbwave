@@ -147,6 +147,7 @@ class ToDriver:
         self.target,self.args,self.kwargs = target, args, kwargs
       def run(self):
         try:
+          logging.debug('Starting wait on %s', self.target)
           self.target(*self.args, **self.kwargs)
         except Exception as e:
           self.excObj = e
