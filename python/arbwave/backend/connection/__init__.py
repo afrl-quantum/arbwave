@@ -10,8 +10,9 @@ import os, traceback, logging, importlib
 from os import path
 from logging import log, debug, DEBUG
 import Pyro.core
-from . import pyro
 from ... import options
+from ... import tools
+from . import pyro
 
 __all__=['Local', 'Remote']
 
@@ -83,6 +84,22 @@ class Local(object):
   def __getitem__(self,i):
     return self.drivers[i]
 
+  def get_compatibility(self):
+    """
+    Get compatibilty options between frontend and backend
+    """
+    return dict(
+      graphs = tools.graphs.get_valid(),
+    )
+
+  def set_compatibility(self, **kw):
+    """
+    Get compatibilty options between frontend and backend
+    """
+    if 'graphs' in kw:
+      g = tools.graphs.negotiate(kw['graphs'])
+      debug('Negotiated common directed graph format: %s', g)
+
 
 
 def serve():
@@ -127,6 +144,17 @@ class Remote(pyro.Proxy):
 
   def __getitem__(self,i):
     return self.drivers[i]
+
+  def negotiate(self):
+    """
+    Negotiate compatibilty components between frontend and backend
+    """
+    D = self.get_compatibility()
+    if 'graphs' not in D:
+      raise RuntimeError('Remote side will not negotiate directed graphs!')
+    self.set_compatibility(
+      graphs = [tools.graphs.negotiate(D['graphs'])],
+    )
 
 
 def factory(prefix, host):

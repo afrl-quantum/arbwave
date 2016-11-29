@@ -1,6 +1,9 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from ..graphs import DiGraph
 
+# We do not need to use the dynamically assigned DiGraph class since this
+# version compatibilty stuff happens only on the frontend--we'll use whatever
+# version of DiGraph exists at startup.
 G = DiGraph()
 registered = dict()
 
