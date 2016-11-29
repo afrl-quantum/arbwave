@@ -99,13 +99,6 @@ class Card( POINTER(comedi.comedi_t) ):
     R += [(D[r.source]['arbwave'],D[r.destination]['arbwave']) for r in pairs]
     return R
 
-  @cached.property
-  def signals(self):
-    return [
-      channels.Backplane(src,destinations=dest,invertible=False)
-      for src,dest in self.available_routes
-    ]
-
 
   nlkup = lambda self, *a: [self.name_table[i] for i in a]
 

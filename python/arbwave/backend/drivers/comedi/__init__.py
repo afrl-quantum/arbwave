@@ -39,6 +39,7 @@ class Driver(Base):
     self.lines      = list()
     self.counters   = list()
     self.signals    = list()
+    src_dests       = dict()
 
 
     for df in self.glob_comedi_device_files():
@@ -56,7 +57,9 @@ class Driver(Base):
       self.lines    += [ do for sub in card.do_subdevices for do in sub.available_channels ]
       self.lines    += [ do for sub in card.dio_subdevices for do in sub.available_channels ]
       self.counters += [ sub for sub in card.counter_subdevices  ] #don't collect counter channels
-      self.signals  += [ so for  so in card.signals ]
+      # aggregate this cards available routes into the complete dictionary
+      for src,dest in card.available_routes:
+        src_dests.setdefault(src, list()).append(dest)
 
     # add all the counters as timing sources
     self.timing_channels = [
@@ -70,6 +73,13 @@ class Driver(Base):
     ]
 
     # FIXME:  add in DOTiming channels
+
+    # convert the aggregate routes dictionary to a list of Backplane signals
+    for src, dests in src_dests.items():
+      log(DEBUG-1, 'creating comedi backplane channel: %s --> %s', src, dests)
+      self.signals.append(
+        channels.Backplane(src,destinations=dests,invertible=False)
+      )
 
     info('found %d comedi supported boards',len(self.cards))
 
