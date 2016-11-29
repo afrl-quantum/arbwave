@@ -1211,9 +1211,9 @@ class ComediSim(object):
                                         chanlist_len):
     debug('comedi_get_cmd_timing_constraints(%d, %d, %d, 0x%x, %d, 0x%x, 0x%x, %d)',
           fp, subdevice,
-          scan_begin_src, scan_begin_min,
-          convert_src, convert_min,
-          chanlist, chanlist_len)
+          scan_begin_src, addressof(scan_begin_min._obj),
+          convert_src, addressof(convert_min._obj),
+          addressof(chanlist), chanlist_len)
     return self[fp][subdevice].get_cmd_timing_constraints(
       scan_begin_src, scan_begin_min,
       convert_src, convert_min,
