@@ -173,10 +173,6 @@ class Subdevice(Base):
     return self.card.signal_names['onboardclock'].format(dev=self.name)
 
   @property
-  def prefix(self):
-    return self.card.prefix
-
-  @property
   def flags(self):
     return comedi.get_subdevice_flags(self.card, self.subdevice)
 
