@@ -35,6 +35,8 @@ class Arbwave(object):
   ANYTIME = BEFORE | AFTER
 
   StopGeneration = StopGeneration
+  STOP = STOP
+  RESTART = RESTART
   
   def __init__(self, globals_source, ui):
     """
