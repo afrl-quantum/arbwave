@@ -121,9 +121,9 @@ def end_drag(w, ctx, parent, channels):
 
 def highlight(selection, plotter):
   model, i = selection.get_selected()
-  if i:
+  try:
     plotter.highlight( model[i][model.DEVICE].partition('/')[-1] )
-  else:
+  except:
     plotter.highlight( None )
 
 
