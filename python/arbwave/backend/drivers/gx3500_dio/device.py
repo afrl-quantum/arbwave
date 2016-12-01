@@ -85,13 +85,9 @@ class Device(Base):
             '{dev}/Internal_XO'.format(dev=self)
         ]
 
-        self.board_config = {
-            'use_10_MHz': False,
-            'external_trigger': False,
-        }
+        self.config = self.get_config_template()
 
         self.clocks = None
-        self.config = None
         self.signals = None
         self.is_continuous = False
         self.ports = np.zeros((4,), dtype=np.uint32)
@@ -120,11 +116,26 @@ class Device(Base):
                 'type': str,
                 'range': self.possible_clock_sources
             },
-            'hw_trigger': {
-                'value': False,
-                'type': bool,
-                'range': None
-            }
+            'trigger': {
+                'enable': {
+                    'value': False,
+                    'type': bool,
+                    'range': None
+                },
+                'invert': {
+                    'value': False,
+                    'type': bool,
+                    'range': None
+                },
+                'mode' : {
+                    'value' : 'edge',
+                    'type' : str,
+                    'range' : [
+                        ('edge', 'Trigger on Rising/Falling Edge of Trigger'),
+                        ('level','Trigger on Level of Trigger'),
+                    ],
+                },
+            },
         }
 
     def set_config(self, config):
@@ -142,11 +153,6 @@ class Device(Base):
 
         if self.config == config:
             return
-
-        if 'clock' in config:
-            self.board_config['use_10_MHz'] = not 'Internal_XO' in config['clock']['value']
-        if 'hw_trigger' in config:
-            self.board_config['external_trigger'] = config['hw_trigger']['value']
 
         self.config = copy.deepcopy(config)
 
@@ -393,12 +399,15 @@ class Device(Base):
 
         self._upload_program(instr_list)
 
-        auto_trigger = continuous and not self.board_config['external_trigger']
-        self.board.config(number_transitions=len(instr_list),
-                          repetitions=0 if continuous else 1,
-                          use_10_MHz=self.board_config['use_10_MHz'],
-                          external_trigger=self.board_config['external_trigger'],
-                          auto_trigger=auto_trigger)
+        self.board.config(
+          number_transitions      =len(instr_list),
+          repetitions             =0 if continuous else 1,
+          use_10_MHz              =not 'Internal_XO' in self.config['clock']['value'],
+          external_trigger        =self.config['trigger']['enable']['value'],
+          invert_external_trigger =self.config['trigger']['invert']['value'],
+          external_trigger_type   =self.config['trigger']['mode']['value'],
+          auto_trigger            =not self.config['trigger']['enable']['value'],
+        )
 
         self.is_continuous = continuous
 
@@ -415,14 +424,10 @@ class Device(Base):
         self.set_output(clock_channels)
         self.ports = p
 
-        # arm the board
+        # arm the board; if it not expecting a hardware trigger, sequencing will
+        # automatically start (see auto_trigger above)
         debug('gx3500: ARMing the board')
         self.board.command('ARM')
-
-        # trigger the board if it isn't waiting for a hardware trigger
-        if not self.board_config['external_trigger'] and not self.is_continuous:
-            debug('gx3500: TRIGGERing the board')
-            self.board.command('TRIGGER')
 
     def wait(self):
         """

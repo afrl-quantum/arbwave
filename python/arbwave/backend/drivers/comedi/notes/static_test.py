@@ -10,20 +10,20 @@ import arbwave.backend.drivers.comedi as COM
 driver = COM.Driver()
 
 configA = {'comedi/Dev0/ao1': # used subdevice, might be wrong
-              {'use-only-onboard-memory':  
+              {'use-only-onboard-memory':
                   {'type': bool, 'value': True},
-              'clock-settings': 
+              'clock-settings':
                   {'edge': {'type': str, 'value': 'rising'},
                    'mode':  {'type': str, 'value': 'continuous'}},
-              'trigger': 
+              'trigger':
                   {'source': {'type': str, 'value': ''},
                    'enable': {'type': bool, 'value': False},
                    'edge': {'type': str, 'value': 'rising'}},
-              'clock': 
+              'clock':
                   {'type': str, 'value': ''},
-                   'default-voltage-range': 
+                   'default-voltage-range':
                         {'minimum': {'type': float, 'value': 0.0},
-                         'maximum': {'type': float, 'value': 5.0}}}}            
+                         'maximum': {'type': float, 'value': 5.0}}}}
 
 
 
@@ -31,12 +31,12 @@ configA = {'comedi/Dev0/ao1': # used subdevice, might be wrong
 
 
 channels = {'comedi/Dev0/ao0': {'max': 10, 'order': 0, 'min': -10},
-            
+
 
 
 #without routing, paths seem to have no effect
 paths = {'comedi/Dev0/PFI0': ({'comedi/Dev0/PFI0': None},
-                                 {'comedi/Dev0/PFI0': 0})} 
+                                 {'comedi/Dev0/PFI0': 0})}
 
 analog =
 

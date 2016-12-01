@@ -347,9 +347,8 @@ class RangeFactory:
       devs = backend.get_devices()
 
     r = Range( devs[path[0]], path[1:] )
-    if path[1] == 'clock':
+    if path[-1] == 'clock':
       assert model[i][model.TYPE] == str, 'expected string clock type'
-      #print 'I am supposed to make a clock list generator'
       return ClockRange(r, self.store.clocks, self.store.signals)
     else:
       return r
