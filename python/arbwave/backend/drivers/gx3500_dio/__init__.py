@@ -51,7 +51,7 @@ class Driver(Base):
             except NotATimingBoard:
                 pass
         
-        logging.info('Found %d timing/DIO boards.', len(self.devices))
+        logging.info('Found %d gxt timing/DIO boards.', len(self.devices))
 
         self.digital_channels = capabilities.get_digital_channels(self.devices)
         self.timing_channels = capabilities.get_timing_channels(self.devices)
@@ -105,7 +105,7 @@ class Driver(Base):
 
         :param config: a dict of {'device/path': config_dict }
         :param channels: ??
-        :param signal_graph: directed igraph.Graph of signal routing
+        :param signal_graph: directed graph of signal routing
         """
         for d,dev in self.devices.items():
             if d in config:
