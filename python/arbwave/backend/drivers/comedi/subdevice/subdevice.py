@@ -616,7 +616,7 @@ class Subdevice(Base):
 
 
   def wait(self):
-    if self.running:
+    if self.busy:
       log(DEBUG-1,'comedi: waiting for (%s) to finish...', self)
       if self.cmd_is_continuous():
         raise RuntimeError('Cannot wait for continuous waveform tasks')
@@ -630,10 +630,15 @@ class Subdevice(Base):
         time.sleep(0.01)
 
       log(DEBUG-1,'comedi: (%s) finished', self)
+      # cancel the command to allow INSN_CONFIG calls (such as
+      # get_cmd_timing_constraints) to complete--INSN_CONFIG are not allowed
+      # when the subdevice is busy.
+      self.stop()
 
 
   def stop(self):
     if self.busy:
+      debug('comedi: cancelling cmd for %s', self)
       raiserr( comedi.cancel(self.card, self.subdevice), 'cancel' )
 
 
