@@ -376,10 +376,13 @@ class Task(Base):
         debug('NIDAQmx:  task.wait() timed out! finished=%s',
               self.task.is_done())
       log(DEBUG-1,'NIDAQmx: task (%s) finished', self.task)
+      # may as well stop the task since we are finished
+      self.stop()
 
 
   def stop(self):
     if self.task:
+      debug('nidaqmx: stopping task for %s', self)
       self.task.stop()
 
 
