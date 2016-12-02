@@ -48,11 +48,28 @@ def mk_crange(min,max,unit):
   r.unit = unit
   return r
 
+class BusyError(Exception): pass
+
+class busy_marker(object):
+  def __init__(self, subdev):
+    self.subdev = subdev
+  def __enter__(self):
+    if self.subdev.flags & clib.SDF_BUSY:
+      debug('comedi: Subdevice already busy')
+      raise BusyError()
+    self.subdev.flags |= clib.SDF_BUSY
+  def __exit__(self,type,value,traceback):
+    self.subdev.flags &= ~clib.SDF_BUSY
+
+
 class SimSubDev(dict):
   SIMULATED_BUFFER_SIZE = 2**21 # in bytes
+
   def __init__(self, *a, **kw):
     super(SimSubDev,self).__init__(*a, **kw)
     self.__dict__ = self
+    self.busy_body = busy_marker(self)
+
     # ensure that ranges are sorted correctly
     self.setdefault('type', clib.SUBD_UNUSED)
     self.setdefault('n_channels', 0)
@@ -109,11 +126,15 @@ class SimSubDev(dict):
                                        chanlist, chanlist_len):
     if not self.flags & clib.SDF_CMD:
       return -1
-    # our simulated hardware does not care how many channels or which trigger
-    # modes are used
-    scan_begin_min._obj.value = self.scan_begin_rng_ns[0]
-    convert_min._obj.value    = self.convert_rng_ns[0]
-    return 0
+    try:
+      with self.busy_body:
+        # our simulated hardware does not care how many channels or which
+        # trigger modes are used
+        scan_begin_min._obj.value = self.scan_begin_rng_ns[0]
+        convert_min._obj.value    = self.convert_rng_ns[0]
+        return 0
+    except BusyError:
+      return -1
 
   def command_test(self, command):
     if not self.flags & clib.SDF_CMD:
@@ -186,29 +207,49 @@ class SimSubDev(dict):
 
   # AI functions
   def data_read(self, channel, range, aref, data):
-    # dereference the pointer and set a value
-    data._obj.value = self.state[channel]
-    return 1
+    try:
+      with self.busy_body:
+        # dereference the pointer and set a value
+        data._obj.value = self.state[channel]
+        return 1
+    except BusyError:
+      return -1
 
   def data_read_n(self, channel, range, aref, data, n):
-    # dereference the pointer and set a value
-    data._obj[0:n] = [self.state[channel] for i in xrange(n)]
-    return n
+    try:
+      with self.busy_body:
+        # dereference the pointer and set a value
+        data._obj[0:n] = [self.state[channel] for i in xrange(n)]
+        return n
+    except BusyError:
+      return -1
 
   def data_read_delayed(self, channel, range, aref, data, nanosec):
-    time.sleep( nanosec * 1e-9 )
-    # dereference the pointer and set a value
-    data._obj.value = self.state[channel]
-    return 1
+    try:
+      with self.busy_body:
+        time.sleep( nanosec * 1e-9 )
+        # dereference the pointer and set a value
+        data._obj.value = self.state[channel]
+        return 1
+    except BusyError:
+      return -1
 
   def data_read_hint(self, channel, range, aref):
-    # hint taken
-    return 0
+    try:
+      with self.busy_body:
+        # hint taken
+        return 0
+    except BusyError:
+      return -1
 
   # AO functions
   def data_write(self, channel, range, aref, data):
-    self.state[channel] = data
-    return 1 # success in any case!
+    try:
+      with self.busy_body:
+        self.state[channel] = data
+        return 1 # success in any case!
+    except BusyError:
+      return -1
 
   # CMD functions
   def get_cmd_src_mask(self, cmd):
@@ -278,13 +319,17 @@ class SimSubDev(dict):
 
   # Digital I/O
   def dio_bitfield2(self, write_mask, bits, base_channel):
-    for i, ch in izip( xrange(8*sizeof(c_uint)),
-                       xrange( base_channel, self.n_channels ) ):
-      if write_mask & (1 << i):
-        self.state[ch] = bits._obj.value & ( 1 << i )
-      bits._obj.value &= ~( 1 << i ) # clear bit
-      bits._obj.value |= bool(self.state[ch]) << i # write bit
-    return 0
+    try:
+      with self.busy_body:
+        for i, ch in izip( xrange(8*sizeof(c_uint)),
+                           xrange( base_channel, self.n_channels ) ):
+          if write_mask & (1 << i):
+            self.state[ch] = bits._obj.value & ( 1 << i )
+          bits._obj.value &= ~( 1 << i ) # clear bit
+          bits._obj.value |= bool(self.state[ch]) << i # write bit
+        return 0
+    except BusyError:
+      return -1
 
   def dio_config(self, channel, direction):
     self.ioconfig[channel] = direction
