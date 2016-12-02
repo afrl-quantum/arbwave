@@ -425,11 +425,18 @@ class Subdevice(Base):
     else:
       # we use the new comedi facility to query async subdevice speeds
       scan_begin_min, convert_min = ctypes.c_uint(), ctypes.c_uint()
-      if comedi.get_cmd_timing_constraints(self.card, self.subdevice,
+      retval = comedi.get_cmd_timing_constraints(self.card, self.subdevice,
             self.cmd.scan_begin_src, byref(scan_begin_min),
             self.cmd.convert_src,    byref(convert_min),
-            self.cmd.chanlist, self.cmd.chanlist_len) < 0:
-        raise RuntimeError('comedi.get_min_period: get_cmd_timing_constraints failed')
+            self.cmd.chanlist, self.cmd.chanlist_len)
+      if retval < 0:
+        raise RuntimeError(
+          'comedi.get_min_period: '
+          'get_cmd_timing_constraints({}, subdev={}, scan_src={}, <addr>, '
+          'convert_src={}, <addr>, <addr>, chlen={}) failed (=={})'
+          .format(self.card, self.subdevice, self.cmd.scan_begin_src,
+                  self.cmd.convert_src, self.cmd.chanlist_len, retval)
+        )
       return scan_begin_min.value*unit.ns
 
   @cached.property
