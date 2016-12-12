@@ -585,8 +585,7 @@ class Subdevice(Base):
     # for this
     #data[:] = scans
     # scale the data to sampl type.
-    for ch in chlist:
-      ch_i = self.get_channel(ch)
+    for ch_i, ch in zip(xrange(n_channels), chlist):
       data[:,ch_i] = self.convert_data( ch, scans[:,ch_i] )
 
     self.t_max = t_max
