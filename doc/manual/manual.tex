@@ -19,6 +19,7 @@
 \usepackage{verbatim}
 \usepackage{url}
 \usepackage[numbers,sort&compress]{natbib}
+\usepackage{fancyhdr}
 
 \newboolean{usebibunits}
 \setboolean{usebibunits}{false}
@@ -84,11 +85,23 @@
 \newcommand{\device}[1]{\textbf{#1}}            % an output device
 
 
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.25pt}
+%\renewcommand{\footrulewidth}{0.5pt}
+\fancyhead[r]{%
+  \footnotesize%
+  Arbitrary Waveform Generation for Experimental Control (Arbwave)---%
+  User Manual%
+}
+\fancyfoot[c]{
+  \scriptsize
+  \thepage
+}
+
 \makeindex
 
 
 \begin{document}
-
 
 \bibliographystyle{unsrtnat}              % Set the global bibliography style.
 
@@ -110,7 +123,7 @@
     {\LARGE Version: \revision}\\
     {\LARGE(\revdate)} \\
     \vspace{2em}
-    {\LARGE\rm--USER MANUAL--}\\
+    {\huge\sc--User Manual--}\\
     \vspace{2em}
     {\Large\rm This Document Last Revised \mandate}
 }
@@ -120,7 +133,6 @@
 \begin{center}
 \begin{Large}
 {\hspace{-2em}Written by:}\\
-Dr. Brian Kasch, \\
 Dr. Spencer E. Olson
 }
 { % address
@@ -134,8 +146,11 @@ Dr. Spencer E. Olson
 \end{center}
 }
 
+%\thispagestyle{fancy}
+
 \initializefrontsections
 
+\pagestyle{fancy}
 
 % Copyright page
 \unnumberedpage
