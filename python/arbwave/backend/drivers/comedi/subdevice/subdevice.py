@@ -425,11 +425,18 @@ class Subdevice(Base):
     else:
       # we use the new comedi facility to query async subdevice speeds
       scan_begin_min, convert_min = ctypes.c_uint(), ctypes.c_uint()
-      if comedi.get_cmd_timing_constraints(self.card, self.subdevice,
+      retval = comedi.get_cmd_timing_constraints(self.card, self.subdevice,
             self.cmd.scan_begin_src, byref(scan_begin_min),
             self.cmd.convert_src,    byref(convert_min),
-            self.cmd.chanlist, self.cmd.chanlist_len) < 0:
-        raise RuntimeError('comedi.get_min_period: get_cmd_timing_constraints failed')
+            self.cmd.chanlist, self.cmd.chanlist_len)
+      if retval < 0:
+        raise RuntimeError(
+          'comedi.get_min_period: '
+          'get_cmd_timing_constraints({}, subdev={}, scan_src={}, <addr>, '
+          'convert_src={}, <addr>, <addr>, chlen={}) failed (=={})'
+          .format(self.card, self.subdevice, self.cmd.scan_begin_src,
+                  self.cmd.convert_src, self.cmd.chanlist_len, retval)
+        )
       return scan_begin_min.value*unit.ns
 
   @cached.property
@@ -578,8 +585,7 @@ class Subdevice(Base):
     # for this
     #data[:] = scans
     # scale the data to sampl type.
-    for ch in chlist:
-      ch_i = self.get_channel(ch)
+    for ch_i, ch in zip(xrange(n_channels), chlist):
       data[:,ch_i] = self.convert_data( ch, scans[:,ch_i] )
 
     self.t_max = t_max

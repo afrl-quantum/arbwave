@@ -1,4 +1,6 @@
 % vim: ts=2:sw=2:tw=80:et
+\thispagestyle{fancy}
+\pagestyle{fancy}
 \section{Natural Time and Duration}
 
 \subsection{Automatically defined local waveform variables}
@@ -6,9 +8,9 @@
   \hline
   Variable Name  & Description  & Group Scope & Waveform Element Scope \\
   \hline
-  t     & Currently progressed natural time & X & X \\
-  dt    & Duration of current group & X & X \\
- dt\_clk& Minimum clock period of channel &  & X \\
+  \symb{natural_time} & Currently progressed natural time & X & X \\
+  \symb{duration}     & Duration of current group & X & X \\
+  \symb{dt_clk}      & Minimum clock period of channel &  & X \\
  \hline
 \end{tabular}
 

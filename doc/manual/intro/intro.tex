@@ -1,24 +1,39 @@
 % vim: ts=2:sw=2:tw=80:et
+\thispagestyle{fancy}
+\pagestyle{fancy}
+
 This manual describes the use and operation of Arbwave, the arbitrary waveform
 experimental control program.
 
 \section{What is Arbwave?\index{What is Arbwave?}}
+\subsection{Background}
+Atomic physics experiments typically involve various voltages, currents,
+magnetic fields, laser fields, and mechanical devices that must be manipulated
+and altered according to very precise relative timing relationships.  It is
+necessary to use hardware and software that provides for coordinating these
+tight timing relationships.  The extent to which software and hardware are
+able to present these timing relationships to a user in a succinct and
+consistent fashion directly determines how well a configuration can be
+tailored to the specific experimental situation.
 
-\section{What can Arbwave do?}
+\subsection{What can Arbwave do?}
+Arbwave provides a means for a user to clearly coordinate groups of transitions
+for various control signals that can be used to run a complicated experimental
+timing sequence.  In Arbwave, a series of channels are defined where each
+channel represents some control signal used to supervise an experimental
+parameter such as voltage, current, magnetic field, etc.  Using the
+information of the defined channels, Arbwave allows one to coordinate
+heirarchical sets of transitions for each of those channels.  Arbwave also
+graphically represents each of the signal transitions as complete waveforms
+where the time for each transition is accurately shown.  Furthermore, Arbwave
+facilitates execution of these waveforms in various operation patterns, such
+as control-variable nested loop iteration and multi-variable optimization.
+Finally, user scripting, via Python, can be inserted into the execution to
+customize a particular experimental procedure, customize an optimization
+procedure, and hook into various external data recorders processors.
 
-We can also refer to a figure as Fig.~\ref{fig:intro:jdk_grid_example}.
 
-\begin{figure}[hb]
-    \centerline{\includegraphics[angle=-90]{figures/jdk_grid_example}}
-    \caption{Regular mesh on the left; stretched mesh, in both directions, on
-             the right.} 
-    \label{fig:intro:jdk_grid_example}
-\end{figure}
-
-We just love to cite \citet{Rambo:1989}.
-
-
-\section{Supported Hardware}\label{sec:hardware}
+\section{Supported Hardware\index{Supported Hardware}}\label{sec:hardware}
 \begin{center}
 \tablefirsthead{%
   \hline
