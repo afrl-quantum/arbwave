@@ -12,7 +12,7 @@ import physical
 from ....tools.print_units import M
 from ... import stores
 from ...packing import *
-from ...dataviewer import DataViewer
+from ... import dataviewer as viewers
 from .. import generic
 from .. import helpers
 from ..helpers import GTVC, GCRT
@@ -137,16 +137,20 @@ class OptimView(gtk.Dialog):
     self.set_default_size(550, 600)
     self.set_border_width(10)
 
-    self.repetitions = gtk.SpinButton(
-      gtk.Adjustment(lower=1, upper=sys.maxint, step_incr=1, page_incr=5)
+    self.repetitions = gtk.SpinButton.new(
+      gtk.Adjustment(lower=1, upper=sys.maxint, step_incr=1, page_incr=5),
+      1,
+      10,
     )
     self.vbox.pack_start(
-      hpack(gtk.Label('Number of Repetitions'), self.repetitions) )
+      hpack(gtk.Label('Number of Repetitions'), self.repetitions),
+      True, True, 0
+    )
     if 'repetitions' in settings:
       self.repetitions.set_value( settings['repetitions'] )
 
     body = gtk.VPaned()
-    self.vbox.pack_start( body )
+    self.vbox.pack_start( body, True, True, 0 )
 
 
     self.algs = stores.Generic(use_enable=True,keep_order=True)
@@ -173,7 +177,7 @@ class OptimView(gtk.Dialog):
     if 'parameters' in settings:
       for p in settings['parameters']:
         self.params.append(
-          ( p['name'], M(eval(p['name'],Globals)),
+          ( p['name'], repr(M(eval(p['name'],Globals))),
             p['min'], p['max'], p['scale'], p['enable'] )
         )
     else:
@@ -224,7 +228,7 @@ class OptimView(gtk.Dialog):
 
 
     vbox = VBox()
-    vbox.pack_start( V )
+    vbox.pack_start( V, True, True, 0 )
 
 
     self.constraints = Constraints()
@@ -238,7 +242,7 @@ class OptimView(gtk.Dialog):
     V.set_reorderable(True)
     #V.connect('drag-begin', begin_drag, self.window)
     #V.connect('drag-end', end_drag, self.window, waveforms)
-    V.connect('drag-motion', drag_motion, self.window)
+    V.connect('drag-motion', drag_motion)
     V.connect('key-press-event', self.view_keypress_cb, V, Constraints.DEFAULT)
     R = {
       'constraint' : GCRT(),
@@ -256,7 +260,7 @@ class OptimView(gtk.Dialog):
     V.append_column( C['constraint'] )
     V.append_column( C['enable'] )
 
-    vbox.pack_start( V )
+    vbox.pack_start( V, True, True, 0 )
 
 
     scroll = gtk.ScrolledWindow()
@@ -358,9 +362,9 @@ class Executor:
         self.constraints.append( [c[EQ], lambda G : eval(c[EQ], G), Constraints.ENABLE] )
 
     if old_pnames is None or old_pnames != self.pnames:
-      self.show = DataViewer(
+      self.show = viewers.db.get(
         columns=(self.pnames+['Merit']+self.runnable.extra_data_labels()),
-        parent=parent, globals=Globals,
+        title='Optimization Results',
       )
 
     algs = opt.algs
