@@ -534,7 +534,9 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals,
   wve = WaveformEvalulator(devcfg, clocks, channels, globals=globals,
                            continuous=continuous)
   debug('compute.waveforms: beginning group recursion...')
-  wve.group( waveforms, globals=globals )
+  # we _do_ pass in a new dictionary for locals so that it is created from
+  # scratch every time this function is called.
+  wve.group( waveforms, globals=globals, locals=dict() )
   debug('finalizing compute.waveforms')
   return wve.finish()
 
