@@ -6,12 +6,19 @@ import bisect, sys
 from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 from itertools import chain
 
+try:
+  import sympy
+  has_sympy = True
+except:
+  has_sympy = False
+
 from ... import backend
 import physical
 from physical import unit
 from math import ceil
 from ...tools.scaling import calculate as calculate_scaling
 from ...tools.eval import evalIfNeeded
+from ...tools.float_range import xarange
 
 machine_arch = np.MachAr()
 
@@ -133,6 +140,10 @@ def set_units_and_scaling(chname, ci, chan, globals):
 
 
 class WaveformEvalulator:
+  if has_sympy:
+    x = sympy.Symbol('x')
+    U0 = sympy.Symbol('U0')
+
   def __init__(self, devcfg, clocks, channels, globals, continuous):
     # currently configured...
     self.devcfg = devcfg
@@ -331,6 +342,22 @@ class WaveformEvalulator:
     # we're finally to the point to begin evaluating the value of the element
     locals['t'] = t
     locals['dt'] = dt
+
+    if has_sympy:
+      # insert symbols in case the user enters a sympy expression
+      locals['x'] = self.x
+      locals['U0'] = ci['last']
+      locals.setdefault('expr_steps', globals.get('expr_steps', 10))
+      locals.setdefault('expr_err', globals.get('expr_err', 0.1))
+
+      def expr(expression, steps=None, err=None):
+        if steps is not None:
+          locals['expr_steps'] = steps
+        if err is not None:
+          locals['expr_err'] = err
+        return expression
+      locals['expr'] = expr
+
     value = evalIfNeeded( e['value'], globals, locals )
 
     # t and dt must be aligned to the nearest clock pulse
@@ -341,7 +368,33 @@ class WaveformEvalulator:
     log(DEBUG-2, 'compute.waveforms(%s): t=%s, dt=%s, actual: t=%s, dt=%s',
         err_prefix, t, dt, ti*dt_clk, dti*dt_clk )
 
-    if not hasattr( value, 'set_vars' ):
+    if has_sympy and isinstance(value, sympy.Expr):
+      # We are assuming that this value is expressed as a sympy.Expr
+      # (expression) that varies with a single independent variable (after all
+      # substitutions) as 'x', the relative time that varies from 0..1.
+
+      # should only be one (or zero) free variables
+      assert set([self.x]).issuperset(value.free_symbols)
+
+      # first implementation:  brain dead iteration
+      steps, err_max = locals['expr_steps'], locals['expr_err']
+      dtij = 1 if dti < steps else (dti/steps) # step size for integer time
+      dx = dtij/float(dti) # step size for relative (0-1) time
+
+      vals = list()
+      for tij, x in zip( xrange(ti, ti+dti-1, dtij), xarange(0, 1+1e-10, dx) ):
+        vals.append([tij, dtij, float(value.subs(self.x,x))*unit.V])
+
+      # ensure that the last added point does not last too long
+      vals[-1][1] = min(dtij, ti+dti-1 - vals[-1][0])
+
+      # for loop above skips the last point intentionally.  Let's add it here.
+      vals.append([ti+dti-1, 1, float(value.subs(self.x,1))*unit.V])
+
+      for tij, dtij, v in vals:
+        insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
+      ci['last'] = value
+    elif not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
       insert_value(ti, dti, value, dt_clk, chname, ci, trans, e['path'], parent)
       ci['last'] = value
@@ -363,6 +416,9 @@ class WaveformEvalulator:
       dict( t=ti*dt_clk, dt=dti*dt_clk, val=repr(value) )
 
     locals.pop('dt_clk')
+    if has_sympy:
+      locals.pop('x')
+      locals.pop('U0')
     
     log(DEBUG-1, 'compute.waveforms:  leave element %s', err_prefix)
     # we need to return the end time of this waveform element
