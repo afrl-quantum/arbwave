@@ -18,7 +18,7 @@ from physical import unit
 from math import ceil
 from ...tools.scaling import calculate as calculate_scaling
 from ...tools.eval import evalIfNeeded
-from ...tools.float_range import xarange
+from . import linearize
 
 machine_arch = np.MachAr()
 
@@ -70,11 +70,12 @@ class UniqueElement:
 
 
 class ClampedInterp1d:
-  def __init__(self, x, y):
+  def __init__(self, x, y, range):
     data = list( np.array([x, y]).T )
     data.sort( key = lambda v : v[0] )
     data = np.array(data)
     self.interp = interp1d( data[:,0], data[:,1] )
+    self.range = range
 
   def pointwise(self,x):
     if x < self.interp.x[0]:
@@ -95,7 +96,7 @@ def make_univariate_spline(scaling,units,offset,order=1,smooth=0,
                            globals=globals()):
   # we have to first evaluate everything, build an array, and sort
   L = calculate_scaling(scaling, units, offset, globals)
-  mn, mx   = L[0,0], L[-1,0]
+  mn, mx   = float(L[0,0]), float(L[-1,0])
 
   # to make things more natural for the user, we'll first generate a higher
   # resolution interpolation of voltage vs output.  We'll then swap the axes on
@@ -106,11 +107,12 @@ def make_univariate_spline(scaling,units,offset,order=1,smooth=0,
   s = UnivariateSpline(L[:,0], L[:,1], k=order, s=smooth)
   hl = 100.*len(L)
 
-  voltage = np.arange(0.0, hl) * (mx-mn)/(hl - 1.0) + mn
+  voltage = np.r_[mn:mx:(hl*1j)]
   output = s(voltage)
 
   # 2.  create a new linear interpolator of output vs voltage
-  return ClampedInterp1d( output, voltage )
+  # 2b. store the span of the output values (used for scaling expressions)
+  return ClampedInterp1d( output, voltage, L[:,1].max() - L[:,1].min() )
 
 
 def set_units_and_scaling(chname, ci, chan, globals):
@@ -349,12 +351,16 @@ class WaveformEvalulator:
       locals['U0'] = ci['last']
       locals.setdefault('expr_steps', globals.get('expr_steps', 10))
       locals.setdefault('expr_err', globals.get('expr_err', 0.1))
+      locals.setdefault('expr_fmt', globals.get('expr_fmt', 'uniform'))
 
-      def expr(expression, steps=None, err=None):
+      overrides = dict()
+      def expr(expression, steps=None, err=None, fmt=None):
         if steps is not None:
-          locals['expr_steps'] = steps
+          overrides['expr_steps'] = steps
         if err is not None:
-          locals['expr_err'] = err
+          overrides['expr_err'] = err
+        if fmt is not None:
+          overrides['expr_fmt'] = fmt
         return expression
       locals['expr'] = expr
 
@@ -373,31 +379,45 @@ class WaveformEvalulator:
       # (expression) that varies with a single independent variable (after all
       # substitutions) as 'x', the relative time that varies from 0..1.
 
-      # should only be one (or zero) free variables
-      assert set([self.x]).issuperset(value.free_symbols)
+      # we first need to make sure that any symbols from the environment are
+      # substituted.  Doing this allows the user to create a symbolic function,
+      # say in the global script, that gets used with global/local variables
+      # substituted appropriately.  This might be helpful if the user wants to
+      # reuse symbolic expressions.
+      Vars = {sym.name:(L.get(sym.name, None) or G.get(sym.name, None)
+                        or SymbolNotFound) # This is intended to be a bad name
+        for sym in value.free_symbols - set([self.x, self.U0])
+      }
+      Vars[self.U0] = ci['last'] # make sure we substitute the 'last value'
+
+      expr = value.subs(Vars)
+
+      # only 'x' symbol (or none) should be left
+      assert set([self.x]).issuperset(expr.free_symbols)
 
       # first implementation:  brain dead iteration
-      steps, err_max = locals['expr_steps'], locals['expr_err']
-      dtij = 1 if dti < steps else (dti/steps) # step size for integer time
-      dx = dtij/float(dti) # step size for relative (0-1) time
+      overrides.setdefault('expr_steps', locals['expr_steps'])
+      overrides.setdefault('expr_err', locals['expr_err'])
+      overrides.setdefault('expr_fmt', locals['expr_fmt'])
 
-      vals = list()
-      for tij, x in zip( xrange(ti, ti+dti-1, dtij), xarange(0, 1+1e-10, dx) ):
-        vals.append([tij, dtij, float(value.subs(self.x,x))*unit.V])
+      try:
+        expr_iter = linearize.evaluators[ overrides['expr_fmt'] ]
+      except:
+        raise NameError('unknown expression formatting: '+overrides['expr_fmt'])
 
-      # ensure that the last added point does not last too long
-      vals[-1][1] = min(dtij, ti+dti-1 - vals[-1][0])
+      # now we finally add everything into the arbwave waveforms
+      for tij, dtij, v in expr_iter(expr, ti, dti,
+                                    channel_scale=ci['scaling'].range,
+                                    channel_caps={'step','slope'},
+                                    **overrides):
+        insert_value(tij, dtij, v*unit.V, dt_clk, chname, ci, trans, e['path'], parent)
+      ci['last'] = v
 
-      # for loop above skips the last point intentionally.  Let's add it here.
-      vals.append([ti+dti-1, 1, float(value.subs(self.x,1))*unit.V])
-
-      for tij, dtij, v in vals:
-        insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
-      ci['last'] = value
     elif not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
       insert_value(ti, dti, value, dt_clk, chname, ci, trans, e['path'], parent)
       ci['last'] = value
+
     else:
       debug('%s.set_vars(%s,%s,%s,%s)', value, ci['last'], ti, dti, dt_clk)
       value.set_vars( ci['last'], ti, dti, dt_clk )
@@ -407,7 +427,7 @@ class WaveformEvalulator:
         value.set_units( ci['units'], ci['units_str'] )
       for tij, dtij, v in value:
         insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
-        ci['last'] = v
+      ci['last'] = v
 
     # cache for presentation to user--use integer*dt_clk for accuracy of info
     # do this _after_ inserting value so that functional forms can respond to
