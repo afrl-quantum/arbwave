@@ -56,10 +56,12 @@ def build_device_combobox_tree():
   T = device_combobox_tree
   T.clear()
 
-  add_paths_to_combobox_tree(
-    T, backend.get_analog_channels(),  'Analog',  skip_CAT=0 )
-  add_paths_to_combobox_tree(
-    T, backend.get_digital_channels(), 'Digital', skip_CAT=0 )
+  M = dict()
+  chans = backend.get_output_channels().items()
+  chans.sort( cmp = lambda i0, i1 : pcmp(i0[0], i1[0]) )
+  for c, chan_info in chans:
+    add_path_to_combobox_tree( T, [chan_info.type()] + c.split('/'), 0, M )
+
 
 hosts_changed.callbacks.append( build_device_combobox_tree )
 
@@ -107,8 +109,10 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
   return True
 
 
-def is_analog( channels, path ):
-  return channels[path][channels.DEVICE].startswith('Analog/')
+def allows_scaling( channels, path ):
+  # All(?) but digital channels should have a concept of scale
+  devname = channels[path][channels.DEVICE]
+  return devname and not devname.lower().startswith('digital/')
 
 
 def begin_drag(w, ctx, parent):
@@ -198,7 +202,7 @@ class Channels:
     ui_manager = mkUIManager()
     V.connect('button-press-event',
       popup_button_press_handler,
-      is_analog,
+      allows_scaling,
       ui_manager,
       ui_manager.get_widget('/CH:Edit'),
       [('/CH:Edit/CH:Scaling', self.edit_scaling)],
@@ -217,7 +221,7 @@ class Channels:
         add_undo=self.add_undo,
       )
       self.scaling_editor.connect('destroy', unset_editor)
-    if is_analog( model, path ):
+    if allows_scaling( model, path ):
       self.scaling_editor.set_channel(model[path][model.LABEL])
     self.scaling_editor.present()
 

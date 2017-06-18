@@ -55,7 +55,7 @@ class Driver(Base):
   def get_devices(self):
     return self.devices.values()
 
-  def get_digital_channels(self):
+  def get_output_channels(self):
     return self.digital_channels
 
   def get_timing_channels(self):

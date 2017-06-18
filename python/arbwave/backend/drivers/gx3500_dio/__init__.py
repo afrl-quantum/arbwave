@@ -74,7 +74,7 @@ class Driver(Base):
         """
         return self.devices.values()
 
-    def get_digital_channels(self):
+    def get_output_channels(self):
         """
         Get the complete list of available digital channels.
 

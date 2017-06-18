@@ -143,8 +143,7 @@ class WaveformEvalulator:
     # all the currently known possible channels
     self.timing_channels = backend.get_timing_channels()
     self.used_clocks = dict() # cache of clock values
-    self.do_ao_channels = backend.get_analog_channels()
-    self.do_ao_channels.update( backend.get_digital_channels() )
+    self.output_channels = backend.get_output_channels()
 
     self.transitions = dict()
     # dictionary of clocks that serve channels that require padding (like NI
@@ -164,7 +163,7 @@ class WaveformEvalulator:
 
       ci = self.channel_info[chname]
       # drop the "Analog/" "Digital/" prefix to lookup actual device
-      chan_dev = self.do_ao_channels[ chan['device'].partition('/')[-1] ]
+      chan_dev = self.output_channels[ chan['device'].partition('/')[-1] ]
 
       # set type and clock
       ci['type'] = chan_dev.type()
@@ -639,10 +638,9 @@ def static( devcfg, channels, globals ):
     if not dev:
       continue
 
-    do_ao_channels = backend.get_analog_channels()
-    do_ao_channels.update( backend.get_digital_channels() )
+    output_channels = backend.get_output_channels()
     # drop the "Analog/" "Digital/" prefix to lookup actual device
-    chan_dev = do_ao_channels[ chan['device'].partition('/')[-1] ]
+    chan_dev = output_channels[ chan['device'].partition('/')[-1] ]
 
     # we do most of the same basic things as for waveforms without transitions
     ci['type'] = chan_dev.type()

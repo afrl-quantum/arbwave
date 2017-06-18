@@ -27,8 +27,7 @@ class Driver(Base):
 
     # mapping from task name to device
     self.tasks          = dict()
-    self.analogs        = list()
-    self.lines          = list()
+    self.outputs        = list()
     self.timing_channels= list()
     self.signals        = list()
     self.routed_signals = dict()
@@ -52,7 +51,7 @@ class Driver(Base):
                   ]
       if available:
         self.tasks[ str(t) ] = t
-        self.analogs += available
+        self.outputs += available
 
         # add the internal analog output timer
         if t.has_onboardclock:
@@ -70,7 +69,7 @@ class Driver(Base):
       if available:
         available = zip(*available) # unzip
         self.tasks[ str(t) ] = t
-        self.lines            += available[0]
+        self.outputs          += available[0]
         self.timing_channels  += available[1]
 
         # add the internal analog output timer
@@ -86,6 +85,7 @@ class Driver(Base):
       if available:
         self.tasks[ str(t) ] = t
         self.timing_channels += available
+
 
     for src, dest in self.rl.aggregate_map.items():
       logging.log(logging.DEBUG-1,
@@ -141,11 +141,8 @@ class Driver(Base):
     """
     return self.tasks.values()
 
-  def get_analog_channels(self):
-    return self.analogs
-
-  def get_digital_channels(self):
-    return self.lines
+  def get_output_channels(self):
+    return self.outputs
 
   def get_timing_channels(self):
     return self.timing_channels

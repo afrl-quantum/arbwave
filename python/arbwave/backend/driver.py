@@ -44,19 +44,11 @@ class Driver(object):
     """
     return []
 
-  def get_analog_channels(self):
+  def get_output_channels(self):
     """
-    Return a list of analog channels connected to this driver.  Note that this
-    should return a list of analog channel class instances that are static for
-    the lifetime of the driver.
-    """
-    return []
-
-  def get_digital_channels(self):
-    """
-    Return a list of digital channels connected to this driver.  Note that this
-    should return a list of digital channel class instances that are static for
-    the lifetime of the driver.
+    Return a list of all output channels connected to this driver.  This list
+    includes analog, digital, and dds output channels of the appropriate output
+    channel instances.
     """
     return []
 

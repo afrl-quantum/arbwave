@@ -79,17 +79,10 @@ def get_devices():
       D[ str(c) ] = c
   return D
 
-def get_analog_channels():
+def get_output_channels():
   D = dict()
   for d in all_drivers.values():
-    for c in d.get_analog_channels():
-      D[ str(c) ] = c
-  return D
-
-def get_digital_channels():
-  D = dict()
-  for d in all_drivers.values():
-    for c in d.get_digital_channels():
+    for c in d.get_output_channels():
       D[ str(c) ] = c
   return D
 

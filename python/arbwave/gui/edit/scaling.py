@@ -107,7 +107,7 @@ class Editor(gtk.Dialog):
     )
     # This ensures you can't select digital channels
     def is_sensitive(celllayout, cell, model, i, *user_args):
-      if model[i][model.DEVICE].startswith('Digital'):
+      if model[i][model.DEVICE].lower().startswith('digital/'):
         cell.set_property('sensitive', False)
         cell.set_property('visible', False)
       else:

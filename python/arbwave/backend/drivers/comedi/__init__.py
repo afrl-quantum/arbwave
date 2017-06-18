@@ -35,8 +35,7 @@ class Driver(Base):
     # device path --> Device instance
     self.cards      = dict()
     self.subdevices = dict()
-    self.analogs    = list()
-    self.lines      = list()
+    self.outputs    = list()
     self.counters   = list()
     self.signals    = list()
     src_dests       = dict()
@@ -53,13 +52,14 @@ class Driver(Base):
         continue
       self.cards[ str(card) ] = card
       self.subdevices.update( card.subdevices )
-      self.analogs  += [ ao for sub in card.ao_subdevices for ao in sub.available_channels ]
-      self.lines    += [ do for sub in card.do_subdevices for do in sub.available_channels ]
-      self.lines    += [ do for sub in card.dio_subdevices for do in sub.available_channels ]
+      self.outputs  += [ ao for sub in card.ao_subdevices for ao in sub.available_channels ]
+      self.outputs  += [ do for sub in card.do_subdevices for do in sub.available_channels ]
+      self.outputs  += [ do for sub in card.dio_subdevices for do in sub.available_channels ]
       self.counters += [ sub for sub in card.counter_subdevices  ] #don't collect counter channels
       # aggregate this cards available routes into the complete dictionary
       for src,dest in card.available_routes:
         src_dests.setdefault(src, list()).append(dest)
+
 
     # add all the counters as timing sources
     self.timing_channels = [
@@ -105,11 +105,8 @@ class Driver(Base):
     """
     return self.subdevices.values()
 
-  def get_analog_channels(self):
-    return self.analogs
-
-  def get_digital_channels(self):
-    return self.lines
+  def get_output_channels(self):
+    return self.outputs
 
   def get_timing_channels(self):
     return self.timing_channels
