@@ -29,7 +29,7 @@ class Driver(Base):
     pass
 
   def stop(self):
-    """Dummy start function because we use this class as the device arg for
+    """Dummy stop function because we use this class as the device arg for
     Timing(...)"""
     pass
 
