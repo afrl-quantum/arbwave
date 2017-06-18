@@ -682,6 +682,13 @@ def check_final_units( value, chname, ci ):
 
 
 def prefix( devname ):
+  """
+  Remove the non-device 'Analog' or 'Digital' prefix and return the driver
+  prefix and the device name (minus the non-device prefix).
+  For example, given a devname like 'Analog/ni/Dev/ao1', this function returns a
+  tuple:
+    ('ni', 'ni/Dev1/ao1')
+  """
   # we have to make sure we chop off the 'Analog' and 'Digital' part
   dev = devname.partition('/')[-1]
   return dev.partition('/')[0], dev

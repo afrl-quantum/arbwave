@@ -15,6 +15,7 @@ Currently assigned prefixes:
   ni     : National Instruments
   vp     : Viewpoint
   comedi : Comedi
+  gxt    : Marvin Test GxFpga using AFRL firmware (verified with GX3500)
 
 
 Common paths should use the same name regardless of which device they are on.

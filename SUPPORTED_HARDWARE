@@ -5,5 +5,7 @@ Supported Hardware:
   Supported:
     Viewpoint
     National Instruments NI-DAQmx
-    Marvin Test, GxAo (analog output) and GxFpga (digital output)
-    Comedi (not yet complete)
+    Marvin Test:
+      GxFpga for digital output using AFRL firmware (verified with GX3500)
+      GxAo for analog output (not yet complete)
+    Comedi
