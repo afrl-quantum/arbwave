@@ -7,8 +7,6 @@ import sys, re, pydoc
 import numpy as np
 from matplotlib import mlab
 
-import physical
-
 from ...tools.print_units import M
 
 import helpers
