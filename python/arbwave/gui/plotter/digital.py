@@ -15,7 +15,7 @@ fc=get_face_color
 ls=get_linestyle
 
 
-def mkbbars( L, dt, xscale ):
+def mkbbars( (encoding, L), dt, xscale ):
   # only pick out the true value transitions
   return [ (L[i][0]*xscale, dt[i]*xscale)   for i in xrange(len(L)) if L[i][1] ]
 
@@ -85,49 +85,52 @@ def plot( ax, signals, name_map=None, t_final=None ):
 #
 # format:
 #  'channel-label' : {
-#    group-number : [(start-time, value), ...],
+#    group-number : (encoding, [(start-time, value), ...]),
 #    ...
 #  }
+#
+# In the above description, encoding is a description of how the values in the
+# group should be interpreted.  Digital values currently ignore encoding.
 #
 # The start-time is normally in integer number of clock cycles
 example_signals = {
   'CH0' : {
-    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
-    2 : [(1300,True), (2000,False)],
-    3 : [(2200,True)],
+    0 : (None, [(0,True), (1000,False), (1100,True), (1200,False)]),
+    2 : (None, [(1300,True), (2000,False)]),
+    3 : (None, [(2200,True)]),
   },
   'CH1' : {
-    0 : [(0,True), (500,False), (800,True), (1000,False)],
-    2 : [(2000,True), (2100,False)],
-    3 : [(2150,True), (2200,False)],
+    0 : (None, [(0,True), (500,False), (800,True), (1000,False)]),
+    2 : (None, [(2000,True), (2100,False)]),
+    3 : (None, [(2150,True), (2200,False)]),
   },
   'CH2' : {
-    0 : [(0,True), (500,False), (800,True), (1000,False)],
-    2 : [(2000,True), (2100,False)],
+    0 : (None, [(0,True), (500,False), (800,True), (1000,False)]),
+    2 : (None, [(2000,True), (2100,False)]),
   },
   'CH3' : {
-    0 : [(100,True), (400,False), (900,True), (1000,False)],
-    2 : [(2000,True), (2100,False)],
+    0 : (None, [(100,True), (400,False), (900,True), (1000,False)]),
+    2 : (None, [(2000,True), (2100,False)]),
   },
   'CH4' : {
-    0 : [(200,True), (600,False), (900,True), (1100,False)],
-    2 : [(2000,True), (2100,False)],
+    0 : (None, [(200,True), (600,False), (900,True), (1100,False)]),
+    2 : (None, [(2000,True), (2100,False)]),
   },
   'CH5' : {
-    0 : [(0,True), (500,False), (800,True), (1000,False)],
-    2 : [(2000,True), (2100,False)],
+    0 : (None, [(0,True), (500,False), (800,True), (1000,False)]),
+    2 : (None, [(2000,True), (2100,False)]),
   },
   'CH6' : {
-    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
-    2 : [(1300,True), (2000,False)],
+    0 : (None, [(0,True), (1000,False), (1100,True), (1200,False)]),
+    2 : (None, [(1300,True), (2000,False)]),
   },
   'CH7' : {
-    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
-    2 : [(1300,True), (2000,False)],
+    0 : (None, [(0,True), (1000,False), (1100,True), (1200,False)]),
+    2 : (None, [(1300,True), (2000,False)]),
   },
   'CH8' : {
-    0 : [(0,True), (1000,False), (1100,True), (1200,False)],
-    2 : [(1300,True), (2000,False)],
+    0 : (None, [(0,True), (1000,False), (1100,True), (1200,False)]),
+    2 : (None, [(1300,True), (2000,False)]),
   },
 }
 

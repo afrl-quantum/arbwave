@@ -110,7 +110,9 @@ class Digital(Base):
         transitions.sort()
 
         Tlist = [((ti, True), (ti+dt_on, False)) for ti in transitions*dt_scale]
-        waveforms[clk] =  { (-1,): list(chain(*Tlist)) }
+
+        # encoding for clk is step; comedi only understands step encoding anyway
+        waveforms[clk] =  { (-1,): ('step', list(chain(*Tlist))) }
 
     super(Digital,self) \
       .set_waveforms( waveforms, clock_transitions, t_max, continuous)

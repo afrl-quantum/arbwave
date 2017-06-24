@@ -510,11 +510,13 @@ class Subdevice(Base):
     for i in xrange( n_channels ):
       if chlist[i] not in waveforms:
         continue
-      for g in waveforms[ chlist[i] ].items():
-        for t,v in g[1]:
-          if not scans[t]:
-            scans[t] = copy.copy( nones )
-          scans[t][i] = v
+      for wf_path, (encoding,group_trans) in waveforms[ chlist[i] ].iteritems():
+        assert encoding == 'step', \
+          'non-step transition encoding for comedi: '+encoding
+        for timestamp, value in group_trans:
+          if not scans[timestamp]:
+            scans[timestamp] = copy.copy( nones )
+          scans[timestamp][i] = value
 
     # for now, if a channel does not have any data for t=0, we'll issue
     # an error and set the empty channel value at t=0 to zero.

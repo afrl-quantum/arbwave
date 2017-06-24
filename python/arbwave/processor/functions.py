@@ -103,6 +103,9 @@ class SinPulse(ScaledFunction):
     self.t = None
     self.duration = None
 
+  def get_encoding(self, capabilities):
+    return 'linear' if 'linear' in capabilities else 'step'
+
   def __repr__(self):
     return '{}({}, {}*Hz, {}, {}, {})' \
       .format(self.name, self.ufmt(self.A), self.F/unit.Hz, self.ufmt(self.average),
@@ -199,6 +202,9 @@ class Ramp(ScaledFunction):
     self.tf = duration # final time of ramp functional form (in seconds)
     self.tf_clk = None # final time of ramp functional form in dt_clk units
 
+  def get_encoding(self, capabilities):
+    return 'linear' if 'linear' in capabilities else 'step'
+
   def __repr__(self):
     return '{}({}, {}, {}, {}, {}, {}*s)' \
       .format(self.name, self.ufmt(self.to), self.exponent,
@@ -286,6 +292,9 @@ class Pulse(ScaledFunction):
     self.t        = None
     self.duration = None
 
+  def get_encoding(self, capabilities):
+    return 'step'
+
   def __repr__(self):
     return '{}({}, {})'.format(
       self.name, self.ufmt(self.high), self.ufmt(self.low)
@@ -344,6 +353,9 @@ class PulseTrain(ScaledFunction):
     self._from    = None
     self.t        = None
     self.duration = None
+
+  def get_encoding(self, capabilities):
+    return 'step'
 
   def __repr__(self):
     return '{}({}, {}, {}, {})' \
@@ -423,6 +435,9 @@ class Interpolate:
     self.t = None
     self.duration = None
     self.tf_safe = None
+
+  def get_encoding(self, capabilities):
+    return 'linear' if 'linear' in capabilities else 'step'
 
   def __repr__(self):
     return '{}(<x>, <y>, {}, {})'.format(self.name, self.steps, self.dt_input)

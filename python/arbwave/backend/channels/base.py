@@ -8,6 +8,20 @@ class Base(object):
   _padded_timing   = True
   _finite_end_clock = False
 
+  # set of 'step', 'linear', and/or 'bezier'
+  #
+  # 'linear' : allows the output to linearly ramp from one value to another
+  # 'step'   : each output remains fixed until a subsequent transition
+  # 'bezier' : (speculated, not supported)
+  #
+  # This list defines what kind of transitions can be programmed.  Dumb channels
+  # should generally allow 'step' type of transitions, where an output value is
+  # static between transitions.
+  #
+  # this _can_ be overridden by a sub-class in order to define a channel with
+  # other or multiple capabilities
+  _capabilities = {'step'}
+
   def __init__(self, name, dev=None):
     super(Base,self).__init__()
     self.name = name
@@ -68,3 +82,17 @@ class Base(object):
     # we capitalize the first letter!
     T = self.type()
     return '{}{}/{}'.format( T[0].upper(), T[1:], self.name )
+
+  def get_capabilities(self):
+    """
+    set of 'step', 'linear', and/or 'bezier'
+
+    'linear' : allows the output to linearly ramp from one value to another
+    'step'   : each output remains fixed until a subsequent transition
+    'bezier' : (speculated, not supported)
+
+    This list defines what kind of transitions can be programmed.  Dumb channels
+    should generally allow 'step' type of transitions, where an output value is
+    static between transitions.
+    """
+    return self._capabilities

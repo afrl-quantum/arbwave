@@ -252,7 +252,9 @@ class Device(Base):
 #        debug('gx3500: input waveforms are \n' + str(waveforms))
         # first reformat the waveforms: this is straightforward
         for channel, groups in waveforms.iteritems():
-            for _, transitions in groups.iteritems():
+            for _, (encoding, transitions) in groups.iteritems():
+                # encoding is currently ignored (i.e. not defined) for digital
+                # channel data
                 for timestamp, value in transitions:
                     transition_map.setdefault(timestamp, {})[channel] = value
 

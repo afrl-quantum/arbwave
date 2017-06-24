@@ -47,7 +47,7 @@ class Digital(Base):
       2.  Sets triggering.
       3.  Writes data to hardware buffers without auto_start.
 
-      waveforms : see gui/plotter/digital.py for format
+      waveforms : see gui/plotter/{analog.py,digital.py} for format
       clock_transitions :  dictionary of clocks to dict(ignore,transitions)
       t_max : maximum time of waveforms
     """
@@ -80,7 +80,9 @@ class Digital(Base):
         transitions.sort()
 
         Tlist = [((ti, True), (ti+dt_on, False)) for ti in transitions*dt_scale]
-        waveforms[clk] =  { (-1,): list(chain(*Tlist)) }
+
+        # encoding for clk is step; nidaq only understands step encoding anyway
+        waveforms[clk] = { (-1,): ('step', list(chain(*Tlist))) }
 
     super(Digital,self) \
       .set_waveforms( waveforms, clock_transitions, t_max, continuous)

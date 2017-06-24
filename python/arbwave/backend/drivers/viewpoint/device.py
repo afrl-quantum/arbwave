@@ -151,53 +151,49 @@ class Device(Base):
 
     scan_rate = C['out']['scan_rate']
 
-    transitions = dict()
+    transition_map = dict()
     # first add the waveform transitions
-    for line in waveforms:
-      for g in waveforms[line].values():
-        for t in g:
-          if t[0] not in transitions:
-            transitions[ t[0] ] = dict()
-          transitions[ t[0] ][line] = t[1]
+    for channel, groups in waveforms.iteritems():
+      for wf_path, (encoding, transitions) in groups.iteritems():
+        # encoding is currently ignored (i.e. not defined) for digital
+        # channel data
+        for timestamp, value in transitions:
+          transition_map.setdefault(timestamp, {})[channel] = value
 
     # second, add transtions for channels being used as aperiod clocks
-    for line in clock_transitions:
-      if 'Internal' in line:
+    for channel, cfg in clock_transitions.iteritems():
+      if 'Internal' in channel:
         continue
 
       # as in processor/engine/compute, dt_clk already should be an integer
       # multiple of 1/scan_rate (where multiple is >= 2)
-      period = int(round( clock_transitions[line]['dt'] * scan_rate ))
+      period = int(round( cfg['dt'] * scan_rate ))
       half_period = period/2
-      for t_rise in clock_transitions[line]['transitions']:
+      for t_rise in cfg['transitions']:
         t_rise *= period # rescale t_rise from dt_clk units to 1/scan_rate units
         t_fall = t_rise + half_period
-        if t_rise not in transitions:
-          transitions[ t_rise ] = dict()
-        if t_fall not in transitions:
-          transitions[ t_fall ] = dict()
         # we assume that each device using this clock waits for rising edge
-        transitions[ t_rise ][line] = True
+        transition_map.setdefault(t_rise, {})[channel] = True
         # finish the clock pulse by lowering it to logic zero
-        transitions[ t_fall ][line] = False
+        transition_map.setdefault(t_fall, {})[channel] = False
 
     t_last = int(round( t_max * scan_rate ))
 
     # Add the last "transition" which is really just a final duration
-    transitions[ t_last ] = None
+    transition_map[ t_last ] = None
 
     self.t_max = t_last / scan_rate # save for self.wait()
 
     C['out']['repetitions'] = {True:0, False:1}[continuous]
     # VIEWPOINT FIXME:  They need to fix their bug!
     # This is what it should be if viewpoint fixed it:
-    #C['out']['number_transitions'] = len(transitions)
-    if len(transitions) > 507:
+    #C['out']['number_transitions'] = len(transition_map)
+    if len(transition_map) > 507:
       C['out']['number_transitions'] = 0
       warn('Using VIEWPOINT-bug work around ( number transitions [%d] > 507 )',
-           len(transitions))
+           len(transition_map))
     else:
-      C['out']['number_transitions'] = len(transitions)
+      C['out']['number_transitions'] = len(transition_map)
     #END VIEWPOINT BUG WORKAROUND
 
     debug( 'dio64: out-config: %s', C['out'] )
@@ -214,10 +210,10 @@ class Device(Base):
     self.board.set_property('port-routes', self.routes)
 
     scans, stat = self.board.out_status()
-    if scans.value < len(transitions):
+    if scans.value < len(transition_map):
       raise NotImplementedError(
-        'viewpoint scans < len(transitions); configure failed?')
-    self.board.write(transitions, stat, integer_time=True)
+        'viewpoint scans < len(transition_map); configure failed?')
+    self.board.write(transition_map, stat, integer_time=True)
     # we set all the lines being used as clocks to low.  This is done before the
     # waveform is actually started and in preparation of the start signal.
     self.board.set_output(

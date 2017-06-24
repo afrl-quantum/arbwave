@@ -24,13 +24,15 @@ class UniqueElement:
   This element representation only allows waveform elements that do _not_
   overlap.
   """
-  def __init__(self, ti, dti, value, dt_clk, chname, group, group_name):
-    self.ti = ti
-    self.tf = ti + dti
-    self.value = value
-    self.dt_clk = dt_clk
-    self.chname = chname
-    self.group = group
+  def __init__(self, ti, dti, value, dt_clk, encoding,
+               chname, group, group_name):
+    self.ti         = ti
+    self.tf         = ti + dti
+    self.value      = value
+    self.dt_clk     = dt_clk
+    self.encoding   = encoding
+    self.chname     = chname
+    self.group      = group
     self.group_name = group_name
 
     # one more check to be sure that dt was big enough
@@ -164,6 +166,9 @@ class WaveformEvalulator:
       ci = self.channel_info[chname]
       # drop the "Analog/" "Digital/" prefix to lookup actual device
       chan_dev = self.output_channels[ chan['device'].partition('/')[-1] ]
+
+      # record the channel capabilities (set of 'step', 'linear', 'bezier')
+      ci['capabilities'] = chan_dev.get_capabilities()
 
       # set type and clock
       ci['type'] = chan_dev.type()
@@ -342,7 +347,8 @@ class WaveformEvalulator:
 
     if not hasattr( value, 'set_vars' ):
       # we assume that this value is just a simple value
-      insert_value(ti, dti, value, dt_clk, chname, ci, trans, e['path'], parent)
+      insert_value(ti, dti, value, dt_clk, 'step', chname, ci, trans, e['path'],
+                   parent)
       ci['last'] = value
     else:
       debug('%s.set_vars(%s,%s,%s,%s)', value, ci['last'], ti, dti, dt_clk)
@@ -351,8 +357,11 @@ class WaveformEvalulator:
         # allow value generator to show a more reasonable string repr in
         # eval_cache
         value.set_units( ci['units'], ci['units_str'] )
+
+      encoding = value.get_encoding(ci['capabilities'])
       for tij, dtij, v in value:
-        insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
+        insert_value(tij, dtij, v, dt_clk, encoding, chname, ci, trans,
+                     e['path'], parent)
         ci['last'] = v
 
     # cache for presentation to user--use integer*dt_clk for accuracy of info
@@ -406,12 +415,13 @@ class WaveformEvalulator:
       if len(elems) == 0 or elems[0].ti > 0:
         # first element of this channel is at t > 0 so we insert a
         # t=0 value that lasts for at least t_clk time
-        insert_value(0,1, ci['init'], dt_clk, chname, ci, trans, (-1,),'root')
+        insert_value(0,1, ci['init'], dt_clk, 'step', chname, ci, trans, (-1,),
+                     'root')
 
       if not self.continuous:
         # Ensure that each channel ends on its static value
         insert_value( int(round( self.t_max / dt_clk )), 1, ci['init'],
-                      dt_clk, chname, ci, trans, (-2,), 'root' )
+                      dt_clk, 'step', chname, ci, trans, (-2,), 'root' )
         t_max = max( t_max, self.t_max + dt_clk )
 
 
@@ -507,12 +517,13 @@ class WaveformEvalulator:
       self._insert_into_parent_clock_transitions( clk.parent_clock )
 
 
-def insert_value( ti, dti, v, dt_clk, chname, ci, trans, group, group_name ):
+def insert_value( ti, dti, v, dt_clk, encoding, chname, ci, trans,
+                  group, group_name ):
   # apply scaling and convert to proper units
   v = apply_scaling(v, chname, ci)
   check_final_units(v, chname, ci)
 
-  u = UniqueElement(ti, dti, v, dt_clk, chname, group, group_name)
+  u = UniqueElement(ti, dti, v, dt_clk, encoding, chname, group, group_name)
   if rootlog.getEffectiveLevel() <= (DEBUG-1):
     log(DEBUG-1, 'inserting transition:\n%s', repr(u) )
 
@@ -538,12 +549,21 @@ def waveforms( devcfg, clocks, signals, channels, waveforms, globals,
   return wve.finish()
 
 
-def to_plottable( elem ):
+def to_plottable( elements ):
   retval = dict()
-  for e in elem:
+  for e in elements:
+    # for uncomplicated waveform elements, such as when it is single valued,
+    # will only have one item in the group
+    # more complicated waveform elements, such as ramps, pulses, and (future)
+    # sympy expressions will have more than one item for the group.
     if e.group not in retval:
-      retval[e.group] = list()
-    retval[e.group].append( (e.ti, e.value) )
+      retval[e.group] = (e.encoding, list())
+
+    G = retval[e.group]
+    assert G[0] == e.encoding, \
+      'Encoding for single waveform element must be constant'
+    # append the next value in the waveform element
+    G[1].append( (e.ti, e.value) )
 
   return retval
 
@@ -577,6 +597,7 @@ def make_channel_info(channels):
       'scaling' : None,
       'units'   : None,
       'units_str' : None,
+      'capabilities' : {'step'},
       'last' : None,
       'clock' : None,
       'min_period' : None,
