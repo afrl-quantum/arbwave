@@ -98,8 +98,7 @@ class Driver(Base):
 
   def set_waveforms(self, analog, digital, transitions, t_max, continuous):
     """
-    Viewpoint ignores all transition information since it only needs absolute
-    timing information.
+    Set the waveform for the viewpoint driver.
     """
     assert len(analog) == 0, 'Viewpoint does not perform analog output'
     D = collect_prefix(digital, 0, 2, 2)
