@@ -1,12 +1,14 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import threading, logging
+import physical
 from ... import backend
 from ...tools.gui_callbacks import do_gui_operation
 from ...tools.path import collect_prefix
 from ...tools.scaling import calculate as calculate_scaling
 from ...tools import signal_graphs
 from ...tools import signals
+from ...gui.storage.var_tools import writevars
 
 
 
@@ -46,9 +48,34 @@ def to_plotter( plotter, analog, digital, clocks, channels, t_max ):
 def to_ui_notify( ui, message ):
   do_gui_operation( ui.notify.show, message )
 
-def to_file( analog, digital, transitions, clocks, channels, filename=None, fmt=None ):
-  S = signals.merge_signals_sets( [analog, digital] )
-  S.to_arrays( transitions, clocks, channels ).save( filename, fmt=fmt )
+def to_file( analog, digital, transitions, clocks, channels, filename,
+             fmt='gnuplot' ):
+  if fmt == 'gnuplot':
+    S = signals.merge_signals_sets( [analog, digital] )
+    S.to_arrays( transitions, clocks, channels ).save( filename )
+
+  elif fmt == 'python':
+    if type(filename) is not str and hasattr(filename, 'write'):
+      f = filename
+    else:
+      f = open(filename, 'w')
+
+    print_style = physical.Quantity.get_default_print_style()
+    physical.Quantity.set_default_print_style('math')
+    writevars(f, dict(
+      analog=analog,
+      digital=digital,
+      transitions=transitions,
+      clocks=clocks,
+      channels=channels
+    ))
+    physical.Quantity.set_default_print_style(print_style)
+
+    if f != filename:
+      f.close()
+
+  else:
+    raise RuntimeError('unknown output file format to save waveform: ' + fmt)
 
 class ToDriver:
   def __init__(self):

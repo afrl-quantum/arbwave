@@ -175,21 +175,21 @@ class Arbwave(object):
     send.to_plotter( self.ui.plotter, analog, digital, dev_clocks, self.channels, t_max )
 
 
-  def save_gnuplot(self, filename=None, fmt=None):
+  def save_waveform(self, filename, fmt='gnuplot'):
     """
-    Process inputs to send to a file in gnuplot type format.
-      Arguments:
-        filename : either a filehandle of an open file or a name of a file to
-                   write to
-        fmt      : filename format to use for creating files specific to each
-                   clock (if filename is specified and not fmt, then everything
-                   is saved in the same file)
-                   Example:  file-{}.txt
-                    {} will be replaced with the clock name
-    """
-    assert not (filename is not None == fmt is not None), \
-      'must specify either filename or fmt, _not_ both'
+    Save waveform to a file in the specified output format.
+      filename : the file to save the waveform to
+        If the output file format is for gnuplot, then the filename can be:
+          (1) a filehandle of an open file to write to
+          (2) a name of a file to open then write to
+          (3) or filename format to use for creating files specific to each
+              clock.
+              Example:  file-{}.txt
+               {} will be replaced with the clock name
+          If a single filename is specified, everything is saved in the same file
 
+      fmt : either 'gnuplot' or 'python' to specify the output format
+    """
     analog, digital, transitions, dev_clocks, t_max, eval_cache = \
       compute.waveforms( self.devcfg,
                          self.clocks,

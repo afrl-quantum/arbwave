@@ -48,24 +48,25 @@ class SignalsSet(dict):
     super(SignalsSet,self).update( other_, **kwargs_ )
 
   class SignalsArrays(dict):
-    def save( self, ff=None, fmt=None ):
-      assert not (ff is not None == fmt is not None), \
-        'must specify either ff=filename or fmt, _not_ both'
-
-      if ff is not None:
-        # get the handle to an open file
-        if hasattr(ff, 'write'):
-          f = ff
-          closeall= lambda :None
-        else:
-          f = open(ff, 'w')
-          closeall= lambda :f.close()
+    def save( self, ff ):
+      # get the handle to an open file
+      if type(ff) is not str and hasattr(ff, 'write'):
+        # file is already open
+        f = ff
         open_i  = lambda clk: f
         close_i = lambda ignore:None
-      else:
-        open_i  = lambda clk: open(fmt.format(clk.replace('/','-')),'w')
+        closeall= lambda :None
+      elif '{}' in ff:
+        # filename is series format
+        open_i  = lambda clk: open(ff.format(clk.replace('/','-')),'w')
         close_i = lambda f:f.close()
         closeall= lambda :None
+      else:
+        # single filename
+        f = open(ff, 'w')
+        open_i  = lambda clk: f
+        close_i = lambda ignore:None
+        closeall= lambda :f.close()
 
       for clk,I in self.items():
         f = open_i(clk)
