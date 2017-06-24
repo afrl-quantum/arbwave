@@ -47,6 +47,7 @@ class step_iter:
 ###################
 class ScaledFunction(object):
   def __init__(self):
+    super(ScaledFunction, self).__init__()
     self.units = None
     self.units_str = None
   def set_units(self, units, units_str):
@@ -87,7 +88,7 @@ class SinPulse(ScaledFunction):
 
     Only one of dt or steps can be used.
    """
-    ScaledFunction.__init__(self)
+    super(SinPulse, self).__init__()
     self.F = F
     self.A = A
     self.average = average
@@ -183,7 +184,7 @@ class Ramp(ScaledFunction):
 
     Only one of dt or steps can be used.
    """
-    ScaledFunction.__init__(self)
+    super(Ramp, self).__init__()
     self.to = to
     self.exponent = exponent
     if steps > 0:
@@ -278,7 +279,7 @@ class Pulse(ScaledFunction):
             set, it will be set to whatever the channel is at prior to this
             pulse.
    """
-    ScaledFunction.__init__(self)
+    super(Pulse, self).__init__()
     self.high     = high
     self.low      = low
     self._from    = None
@@ -335,7 +336,7 @@ class PulseTrain(ScaledFunction):
             set, it will be set to whatever the channel is at prior to this
             pulse.
    """
-    ScaledFunction.__init__(self)
+    super(PulseTrain, self).__init__()
     self.n        = n
     self.duty     = duty
     self.high     = high
