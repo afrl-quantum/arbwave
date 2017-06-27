@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from os import path
-from itertools import chain
+from itertools import chain, izip
 import numpy as np
 import physical
 
@@ -32,7 +32,7 @@ def create_channel_name_map(channels, clocks):
 
 class Signals(dict):
   def simple_dict(self):
-    return dict( chain(* self.values() ) )
+    return dict( chain(* zip(*self.values())[1] ) )
 
 
 class SignalsSet(dict):

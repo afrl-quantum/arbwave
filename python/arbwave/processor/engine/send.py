@@ -50,6 +50,7 @@ def to_ui_notify( ui, message ):
 
 def to_file( analog, digital, transitions, clocks, channels, filename,
              fmt='gnuplot' ):
+  fmt = fmt.lower()
   if fmt == 'gnuplot':
     S = signals.merge_signals_sets( [analog, digital] )
     S.to_arrays( transitions, clocks, channels ).save( filename )
@@ -60,7 +61,7 @@ def to_file( analog, digital, transitions, clocks, channels, filename,
     else:
       f = open(filename, 'w')
 
-    print_style = physical.Quantity.get_default_print_style()
+    pstyle, pstyle_kwargs = physical.Quantity.get_default_print_style()
     physical.Quantity.set_default_print_style('math')
     writevars(f, dict(
       analog=analog,
@@ -69,7 +70,7 @@ def to_file( analog, digital, transitions, clocks, channels, filename,
       clocks=clocks,
       channels=channels
     ))
-    physical.Quantity.set_default_print_style(print_style)
+    physical.Quantity.set_default_print_style(pstyle, **pstyle_kwargs)
 
     if f != filename:
       f.close()
