@@ -463,9 +463,12 @@ class Executor:
           return np.array([r])
 
       self.evals += 1
+
       # average result for the given number of repetitions
-      result = sum([A(self.runnable.run()) for i in xrange(self.repetitions)]) \
-             / float(self.repetitions)
+      result = np.array([
+        A(self.runnable.run()) for i in xrange(self.repetitions)
+      ]).mean(axis=0)
+
       # result is necessarily a numpy array by now
       self.show.add( *M(list(x) + list(result)) )
     self.cache( x, result )
