@@ -9,3 +9,6 @@ Supported Hardware:
       GxFpga for digital output using AFRL firmware (verified with GX3500)
       GxAo for analog output (not yet complete)
     Comedi
+    BeagleBone Black with AFRL firmware/hardware:
+      timing using PRU (not yet complete)
+      DDS using PRU + AFRL/DDS Cape

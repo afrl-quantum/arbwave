@@ -16,6 +16,7 @@ Currently assigned prefixes:
   vp     : Viewpoint
   comedi : Comedi
   gxt    : Marvin Test GxFpga using AFRL firmware (verified with GX3500)
+  bbb    : BeagleBone Black (with AFRL firmware/hardware)
 
 
 Common paths should use the same name regardless of which device they are on.
