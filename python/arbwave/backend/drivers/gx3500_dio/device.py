@@ -373,8 +373,11 @@ class Device(Base):
         """
         Set the output waveforms for the GX3500 device.
 
-        :param waveforms: a dict('channel': {'group': [(t1, val1), (t2, val2)]})
+        :param waveforms:
+          a dict('channel': {'group': (<encoding>, [(t1, val1), (t2, val2)])})
                           (see gui/plotter/digital.py for format)
+                          for digital channels, <encoding> is currently
+                          undefined.
         :param clock_transitions: a dict('channel': { 'dt': dt, 
                                   'transitions': iterable})
                                   (see processor/engine/compute.py for format)
