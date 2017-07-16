@@ -200,17 +200,17 @@ class ConfigDialog(gtk.Dialog):
 
     def add_dev_config( action, devcfg ):
       devices = backend.get_devices()
-      S = set( devices.keys() )
+      S = set( devices.iterkeys() )
       configured_devices = [ D[devcfg.LABEL]  for D in devcfg ]
       L = list( S.difference( configured_devices ) )
       L.sort()
-      dev = do_popup_selection( self, L )
-      if not dev:
+      devname = do_popup_selection( self, L )
+      if not devname:
         return
 
       self.store.pause()
-      template = devices[dev].get_config_template()
-      devcfg.load( { dev : template }, clear=False )
+      template = devices[devname].get_config_template()
+      devcfg.load( { devname : template }, clear=False )
       self.store.unpause()
       self.store.update(devcfg)
 
