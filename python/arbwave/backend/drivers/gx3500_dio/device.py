@@ -146,7 +146,7 @@ class Device(Base):
         :param config: the configuration dictionary to be applied, compare
                        get_config_template()
         """
-        debug('gx3500.Device({}).set_config(config={})'.format(self, config))
+        debug('gx3500.Device(%s).set_config(config=%s)', self, config)
         valid_keys = set(self.get_config_template().keys())
         assert set(config.keys()).issubset(valid_keys), \
           'Unknown configuration keys for GX3500 timing board'
@@ -162,7 +162,7 @@ class Device(Base):
 
         :param clocks: a dict of {'clock/path': config_dict }
         """
-        debug('gx3500.Device({}).set_clocks(clocks={})'.format(self, clocks))
+        debug('gx3500.Device(%s).set_clocks(clocks=%s)', self, clocks)
         if self.clocks == clocks:
             return
         self.clocks = copy.deepcopy(clocks)
@@ -175,7 +175,7 @@ class Device(Base):
         :param signals: a dict of { (src, dest) : config_dict} where src and
                         dest are both paths
         """
-        debug('gx3500.Device({}).set_signals(signals={})'.format(self, signals))
+        debug('gx3500.Device(%s).set_signals(signals=%s)', self, signals)
         if self.signals == signals:
             return
         self.signals = copy.deepcopy(signals)
@@ -197,8 +197,8 @@ class Device(Base):
                 port, bit = _port_bit(src[skip_self:])
                 kwroutes['pxi' + dest[-1]] = 32*port + bit
 
-        debug('gx3500.Device({}): calling board.set_pxi_routing(**{})' \
-               .format(self, kwroutes))
+        debug('gx3500.Device(%s): calling board.set_pxi_routing(**%s)',
+              self, kwroutes)
         self.board.set_pxi_routing(**kwroutes)
 
     def set_output(self, values):
@@ -217,7 +217,7 @@ class Device(Base):
             port is one of [ABCD]; group is one of [EFGHJKLM],
             and line is between 0 and 3 (e.g. A/E2)
         """
-        debug('gx3500.Device({}).set_output(values={})'.format(self, values))
+        debug('gx3500.Device(%s).set_output(values=%s)', self, values)
         if not isinstance(values, dict):
             values = dict(values)
 
@@ -228,8 +228,8 @@ class Device(Base):
             else:
                 self.ports[port] &= ~(1 << bit)
 
-        debug('gx3500.Device({}): calling board.set_defaults(*{})' \
-               .format(self, self.ports))
+        debug('gx3500.Device(%s): calling board.set_defaults(*%s)',
+              self, self.ports)
         self.board.set_defaults(*self.ports)
 
     def _compile_transition_map(self, waveforms, clock_transitions, t_max):
@@ -244,12 +244,12 @@ class Device(Base):
 
         :return: a dict(timestamp: {channel: value})
         """
-        debug('gx3500: compiling transitions for {} channels and {} clocks' \
-              .format(len(waveforms), len(clock_transitions)))
+        debug('gx3500: compiling transitions for %d channels and %d clocks',
+              len(waveforms), len(clock_transitions))
 
         transition_map = {}
 
-#        debug('gx3500: input waveforms are \n' + str(waveforms))
+#        debug('gx3500: input waveforms are \n%s', waveforms)
         # first reformat the waveforms: this is straightforward
         for channel, groups in waveforms.iteritems():
             for _, transitions in groups.iteritems():
@@ -316,7 +316,7 @@ class Device(Base):
 
         :return: a list of instruction word tuples
         """
-        debug('gx3500: assembling a program with {} transitions'.format(len(transitions)))
+        debug('gx3500: assembling a program with %d transitions', len(transitions))
         instr_list = []
         ports = new_ports = transitions[0][1] # the first instruction writes all 4 ports
         t_last = 0
@@ -359,12 +359,12 @@ class Device(Base):
 
         words = np.fromiter(itertools.chain(*instr_list), dtype=np.uint32)
         if len(words) >= 2**16 - 1:
-            raise ValueError('gx3500({}): program too long'.format(self))
+            raise ValueError('gx3500(%s): program too long', self)
 
-        debug('gx3500: uploading a program of {} words'.format(len(words)))
-        program_dump = np.array2string(words, max_line_width=78,
-                                       formatter={'all': lambda v: hex(v)[:-1]})
-#        debug('gx3500({}): program dump follows:\n'.format(self) + program_dump)
+        debug('gx3500: uploading a program of %d words', len(words))
+        #program_dump = np.array2string(words, max_line_width=78,
+        #                               formatter={'all': lambda v: hex(v)[:-1]})
+        #debug('gx3500(%s): program dump follows:\n%s', self, program_dump)
         self.board.write('mem', 0x0000, words)
 
     def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
@@ -387,7 +387,7 @@ class Device(Base):
         # remove Internal clocks from the clock_transitions
         clock_transitions = { c:p for c, p in clock_transitions.iteritems()
                               if 'Internal' not in c }
-#        debug('gx3500: clock transitions for {}'.format(clock_transitions))
+#        debug('gx3500: clock transitions for %s', clock_transitions)
 
         assert set([str(self) + '/' + c for c in clock_transitions]) \
                  .issubset(self.clocks.iterkeys()), \
@@ -438,7 +438,7 @@ class Device(Base):
 
         while self.board.state != 'SETUP':
             time.sleep(0.1)
-#            debug('gx3500: waiting, board is in ' + self.board.state)
+#            debug('gx3500: waiting, board is in %s', self.board.state)
 
     def stop(self):
         """
