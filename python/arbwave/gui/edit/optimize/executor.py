@@ -410,11 +410,11 @@ class Executor:
         scale = self.params[:,3]
         # first unscale all parameters
         x0 /= scale
-        for alg in self.algorithms.items():
+        for name, kwargs in self.algorithms.iteritems():
           self.evals = 0
-          x0, merit = algorithms[alg[0]]['func'](self._call_func, x0, **alg[1])
+          x0, merit = algorithms[name]['func'](self._call_func, x0, **kwargs)
           # print parameters rescaled
-          print 'After', alg[0], 'x0: ', x0*scale, ', merit: ', merit
+          print 'After', name, 'x0: ', x0*scale, ', merit: ', merit
           print 'Number function evaluations: ', self.evals
 
         self.save_globals( x0 * scale )
