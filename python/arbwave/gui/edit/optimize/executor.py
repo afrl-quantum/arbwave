@@ -101,22 +101,22 @@ def set_item_value( cell, path, new_item, model, Globals, typ=str ):
 
 
 def query_alg_tooltip(widget, x, y, keyboard_tip, tooltip):
-  try:
-    algs, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
-    iter = algs.get_iter( path[0:1] ) # only consider root for alg
-    alg, = algs.get(iter, algs.LABEL)
-
-    td = pydoc.TextDoc()
-    markup = td.docroutine( algorithms[alg]['actual_func'] )
-    markup = ''.join(re.split('\x08.',markup))
-    markup = '\n'.join(markup.split('\n')[0:20])
-    markup += '\n...\n<b>For more, see scipy.optimize</b>'
-    tooltip.set_markup( markup )
-    widget.set_tooltip_row(tooltip, path)
-
-    return True
-  except:
+  is_row, x, y, algs, path, iter = widget.get_tooltip_context(x, y, keyboard_tip)
+  if not is_row:
     return False
+
+  iter = algs.get_iter( path[0:1] ) # only consider root for alg
+  alg, = algs.get(iter, algs.LABEL)
+
+  td = pydoc.TextDoc()
+  markup = td.docroutine( algorithms[alg]['actual_func'] )
+  markup = ''.join(re.split('\x08.',markup))
+  markup = '\n'.join(markup.split('\n')[0:20])
+  markup += '\n...\n<b>For more, see scipy.optimize</b>'
+  tooltip.set_markup( markup )
+  widget.set_tooltip_row(tooltip, path)
+
+  return True
 
 
 class OptimView(gtk.Dialog):

@@ -21,9 +21,9 @@ def edit_device(action, path, model, add_undo=None):
 def create_action_group():
   # GtkActionEntry
   entries = (
-    ( 'CH:Scaling', None,               # name, stock id
+    ( 'CH:Scaling', None,     # name, stock id
       'Scaling...', None,     # label, accelerator
-      'Edit Scaling'),          # tooltip
+      'Edit Scaling'),        # tooltip
   )
 
   # GtkToggleActionEntry
