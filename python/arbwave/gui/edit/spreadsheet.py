@@ -184,7 +184,7 @@ class Callbacks:
     elif event.keyval == keys.DEL:
       model, rows = self.treeview.get_selection().get_selected_rows()
       # we convert paths to row references so that references are persistent
-      rows = [ gtk.TreeRowReference(model, p)  for p in rows ]
+      rows = [ gtk.TreeRowReference.new(model, p)  for p in rows ]
       for r in rows:
         model.remove( model.get_iter( r.get_path() ) )
       return True
