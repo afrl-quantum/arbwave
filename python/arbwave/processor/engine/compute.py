@@ -116,6 +116,9 @@ def set_units_and_scaling(chname, ci, chan, globals):
     elif ci['type'] == 'analog':
       ci['units'] = unit.V
       ci['units_str'] = 'V'
+    elif ci['type'] == 'dds':
+      ci['units'] = unit.Hz
+      ci['units_str'] = 'Hz'
 
   if (not ci['scaling']) and chan['scaling']:
     assert ci['units'], chname+': dimensions required for scaling'
@@ -395,6 +398,7 @@ class WaveformEvalulator:
     debug('initial t_max: %s', self.t_max)
     # the return values are initially empty
     retvals = {'analog':dict(), 'digital':dict()}
+    retvals['dds'] = retvals['analog'] # dds also put out on analog collection
     clocks  = dict()
 
     t_max = self.t_max
@@ -521,7 +525,6 @@ def insert_value( ti, dti, v, dt_clk, encoding, chname, ci, trans,
                   group, group_name ):
   # apply scaling and convert to proper units
   v = apply_scaling(v, chname, ci)
-  check_final_units(v, chname, ci)
 
   u = UniqueElement(ti, dti, v, dt_clk, encoding, chname, group, group_name)
   if rootlog.getEffectiveLevel() <= (DEBUG-1):
@@ -570,18 +573,37 @@ def to_plottable( elements ):
 
 
 def apply_scaling(value, chname, ci):
+  if ci['type'] == 'digital':
+    if type(value) not in [bool, int, float]:
+      raise TypeError(
+        'Found digital channel with type: {}\n' \
+        'digital channels value types must be [True,False,==0,!=0]\n' \
+        .format(type(value))
+      )
+    #value = bool(value) # set value as boolean
+    return value
+
+  if   ci['type'] == 'analog':
+    ch_unit = unit.V
+    unit_err = chname+': analog channels expect units=V'
+  elif ci['type'] == 'dds':
+    ch_unit = unit.Hz
+    unit_err = chname+': dds channels expect units=Hz'
+  else:
+    raise RuntimeError("type of channel '"+chname+"' reset?!")
+
+  assert ci['units'], chname+':  dimensions required for scaling'
+
   # apply scaling and range checks...
   if not ci['scaling']:
-    if ci['units']:
-      value *= unit.V / ci['units']
-    # else digital required to be boolean
+    value = value * ch_unit / ci['units']
+    ch_unit.unitsMatch( value, unit_err )
   else:
-    assert ci['units'], chname+':  dimensions required for scaling'
     val = value / ci['units']
-    assert type(val) is not physical.Quantity, \
-      chname+':  wrong units: {}, expected [{}]' \
-      .format(value, ci['units'])
-    value = ci['scaling'](val)*unit.V
+    assert type(val) is float, \
+      '{}:  wrong units: {}, expected [{}]'.format(chname, value, ci['units'])
+
+    value = ci['scaling'](val) * ch_unit
 
   return value
 
@@ -603,23 +625,6 @@ def make_channel_info(channels):
       'min_period' : None,
     }
   return D
-
-
-
-def check_final_units( value, chname, ci ):
-  if   ci['type'] == 'analog':
-    unit.V.unitsMatch( value, 'analog channels expect units=V' )
-    #value = float(value) # set value in SI units
-  elif ci['type'] == 'digital':
-    if type(value) not in [bool, int, float]:
-      raise TypeError(
-        'Found digital channel with type: {}\n' \
-        'digital channels value types must be [True,False,==0,!=0]\n' \
-        .format(type(value))
-      )
-    #value = bool(value) # set value as boolean
-  else:
-    raise RuntimeError("type of channel '"+chname+"' reset?!")
 
 
 
@@ -668,10 +673,9 @@ def static( devcfg, channels, globals ):
     set_units_and_scaling(chname, ci, chan, globals)
     value = evalIfNeeded( chan['value'], globals )
     value = apply_scaling(value, chname, ci)
-    check_final_units( value, chname, ci )
 
     prfx, dev = prefix(dev)
-    if   ci['type'] == 'analog':
+    if   ci['type'] in ('analog', 'dds'):
       if prfx not in analog:
         analog[ prfx ] = dict()
       analog[ prfx ][ dev ] = value
