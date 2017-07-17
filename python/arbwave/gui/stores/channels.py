@@ -42,6 +42,8 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
   INTERP_ORDER =6
   INTERP_SMOOTHING =7
   OFFSET  =8
+  PLOT_SCALE_OFFSET = 9
+  PLOT_SCALE_FACTOR = 10
 
   def __init__(self, **kwargs):
     super(Channels,self).__init__(
@@ -56,6 +58,8 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
         int,  # interpolation order
         float,# interpolation smoothing parameter
         str,  # offset in correct units
+        float,# offset for plotting
+        float,# scaling factor for plotting
       ),
       **kwargs
     )
@@ -72,18 +76,18 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
       D[ i[Channels.LABEL] ] = {
         'device'  : i[Channels.DEVICE],
         'value'   : i[Channels.VALUE],
-        'scaling' : list(),
+        'scaling' : [(row[0], row[1]) for row in i[Channels.SCALING]
+                      if row[0] or row[1]
+                    ] if i[Channels.SCALING] else None, # *or* in case user has half entry
         'units'   : i[Channels.UNITS],
         'enable'  : i[Channels.ENABLE],
         'interp_order' : i[Channels.INTERP_ORDER],
         'interp_smoothing' : i[Channels.INTERP_SMOOTHING],
         'offset'  : i[Channels.OFFSET],
+        'plot_scale_offset'  : i[Channels.PLOT_SCALE_OFFSET],
+        'plot_scale_factor'  : i[Channels.PLOT_SCALE_FACTOR],
         'order'   : order,
       }
-      if i[Channels.SCALING]:
-        slist = D[ i[Channels.LABEL] ]['scaling']
-        for row in i[Channels.SCALING]:
-          slist.append( (row[0], row[1]) )
 
       order += 1
     return D
@@ -93,9 +97,11 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
     items = D.items()
     items.sort(key=lambda i: i[1]['order'])
     for i in items:
-      slist = gtk.ListStore(str,str)
-      for row in i[1]['scaling']:
-        slist.append( row )
+      slist = None
+      if i[1]['scaling']:
+        slist = gtk.ListStore(str,str)
+        for row in i[1]['scaling']:
+          slist.append( row )
 
       self.append([
         i[0],
@@ -107,6 +113,8 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
         i[1]['interp_order'],
         i[1]['interp_smoothing'],
         i[1]['offset'],
+        i[1]['plot_scale_offset'],
+        i[1]['plot_scale_factor'],
       ])
 
   def representation(self):

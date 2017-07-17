@@ -1,5 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from gi.repository import Gtk as gtk, GObject as gobject
+import re
 
 from matplotlib.figure import Figure
 
@@ -19,6 +20,41 @@ from scipy.interpolate import UnivariateSpline
 
 from helpers import *
 import spreadsheet
+
+def fstr(num):
+  return '{:g}'.format(num)
+
+
+class NumberEntryEnforcer(object):
+  expr     =      '^[0-9]*\.?[0-9]*([eE][-+]?[0-9]*)?$'
+  all_expr = '^[-+]?[0-9]*\.?[0-9]*([eE][-+]?[0-9]*)?$'
+
+  def __init__(self, editor, column, allow_negative=False):
+    self.old = ''
+    self.editor = editor
+    self.column = column
+    if allow_negative:
+      self.expr = self.all_expr
+  def __call__(self, entry):
+    val = entry.get_text()
+    if not re.match(self.expr, val):
+      entry.set_text(self.old)
+    else:
+      self.old = val
+
+  def activate(self, entry):
+    val = entry.get_text()
+    try:
+      val = float(val)
+      if self.editor.chan:
+        self.editor.chan[self.column] = val
+      entry.set_text(fstr(val))
+    except:
+      if self.editor.chan:
+        val = fstr(self.editor.chan[self.column])
+        entry.set_text(val)
+      else:
+        entry.set_text(self.old)
 
 
 class Editor(gtk.Dialog):
@@ -116,6 +152,7 @@ class Editor(gtk.Dialog):
     self.channel_select.set_cell_data_func( cbr, is_sensitive )
 
     self.units = gtk.Entry()
+    self.units.set_width_chars(8)
     def update_units_label(entry):
       T = self.units.get_text()
       # just a simple test to see if the units evaluate
@@ -132,6 +169,7 @@ class Editor(gtk.Dialog):
     self.units.set_text('V')
 
     self.offset = gtk.Entry()
+    self.offset.set_width_chars(10)
     def update_offset(entry):
       T = self.offset.get_text()
       # just a simple test to see if the units evaluate
@@ -170,6 +208,27 @@ class Editor(gtk.Dialog):
     self.smoothing.set_value(0)
 
 
+    self.enforce_scale_offset = \
+      NumberEntryEnforcer(self, self.channels.PLOT_SCALE_OFFSET, True)
+    self.scale_offset = gtk.Entry()
+    self.scale_offset.set_text('0.0')
+    self.scale_offset.set_width_chars(10)
+    self.scale_offset.connect('changed', self.enforce_scale_offset)
+    self.scale_offset.connect('activate', self.enforce_scale_offset.activate)
+    self.scale_offset.set_tooltip_text(
+      'Specify an offset for the waveform plot')
+
+    self.enforce_scale_factor = \
+      NumberEntryEnforcer(self, self.channels.PLOT_SCALE_FACTOR)
+    self.scale_factor = gtk.Entry()
+    self.scale_factor.set_text('1.0')
+    self.scale_factor.set_width_chars(10)
+    self.scale_factor.connect('changed', self.enforce_scale_factor)
+    self.scale_factor.connect('activate', self.enforce_scale_factor.activate)
+    self.scale_factor.set_tooltip_text(
+      'Specify a scaling factor for the waveform plot')
+
+
     ubox = gtk.HBox()
     ubox.pack_start( self.channel_select, True, True, 0 )
     ubox.pack_start( gtk.Label('Output Scale/Units:  '), True, True, 0 )
@@ -182,13 +241,20 @@ class Editor(gtk.Dialog):
     pbox.pack_start( self.smoothing, True, True, 0 )
 
     obox = gtk.HBox()
-    obox.pack_start( gtk.Label('Output Offset (with units):'), True, True, 0 )
+    obox.pack_start( gtk.Label('Output Offset/Units:'), True, True, 0 )
     obox.pack_start( self.offset, True, True, 0 )
+
+    sbox = gtk.HBox()
+    sbox.pack_start( gtk.Label('Plot Offset [V]:'), True, True, 0 )
+    sbox.pack_start( self.scale_offset, True, True, 0 )
+    sbox.pack_start( gtk.Label('Plot Scale:'), True, True, 0 )
+    sbox.pack_start( self.scale_factor, True, True, 0 )
 
     bottom = gtk.VBox()
     bottom.pack_start(ubox, False, False, 0)
     bottom.pack_start(pbox, False, False, 0)
     bottom.pack_start(obox, False, False, 0)
+    bottom.pack_start(sbox, False, False, 0)
     bottom.pack_start(sw, True, True, 0)
 
     body = gtk.VPaned()
@@ -252,6 +318,8 @@ class Editor(gtk.Dialog):
     self.offset.set_text( chan[self.channels.OFFSET] or '' )
     self.order.set_value( chan[self.channels.INTERP_ORDER] )
     self.smoothing.set_value( chan[self.channels.INTERP_SMOOTHING] )
+    self.scale_offset.set_text( fstr(chan[self.channels.PLOT_SCALE_OFFSET]) )
+    self.scale_factor.set_text( fstr(chan[self.channels.PLOT_SCALE_FACTOR]) )
     store = chan[self.channels.SCALING]
     self.view.set_model( store )
 
@@ -449,15 +517,17 @@ data = np.array([
     INTERP_ORDER     = 3
     INTERP_SMOOTHING = 4
     OFFSET           = 5
-    DEVICE           = 6
+    PLOT_SCALE_OFFSET= 6
+    PLOT_SCALE_FACTOR= 7
+    DEVICE           = 8
     def __init__(self):
       super(Channels,self).__init__(
-        str, str, gtk.ListStore, int, float, str, str
+        str, str, gtk.ListStore, int, float, str, float, float, str
       )
 
   channels = Channels()
-  channels.append(( 'MOT Detuning', 'MHz', gtk.ListStore(str,str), 1, 0, '', 'Analog' ))
-  channels.append(( 'MOT Power', 'mW', gtk.ListStore(str,str), 1, 0, '10*mW', 'Analog' ))
+  channels.append(( 'MOT Detuning', 'MHz', gtk.ListStore(str,str), 1, 0, '', 0.0, 1.0, 'Analog' ))
+  channels.append(( 'MOT Power', 'mW', gtk.ListStore(str,str), 1, 0, '10*mW', 0.0, 0.5, 'Analog' ))
   edit(channels, globals=Globals)
 
 if __name__ == '__main__':

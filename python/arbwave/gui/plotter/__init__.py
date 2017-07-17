@@ -4,6 +4,8 @@ from plotter_toolbar import NavigationToolbar
 import digital, analog
 import common
 
+from ...tools.eval import evalIfNeeded
+
 class Highlighter(object):
   def __init__(self, line):
     self.line = line
@@ -25,6 +27,7 @@ class Highlighter(object):
 
 class Plotter(object):
   def __init__(self,win):
+    self.ui = win
     self.axes, self.fig, self.canvas = gui.init_plot()
     self.toolbar = NavigationToolbar(
       self.canvas, win,
@@ -80,6 +83,18 @@ class Plotter(object):
   def plot_analog(self, signals, names=None, t_final=None, *args, **kwargs ):
     if names is not None:   self.names = names
     if t_final is not None: self.t_final=t_final
+
+    # update name_map for those that request waveform plot scaling
+    C = self.ui.channels
+    G = self.ui.processor.get_globals()
+    for i in iter(C):
+      # drop the dumb 'Analog', 'Digital', or 'dds' prefix
+      devname = i[C.DEVICE].partition('/')[-1]
+      if devname not in self.names:
+        continue
+
+      self.names[ devname ]['yscale'] = i[C.PLOT_SCALE_OFFSET], i[C.PLOT_SCALE_FACTOR]
+
     self.ranges['analog'], group_lines = analog.plot(
       self.axes['analog'], signals, self.names, self.t_final, *args, **kwargs
     )

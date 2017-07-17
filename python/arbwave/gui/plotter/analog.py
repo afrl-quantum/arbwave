@@ -12,7 +12,7 @@ fc=get_face_color
 ls=get_linestyle
 
 
-def mkxy( (encoding, L), Vi ):
+def mkxy( (encoding, L), (x0, y0) ):
   """
   Convert the grouping data into (x,y) points for various types of transitions.
   encoding : Specifies the type of output to create:
@@ -21,39 +21,45 @@ def mkxy( (encoding, L), Vi ):
     'bezier' : (speculated, not supported)
   L :  [(start-time, value), ...]
        for each grouping of channel data (see below).
-  Vi:  Previous value for a channel.  If Vi is None, this is the first value
+  x0:  x-value for last value y0.  If x0 is None, this is the first value
+       grouping for this channel.
+  y0:  Previous value for a channel.  If y0 is None, this is the first value
        grouping for this channel.
   """
   if encoding is 'linear':
     X, Y = zip(*L)
-    if Vi is not None:
+    if y0 is not None:
       # if this is not the first point, we copy the last value for our new first
       # time to ensure that a 'step' from a previous grouping remains a step
-      x = [X[0]]
-      y = [Vi]
-      x.extend(X)
-      y.extend(Y)
-    Vi = y[-1]
+      x = np.r_[x0, X[0], X]
+      y = np.r_[y0,   y0, np.array(Y).astype(float)] # remove units
+    else:
+      x = np.array(X)
+      y = np.array(Y).astype(float)
+    x0 = x[-1]
+    y0 = y[-1]
   else:
     # take care of beginning first
-    if Vi is None:
+    if y0 is None:
       istart = 1
-      x = [None] * (2* (len(L) - 1) + 1)
-      y = [None] * (2* (len(L) - 1) + 1)
-      x[0] =      L[0][0]
-      y[0] = Vi = L[0][1]
+      x = np.zeros(2* (len(L) - 1) + 1)
+      y = np.zeros(2* (len(L) - 1) + 1)
+      x[0] = x0 =       L[0][0]
+      y[0] = y0 = float(L[0][1]) # remove units
     else:
       # this group of (xi,yi) is not the beginning for the channel
       istart = 0
-      x = [None] * (2* len(L))
-      y = [None] * (2* len(L))
+      x = np.zeros(2* len(L) + 1)
+      y = np.zeros(2* len(L) + 1)
+      x[0] = x0
+      y[0] = y0
 
     # loop through the rest
-    for i, (l0, l1) in izip(xrange(istart, 2*len(L), 2), L[istart:]):
+    for i, (l0, l1) in izip(xrange(1, 2*len(L) + 1, 2), L[istart:]):
       x[i:i+2] = [ l0, l0 ]
-      y[i:i+2] = [ Vi, l1 ]
-      Vi = l1
-  return x, y, Vi
+      y[i:i+2] = [ float(y0), float(l1) ] # remove units
+      x0, y0 = l0, l1
+  return x, y, x0, y0
 
 
 def plot( ax, signals, name_map=None, t_final=None ):
@@ -65,12 +71,28 @@ def plot( ax, signals, name_map=None, t_final=None ):
   channels = signals.items()
   if name_map:
     channels.sort( key = lambda v: -name_map[v[0]]['order'] )
-    get_label = lambda n : name_map[n]['name']
-    get_scale = lambda n : float(name_map[n]['dt_clk']) #strip units
+    get_label  = lambda n : name_map[n]['name']
+    get_xscale = lambda n : float(name_map[n]['dt_clk']) #strip units
+    get_yscale = lambda n : name_map[n]['yscale']
   else:
     channels.sort( key = lambda v: v[0] ) # reverse lexical sort
-    get_label = lambda n : n
-    get_scale = lambda n : 1.0 # scaled by unity
+    get_label  = lambda n : n
+    get_xscale = lambda n : 1.0 # scaled by unity by default
+    # offset by 0.0 and scaled by unity by default:
+    get_yscale = lambda n : (0.0, 1.0)
+
+  def apply_yscale(y, yscale):
+    """
+    Given an array of values y, where y is a subset of Y, we need to apply a
+    scaling like:
+      y = (y - min(Y)) / (max(Y) - min(Y))
+    """
+    if yscale[0] != 0:   # 'if' is so we can avoid looping if not necessary
+      y -= yscale[0]
+    if yscale[1] != 1.0: # 'if' is so we can avoid looping if not necessary
+      y *= yscale[1]
+    return y
+
 
   cconv = ColorConverter()
 
@@ -78,41 +100,35 @@ def plot( ax, signals, name_map=None, t_final=None ):
   labels = list()
   i = 0
   group_lines = dict()
-  ylim = None
+  ylim = 1e300, 1e-300
   for c in channels:
     labels.append( get_label( c[0] ) )
-    xscale = get_scale( c[0] )
+    xscale = get_xscale( c[0] )
+    yscale = get_yscale( c[0] )
 
-    x = list()
-    y = list()
-    Vi = None
+    x0 = None
+    y0 = None
     groups = c[1].items()
     groups.sort( key = lambda v : v[0] )
     for g in groups:
-      xg, yg, Vi = mkxy( g[1], Vi )
-      if x:
-        group_lines[(g[0],c[0])] = \
-          ax.plot( xscale * np.array([x[-1]]+xg),
-                   [y[-1]]+yg, color=fc(i), linewidth=2 )[0]
-      else:
-        group_lines[(g[0],c[0])] = \
-          ax.plot( xscale * np.array(xg), yg, color=fc(i), linewidth=2)[0]
-      x += xg
-      y += yg
-      #s = max(1, int(.05 * len(xg)))
-      #ax.plot( xscale*np.array(xg)[::s], np.array(yg)[::s], get_marker(g[0]), color=fc(i) )
+      xg, yg, x0, y0 = mkxy( g[1], (x0, y0) )
+      xg *= xscale
+      apply_yscale(yg, yscale)
+
+      ylim = min(ylim[0], yg.min()), max(ylim[1], yg.max())
+
+      group_lines[(g[0],c[0])] = ax.plot(xg, yg, color=fc(i), linewidth=2)[0]
+
     # By definition, each final transition is supposed to be honored as a fixed
     # value.  This final data point just ensures that this hold is plotted for
     # each channel until all channels have finished.
-    x.append( t_final / xscale )
-    y.append( y[-1] )
+    x0 *= xscale
+    y0 = apply_yscale(y0, yscale)
+    x1 = t_final
+    y1 = y0
 
-    if ylim:
-      ylim = min(ylim[0], *y), max(ylim[1], *y)
-    else:
-      ylim = min(y), max(y)
-
-    group_lines[((-1,), c[0])] = ax.plot( xscale*np.array(x[-2:]), y[-2:], color=fc(i), linewidth=2 )[0]
+    group_lines[((-1,), c[0])] = \
+      ax.plot( [x0, x1], [y0, y1], color=fc(i), linewidth=2 )[0]
     i += 1
 
   #ax.set_xlabel('Time (s)')
