@@ -206,9 +206,10 @@ class Ramp(ScaledFunction):
     return 'linear' if 'linear' in capabilities else 'step'
 
   def __repr__(self):
+    tf = None if self.tf is None else self.tf/unit.s
     return '{}({}, {}, {}, {}, {}, {}*s)' \
       .format(self.name, self.ufmt(self.to), self.exponent,
-              self.steps, self.ufmt(self._from), self.dt_input, self.tf/unit.s)
+              self.steps, self.ufmt(self._from), self.dt_input, tf)
 
   def __call__(self, t):
     """
