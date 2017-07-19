@@ -1,4 +1,38 @@
 # vim: ts=2:sw=2:tw=80:nowrap
+"""
+Definitions of all optimization algorithms provided by Arbwave.
+
+Each algorithm is assigned a unique name (such as 'Powell').  The function
+that performs the optimization is also specified as the 'func' entry.  The
+signature of this function should be:
+  func( merit_function, x0, **kwargs)
+
+  where the signature of the merit function is always:
+  merit_function(x0)
+    ...do stuff...
+    return merit_value
+
+  x0 represents the current optimization parameter space vector (initial
+  parameters are passed into the algorithm and then passed to the merit function
+  by the algorithm as they are modified), and kwargs are all the parameters
+  specified by the user and defined also in the 'parameters' entry for each
+  algorithm.
+
+  An example set of parameters are specifed as:
+    'parameters' : {
+      'args'      : {'order':0, 'enable':False,'type':str,  'value':'()',  'range':None},
+      'xtol'      : {'order':1, 'enable':True, 'type':float,'value':0.0001,'range':[0,FMAX,1e-4,1e-3],   'combo':False},
+      'ftol'      : {'order':2, 'enable':True, 'type':float,'value':0.0001,'range':[0,FMAX,1e-4,1e-3],   'combo':False},
+      'maxiter'   : {'order':3, 'enable':False,'type':int,  'value':4000,  'range':xrange(sys.maxint)},
+      'maxfun'    : {'order':4, 'enable':False,'type':int,  'value':4000,  'range':xrange(sys.maxint)},
+      'disp'      : {'order':5, 'enable':True, 'type':bool, 'value':True,  'range':None},
+      #'retall'   : {'order':6, 'enable':False,'type':bool, 'value':False,'range':None},
+      'callback'  : {'order':7, 'enable':False,'type':str,  'value':'',    'range':None},
+      'direc'     : {'order':8, 'enable':False,'type':str,  'value':'',    'range':None},
+    },
+
+  Documentation for the algorithm
+"""
 
 import sys
 

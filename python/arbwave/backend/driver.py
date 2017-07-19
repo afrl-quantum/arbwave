@@ -81,6 +81,10 @@ class Driver(object):
       raise NotImplementedError('Drivers must implement set_device_config')
 
   def set_clocks( self, clocks ):
+    """
+    Configure output channels on devices from the particular driver from which
+    clock signals are generated.
+    """
     if clocks:
       raise NotImplementedError('Drivers with clocks must implement set_clocks')
 
