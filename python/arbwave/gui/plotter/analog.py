@@ -31,11 +31,11 @@ def mkxy( (encoding, L), (x0, y0) ):
     if y0 is not None:
       # if this is not the first point, we copy the last value for our new first
       # time to ensure that a 'step' from a previous grouping remains a step
-      x = np.r_[x0, X[0], X]
-      y = np.r_[y0,   y0, np.array(Y).astype(float)] # remove units
+      x = np.r_[x0, float(X[0]), np.array(X, dtype=float)]
+      y = np.r_[y0,   y0, np.array(Y, dtype=float)] # remove units
     else:
-      x = np.array(X)
-      y = np.array(Y).astype(float)
+      x = np.array(X, dtype=float)
+      y = np.array(Y, dtype=float)
     x0 = x[-1]
     y0 = y[-1]
   else:
@@ -44,7 +44,7 @@ def mkxy( (encoding, L), (x0, y0) ):
       istart = 1
       x = np.zeros(2* (len(L) - 1) + 1)
       y = np.zeros(2* (len(L) - 1) + 1)
-      x[0] = x0 =       L[0][0]
+      x[0] = x0 = float(L[0][0]) # remove units
       y[0] = y0 = float(L[0][1]) # remove units
     else:
       # this group of (xi,yi) is not the beginning for the channel
@@ -56,9 +56,9 @@ def mkxy( (encoding, L), (x0, y0) ):
 
     # loop through the rest
     for i, (l0, l1) in izip(xrange(1, 2*len(L) + 1, 2), L[istart:]):
-      x[i:i+2] = [ l0, l0 ]
+      x[i:i+2] = [ float(l0), float(l0) ]
       y[i:i+2] = [ float(y0), float(l1) ] # remove units
-      x0, y0 = l0, l1
+      x0, y0 = l0, float(l1)
   return x, y, x0, y0
 
 
