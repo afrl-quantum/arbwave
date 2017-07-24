@@ -3,6 +3,23 @@
 \pagestyle{fancy}
 \section{Channel Name}
 \section{Specifying Device}
+
 \section{Defining Scaling and Units}
+Arbwave allows for non-digital channels to be scaled according to an arbitrary
+monotonically decreasing/increasing function.  This allows the user to calibrate
+the output of a particular channel for a particular use.  For example, if a
+analog voltage output channel is used to change the frequency output of a laser,
+it is more convenient for the channel to be calibrated to describe the actual
+frequency changes occurring with the laser.
+
+The user can right-click a non-digital channel in the channel menu to access the
+scaling dialog.  The scaling dialog, shown in Fig.~\ref{fig:scaling}, gives
+access to a table of scaling values that can be used to calibrate the channel.
+
+Each row of this table consists of a list of voltage settings that produce the
+corresponding list of output values (such as laser frequency).  The list in each
+column of each row may include one or more items although it is critical that
+the two cells of a row must contain the same number of elements.
+
 \section{Static Values}
 \section{Enabling}

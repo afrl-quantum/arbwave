@@ -434,8 +434,12 @@ def evalIfNeeded( s, G, L=dict() ):
 
 def calculate( scaling, units, offset, globals, return_range=False ):
   U = evalIfNeeded(units, globals)
+
+  # we allow the user to comment out the offset (instead of just clearing it)
   if offset is not None:
     offset = offset.partition('#')[0].strip()
+
+  # now with commented portion ignored, calculate the offset
   if offset:
     offset = evalIfNeeded(offset, globals)
     # ensure proper units
