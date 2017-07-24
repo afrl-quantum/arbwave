@@ -21,6 +21,8 @@ import numpy as np
 import sympy
 from itertools import izip, repeat
 
+from physical.sympy_util import from_sympy
+
 from ...tools.float_range import xarange
 
 machine_arch = np.MachAr()
@@ -100,7 +102,7 @@ def optimize(expression, ti, dti, expr_steps, expr_err,
   # calculate & cache all values of the expression that will be used
   xsym = sympy.Symbol('x')
   cache = tuple(
-    float(expression.subs(xsym,x))
+    from_sympy(expression.subs(xsym,x))
     for x in xarange(0,1+10*machine_arch.eps,0.5*dx)
   )
 
@@ -141,14 +143,14 @@ def uniform(expression, ti, dti, expr_steps, **kw):
   for tij, x in izip( xrange(ti, ti+dti-1 - dtij, dtij),
                      xarange(0, 1, dx)):
 
-    yield tij, dtij, float(expression.subs(xsym, x))
+    yield tij, dtij, from_sympy(expression.subs(xsym, x))
 
   # second to last transition. Make sure it is not too long
   yield tij+dtij, min(dtij, ti+dti-1 - (tij+dtij)), \
-        float(expression.subs(xsym,x+dx))
+        from_sympy(expression.subs(xsym,x+dx))
 
   # last point is added very explicitly to reach the end of time (x=1)
-  yield ti+dti-1, 1, float(expression.subs(xsym,1))
+  yield ti+dti-1, 1, from_sympy(expression.subs(xsym,1))
 
 
 

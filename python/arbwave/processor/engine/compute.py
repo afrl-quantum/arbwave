@@ -393,7 +393,7 @@ class WaveformEvalulator:
       expr = value.subs(Vars)
 
       # only 'x' symbol (or none) should be left
-      assert set([self.x]).issuperset(expr.free_symbols)
+      assert {self.x}.issuperset(expr.free_symbols)
 
       # first implementation:  brain dead iteration
       overrides.setdefault('expr_steps', locals['expr_steps'])
@@ -410,7 +410,7 @@ class WaveformEvalulator:
                                     channel_scale=ci['scaling'].range,
                                     channel_caps={'step','slope'},
                                     **overrides):
-        insert_value(tij, dtij, v*unit.V, dt_clk, chname, ci, trans, e['path'], parent)
+        insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
       ci['last'] = v
 
     elif not hasattr( value, 'set_vars' ):
