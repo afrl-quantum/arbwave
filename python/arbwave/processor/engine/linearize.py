@@ -18,10 +18,12 @@ supported:
 """
 
 import numpy as np
-import sympy
 from itertools import izip, repeat
 
-from physical.sympy_util import from_sympy
+from physical.sympy_util import has_sympy, from_sympy
+
+if has_sympy:
+  import sympy
 
 from ...tools.float_range import xarange
 
