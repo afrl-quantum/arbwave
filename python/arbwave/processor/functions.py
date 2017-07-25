@@ -10,10 +10,15 @@ of 0.5 over the duration of the waveform element.
 from scipy.interpolate import interp1d
 import numpy as np
 import math
+
 import physical
 from physical import unit
+from physical.sympy_util import has_sympy
+
 machine_arch = np.MachAr()
 from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
+
+from ..tools.dict import Dict
 
 class step_iter:
   def __init__(self, ti, tf, dt, fun):
@@ -46,10 +51,18 @@ class step_iter:
 
 ###################
 class ScaledFunction(object):
+  """
+  Interface to change how the value-generator is presented when the eval_cache
+  is shown to the user.
+  """
   def __init__(self):
     self.units = None
     self.units_str = None
   def set_units(self, units, units_str):
+    """
+    Arbwave calls this function if it exists to give the generator the
+    user-specified units and units string for the particular channel.
+    """
     self.units = units
     self.units_str = units_str
   def ufmt(self, value):
@@ -182,8 +195,8 @@ class Ramp(ScaledFunction):
               [Default: None]
 
     Only one of dt or steps can be used.
-   """
-    ScaledFunction.__init__(self)
+    """
+    super(Ramp, self).__init__()
     self.to = to
     self.exponent = exponent
     if steps > 0:
@@ -277,8 +290,8 @@ class Pulse(ScaledFunction):
             will be set to its logical complement.  Otherwise, if low is not
             set, it will be set to whatever the channel is at prior to this
             pulse.
-   """
-    ScaledFunction.__init__(self)
+    """
+    super(Pulse, self).__init__()
     self.high     = high
     self.low      = low
     self._from    = None
@@ -334,8 +347,8 @@ class PulseTrain(ScaledFunction):
             will be set to its logical complement.  Otherwise, if low is not
             set, it will be set to whatever the channel is at prior to this
             pulse.
-   """
-    ScaledFunction.__init__(self)
+    """
+    super(PulseTrain, self).__init__()
     self.n        = n
     self.duty     = duty
     self.high     = high
@@ -409,7 +422,7 @@ class Interpolate:
     dt      : the timestep to increment (Default: duration/steps)
 
     Only one of dt or steps can be used.
-   """
+    """
     self.interp = interp1d( (x - min(x)) / float(max(x) - min(x)), y )
     self.unity = getunity( y[0] )
     if steps > 0:
@@ -465,6 +478,102 @@ class Interpolate:
     else:
       ti = self.t
     return step_iter(ti, self.t+self.duration, self.dt, self)
+
+
+class Expr(object):
+  markup = \
+"""
+<span color="blue"><b><u>Value Expressions Basics</u></b></span>(sympy expressions available:  {})
+
+The value of each waveform element, in the most basic form, may be specified as
+a single value with units appropriate for the respective channel.
+
+Often times, a single value for a waveform element is not sufficient.  Arbwave
+provides two mechanisms that allow a single waveform element to represent a
+time-varying function.  The simplest of these two is using <i>Value Expressions</i>,
+as described in here.  The second mechanism is using the much more
+powerful, extensible, but much more complicated-to-extend <i>Value Generators
+</i>--see help menu for more information.
+
+If the sympy package is available, Arbwave uses it to allow the user to specify
+functional forms of values for a waveform element.  When using expressions, in
+order to define how a channel's value should change over time, one uses the
+symbol <b><i>x</i></b> to represent relative waveform-element time.  <b><i>x</i></b> always varies
+from 0 to 1.  Thus, for a waveform element with duration <b><i>dt</i></b>, <b><i>x</i></b> varies from 0 to 1
+over the duration of the waveform element.
+
+As an example of using expressions, consider the <b>Ramp</b> value generator
+function.  This function generally varies the channel as:
+
+  U0 + (U1 - U0)*x**E
+
+where U0 and U1 are the beginning and ending values of the ramp respectively and
+E is the power of the time dependence.  If, for instance, a voltage channel
+required to be changed from its original value to a final value of 10*V with a
+square-root time dependence, one could simply use an expression like:
+
+  U0 + (10*V - U0)*x**0.5
+
+Using expressions, it is much simpler for the user to specify somewhat arbitrary
+functional forms of waveform values.  For instance, one can specify an Gaussian
+change function as something like:
+
+  10*V * sy.exp(-(x-.5)**2.0 / (2 * .1**2.0))
+
+where sy represents the sympy module as imported in the global script as:
+
+  import sympy as sy
+
+<span color="blue"><b><u>Value Expressions Advanced</u></b></span>
+Just as many <i>Value Generators</i> allow the user to use functional arguments to
+modify the waveform generated, such as the number of steps in a <b>Ramp</b>,
+<i>Value Expressions</i> similarly provides a method to modify the output.
+
+There are three primary parameters to modify the resulting waveform of an
+expression:
+  - <tt>expr_fmt</tt>
+    - linear
+      Causes the output waveform to be uniformly discretized in time.
+    - optimize
+      Causes the output waveform to be optimally discretized in time such that a
+      constant total err (<tt>expr_err</tt>) is maintained for each linear
+      time segment.
+  - <tt>expr_steps</tt>
+      For <tt>expr_fmt = linear</tt>, this sets the number of fixed-size steps
+      to make over the duration.
+      For <tt>expr_fmt = optimize</tt>, <tt>1/expr_steps</tt> defines the
+      minimal relative time-step to consider when creating a line segment that
+      maximally incurs a total error equal to <tt>expr_err</tt>.
+  - <tt>expr_err</tt>
+      See "optimize" above.
+
+There are three possible methods to set each of these <i>Value Expression</i>
+parameters:
+  - globally (i.e. in embedded Python shell or in global script)
+  - local to group (in a local group script)
+  - local to waveform element:
+    If one desires the scope of these parameters to be limited to a single
+    element, one must wrap the expression by the <tt>expr</tt> function.
+    The signature to this function is given by:
+      <b>expr(expression, steps=None, err=None, fmt=None)</b>
+""".format(has_sympy)
+
+  def __init__(self):
+    self.settings = Dict()
+
+  def __call__(self, expression, steps=None, err=None, fmt=None):
+    if steps is not None:
+      self.settings.expr_steps = steps
+    if err is not None:
+      self.settings.expr_err = err
+    if fmt is not None:
+      self.settings.expr_fmt = fmt
+    return expression
+
+  def update_settings(self, D):
+    self.settings.setdefault('expr_steps', D['expr_steps'])
+    self.settings.setdefault('expr_err', D['expr_err'])
+    self.settings.setdefault('expr_fmt', D['expr_fmt'])
 
 
 registered = {

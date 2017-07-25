@@ -6,18 +6,19 @@ import bisect, sys
 from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 from itertools import chain
 
-try:
+
+from physical import unit
+from physical.sympy_util import has_sympy
+import physical
+if has_sympy:
   import sympy
-  has_sympy = True
-except:
-  has_sympy = False
+
+from math import ceil
 
 from ... import backend
-import physical
-from physical import unit
-from math import ceil
 from ...tools.scaling import calculate as calculate_scaling
 from ...tools.eval import evalIfNeeded
+from ..functions import Expr
 from . import linearize
 
 machine_arch = np.MachAr()
@@ -353,16 +354,8 @@ class WaveformEvalulator:
       locals.setdefault('expr_err', globals.get('expr_err', 0.1))
       locals.setdefault('expr_fmt', globals.get('expr_fmt', 'uniform'))
 
-      overrides = dict()
-      def expr(expression, steps=None, err=None, fmt=None):
-        if steps is not None:
-          overrides['expr_steps'] = steps
-        if err is not None:
-          overrides['expr_err'] = err
-        if fmt is not None:
-          overrides['expr_fmt'] = fmt
-        return expression
-      locals['expr'] = expr
+      expr = Expr()
+      locals['expr'] = expr.__call__
 
     value = evalIfNeeded( e['value'], globals, locals )
 
@@ -390,27 +383,26 @@ class WaveformEvalulator:
       }
       Vars[self.U0] = ci['last'] # make sure we substitute the 'last value'
 
-      expr = value.subs(Vars)
+      expression = value.subs(Vars)
 
       # only 'x' symbol (or none) should be left
-      assert {self.x}.issuperset(expr.free_symbols)
+      assert {self.x}.issuperset(expression.free_symbols)
 
       # first implementation:  brain dead iteration
-      overrides.setdefault('expr_steps', locals['expr_steps'])
-      overrides.setdefault('expr_err', locals['expr_err'])
-      overrides.setdefault('expr_fmt', locals['expr_fmt'])
+      expr.update_settings(locals)
 
       try:
-        expr_iter = linearize.evaluators[ overrides['expr_fmt'] ]
+        expr_iter = linearize.evaluators[ expr.settings.expr_fmt ]
       except:
-        raise NameError('unknown expression formatting: '+overrides['expr_fmt'])
+        raise NameError('unknown expression formatting: '+expr.settings.expr_fmt)
 
       # now we finally add everything into the arbwave waveforms
-      for tij, dtij, v in expr_iter(expr, ti, dti,
+      for tij, dtij, v in expr_iter(expression, ti, dti,
                                     channel_scale=ci['scaling'].range,
                                     channel_caps={'step','slope'},
-                                    **overrides):
+                                    **expr.settings):
         insert_value(tij, dtij, v, dt_clk, chname, ci, trans, e['path'], parent)
+      del expr
       ci['last'] = v
 
     elif not hasattr( value, 'set_vars' ):
