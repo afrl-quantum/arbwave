@@ -51,6 +51,7 @@
 \usepackage{hypernat}
 \usepackage {makeidx}           % make index
 \usepackage{supertabular}       % for making larger tables
+\usepackage{listings}
 \usepackage{arbwave-version}    % Include the version of the Arbwave package
 
 
@@ -75,6 +76,31 @@
 % Fuzz -------------------------------------------------------------------
 \hfuzz2pt % Don't bother to report over-full boxes if over-edge is < 2pt
 \vfuzz2pt % Don't bother to report over-full boxes if over-edge is < 2pt
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% for commenting code blocks
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  framerule=0pt,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=2
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

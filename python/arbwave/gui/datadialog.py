@@ -340,18 +340,6 @@ class DataDialog(gtk.Window):
 
       self.params.append( (True,) + stuff )
 
-      if 'data' in self.Globals:
-        # only append the current new
-        new_row = [self.convert_row_data(stuff)]
-        D = self.Globals['data']
-        if len(D) == 0:
-          self.Globals['data'] = np.array(new_row, dtype=float)
-        else:
-          self.Globals['data'] = np.append(D, new_row, axis=0)
-      else:
-        # generate the missing data...
-        self.Globals['data'] = self.get_all_data()
-
       if self.autosave.get_sensitive() and self.autosave.get_active():
         self.gtk_save_handler()
       self.new_data = True
@@ -393,9 +381,8 @@ class DataDialog(gtk.Window):
         self.canvas.draw()
         return True # nothing to plot, clear plot and return
 
-      if 'data' not in self.Globals:
-        # in case the user deleted it(?)
-        self.Globals['data'] = self.get_all_data()
+      # update soft-copy of data
+      self.Globals['data'] = self.get_all_data()
 
       if len(self.Globals['data']) == 0:
         return True

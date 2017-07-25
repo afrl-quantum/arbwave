@@ -20,17 +20,42 @@ def show_autovars(parent):
   dialog.show_all()
 
   L.set_markup("""\
-Arbwave develops the complete timing diagram of a waveform using a concept known
+<span color="blue"><b><u>Automatic Variables</u></b></span>
+Arbwave develops the complete timing diagram of a waveform using a concept
 known as <i>Natural Time</i>.
+
 <i>Natural Time</i> is defined as the time that a waveform group or element
 begins based upon the preceding sibling groups or preceding waveform elements
 of the same Arbwave channel.
+
 In order to make the use of natural time more convenient, Arbwave automatically
 generates and provides the following variables:
-  <b>t</b>: Local time (units: time)
-  <b>dt</b>: Duration of parent group (units: time)
-  <b>dt_clk</b>: Minimum clock period of a waveform element (units: time)
+  <b><i>t</i></b>: Local time (units: time)
+  <b><i>dt</i></b>: Duration of parent group (units: time)
+  <b><i>dt_clk</i></b>: Minimum clock period of a waveform element (units: time)
+  <b><i>U0</i></b>: Last value for the particular channel (units: &lt;depends on channel&gt;)
   """)
+
+  # Close dialog on user response
+  dialog.connect ("response", lambda d, r: d.destroy())
+  dialog.show()
+
+
+def show_expressions(parent):
+  dialog = gtk.Dialog( 'Value Expressions',
+    parent, gtk.DialogFlags.DESTROY_WITH_PARENT,
+    (gtk.STOCK_CLOSE, gtk.ResponseType.OK) )
+
+  L = gtk.Label()
+  scroll = gtk.ScrolledWindow()
+  scroll.set_size_request(550,400)
+  scroll.set_shadow_type(gtk.ShadowType.ETCHED_IN)
+
+  scroll.add_with_viewport( L )
+  dialog.vbox.pack_start( scroll, True, True, 0 )
+  dialog.show_all()
+
+  L.set_markup( functions.Expr.markup )
 
   # Close dialog on user response
   dialog.connect ("response", lambda d, r: d.destroy())
