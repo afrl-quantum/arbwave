@@ -116,7 +116,7 @@ def show_arbwavefunctions(parent):
     ('Arbwave.update_static', Arbwave.update_static),
     ('Arbwave.update_plotter',Arbwave.update_plotter),
     ('Arbwave.stop_check',    Arbwave.stop_check),
-    ('Arbwave.save_gnuplot',  Arbwave.save_gnuplot),
+    ('Arbwave.save_waveform', Arbwave.save_waveform),
     ('Arbwave.find',          Arbwave.find),
     ('Arbwave.find_group',    Arbwave.find_group),
     ('Arbwave.find_channel',  Arbwave.find_channel),
