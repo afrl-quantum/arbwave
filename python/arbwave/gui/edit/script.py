@@ -43,27 +43,28 @@ class Editor(gtk.Dialog):
     sw.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.AUTOMATIC)
     sw.set_shadow_type(gtk.ShadowType.IN)
     table.attach(sw,
-		 # /* X direction */       /* Y direction */
+                 # /* X direction */       /* Y direction */
                  0, 1,                   1, 2,
                  gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,
                  gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,
                  0,                      0)
 
-    contents = gtk.TextView()
-    contents.grab_focus()
-    sw.add(contents)
+    self.contents = gtk.TextView()
+    self.contents.grab_focus()
+    sw.add(self.contents)
+    self.vadj = sw.get_vadjustment()
 
     ## Create statusbar
 
     self.statusbar = gtk.Statusbar()
     table.attach(self.statusbar,
-		 #/* X direction */       /* Y direction */
+                 #/* X direction */       /* Y direction */
                  0, 1,                   2, 3,
                  gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,  0,
                  0,                      0);
 
     ## Show text widget info in the statusbar */
-    self.buf = contents.get_buffer()
+    self.buf = self.contents.get_buffer()
     if self.target:
       self.set_text( self.target.get_text() )
 
@@ -76,6 +77,8 @@ class Editor(gtk.Dialog):
     self.update_statusbar()
 
     self.present()
+
+    self.reset_cursor_position = False
 
   def _present_prep(self):
     if self.notebook and self.notebook.page_num(self.vbox) < 0:
@@ -146,6 +149,12 @@ class Editor(gtk.Dialog):
 
 
   def mark_set_callback(self, buf, new_location, mark):
+    if (self.reset_cursor_position):
+      self.reset_cursor_position = False
+      self.buf.place_cursor(self.savediter)
+      self.vadj.set_value(self.vadjval)
+      # these should only ever exist when the cursor reset is requested
+      del self.savediter, self.vadjval
     self.update_statusbar()
 
   def update_resize_grip(self, widget, event):
@@ -159,8 +168,20 @@ class Editor(gtk.Dialog):
   def respond(self, dialog, response_id):
     if response_id in [gtk.ResponseType.OK, gtk.ResponseType.APPLY] and self.target:
       try:
+        iter = self.buf.get_iter_at_mark(self.buf.get_insert())
+        saverow = iter.get_line()
+        savecol = iter.get_line_offset()
+
+        self.reset_cursor_position = True
         self.target.set_text( self.get_text() )
         self.unset_changes()
+        # recreate the cursor iterator
+        self.savediter = self.buf.get_iter_at_line_offset(saverow, savecol)
+
+        # get ready for cursor reset
+        self.vadjval = self.vadj.get_value()
+        self.contents.grab_focus()
+
       except Exception, e:
         # It looks like the target rejected our text...
         self.update_statusbar('  Could not save text!!!!')
