@@ -2,9 +2,11 @@
 import numpy as np
 
 class float_range(object):
-  def __init__(self, mn, mx, include_beginning=True, include_end=False):
+  def __init__(self, mn, mx, include_beginning=True, include_end=False,
+               step=None):
     self.mn = mn
     self.mx = mx
+    self.step = step
     self.include_beginning = include_beginning
     self.include_end = include_end
 

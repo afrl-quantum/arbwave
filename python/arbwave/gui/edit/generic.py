@@ -74,12 +74,14 @@ class Range:
 
   def get_adjustment(self):
     r = self()
-    if type(r) is xrange:
-      return r[0], r[-1], -1, -1
-    else:
-      if len(r) == 4:
-        return r[0:4]
-      return min(r), max(r), -1, -1
+    if hasattr(r, '__len__') and len(r) == 4:
+      return r[0:4]
+
+    mn = min(r)
+    mx = max(r)
+    step = getattr(r, 'step', None)
+    page = getattr(r, 'page', None)
+    return mn, mx, step, page
 
 
 class RangeFactory:
@@ -115,14 +117,16 @@ def set_range( cell, editable, path, model ):
   editable.connect('activate', coerce_range, TYPE )
 
   if TYPE is int:
-    if step == -1 and page == -1:
+    if step is None:
       step = 1
-      page = max(1,.1*(mx-mn))
+    if page is None:
+      page = int(min(max(10*step, .1*(mx-mn)), .2*(mx-mn)))
     adj.configure(row[model.VAL_INT], mn, mx, step, page, 0)
   elif TYPE is float:
-    if step == -1 and page == -1:
+    if step is None:
       step = .01*(mx-mn)
-      page = .1*(mx-mn)
+    if page is None:
+      page = min(max(10*step, .1*(mx-mn)), .2*(mx-mn))
     digits = int(round( -log10( step * 0.01 ) ))
     if digits > 0:
       editable.set_digits(digits)

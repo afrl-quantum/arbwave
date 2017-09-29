@@ -305,10 +305,14 @@ class Range:
 
   def get_adjustment(self):
     r = self()
-    if type(r) is xrange:
-      return r[0], r[-1], -1, -1
-    else:
-      return min(r), max(r), -1, -1
+    if hasattr(r, '__len__') and len(r) == 4:
+      return r[0:4]
+
+    mn = min(r)
+    mx = max(r)
+    step = getattr(r, 'step', None)
+    page = getattr(r, 'page', None)
+    return mn, mx, step, page
 
 
 class ClockRange:
