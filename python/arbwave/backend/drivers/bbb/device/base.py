@@ -104,19 +104,6 @@ class Device(Base):
       'bbb.Device({}):  does not have routeable signals'.format(self))
 
 
-  def set_output(self, values):
-    """
-    Immediately force the output on several channels; all others are
-    unchanged.
-
-    :param values: the channels to set. May be a dict of { <channel>: <value>},
-                   or a list of [ (<channel>, <value>), ...] tuples or something
-                   equivalently coercable to a dict
-    """
-    debug('bbb.Device(%s).set_output(values=%s)', self, values)
-    self.proxy.set_output( data )
-
-
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
     """
     Set the output waveforms for the AFRL/BeagleBone Black device.

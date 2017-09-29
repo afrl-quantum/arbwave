@@ -38,11 +38,17 @@ class DDS(DDSBase):
     Returns the minimum timing period in units of seconds.
     *** This needs to be measured again and corrected ***
     """
-    return 1*unit.us
+    # FIXME:  This information is provided by the bbb device.  query it for the
+    # correct number of channels.
+    return 15*unit.us
 
 
 
-_bbb_digital_minimum_neighbor_period = 45*unit.ns
+# The minimum period is 15 clock cycles or 75ns.
+# TODO: Until Arbwave may potentially gain the ability to have non-uniform
+# periods for channels, it may be wise to upgrade this minimum to a more even
+# value, say 100*ns
+_bbb_digital_minimum_neighbor_period = 15*5*unit.ns
 """
 The BeagleBone Black timing firmware _does_ have timing resolution of 5*ns, but
 any two transitions must be separated by at least 45*ns.  We may want to limit
@@ -95,5 +101,20 @@ class Timing(TBase):
       }
     }
 
+class AM335x_L3_CLK(TBase):
+  """
+  Timing channel specialization for the L3 peripherals of the AM335x SOC of
+  which the PRUSS module is a member.  The L3 peripherals run at 200MHz with
+  this being derived from the CORE_CLKOUTM4 output of the PLL block.
+  """
+
+  def get_min_period(self):
+    """
+    Returns the minimum timing period (period between two rising edges of this
+    clock pulse) in units of seconds.
+
+    :return: the minimum period with physical.unit.s
+    """
+    return 200 * unit.ns
 
 class Backplane(BBase): pass

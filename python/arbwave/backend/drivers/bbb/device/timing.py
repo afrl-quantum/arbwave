@@ -1,7 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 # -*- coding: utf-8 -*-
 """
-DDS logical device driver for the BeagleBone Black using AFRL firmware/hardware.
+Timing logical device driver for the BeagleBone Black using AFRL
+firmware/hardware.
 """
 
 import copy
@@ -20,16 +21,22 @@ from .base import Device as Base
 
 class Device(Base):
   """
-  DDS logical Device for a single instance of the BeagleBone Black using AFRL
+  Timing logical Device for a single instance of the BeagleBone Black using AFRL
   firmware/hardware.
   """
 
 
   def __init__(self, *a, **kw):
     super(Device,self).__init__(*a, **kw)
-    self.channels = [
-      channels.DDS('{}/{}'.format(self,i), self) for i in xrange(4)
+    self.digital_channels = [
+      channels.Digital('{}/{}'.format(self,i), self) for i in xrange(4)
     ]
+    self.timing_channels = [
+      channels.Timing('{}/{}'.format(self,i), self) for i in xrange(4)
+    ]
+    self.timing_channels.append(
+      channels.AM335x_L3_CLK('{}/InternalClock'.format(self))
+    )
     self.config = None
 
 
@@ -41,14 +48,7 @@ class Device(Base):
   @cached.property
   def possible_clock_sources(self):
     return [
-      '{}/update'.format(self),
-      '{}/timing/0'.format(self.hostid),
-    ]
-
-
-  def get_routeable_backplane_signals(self):
-    return [
-      channels.Backplane('External/', ['{}/update'.format(self)]),
+      '{dev}/InternalClock'.format(dev=self),
     ]
 
 
@@ -63,37 +63,31 @@ class Device(Base):
     if self.proxy is None:
       self.open()
 
-    D = Dict(self.proxy.get_sysclk())
-    refclk_src = self.proxy.refclk_src
+    D = Dict()
 
     config = {
-      'sysclk': {
-        'value': D.sysclk,
-        'type' : float,
-        'range': float_range(1e6, 500e6),
-      },
-      'refclk': {
-        'source': {
-          'value': refclk_src,
-          'type' : 'str',
-          'range': ['tcxo', 'refclk'],
+      'trigger' : {
+        'enable': {
+          'value': self.proxy.triggered,
+          'type': bool,
+          'range': None,
         },
-        'frequency' : {
-          'value': D.refclk,
-          'type' : float,
-          'range': [50e6] if refclk_src == 'tcxo' else float_range(1e6, 100e6),
-          'doreload' : True, # reload the range everytime we need it
+        'setup_time' : {
+          'value' : self.proxy.start_delay * 5*units.ns,
+          'type'  : float,
+          'range' : float_range(3*5*units.ns, ((2**48)-1)*5*units.ns, step=5*units.ns),
         },
-      },
-      'pll_chargepump': {
-        'value': D.charge_pump,
-        'type' : str,
-        'range': self.proxy.get_charge_pump_values(),
+        'retrigger': {
+          'value': self.proxy.retrigger,
+          'type': bool,
+          'range': None,
+        },
       },
       'clock': {
         'value': '',
         'type': str,
         'range': self.possible_clock_sources,
+        'doreload' : True, # reload the range everytime we need it
       },
     }
 
@@ -111,15 +105,14 @@ class Device(Base):
                    get_config_template()
     """
     debug('bbb.Device(%s).set_config(config=%s)', self, config)
-    valid_keys = set([
-      'sysclk', 'refclk', 'pll_chargepump', 'clock'
-    ])
+    valid_keys = set(['trigger', 'clock'])
     assert set(config.keys()).issubset(valid_keys), \
       'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone Black' \
       .format(self)
-    valid_refclk_keys = set(['source', 'frequency'])
-    assert set(config['refclk'].keys()).issubset(valid_refclk_keys), \
-      'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone Black' \
+    valid_trigger_keys = set(['enable', 'setup_time', 'retrigger'])
+    assert set(config['trigger'].keys()).issubset(valid_trigger_keys), \
+      'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone ' \
+                       'Black timing trigger' \
       .format(self)
 
     if self.config is None:
@@ -129,26 +122,43 @@ class Device(Base):
     if self.config == config:
       return
 
-    if (self.config['sysclk'] != config['sysclk'] or
-        self.config['refclk']['frequency'] != config['refclk']['frequency'] or
-        self.config['pll_chargepump'] != config['pll_chargepump']):
-      self.proxy.set_sysclk(config['refclk']['frequency']['value'],
-                            config['sysclk']['value'],
-                            config['pll_chargepump']['value'])
+    trg_config = config['trigger']
+    if self.config['trigger'] != trg_config:
+      if self.config['enable'] != trg_config['enable']:
+        self.proxy.triggered = trg_config['enable']['value']
 
-    if self.config['refclk']['source'] != config['refclk']['source']:
-      self.proxy.refclk_src = config['refclk']['source']
-        
+      if self.config['setup_time'] != trg_config['setup_time']:
+        self.proxy.start_delay = \
+          int(trg_config['setup_time']['value'] / (5*units.ns))
 
-    if self.config['clock'] !=  config['clock']:
-      self.proxy.update_src = config['clock']['value']
+      if self.config['retrigger'] != trg_config['retrigger']:
+        self.proxy.retrigger = trg_config['retrigger']['value']
+
+    # We don't really have to respond to the clock setting (for now, no hardware
+    # to configure for this change)
 
     # finally, keep a copy of the config given to us
     self.config = copy.deepcopy(config)
 
 
+  def set_clocks(self, clocks):
+    """
+    Set which clock is controlling the board.
+
+    :param clocks: a dict of {'clock/path': config_dict }
+    """
+    debug('bbb.Device(%s).set_clocks(clocks=%s)', self, clocks)
+    if self.clocks == clocks:
+      return
+    self.clocks = copy.deepcopy(clocks)
+
+
   def get_output_channels(self):
-    return self.channels
+    return self.digital_channels
+
+
+  def get_timing_channels(self):
+    return self.timing_channels
 
 
   def set_output(self, values):
@@ -160,13 +170,22 @@ class Device(Base):
                    or a list of [ (<channel>, <value>), ...] tuples or something
                    equivalently coercable to a dict
     """
+    debug('bbb.Device(%s).set_output(values=%s)', self, values)
     if not isinstance(values, dict):
       values = dict(values)
 
-    for channel, val in values.iteritems():
-      assert 0 <= channel <= 3, \
-        'bbb.Device({}).set_output:  invalid channel number'.format(self)
-      self.proxy.set_frequency(val, 1 << channel)
+    value = 0
+    for ch, val in values.iteritems():
+      if 8 <= ch <= 9:
+        ch += 6 # channel 8 and 9 are bits 14 and 15
+      elif ch < 0 or ch > 9:
+        raise RuntimeError('bbb.timing: invalid channel number [{}]'.format(ch))
+
+      if val:
+        value |=   1 << ch
+      else:
+        value &= ~(1 << ch)
+    self.proxy.data = value
 
 
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
@@ -188,7 +207,8 @@ class Device(Base):
     debug('bbb.Device(%s).set_waveforms(waveforms=%s, clock_transitions=%s, ' \
           't_max=%s, continuous=%s)',
           self, waveforms, clock_transitions, t_max, continuous)
-    if self.proxy:
-      self.proxy.set_waveforms(
-        waveforms, clock_transitions, t_max, continuous)
+    if self.connection:
+      #self.connection.set_waveforms(
+      #  waveforms, clock_transitions, t_max, continuous)
+      pass
     self.is_continuous = continuous
