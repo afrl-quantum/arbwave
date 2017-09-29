@@ -68,7 +68,6 @@ class DDS(Device):
   sysclk = 500e6
   refclk = 10e6
   charge_pump = '75uA'
-  has_crystal_refclk = True
 
   CHARGE_PUMP_VALUES = [
     '75uA',
@@ -78,20 +77,18 @@ class DDS(Device):
   ]
 
 
-  def set_sysclk(self, refclk, sysclk, charge_pump, has_crystal_refclk):
-    debug('bbb(%s).set_sysclk(%s, %s, %s, %s)',
-          self.objectId, refclk, sysclk, charge_pump, has_crystal_refclk)
+  def set_sysclk(self, refclk, sysclk, charge_pump):
+    debug('bbb(%s).set_sysclk(%s, %s, %s)',
+          self.objectId, refclk, sysclk, charge_pump)
     self.sysclk = sysclk
     self.refclk = refclk
     self.charge_pump = charge_pump
-    self.has_crystal_refclk = has_crystal_refclk
 
   def get_sysclk(self):
     return dict(
       sysclk = self.sysclk,
       refclk = self.refclk,
       charge_pump = self.charge_pump,
-      has_crystal_refclk = self.has_crystal_refclk,
     )
 
   def get_charge_pump_values(self):
