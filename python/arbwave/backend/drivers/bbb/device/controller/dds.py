@@ -29,8 +29,8 @@ class Device(Base, bbb.ad9959.Device):
 
 
   def set_sysclk(self, refclk, sysclk, charge_pump):
-    refclk_MHz = refclk / 1e6 # must be in MHz
-    sysclk_MHz = sysclk / 1e6 # must be in MHz
+    refclk_MHz = int(refclk / 1e6) # must be in MHz
+    sysclk_MHz = int(sysclk / 1e6) # must be in MHz
     charge_pump = CHARGE_PUMP['_'+charge_pump]
     super(Device,self).set_sysclk(refclk_MHz, sysclk_MHz, charge_pump)
 
