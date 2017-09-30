@@ -28,14 +28,14 @@ class Device(Base, bbb.ad9959.Device):
     self.powered = True # turn the power on
 
 
-  def set_sysclk(self, refclk, sysclk, charge_pump):
+  def set_sysclk_float(self, refclk, sysclk, charge_pump):
     refclk_MHz = int(refclk / 1e6) # must be in MHz
     sysclk_MHz = int(sysclk / 1e6) # must be in MHz
     charge_pump = CHARGE_PUMP['_'+charge_pump]
     super(Device,self).set_sysclk(refclk_MHz, sysclk_MHz, charge_pump)
 
 
-  def get_sysclk(self):
+  def get_sysclk_float(self):
     D = super(Device,self).get_sysclk()
     D.sysclk = D.pop('sysclk_MHz') * 1e6
     D.refclk = D.pop('refclk_MHz') * 1e6

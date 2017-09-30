@@ -40,10 +40,10 @@ class Device(Base):
 
   @cached.property
   def possible_clock_sources(self):
-    return [
-      '{}/update'.format(self),
-      '{}/timing/0'.format(str(self).rpartition('/')[0]),
-    ]
+    return {
+      '{}/update'.format(self) : 'update',
+      '{}/timing/0'.format(str(self).rpartition('/')[0]) : 'timing/0',
+    }
 
 
   def get_routeable_backplane_signals(self):
@@ -63,7 +63,7 @@ class Device(Base):
     if self.proxy is None:
       self.open()
 
-    D = Dict(self.proxy.get_sysclk())
+    D = Dict(self.proxy.get_sysclk_float())
     refclk_src = self.proxy.refclk_src
 
     config = {
@@ -93,7 +93,7 @@ class Device(Base):
       'clock': {
         'value': '',
         'type': str,
-        'range': self.possible_clock_sources,
+        'range': self.possible_clock_sources.keys(),
       },
     }
 
@@ -132,15 +132,17 @@ class Device(Base):
     if (self.config['sysclk'] != config['sysclk'] or
         self.config['refclk']['frequency'] != config['refclk']['frequency'] or
         self.config['pll_chargepump'] != config['pll_chargepump']):
-      self.proxy.set_sysclk(config['refclk']['frequency']['value'],
-                            config['sysclk']['value'],
-                            config['pll_chargepump']['value'])
+      self.proxy.set_sysclk_float(config['refclk']['frequency']['value'],
+                                  config['sysclk']['value'],
+                                  config['pll_chargepump']['value'])
 
     if self.config['refclk']['source'] != config['refclk']['source']:
       self.proxy.refclk_src = config['refclk']['source']['value']
         
-    if self.config['clock'] !=  config['clock']:
-      self.proxy.update_src = config['clock']['value']
+    if self.config['clock'] !=  config['clock'] and \
+       config['clock']['value'] != '':
+      self.proxy.update_src = \
+        self.possible_clock_sources[config['clock']['value']]
 
     # finally, keep a copy of the config given to us
     self.config = copy.deepcopy(config)

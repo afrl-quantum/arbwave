@@ -92,14 +92,14 @@ class DDS(Device):
   ]
 
 
-  def set_sysclk(self, refclk, sysclk, charge_pump):
-    debug('bbb(%s).set_sysclk(%s, %s, %s)',
+  def set_sysclk_float(self, refclk, sysclk, charge_pump):
+    debug('bbb(%s).set_sysclk_float(%s, %s, %s)',
           self.objectId, refclk, sysclk, charge_pump)
     self.sysclk = sysclk
     self.refclk = refclk
     self.charge_pump = charge_pump
 
-  def get_sysclk(self):
+  def get_sysclk_float(self):
     return dict(
       sysclk = self.sysclk,
       refclk = self.refclk,
