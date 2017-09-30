@@ -8,7 +8,7 @@ from controller.bbb_pyro import *
 
 type_to_device_klass_map = {
   'dds' : dds.Device,
-#  'timing' : Timing,
+  'timing' : timing.Device,
 }
 
 def create_device(driver, uri, objectId):

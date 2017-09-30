@@ -21,21 +21,23 @@ def main(klass):
   Pyro.core.initServer()
 
   # locate the NS
-  daemon = Pyro.core.Daemon()
   try:
     locator = Pyro.naming.NameServerLocator()
     print 'searching for Naming Service...'
     ns = locator.getNS()
-  except NamingError:
+    bind_ip = ns.adapter.conn.sock.getsockname()[0]
+  except Pyro.core.NamingError:
     ns = None
+    bind_ip = None
 
+  daemon = Pyro.core.Daemon(host=bind_ip)
   if ns is not None:
     print 'Could not find name server'
     daemon.useNameServer(ns)
 
     # make sure our namespace group exists
     try: ns.createGroup(BBB_PYRO_GROUP)
-    except NamingError: pass
+    except Pyro.core.NamingError: pass
 
   obj = Pyro.core.ObjBase()
   device = klass(args.hostid)
@@ -48,4 +50,4 @@ def main(klass):
   except:
     # try removing self from Pyro name server
     try: ns.unregister(device.objectId)
-    except NamingError: pass
+    except Pyro.core.NamingError: pass

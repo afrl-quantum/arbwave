@@ -129,7 +129,7 @@ class Device(Base):
     Start the sequence: arm the board.
     """
     debug('bbb.Device(%s).start()', self)
-    self.proxy.start()
+    self.proxy.exec_waveform(1 if not self.is_continuous else 0)
 
 
   def wait(self):
@@ -137,7 +137,11 @@ class Device(Base):
     Wait for the sequence to finish.
     """
     debug('bbb.Device(%s).wait()', self)
-    self.proxy.wait()
+    if self.is_continuous:
+      raise RuntimeError('cannot wait for continuous waveform to finish')
+
+    reps = self.proxy.waitfor_waveform()
+    debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
 
 
   def stop(self):
@@ -146,3 +150,4 @@ class Device(Base):
     """
     debug('bbb.Device(%s).stop()', self)
     self.proxy.stop()
+    self.is_continuous = False

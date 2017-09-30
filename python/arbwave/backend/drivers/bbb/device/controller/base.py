@@ -26,38 +26,26 @@ class Device(object):
   firmware/hardware.
   """
 
-  def __init__(self, hostid, type, klass):
+  def __init__(self, hostid, type):
     super(Device,self).__init__()
     self.hostid = hostid
     self.objectId = format_objectId(hostid, type)
-    self.is_continuous = False
 
     assert bbb.version.compatible(bbb.VERSION, BBB_VERSION), \
       'AFRL/BeagleBone Black version is incompatible'
 
-    self.device = klass()
-
+  def assert_sw_fw_compatibility(self):
     try:
-      assert self.device.sw_fw_compatible, \
+      assert self.sw_fw_compatible, \
       'AFRL/BeagleBone Black software and firmware are not compatible with ' \
       'each other'
     except:
       self.close()
       raise
 
-    self.device.reset()
-
 
   def __del__(self):
     self.close()
-
-
-  def close(self):
-    """
-    Final cleanup.
-    """
-    debug('bbb.Device(%s).close()', self)
-    self.device.close()
 
 
   def get_version(self):
@@ -100,36 +88,3 @@ class Device(object):
     """
     raise RuntimeError(
       'bbb.Device({}): does not implement waveforms'.format(self))
-
-
-  def start(self):
-    """
-    Start the sequence: arm the board.
-    """
-    debug('bbb.Device(%s).start()', self)
-    self.device.exec_waveform(1 if not self.is_continuous else 0)
-
-
-  def wait(self):
-    """
-    Wait for the sequence to finish.
-    """
-    if self.is_continuous:
-      raise RuntimeError('cannot wait for continuous waveform to finish')
-
-    reps = self.device.waitfor_waveform()
-    debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
-
-
-  def stop(self):
-    """
-    Forcibly stop any running sequence.  For the DDS device, this means writing
-    a Null instruction to the RpMsg queue.
-    """
-    self.device.null_op()
-    reps = self.device.waitfor_waveform()
-    if reps is not None:
-      # For Arbwave, this should only be executed if in continuous mode
-      assert self.is_continuous, 'bbb.Device(%s): should be in continuous mode'
-      debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
-    self.is_continuous = False

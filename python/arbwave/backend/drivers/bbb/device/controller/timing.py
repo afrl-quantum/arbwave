@@ -20,13 +20,13 @@ class Device(Base, bbb.timing.Device):
   def __init__(self, hostid):
     # this opens connection to firmware and also resets device; the system clock
     # parameters will have to be set up.
-    super(Device,self).__init__(hostid, 'dds', bbb.timing.Device)
-
-
+    super(Device,self).__init__(hostid, 'timing')
+    self.assert_sw_fw_compatibility()
+    self.reset()
 
 
 if __name__ == '__main__':
-  import _main_controller_loop as Main
+  import sys, _main_controller_loop as Main
 
   Main.main(Device)
   sys.exit()

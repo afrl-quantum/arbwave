@@ -10,6 +10,8 @@ import bbb.ad9959
 
 from base import Device as Base
 
+CHARGE_PUMP = bbb.Dict(bbb.ad9959.regs.FR1.CHARGE_PUMP)
+CHARGE_PUMP.pop('Default')
 
 class Device(Base, bbb.ad9959.Device):
   """
@@ -20,15 +22,16 @@ class Device(Base, bbb.ad9959.Device):
   def __init__(self, hostid):
     # this opens connection to firmware and also resets device; the system clock
     # parameters will have to be set up.
-    super(Device,self).__init__(hostid, 'dds', bbb.ad9959.Device)
-
+    super(Device,self).__init__(hostid, 'dds')
+    self.assert_sw_fw_compatibility()
+    self.reset()
     self.powered = True # turn the power on
 
 
   def set_sysclk(self, refclk, sysclk, charge_pump):
     refclk_MHz = refclk / 1e6 # must be in MHz
     sysclk_MHz = sysclk / 1e6 # must be in MHz
-    charge_pump = bbb.ad9959.regs.FR1.CHARGE_PUMP['_'+charge_pump]
+    charge_pump = CHARGE_PUMP['_'+charge_pump]
     super(Device,self).set_sysclk(refclk,_MHz, sysclk_MHz, charge_pump)
 
 
@@ -38,7 +41,7 @@ class Device(Base, bbb.ad9959.Device):
     D.refclk = D.pop('refclk_MHz') * 1e6
     # convert the charge_pump value into a nice string representation, but drop
     # the '_' prefix
-    D.charge_pump = bbb.ad9959.regs.FR1.CHARGE_PUMP.reverse()[D.charge_pump][1:]
+    D.charge_pump = CHARGE_PUMP.reverse()[D.charge_pump][1:]
     # convert this to standard dict to more easily get across Pyro boundaries
     return dict(D)
 
@@ -49,14 +52,14 @@ class Device(Base, bbb.ad9959.Device):
     values.
     """
     # remove the '_'_ prefix
-    return tuple(v[1:] for v in bbb.ad9959.regs.FR1.CHARGE_PUMP.iterkeys())
+    return tuple(v[1:] for v in CHARGE_PUMP.iterkeys())
 
 
 
 
 
 if __name__ == '__main__':
-  import _main_controller_loop as Main
+  import sys, _main_controller_loop as Main
 
   Main.main(Device)
   sys.exit()
