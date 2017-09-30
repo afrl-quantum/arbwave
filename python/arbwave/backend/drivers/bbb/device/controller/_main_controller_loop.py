@@ -15,6 +15,9 @@ def main(klass):
   parser.add_argument('--hostid', default=hostname,
     help='Specify the hostid label for this BeagleBone Black [Default: {}]'
          .format(hostname))
+  parser.add_argument('--replace', action='store_true',
+    help='replace any currently registered instances matching this '
+         'hostid/deviceid with this instance')
   args = parser.parse_args()
 
   import Pyro.core, Pyro.naming
@@ -32,7 +35,7 @@ def main(klass):
     bind_ip = hostid
 
   daemon = Pyro.core.Daemon(host=bind_ip)
-  if ns is not None:
+  if ns:
     daemon.useNameServer(ns)
 
     # make sure our namespace group exists
@@ -42,6 +45,10 @@ def main(klass):
   obj = Pyro.core.ObjBase()
   device = klass(args.hostid)
   obj.delegateTo(device)
+
+  if args.replace and ns and device.objectId in dict(ns.flatlist()).iterkeys():
+    ns.unregister(device.objectId)
+
   uri = daemon.connect(obj, device.objectId)
   print 'my uri is: ', uri
 
