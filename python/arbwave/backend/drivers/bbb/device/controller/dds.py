@@ -32,7 +32,7 @@ class Device(Base, bbb.ad9959.Device):
     refclk_MHz = refclk / 1e6 # must be in MHz
     sysclk_MHz = sysclk / 1e6 # must be in MHz
     charge_pump = CHARGE_PUMP['_'+charge_pump]
-    super(Device,self).set_sysclk(refclk,_MHz, sysclk_MHz, charge_pump)
+    super(Device,self).set_sysclk(refclk_MHz, sysclk_MHz, charge_pump)
 
 
   def get_sysclk(self):
