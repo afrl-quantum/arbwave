@@ -5,10 +5,7 @@
 This file is not really for a normal package import
 """
 
-import sys
-from os.path import join as path_join, dirname, pardir
-sys.path.insert(0, path_join( dirname(__file__), *((pardir,)*5) ) )
-
+from bbb_pyro import BBB_PYRO_GROUP, format_objectId
 
 def main(klass):
   import argparse, socket

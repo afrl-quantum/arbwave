@@ -6,22 +6,9 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 """
 
 
-if __name__ == '__main__':
-  import _main_controller_loop as Main
-  import arbwave.backend.drivers.bbb.device.controller.dds as dds
-
-  Main.main(dds.Device)
-  sys.exit()
-
-
-
-
 import bbb.ad9959
 
-from .....tools import cached
-from ....device import BBB_PYRO_GROUP, format_objectId
-from .. import channels
-from .base import Device as Base
+from base import Device as Base
 
 
 class Device(Base, bbb.ad9959.Device):
@@ -63,3 +50,13 @@ class Device(Base, bbb.ad9959.Device):
     """
     # remove the '_'_ prefix
     return tuple(v[1:] for v in bbb.ad9959.regs.FR1.CHARGE_PUMP.iterkeys())
+
+
+
+
+
+if __name__ == '__main__':
+  import _main_controller_loop as Main
+
+  Main.main(Device)
+  sys.exit()
