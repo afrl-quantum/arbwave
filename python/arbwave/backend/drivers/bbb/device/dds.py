@@ -137,7 +137,7 @@ class Device(Base):
                             config['pll_chargepump']['value'])
 
     if self.config['refclk']['source'] != config['refclk']['source']:
-      self.proxy.refclk_src = config['refclk']['source']
+      self.proxy.refclk_src = config['refclk']['source']['value']
         
     if self.config['clock'] !=  config['clock']:
       self.proxy.update_src = config['clock']['value']
