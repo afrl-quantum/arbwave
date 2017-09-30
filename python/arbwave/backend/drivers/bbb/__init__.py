@@ -21,7 +21,7 @@ class Driver(Base):
   description = 'Driver for BeagleBone Black w/ AFRL firmware/hardware'
   has_simulated_mode = True
 
-  getProxyForURI = staticmethod(Pyro.core.getProxyForURI)
+  getProxyForURI = staticmethod(Pyro.core.getAttrProxyForURI)
 
 
   def __init__(self, *a, **kw):
