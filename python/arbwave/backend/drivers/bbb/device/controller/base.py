@@ -34,6 +34,9 @@ class Device(object):
     assert bbb.version.compatible(bbb.VERSION, BBB_VERSION), \
       'AFRL/BeagleBone Black version is incompatible'
 
+  def __repr__(self):
+    return self.objectId
+
   def assert_sw_fw_compatibility(self):
     try:
       assert self.sw_fw_compatible, \
@@ -55,19 +58,6 @@ class Device(object):
 
   def get_objectId(self):
     return self.objectId
-
-
-  def set_output(self, values):
-    """
-    Immediately force the output on several channels; all others are
-    unchanged.
-
-    :param values: the channels to set. May be a dict of { <channel>: <value>},
-                   or a list of [ (<channel>, <value>), ...] tuples or something
-                   equivalently coercable to a dict
-    """
-    raise RuntimeError(
-      'bbb.Device({}): does not implement static output'.format(self))
 
 
   def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):

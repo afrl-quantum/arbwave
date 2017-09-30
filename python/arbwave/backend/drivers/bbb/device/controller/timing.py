@@ -25,6 +25,33 @@ class Device(Base, bbb.timing.Device):
     self.reset()
 
 
+  def set_output(self, values):
+    """
+    Immediately force the output on several channels; all others are
+    unchanged.
+
+    :param values: the channels to set. May be a dict of { <channel>: <value>},
+                   or a list of [ (<channel>, <value>), ...] tuples or something
+                   equivalently coercable to a dict
+    """
+    if not isinstance(values, dict):
+      values = dict(values)
+
+    value = 0
+    for ch, val in values.iteritems():
+      ch = int(ch)
+      if 8 <= ch <= 9:
+        ch += 6 # channel 8 and 9 are bits 14 and 15
+      elif ch < 0 or ch > 9:
+        raise RuntimeError('{}: invalid channel number [{}]'.format(self, ch))
+
+      if val:
+        value |=   1 << ch
+      else:
+        value &= ~(1 << ch)
+    self.data = value
+
+
 if __name__ == '__main__':
   import sys, _main_controller_loop as Main
 

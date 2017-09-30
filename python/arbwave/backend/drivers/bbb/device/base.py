@@ -120,8 +120,11 @@ class Device(Base):
     :param t_max: the maximum duration of any channel
     :param continuous: bool of continuous or single-shot mode
     """
-    raise RuntimeError(
-      'bbb.Device({}): does not implement waveforms'.format(self))
+    debug('bbb.Device(%s).set_waveforms(waveforms=%s, clock_transitions=%s, ' \
+          't_max=%s, continuous=%s)',
+          self, waveforms, clock_transitions, t_max, continuous)
+    self.is_continuous = continuous
+    self.set_waveforms_impl(waveforms, clock_transitions, t_max)
 
 
   def start(self):

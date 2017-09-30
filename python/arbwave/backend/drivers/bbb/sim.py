@@ -6,7 +6,9 @@ Simulated remote connections to AFRL/Beaglebone Black devices.
 from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
 import time
 import Pyro.core
-from .device.controller.base import Device as Base
+
+from .device.controller.bbb_pyro import format_objectId
+from ....version import version as arbwave_version
 
 class NS(object):
   """
@@ -16,8 +18,10 @@ class NS(object):
 
   def __init__(self):
     self.registry = {
-      ':bbb.bbb0/dds' : DDS,
-      ':bbb.bbb1/dds' : DDS,
+      ':bbb.bbb0/dds'     : DDS,
+      ':bbb.bbb1/dds'     : DDS,
+      ':bbb.bbb0/timing'  : Timing,
+      ':bbb.bbb1/timing'  : Timing,
     }
 
   def list(self, pyro_group):
@@ -43,22 +47,31 @@ class NS(object):
     return self.registry[oid](uri, hostid)
 
 
-class Device(Base):
+class Device(object):
   def __init__(self, uri, hostid):
-    super(Device,self).__init__(hostid, self.type)
+    super(Device,self).__init__()
+    self.hostid = hostid
+    self.objectId = format_objectId(hostid, self.type)
     self.URI = uri
+    self.n = None
 
   def _release(self):
     pass
-
+  def get_version(self):
+    """return the Arbwave version"""
+    return arbwave_version()
   def set_output(self, values):
     pass
-  def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
+  def set_waveforms(self, waveforms, clock_transitions, t_max):
     pass
-  def start(self):
+  def exec_waveform(self, n):
+    self.n = n
     pass
-  def wait(self):
-    time.sleep(.5) # wait an arbitrary time
+  def waitfor_waveform(self):
+    time.sleep(.25) # wait an arbitrary time
+    n = self.n
+    self.n = None
+    return n
   def stop(self):
     pass
 
@@ -68,6 +81,8 @@ class DDS(Device):
   sysclk = 500e6
   refclk = 10e6
   charge_pump = '75uA'
+  refclk_src = 'tcxo'
+  update_src = 'timing/0'
 
   CHARGE_PUMP_VALUES = [
     '75uA',
@@ -93,3 +108,14 @@ class DDS(Device):
 
   def get_charge_pump_values(self):
     return self.CHARGE_PUMP_VALUES
+
+  def set_frequency(self, f, chselect=1):
+    pass
+
+
+class Timing(Device):
+  type = 'dds'
+  data = 0
+  triggered = False
+  retrigger = False
+  start_delay = 3

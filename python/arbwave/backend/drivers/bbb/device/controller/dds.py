@@ -55,6 +55,25 @@ class Device(Base, bbb.ad9959.Device):
     return tuple(v[1:] for v in CHARGE_PUMP.iterkeys())
 
 
+  def set_output(self, values):
+    """
+    Immediately force the output on several channels; all others are
+    unchanged.
+
+    :param values: the channels to set. May be a dict of { <channel>: <value>},
+                   or a list of [ (<channel>, <value>), ...] tuples or something
+                   equivalently coercable to a dict
+    """
+    if not isinstance(values, dict):
+      values = dict(values)
+
+    for ch, val in values.iteritems():
+      ch = int(ch)
+      assert 0 <= ch <= 3, \
+        '{}.set_output:  invalid channel number [{}]'.format(self, ch)
+      self.set_frequency(val, 1 << ch)
+
+
 
 
 

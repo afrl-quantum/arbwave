@@ -42,7 +42,7 @@ class Device(Base):
   def possible_clock_sources(self):
     return [
       '{}/update'.format(self),
-      '{}/timing/0'.format(self.hostid),
+      '{}/timing/0'.format(str(self).rpartition('/')[0]),
     ]
 
 
@@ -75,7 +75,7 @@ class Device(Base):
       'refclk': {
         'source': {
           'value': refclk_src,
-          'type' : 'str',
+          'type' : str,
           'range': ['tcxo', 'refclk'],
         },
         'frequency' : {
@@ -139,7 +139,6 @@ class Device(Base):
     if self.config['refclk']['source'] != config['refclk']['source']:
       self.proxy.refclk_src = config['refclk']['source']
         
-
     if self.config['clock'] !=  config['clock']:
       self.proxy.update_src = config['clock']['value']
 
@@ -160,16 +159,11 @@ class Device(Base):
                    or a list of [ (<channel>, <value>), ...] tuples or something
                    equivalently coercable to a dict
     """
-    if not isinstance(values, dict):
-      values = dict(values)
-
-    for channel, val in values.iteritems():
-      assert 0 <= channel <= 3, \
-        'bbb.Device({}).set_output:  invalid channel number'.format(self)
-      self.proxy.set_frequency(val, 1 << channel)
+    debug('bbb.Device(%s).set_output(values=%s)', self, values)
+    self.proxy.set_output(values)
 
 
-  def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
+  def set_waveforms_impl(self, waveforms, clock_transitions, t_max):
     """
     Set the output waveforms for the AFRL/BeagleBone Black device.
 
@@ -183,12 +177,6 @@ class Device(Base):
                               'transitions': iterable})
                               (see processor/engine/compute.py for format)
     :param t_max: the maximum duration of any channel
-    :param continuous: bool of continuous or single-shot mode
     """
-    debug('bbb.Device(%s).set_waveforms(waveforms=%s, clock_transitions=%s, ' \
-          't_max=%s, continuous=%s)',
-          self, waveforms, clock_transitions, t_max, continuous)
     if self.proxy:
-      self.proxy.set_waveforms(
-        waveforms, clock_transitions, t_max, continuous)
-    self.is_continuous = continuous
+      self.proxy.set_waveforms(waveforms, clock_transitions, t_max)

@@ -179,7 +179,7 @@ class Driver(Base):
     # (configs are already naturally separated by device)
     # in addition, we use collect_prefix to drop the 'bbb/DevX' part of the
     # channel paths
-    chans = collect_prefix(channels, 0, 2, 2)
+    chans = collect_prefix(channels, 0, 3, 2)
 
     # devices not configured anymore; remove them
     for devname in (set(self.devices.iterkeys()) - set(config.iterkeys())):
@@ -194,8 +194,7 @@ class Driver(Base):
 
 
   def set_clocks( self, clocks ):
-    debug('bbb.set_clocks')
-
+    clocks = collect_prefix(clocks, 0, 3)
     self.open_required_devices(clocks.iterkeys())
 
     for devname, clks in clocks.iteritems():
@@ -204,7 +203,7 @@ class Driver(Base):
 
   def set_signals( self, signals ):
     debug('bbb.set_signals(signals=%s)', signals)
-    signals = collect_prefix(signals, 0, 2, prefix_list=self.devices)
+    signals = collect_prefix(signals, 0, 3, prefix_list=self.devices)
 
     self.open_required_devices(signals.iterkeys())
 
@@ -214,15 +213,18 @@ class Driver(Base):
 
   def set_static( self, analog, digital ):
     debug('bbb.set_static')
-    D = collect_prefix(digital, 0, 2, 2)
+    D =       collect_prefix(digital, 0, 3, 3)
+    D.update( collect_prefix(analog,  0, 3, 3) )
     for devname, data in D.iteritems():
       self.devices[ devname ].set_output( data )
 
 
   def set_waveforms( self, analog, digital, transitions, t_max, continuous ):
     debug('bbb.set_waveforms')
-    D = collect_prefix(digital, 0, 2, 2)
-    C = collect_prefix(transitions, 0, 2, 2)
+    D =       collect_prefix(digital, 0, 3, 3)
+    D.update( collect_prefix(analog,  0, 3, 3) )
+
+    C = collect_prefix(transitions, 0, 3, 3)
     for d,dev in self.devices.iteritems():
       if d in D or d in C:
         dev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, continuous )

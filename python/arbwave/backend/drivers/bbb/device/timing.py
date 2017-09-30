@@ -29,15 +29,16 @@ class Device(Base):
   def __init__(self, *a, **kw):
     super(Device,self).__init__(*a, **kw)
     self.digital_channels = [
-      channels.Digital('{}/{}'.format(self,i), self) for i in xrange(4)
+      channels.Digital('{}/{}'.format(self,i), dev=self) for i in xrange(4)
     ]
     self.timing_channels = [
-      channels.Timing('{}/{}'.format(self,i), self) for i in xrange(4)
+      channels.Timing('{}/{}'.format(self,i), dev=self) for i in xrange(4)
     ]
     self.timing_channels.append(
-      channels.AM335x_L3_CLK('{}/InternalClock'.format(self))
+      channels.AM335x_L3_CLK('{}/InternalClock'.format(self), dev=self)
     )
     self.config = None
+    self.clocks = None
 
 
   def close(self):
@@ -123,15 +124,16 @@ class Device(Base):
       return
 
     trg_config = config['trigger']
+    my_trg_config = self.config['trigger']
     if self.config['trigger'] != trg_config:
-      if self.config['enable'] != trg_config['enable']:
+      if my_trg_config['enable'] != trg_config['enable']:
         self.proxy.triggered = trg_config['enable']['value']
 
-      if self.config['setup_time'] != trg_config['setup_time']:
+      if my_trg_config['setup_time'] != trg_config['setup_time']:
         self.proxy.start_delay = \
           int(trg_config['setup_time']['value'] / (5*units.ns))
 
-      if self.config['retrigger'] != trg_config['retrigger']:
+      if my_trg_config['retrigger'] != trg_config['retrigger']:
         self.proxy.retrigger = trg_config['retrigger']['value']
 
     # We don't really have to respond to the clock setting (for now, no hardware
@@ -171,24 +173,10 @@ class Device(Base):
                    equivalently coercable to a dict
     """
     debug('bbb.Device(%s).set_output(values=%s)', self, values)
-    if not isinstance(values, dict):
-      values = dict(values)
-
-    value = 0
-    for ch, val in values.iteritems():
-      if 8 <= ch <= 9:
-        ch += 6 # channel 8 and 9 are bits 14 and 15
-      elif ch < 0 or ch > 9:
-        raise RuntimeError('bbb.timing: invalid channel number [{}]'.format(ch))
-
-      if val:
-        value |=   1 << ch
-      else:
-        value &= ~(1 << ch)
-    self.proxy.data = value
+    self.proxy.set_output(values)
 
 
-  def set_waveforms(self, waveforms, clock_transitions, t_max, continuous):
+  def set_waveforms_impl(self, waveforms, clock_transitions, t_max):
     """
     Set the output waveforms for the AFRL/BeagleBone Black device.
 
@@ -202,13 +190,6 @@ class Device(Base):
                               'transitions': iterable})
                               (see processor/engine/compute.py for format)
     :param t_max: the maximum duration of any channel
-    :param continuous: bool of continuous or single-shot mode
     """
-    debug('bbb.Device(%s).set_waveforms(waveforms=%s, clock_transitions=%s, ' \
-          't_max=%s, continuous=%s)',
-          self, waveforms, clock_transitions, t_max, continuous)
-    if self.connection:
-      #self.connection.set_waveforms(
-      #  waveforms, clock_transitions, t_max, continuous)
-      pass
-    self.is_continuous = continuous
+    if self.proxy:
+      self.proxy.set_waveforms(waveforms, clock_transitions, t_max)
