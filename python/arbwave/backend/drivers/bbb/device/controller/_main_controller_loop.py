@@ -27,12 +27,12 @@ def main(klass):
     ns = locator.getNS()
     bind_ip = ns.adapter.conn.sock.getsockname()[0]
   except Pyro.core.NamingError:
+    print 'Could not find name server'
     ns = None
-    bind_ip = None
+    bind_ip = hostid
 
   daemon = Pyro.core.Daemon(host=bind_ip)
   if ns is not None:
-    print 'Could not find name server'
     daemon.useNameServer(ns)
 
     # make sure our namespace group exists
