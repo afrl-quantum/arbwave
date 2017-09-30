@@ -89,6 +89,9 @@ class Plotter(object):
     G = self.ui.processor.get_globals()
     for i in iter(C):
       # drop the dumb 'Analog', 'Digital', or 'dds' prefix
+      if set( (i[C.LABEL], i[C.DEVICE]) ).intersection( (None, '') ):
+        # if any of these fields are blank, then we skip this channel
+        continue
       devname = i[C.DEVICE].partition('/')[-1]
       if devname not in self.names:
         continue
