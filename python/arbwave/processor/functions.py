@@ -549,14 +549,14 @@ modify the waveform generated, such as the number of steps in a <b>Ramp</b>,
 There are three primary parameters to modify the resulting waveform of an
 expression:
   - <tt>expr_fmt</tt>
-    - linear
+    - uniform
       Causes the output waveform to be uniformly discretized in time.
     - optimize
       Causes the output waveform to be optimally discretized in time such that a
       constant total err (<tt>expr_err</tt>) is maintained for each linear
       time segment.
   - <tt>expr_steps</tt>
-      For <tt>expr_fmt = linear</tt>, this sets the number of fixed-size steps
+      For <tt>expr_fmt = uniform</tt>, this sets the number of fixed-size steps
       to make over the duration.
       For <tt>expr_fmt = optimize</tt>, <tt>1/expr_steps</tt> defines the
       minimal relative time-step to consider when creating a line segment that

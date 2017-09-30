@@ -79,7 +79,7 @@ expression:
 \begin{itemize}
   \item \var{expr\_fmt}
     \begin{itemize}
-    \item linear\\
+    \item uniform\\
       Causes the output waveform to be uniformly discretized in time.
     \item optimize\\
       Causes the output waveform to be optimally discretized in time such that a
@@ -87,7 +87,7 @@ expression:
       time segment.
     \end{itemize}
   \item \var{expr\_steps}
-      For \op{expr\_fmt = linear}, this sets the number of fixed-size steps
+      For \op{expr\_fmt = uniform}, this sets the number of fixed-size steps
       to make over the duration.
       For \op{expr\_fmt = optimize}, \op{1/expr\_steps} defines the
       minimal relative time-step to consider when creating a line segment that
