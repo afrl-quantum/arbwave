@@ -670,14 +670,13 @@ def apply_scaling(value, chname, ci):
 
   # apply scaling and range checks...
   if not ci['scaling']:
-    value = value * ch_unit / ci['units']
-    ch_unit.unitsMatch( value, unit_err )
+    value = value / ci['units']
+    assert type(value) is float, unit_err
   else:
     val = value / ci['units']
     assert type(val) is float, \
       '{}:  wrong units: {}, expected [{}]'.format(chname, value, ci['units'])
-
-    value = ci['scaling'](val) * ch_unit
+    value = ci['scaling'](val)
 
   return value
 
