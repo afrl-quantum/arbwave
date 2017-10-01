@@ -117,6 +117,7 @@ class Editor(gtk.Dialog):
 
     V.append_column( C['x'] )
     V.append_column( C['y'] )
+    self.C = C
 
     V.set_size_request( 200, 100 )
 
@@ -311,6 +312,12 @@ class Editor(gtk.Dialog):
       chan[self.channels.UNITS] = 'V'
     if chan[self.channels.INTERP_ORDER] < 1:
       chan[self.channels.INTERP_ORDER] = 1
+
+    devname = chan[self.channels.DEVICE].lower()
+    if   devname.startswith('analog/'):
+      self.C['x'].set_title( 'Voltage (V)' )
+    elif devname.startswith('dds/'):
+      self.C['x'].set_title( 'Frequency (Hz)' )
     # INTERP_SMOOTHING defaults to zero already
 
     self.units.set_text( chan[self.channels.UNITS] )
