@@ -74,7 +74,24 @@ class Device(Base, bbb.ad9959.Device):
       self.set_frequency(val, 1 << ch)
 
 
+  def set_waveforms(self, waveforms, clock_transitions, t_max):
+    """
+    Set the output waveforms for the AFRL/BeagleBone Black device.
 
+    :param waveforms:
+      a dict('channel': {<wfe-path>: (<encoding>, [(t1, val1), (t2, val2)])})
+                      (see gui/plotter/digital.py for format)
+                      where wfe-path means waveform element path, referring to
+                      the unique identifier of the specific waveform element a
+                      particular set of values refers to.
+    :param clock_transitions: a dict('channel': { 'dt': dt,
+                              'transitions': iterable})
+                              (see processor/engine/compute.py for format)
+    :param t_max: the maximum duration of any channel
+    :param continuous: bool of continuous or single-shot mode
+    """
+    raise RuntimeError(
+      'bbb.Device({}): does not implement waveforms'.format(self))
 
 
 if __name__ == '__main__':
