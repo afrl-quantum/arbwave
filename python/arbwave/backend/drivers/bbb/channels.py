@@ -75,8 +75,12 @@ class Timing(TBase):
   """
   aperiodic = True
 
+  def __init__(self, *a, **kw):
+    super(Timing,self).__init__(*a, **kw)
+    self.local_name = str(self)[len(str(self.device))+1:]
+
   def _divider(self):
-    return self.device.clocks[ str(self) ]['divider']['value']
+    return self.device.clocks[ self.local_name ]['divider']['value']
 
   def get_min_period(self):
     """

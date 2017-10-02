@@ -194,7 +194,7 @@ class Driver(Base):
 
 
   def set_clocks( self, clocks ):
-    clocks = collect_prefix(clocks, 0, 3)
+    clocks = collect_prefix(clocks, 0, 3, 3)
     self.open_required_devices(clocks.iterkeys())
 
     for devname, clks in clocks.iteritems():
