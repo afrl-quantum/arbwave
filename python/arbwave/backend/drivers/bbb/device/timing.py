@@ -191,5 +191,13 @@ class Device(Base):
                               (see processor/engine/compute.py for format)
     :param t_max: the maximum duration of any channel
     """
+    used_clocks_set = set(clock_transitions.iterkeys())
+    if not used_clocks_set.issubset(self.clocks.iterkeys()):
+      undefed_clocks = used_clocks_set - set(self.clocks.iterkeys())
+      raise RuntimeError(
+        'got clock transitions for channels not defined as clocks ({})' \
+        .format(undefed_clocks)
+      )
+
     if self.proxy:
       self.proxy.set_waveforms(waveforms, clock_transitions, t_max)

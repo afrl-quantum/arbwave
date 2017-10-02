@@ -23,6 +23,7 @@ class Device(Base):
     self.driver = driver
     self.uri    = uri
     self.proxy  = None
+    self.is_continuous = None
 
 
   def __del__(self):
@@ -123,7 +124,7 @@ class Device(Base):
     debug('bbb.Device(%s).set_waveforms(waveforms=%s, clock_transitions=%s, ' \
           't_max=%s, continuous=%s)',
           self, waveforms, clock_transitions, t_max, continuous)
-    self.is_continuous = continuous
+    self.is_continuous = bool(continuous)
     self.set_waveforms_impl(waveforms, clock_transitions, t_max)
 
 
@@ -131,6 +132,9 @@ class Device(Base):
     """
     Start the sequence: arm the board.
     """
+    if self.is_continuous is None:
+      # we don't have any waveforms, so skip starting
+      return
     debug('bbb.Device(%s).start()', self)
     self.proxy.exec_waveform(1 if not self.is_continuous else 0)
 
@@ -153,4 +157,4 @@ class Device(Base):
     """
     debug('bbb.Device(%s).stop()', self)
     self.proxy.stop()
-    self.is_continuous = False
+    self.is_continuous = None

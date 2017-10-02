@@ -6,6 +6,7 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 """
 
 
+from physical import units
 import bbb.timing
 
 from base import Device as Base
@@ -71,10 +72,6 @@ class Device(Base, bbb.timing.Device):
       raise RuntimeError('bbb::timing channels cannot be used as clocks and ' \
                          'digital output simultaneously')
 
-    assert set([str(self) + '/' + c for c in clock_transitions]) \
-             .issubset(self.clocks.iterkeys()), \
-        'got clock transitions for channels not defined as clocks'
-
     transition_map = self._compile_transition_map(waveforms, clock_transitions, t_max)
     self.set_waveform_size(len(transition_map))
     self._load_transitions(transition_map)
@@ -92,9 +89,6 @@ class Device(Base, bbb.timing.Device):
 
     :return: a dict(timestamp: {channel: value})
     """
-    debug('bbb.timing: compiling transitions for %d channels and %d clocks',
-          len(waveforms), len(clock_transitions))
-
     min_period = self.minimum_period * 5*units.ns
     transition_map = {}
 
@@ -122,7 +116,7 @@ class Device(Base, bbb.timing.Device):
         transition_map.setdefault(edge + period/2, {})[channel] = False
 
     # add a dummy transition to the end to finish the sequence
-    ts_max = int(round(t_max * / min_period)) # convert to #minimum_period#s
+    ts_max = int(round(t_max / min_period)) # convert to #minimum_period#s
     ts_max = max([max(transition_map.iterkeys())+1, ts_max])
     transition_map[ts_max] = {}
 
@@ -145,16 +139,17 @@ class Device(Base, bbb.timing.Device):
     t0 = 0 # time
     data = self.data
     for wi, timestamp in zip(self.waveform, sorted(transition_map.iterkeys())):
-      for channel, value in transition_map[timestamp].iteritems():
-        if 8 <= channel <= 9:
-          channel += 6 # channel 8 and 9 are bits 14 and 15
+      for ch, value in transition_map[timestamp].iteritems():
+        ch = int(ch)
+        if 8 <= ch <= 9:
+          ch += 6 # channel 8 and 9 are bits 14 and 15
         elif ch < 0 or ch > 9:
-        raise RuntimeError('{}: invalid channel number [{}]'.format(self, ch))
+          raise RuntimeError('{}: invalid channel number [{}]'.format(self, ch))
 
         if value:
-          data |=  (1 << channel)
+          data |=  (1 << ch)
         else:
-          data &= ~(1 << channel)
+          data &= ~(1 << ch)
       wi.delay = timestamp - t0
       wi.data = data
       t0 = timestamp
