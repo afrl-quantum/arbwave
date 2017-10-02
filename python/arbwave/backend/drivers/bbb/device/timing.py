@@ -73,16 +73,16 @@ class Device(Base):
           'type': bool,
           'range': None,
         },
-        'setup_time' : {
-          'value' : self.proxy.start_delay * 5*units.ns,
-          'type'  : float,
-          'range' : float_range(3*5*units.ns, ((2**48)-1)*5*units.ns, step=5*units.ns),
-        },
         'retrigger': {
           'value': self.proxy.retrigger,
           'type': bool,
           'range': None,
         },
+      },
+      'start_delay' : {
+        'value' : self.proxy.start_delay * 5*units.ns,
+        'type'  : float,
+        'range' : float_range(3*5*units.ns, ((2**48)-1)*5*units.ns, step=5*units.ns),
       },
       'clock': {
         'value': '',
@@ -106,11 +106,11 @@ class Device(Base):
                    get_config_template()
     """
     debug('bbb.Device(%s).set_config(config=%s)', self, config)
-    valid_keys = set(['trigger', 'clock'])
+    valid_keys = set(['trigger', 'start_delay', 'clock'])
     assert set(config.keys()).issubset(valid_keys), \
       'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone Black' \
       .format(self)
-    valid_trigger_keys = set(['enable', 'setup_time', 'retrigger'])
+    valid_trigger_keys = set(['enable', 'retrigger'])
     assert set(config['trigger'].keys()).issubset(valid_trigger_keys), \
       'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone ' \
                        'Black timing trigger' \
@@ -129,12 +129,13 @@ class Device(Base):
       if my_trg_config['enable'] != trg_config['enable']:
         self.proxy.triggered = trg_config['enable']['value']
 
-      if my_trg_config['setup_time'] != trg_config['setup_time']:
-        self.proxy.start_delay = \
-          int(trg_config['setup_time']['value'] / (5*units.ns))
-
       if my_trg_config['retrigger'] != trg_config['retrigger']:
         self.proxy.retrigger = trg_config['retrigger']['value']
+
+    if self.config['start_delay'] != config['start_delay']:
+      self.proxy.start_delay = \
+        int(config['start_delay']['value'] / (5*units.ns))
+
 
     # We don't really have to respond to the clock setting (for now, no hardware
     # to configure for this change)
