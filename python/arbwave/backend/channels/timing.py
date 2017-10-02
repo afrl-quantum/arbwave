@@ -29,6 +29,7 @@ class RecursiveMinPeriod(object):
     # driver level.
     self.parent_clock = parent_clock # label of parent clock
     self.scaling = scaling
+    super(RecursiveMinPeriod,self).__init__()
 
   def __call__(self, parent_clock_min_period):
     return parent_clock_min_period * self.scaling
