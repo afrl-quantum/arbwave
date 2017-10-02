@@ -133,6 +133,7 @@ class Editor(gtk.Dialog):
     self.canvas = FigureCanvas(f)  # a gtk.DrawingArea
     self.canvas.set_size_request(300,100)
     toolbar = NavigationToolbar(self.canvas, self)
+    self.plot_offset_label = gtk.Label('Plot Offset [V]:')
 
     self.channel_select = gtk.ComboBox.new_with_model(channels)
     cbr = gtk.CellRendererText()
@@ -246,7 +247,7 @@ class Editor(gtk.Dialog):
     obox.pack_start( self.offset, True, True, 0 )
 
     sbox = gtk.HBox()
-    sbox.pack_start( gtk.Label('Plot Offset [V]:'), True, True, 0 )
+    sbox.pack_start( self.plot_offset_label, True, True, 0 )
     sbox.pack_start( self.scale_offset, True, True, 0 )
     sbox.pack_start( gtk.Label('Plot Scale:'), True, True, 0 )
     sbox.pack_start( self.scale_factor, True, True, 0 )
@@ -316,8 +317,10 @@ class Editor(gtk.Dialog):
     devname = chan[self.channels.DEVICE].lower()
     if   devname.startswith('analog/'):
       self.C['x'].set_title( 'Voltage (V)' )
+      self.plot_offset_label.set_text('Plot Offset [V]:')
     elif devname.startswith('dds/'):
       self.C['x'].set_title( 'Frequency (Hz)' )
+      self.plot_offset_label.set_text('Plot Offset [Hz]:')
     # INTERP_SMOOTHING defaults to zero already
 
     self.units.set_text( chan[self.channels.UNITS] )
