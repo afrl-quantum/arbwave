@@ -134,7 +134,7 @@ class Device(Base, bbb.ad9959.Device):
 
         if encoding == 'step':
           for timestamp, value in wfe:
-            transitions_map.setdefault(timestamp, {})[ch] =
+            transitions_map.setdefault(timestamp, {})[ch] = \
               ('set_frequency', value)
         elif encoding == 'linear':
           # create the first component to set beginning/ending frequencies and
