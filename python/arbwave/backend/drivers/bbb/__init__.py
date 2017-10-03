@@ -179,7 +179,7 @@ class Driver(Base):
     # (configs are already naturally separated by device)
     # in addition, we use collect_prefix to drop the 'bbb/DevX' part of the
     # channel paths
-    chans = collect_prefix(channels, 0, 3, 2)
+    chans = collect_prefix(channels, 0, 3, 3)
 
     # devices not configured anymore; remove them
     for devname in (set(self.devices.iterkeys()) - set(config.iterkeys())):
@@ -190,7 +190,7 @@ class Driver(Base):
     self.open_required_devices(config.iterkeys())
 
     for d,dev in self.devices.iteritems():
-      dev.set_config( config[d] )
+      dev.set_config( config[d], chans.get(d,{}) )
 
 
   def set_clocks( self, clocks ):

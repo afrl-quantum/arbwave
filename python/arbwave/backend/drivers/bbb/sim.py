@@ -6,6 +6,7 @@ Simulated remote connections to AFRL/Beaglebone Black devices.
 from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
 import time
 import Pyro.core
+from physical import units
 
 from .device.controller.bbb_pyro import format_objectId
 from ....version import version as arbwave_version
@@ -111,6 +112,13 @@ class DDS(Device):
 
   def set_frequency(self, f, chselect=1):
     pass
+  def get_minimum_period(self, n_chans):
+    # not correct, but gets close
+    return dict(
+      set_frequency          = ((304-82.5)*n_chans),
+      set_frequency_sweep    = ((724-82.5)*n_chans),
+      update_frequency_sweep = ((472-82.5)*n_chans),
+    )
 
 
 class Timing(Device):

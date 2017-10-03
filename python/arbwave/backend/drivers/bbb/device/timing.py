@@ -97,15 +97,22 @@ class Device(Base):
       self.config = config
     return config
 
-  def set_config(self, config):
+  def set_config(self, config, channels):
     """
     Set the internal configuration for the board. This
     does not include the sequence specification or the backplane routing.
 
     :param config: the configuration dictionary to be applied, compare
                    get_config_template()
+    :param channels: Dictionary of channels configured for this device.  Each
+                   value returned is actually a dictionary including max, min
+                   output values for the channel and also the order of the
+                   channel in the channel list on the gui.
+
+    Timing device ignores channels at this point.
     """
-    debug('bbb.Device(%s).set_config(config=%s)', self, config)
+    debug('bbb.Device(%s).set_config(config=%s, channels=%s)',
+          self, config, channels)
     valid_keys = set(['trigger', 'start_delay', 'clock'])
     assert set(config.keys()).issubset(valid_keys), \
       'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone Black' \

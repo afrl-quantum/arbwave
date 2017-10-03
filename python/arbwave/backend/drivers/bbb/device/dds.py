@@ -31,6 +31,8 @@ class Device(Base):
       channels.DDS('{}/{}'.format(self,i), self) for i in xrange(4)
     ]
     self.config = None
+    self.number_configured_channels = 0
+    self.min_period = None
 
 
   def close(self):
@@ -102,15 +104,23 @@ class Device(Base):
       self.config = config
     return config
 
-  def set_config(self, config):
+  def set_config(self, config, channels):
     """
     Set the internal configuration for the board. This
     does not include the sequence specification or the backplane routing.
 
     :param config: the configuration dictionary to be applied, compare
                    get_config_template()
+    :param channels: Dictionary of channels configured for this device.  Each
+                   value returned is actually a dictionary including max, min
+                   output values for the channel and also the order of the
+                   channel in the channel list on the gui.
+
+    DDS device uses channel info to configure what value is returned for the
+    get_min_period function (depends on the number of channels configured).
     """
-    debug('bbb.Device(%s).set_config(config=%s)', self, config)
+    debug('bbb.Device(%s).set_config(config=%s, channels=%s)',
+          self, config, channels)
     valid_keys = set([
       'sysclk', 'refclk', 'pll_chargepump', 'clock'
     ])
@@ -125,6 +135,13 @@ class Device(Base):
     if self.config is None:
       # If this is not set yet, this is the first time accessing device
       self.config = self.get_config_template()
+
+    if self.number_configured_channels != len(channels):
+      self.number_configured_channels = len(channels)
+      self.min_period = max(
+        self.proxy.get_minimum_period(self.number_configured_channels)
+                  .itervalues()
+        ) * 5*units.ns
 
     if self.config == config:
       return
@@ -146,6 +163,10 @@ class Device(Base):
 
     # finally, keep a copy of the config given to us
     self.config = copy.deepcopy(config)
+
+
+  def get_min_period(self):
+    return self.min_period
 
 
   def get_output_channels(self):

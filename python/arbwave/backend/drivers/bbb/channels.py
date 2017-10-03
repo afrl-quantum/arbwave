@@ -38,9 +38,7 @@ class DDS(DDSBase):
     Returns the minimum timing period in units of seconds.
     *** This needs to be measured again and corrected ***
     """
-    # FIXME:  This information is provided by the bbb device.  query it for the
-    # correct number of channels.
-    return 15*unit.us
+    return self.device.get_min_period()
 
 
 
