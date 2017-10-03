@@ -22,7 +22,7 @@ from helpers import *
 import spreadsheet
 
 def fstr(num):
-  return '{:g}'.format(num)
+  return '{:.12g}'.format(num)
 
 
 class NumberEntryEnforcer(object):
@@ -214,7 +214,7 @@ class Editor(gtk.Dialog):
       NumberEntryEnforcer(self, self.channels.PLOT_SCALE_OFFSET, True)
     self.scale_offset = gtk.Entry()
     self.scale_offset.set_text('0.0')
-    self.scale_offset.set_width_chars(10)
+    self.scale_offset.set_width_chars(15)
     self.scale_offset.connect('changed', self.enforce_scale_offset)
     self.scale_offset.connect('activate', self.enforce_scale_offset.activate)
     self.scale_offset.set_tooltip_text(
@@ -224,7 +224,7 @@ class Editor(gtk.Dialog):
       NumberEntryEnforcer(self, self.channels.PLOT_SCALE_FACTOR)
     self.scale_factor = gtk.Entry()
     self.scale_factor.set_text('1.0')
-    self.scale_factor.set_width_chars(10)
+    self.scale_factor.set_width_chars(15)
     self.scale_factor.connect('changed', self.enforce_scale_factor)
     self.scale_factor.connect('activate', self.enforce_scale_factor.activate)
     self.scale_factor.set_tooltip_text(

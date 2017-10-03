@@ -83,22 +83,29 @@ def query_tooltip(widget, x, y, keyboard_tip, tooltip):
   markup = ''
   sep = ''
 
-  enable, units, offset, scaling, order, smooth = channels.get(iter,
-    channels.ENABLE,
-    channels.UNITS,
-    channels.OFFSET,
-    channels.SCALING,
-    channels.INTERP_ORDER,
-    channels.INTERP_SMOOTHING)
+  enable, units, offset, scaling, order, smooth, plot_offset, plot_factor = \
+    channels.get(iter,
+      channels.ENABLE,
+      channels.UNITS,
+      channels.OFFSET,
+      channels.SCALING,
+      channels.INTERP_ORDER,
+      channels.INTERP_SMOOTHING,
+      channels.PLOT_SCALE_OFFSET,
+      channels.PLOT_SCALE_FACTOR,
+    )
+
   markup += \
     '<b>Dimensions</b>:  {units}' \
     .format(**locals())
   if scaling and len(scaling):
     markup += \
     '\n<b>UnivariateSpline(x,y+offset,order,smooth)</b>:\n' \
-    '\toffset : {offset}\n' \
-    '\torder  : {order}\n' \
-    '\tsmooth : {smooth}\n' \
+    '\toffset      : {offset}\n' \
+    '\torder       : {order}\n' \
+    '\tsmooth      : {smooth}\n' \
+    '\tplot_offset : {plot_offset}\n' \
+    '\tplot_factor : {plot_factor}\n' \
     '\t(x,y)  :\n' \
     .format(**locals())
     for r in scaling:
