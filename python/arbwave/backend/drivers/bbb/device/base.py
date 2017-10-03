@@ -6,7 +6,7 @@ Logical device driver for the BeagleBone Black using AFRL firmware/hardware.
 
 from logging import debug, info
 
-from .....version import version as arbwave_version
+from .....version import version as arbwave_version, abi_compatible
 from ....device import Device as Base
 
 
@@ -49,7 +49,7 @@ class Device(Base):
     self.proxy = self.driver.getProxyForURI(self.uri)
 
     ## test and assert version compatibility
-    if arbwave_version() != self.proxy.get_version():
+    if not abi_compatible(arbwave_version(), self.proxy.get_version()):
       self.close()
       raise RuntimeError(
         'bbb.Device({}): remote AFRL/BeagleBone Black ({}) Arbwave version is incompatible'
