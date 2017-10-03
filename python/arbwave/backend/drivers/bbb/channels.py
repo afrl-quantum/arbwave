@@ -119,6 +119,6 @@ class AM335x_L3_CLK(TBase):
 
     :return: the minimum period with physical.unit.s
     """
-    return 200 * unit.ns
+    return 5 * unit.ns
 
 class Backplane(BBase): pass
