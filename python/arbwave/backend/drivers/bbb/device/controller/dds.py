@@ -6,6 +6,7 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 """
 
 
+from itertools import izip
 import bbb.ad9959
 
 from base import Device as Base
@@ -74,7 +75,7 @@ class Device(Base, bbb.ad9959.Device):
       self.set_frequency(val, 1 << ch)
 
 
-  def set_waveforms(self, waveforms, clock_transitions, t_max):
+  def set_waveforms(self, waveforms, n_chans):
     """
     Set the output waveforms for the AFRL/BeagleBone Black device.
 
@@ -89,9 +90,85 @@ class Device(Base, bbb.ad9959.Device):
                               (see processor/engine/compute.py for format)
     :param t_max: the maximum duration of any channel
     :param continuous: bool of continuous or single-shot mode
+    :param n_chans: The number of channels configured for output.  This is used
+                    to define the base time unit using get_minimum_period(...).
     """
-    raise RuntimeError(
-      'bbb.Device({}): does not implement waveforms'.format(self))
+    # has to convert this
+    # waveforms={
+    #   '1': {
+    #     (-1,): ('step', [(0, array(2898.289828982898))]),
+    #     (2, 4): ('step', [(33400, array(3098.109810981098))]),
+    #   },
+    #   '0': {
+    #     (2, 3): ('linear', [(40067, array(33299999.999999993)), (46732, array(4000000.0000000005))]),
+    #     (-1,): ('step', [(0, array(50000000.0))]),
+    #     (2, 2): ('step', [(33400, array(33299999.999999993))]),
+    #   },
+    # }
+    #
+    # to
+    #
+    # [
+    #   { # timestep 1
+    #    #ch: (op, op_args,...)
+    #     0 : ('set_frequency', 33e6),
+    #     1 : ('set_frequency', 22e6),
+    #     2 : ('set_frequency', 12e6),
+    #     3 : ('set_frequency', 92e6),
+    #   },
+    #   { # timestep 2
+    #     1 : ('set_frequency', 45e6),
+    #     2 : ('set_frequency_ramp', 12e6, 77e6, .5),
+    #   },
+    #   { # timestep 3
+    #     2 : ('update_frequency_ramp', 50e6, 77e6, 1),
+    #   },
+    # ]
+    dt = self.get_minimum_period(n_chans)
+
+    transitions_map = dict() # timestamp -> dict(ch->op)
+    for ch, wfm in waveforms.iteritems():
+      ch = int(ch)
+
+      for wfe_path, (encoding, wfe) in wfm.iteritems():
+
+        if encoding == 'step':
+          for timestamp, value in wfe:
+            transitions_map.setdefault(timestamp, {})[ch] =
+              ('set_frequency', value)
+        elif encoding == 'linear':
+          # create the first component to set beginning/ending frequencies and
+          # initial slope.  The initial slope is finagled into being correct by
+          # choosing a DT that ensures the slope is computed correctly.  The
+          # actual time over which the first element endures is simply dependent
+          # on the external update pulse.
+          # FIXME:  This really needs to be tested more thoroughly
+          t0        = wfe[0][0]
+          t1        = wfe[1][0]
+          freq0     = wfe[0][1]
+          freq_last = wfe[-1][1]
+          SLOPE = (freq1 - freq0) / float(dt*(t1 - t0))
+          DT_synthetic = ((freq_last - freq0) / SLOPE)
+
+          transitions_map.setdefault(t0, {})[ch] = \
+            ('set_frequency_ramp', freq0, freq_last, DT_synthetic)
+
+          # Subsequent components only update the slope.
+          for (t0,f0), (t1,f1) in izip(wfe[1:-1], wfe[2:]): # skip first and last
+            transitions_map.setdefault(t0, {})[ch] = \
+              ('update_frequency_ramp', f0, f1, (t1-t0)*dt)
+
+          # now finally, we add in the last step
+          transitions_map.setdefault(wfe[-1][0], {})[ch] = \
+            ('set_frequency', freq_last)
+        else:
+          raise RuntimeError(
+            'bbb.dds: Unsupported waveform encoding [{}]'.format(encoding)
+          )
+
+    waveform = transitions_map.items()
+    waveform.sort(key = lambda (timestep, data): timestep)
+    self.load_waveform([wi[1] for wi in waveform]) # impl'd in bbb.ad9959.Device
 
 
 if __name__ == '__main__':

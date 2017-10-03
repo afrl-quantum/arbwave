@@ -202,4 +202,4 @@ class Device(Base):
     :param t_max: the maximum duration of any channel
     """
     if self.proxy:
-      self.proxy.set_waveforms(waveforms, clock_transitions, t_max)
+      self.proxy.set_waveforms(waveforms, self.number_configured_channels)

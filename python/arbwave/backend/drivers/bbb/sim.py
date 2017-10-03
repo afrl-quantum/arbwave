@@ -119,6 +119,8 @@ class DDS(Device):
       set_frequency_sweep    = ((724-82.5)*n_chans),
       update_frequency_sweep = ((472-82.5)*n_chans),
     )
+  def set_waveforms(self, waveforms, n_chans):
+    pass
 
 
 class Timing(Device):
