@@ -408,7 +408,8 @@ class WaveformEvalulator:
       # now we finally add everything into the arbwave waveforms
       for tij, dtij, v in expr_iter(expression, ti, dti,
                                     channel_scale=ci['scaling'].range,
-                                    channel_caps={'step','slope'},
+                                    channel_caps=ci['capabilities'],
+                                    channel_units=ci['units'],
                                     **expr.settings):
         insert_value(tij, dtij, v, dt_clk, encoding, chname, ci, trans,
                      e['path'], parent)

@@ -32,27 +32,27 @@ machine_arch = np.MachAr()
 
 
 def calculate_piecewise_step(xmin, xmax, xstep, func, err_max):
-  b = func(xmin)
+  b = float(func(xmin))
   x = min(xmin + xstep, xmax)
   xL = list()
   err = 0
   while x < xmax:
     xL.append(x - 0.5*xstep)
-    err = sum([abs(func(xi) - b) for xi in xL])
+    err = sum([abs(float(func(xi)) - b) for xi in xL])
     if err >= err_max or abs(xmax-x) < 10*machine_arch.eps:
       break
     x = min(x + xstep, xmax)
   return x, err
 
 def calculate_piecewise_line(xmin, xmax, xstep, func, err_max):
-  b = func(xmin)
+  b = float(func(xmin))
   x = min(xmin + xstep, xmax)
   xL = list()
   err = 0
   while x < xmax:
     xL.append(x - 0.5*xstep)
-    m = (func(x) - b) / (x - xmin)
-    err = sum([abs(func(xi) - (m*(xi-xmin)+b)) for xi in xL])
+    m = (float(func(x)) - b) / (x - xmin)
+    err = sum([abs(float(func(xi)) - (m*(xi-xmin)+b)) for xi in xL])
     if err >= err_max or abs(xmax-x) < 10*machine_arch.eps:
       break
     x = min(x + xstep, xmax)
@@ -91,8 +91,8 @@ calculate_cont_piecewise = \
 
 
 def optimize(expression, ti, dti, expr_steps, expr_err,
-             channel_scale, channel_caps={'step'}, **kw):
-  if 'slope' in channel_caps:
+             channel_scale, channel_caps, channel_units, **kw):
+  if 'linear' in channel_caps:
     calc = calculate_cont_piecewise
   elif 'step' in channel_caps:
     calc = calculate_step_piecewise
@@ -104,7 +104,7 @@ def optimize(expression, ti, dti, expr_steps, expr_err,
   # calculate & cache all values of the expression that will be used
   xsym = sympy.Symbol('x')
   cache = tuple(
-    from_sympy(expression.subs(xsym,x))
+    from_sympy(expression.subs(xsym,x), channel_units)
     for x in xarange(0,1+10*machine_arch.eps,0.5*dx)
   )
 
@@ -125,7 +125,7 @@ def optimize(expression, ti, dti, expr_steps, expr_err,
   yield ti + (dti-1), 1, func(2*expr_steps)
 
 
-def uniform(expression, ti, dti, expr_steps, **kw):
+def uniform(expression, ti, dti, expr_steps, channel_units, **kw):
   """
   Uniformly discretize the integer _and_ fractional relative time.  This
   function is to help generate values from a sympy expression for waveform
@@ -145,14 +145,14 @@ def uniform(expression, ti, dti, expr_steps, **kw):
   for tij, x in izip( xrange(ti, ti+dti-1 - dtij, dtij),
                      xarange(0, 1, dx)):
 
-    yield tij, dtij, from_sympy(expression.subs(xsym, x))
+    yield tij, dtij, from_sympy(expression.subs(xsym, x), channel_units)
 
   # second to last transition. Make sure it is not too long
   yield tij+dtij, min(dtij, ti+dti-1 - (tij+dtij)), \
-        from_sympy(expression.subs(xsym,x+dx))
+        from_sympy(expression.subs(xsym,x+dx), channel_units)
 
   # last point is added very explicitly to reach the end of time (x=1)
-  yield ti+dti-1, 1, from_sympy(expression.subs(xsym,1))
+  yield ti+dti-1, 1, from_sympy(expression.subs(xsym,1), channel_units)
 
 
 
