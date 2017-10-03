@@ -106,6 +106,17 @@ def conversion_path( test_version ):
 def supported( test_version ):
   return bool( conversion_path(test_version) )
 
+def abi_compatible(v0, v1):
+  """
+  When remote connections to Arbwave objects are made, we will require that they
+  are on the same basic version in order to be defined as
+  application-binary-interface compatible.  We could do a better job at defining
+  compatibility by better versioning rules...
+  """
+  v0 = version_tuple(v0)
+  v1 = version_tuple(v1)
+  return v0[:2] == v1[:2]
+
 
 if __name__ == '__main__':
   import sys
