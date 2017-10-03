@@ -86,7 +86,8 @@ class ClampedInterp1d:
     elif x > self.interp.x[-1]:
       return self.interp.y[-1]
     else:
-      return self.interp(x)
+      # we are always doing point by point interpolation
+      return float(self.interp(x))
 
   def __call__(self, xs):
     if np.iterable(xs):
