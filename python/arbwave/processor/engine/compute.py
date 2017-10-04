@@ -228,9 +228,13 @@ class WaveformEvalulator:
       else:
         clock_period = self.used_clocks[clk] = self.get_clock_period( clk )
 
+      # the *(1-eps) below is to take care of cases when the ceiling is only
+      # narrowly missing a projection to an exact integer multiple of
+      # clock_periods.
       self.min_periods[ clk ] = max(
         self.min_periods.get(clk, clock_period),
-        ceil( chan_dev.get_min_period() / clock_period ) * clock_period,
+        ceil(chan_dev.get_min_period() / clock_period *(1-machine_arch.eps))
+            * clock_period,
       )
 
       # check whether channel requires end-clock pulse for non-continuous mode
