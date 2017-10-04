@@ -360,8 +360,8 @@ class Subdevice(Base):
             self.card, self.subdevice,
             self.get_channel(chname), self.ranges[chname] ).contents
     maxdata = self.maxdata[chname]
-    return np.clip(           (data - rng.min*unit.V) *
-                    (maxdata / ( rng.max - rng.min ) / unit.V),
+    return np.clip(           (data - rng.min) *
+                    (maxdata / ( rng.max - rng.min )),
                    0, maxdata ).astype( self.sampl_t )
 
 
