@@ -146,6 +146,7 @@ class Device(Base, bbb.ad9959.Device):
           t0        = wfe[0][0]
           t1        = wfe[1][0]
           freq0     = wfe[0][1]
+          freq1     = wfe[1][1]
           freq_last = wfe[-1][1]
           SLOPE = (freq1 - freq0) / float(dt*(t1 - t0))
           DT_synthetic = ((freq_last - freq0) / SLOPE)
