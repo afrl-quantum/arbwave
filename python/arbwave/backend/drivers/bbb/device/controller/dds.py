@@ -93,16 +93,37 @@ class Device(Base, bbb.ad9959.Device):
     :param n_chans: The number of channels configured for output.  This is used
                     to define the base time unit using get_minimum_period(...).
     """
+    W = self.convert_waveforms(waveforms, n_chans)
+    self.load_waveform(W) # impl'd in bbb.ad9959.Device
+
+  def convert_waveforms(self, waveforms, n_chans):
+    """
+    Set the output waveforms for the AFRL/BeagleBone Black device.
+
+    :param waveforms:
+      a dict('channel': {<wfe-path>: (<encoding>, [(t1, val1), (t2, val2)])})
+                      (see gui/plotter/digital.py for format)
+                      where wfe-path means waveform element path, referring to
+                      the unique identifier of the specific waveform element a
+                      particular set of values refers to.
+    :param clock_transitions: a dict('channel': { 'dt': dt,
+                              'transitions': iterable})
+                              (see processor/engine/compute.py for format)
+    :param t_max: the maximum duration of any channel
+    :param continuous: bool of continuous or single-shot mode
+    :param n_chans: The number of channels configured for output.  This is used
+                    to define the base time unit using get_minimum_period(...).
+    """
     # has to convert this
     # waveforms={
     #   '1': {
-    #     (-1,): ('step', [(0, array(2898.289828982898))]),
-    #     (2, 4): ('step', [(33400, array(3098.109810981098))]),
+    #     (-1,): ('step', [(0, 2898.289828982898)]),
+    #     (2, 4): ('step', [(33400, 3098.109810981098)]),
     #   },
     #   '0': {
-    #     (2, 3): ('linear', [(40067, array(33299999.999999993)), (46732, array(4000000.0000000005))]),
-    #     (-1,): ('step', [(0, array(50000000.0))]),
-    #     (2, 2): ('step', [(33400, array(33299999.999999993))]),
+    #     (2, 3): ('linear', [(40067, 33299999.999999993)), (46732, 4000000.0000000005)]),
+    #     (-1,): ('step', [(0, 50000000.0)]),
+    #     (2, 2): ('step', [(33400, 33299999.999999993)]),
     #   },
     # }
     #
@@ -124,7 +145,12 @@ class Device(Base, bbb.ad9959.Device):
     #     2 : ('update_frequency_ramp', 50e6, 77e6, 1),
     #   },
     # ]
-    dt = self.get_minimum_period(n_chans)
+
+    # integer time is given in these units.
+    # Note that I am not using physicsal.units pacakge since I'm trying to limit
+    # brining _any_ packages into the code that runs on the beaglebone that
+    # isn't *entirely* necessary.
+    dt = max(self.get_minimum_period(n_chans).itervalues()) * 5e-9
 
     transitions_map = dict() # timestamp -> dict(ch->op)
     for ch, wfm in waveforms.iteritems():
@@ -169,7 +195,7 @@ class Device(Base, bbb.ad9959.Device):
 
     waveform = transitions_map.items()
     waveform.sort(key = lambda (timestep, data): timestep)
-    self.load_waveform([wi[1] for wi in waveform]) # impl'd in bbb.ad9959.Device
+    return [wi[1] for wi in waveform]
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 
 
 from itertools import izip
-from physical import units
+from physical import unit
 import bbb.timing
 
 from base import Device as Base
