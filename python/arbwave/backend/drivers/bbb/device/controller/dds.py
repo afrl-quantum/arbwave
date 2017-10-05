@@ -168,17 +168,14 @@ class Device(Base, bbb.ad9959.Device):
           # choosing a DT that ensures the slope is computed correctly.  The
           # actual time over which the first element endures is simply dependent
           # on the external update pulse.
-          # FIXME:  This really needs to be tested more thoroughly
           t0        = wfe[0][0]
           t1        = wfe[1][0]
           freq0     = wfe[0][1]
           freq1     = wfe[1][1]
           freq_last = wfe[-1][1]
-          SLOPE = (freq1 - freq0) / float(dt*(t1 - t0))
-          DT_synthetic = ((freq_last - freq0) / SLOPE)
 
           transitions_map.setdefault(t0, {})[ch] = \
-            ('set_frequency_ramp', freq0, freq_last, DT_synthetic)
+            ('set_frequency_ramp', freq0, freq1, freq_last, (t1-t0)*dt)
 
           # Subsequent components only update the slope.
           for (t0,f0), (t1,f1) in izip(wfe[1:-1], wfe[2:]): # skip first and last
