@@ -17,20 +17,20 @@
 
 % Try that, if you want:
 % 
-% \usepackage[colorlinks,dvips]{hyperref}
-% \renewcommand{\glosslinkborder}{0 0 0}
-% \renewcommand{\glosslinkcolor}{blue}
+\usepackage[colorlinks]{hyperref}
+\renewcommand{\glosslinkborder}{0 0 0}
+\renewcommand{\glosslinkcolor}{blue}
 
 \makegloss
-\newgloss[nolink]{symb}{.sym}{List of Symbols}{glsplain}
-%\newgloss[nolink]{symb}{.sym}{List of Symbols}{glslookup}
+\newgloss{symb}{.sym}{List of Symbols}{glsplain}
+%\newgloss{symb}{.sym}{List of Symbols}{glslookup}
 %       glslookup style is useful for just using this package as a bibtex
 %       database lookup tool for words/symbols to insert consistenly into a
 %       document.  
 
 % I typically define the macro \symb to make it easier/shorter to use while
 % another glossary is defined.  
-\newcommand{\symb}[2][symb]{\gloss[#1]{#2}}
+\newcommand{\symb}[2][symb,nolink]{\gloss[#1]{#2}}
 
 
 
