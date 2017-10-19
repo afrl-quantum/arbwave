@@ -59,11 +59,8 @@
     \PackageInfo{gloss}{Writing gloss file \jobname#3.aux}%
     \immediate\write\csname glsf@#2\endcsname{\string\bibstyle{#5}}%
   \fi
-  \mkglso@nolink{#2}% define nolink bool for this gloss
-  \mkglso@nocite{#2}% define nocite bool for this gloss
-  \mkglso@refpage{#2}% define refpage bools for this gloss
   \@namedef{glst@#2}{\def\gls@title{#4}}%
-  \@namedef{glso@#2}##1{%
+  \@namedef{glso@#2}{%
       \edef\gls@base{\jobname#3}%
       \edef\gls@name{#2}%
       \edef\gls@opts{#1}% save a list of the options
@@ -73,7 +70,7 @@
         \@ifundefined{glso@\gls@b}%
            {\PackageError{gloss}{Unknown option}%
               {You have used an unknown option in \string\newgloss}}%
-           {\csname glso@\gls@b\endcsname{\gls@name}}}%
+           {\csname glso@\gls@b\endcsname}}%
   }
 %   set the first defined glossary to default unless requested for this one
 %   explicitly
@@ -83,7 +80,7 @@
       \def\defaultgloss{default}%
       {\ifx\glspp@default \defaultgloss%
        \else%
-          \global\def\glso@default##1{\csname glso@#2\endcsname}%
+          \global\def\glso@default{\csname glso@#2\endcsname }%
        \fi}%
     \endgroup%
   }{%
@@ -93,7 +90,7 @@
 \newcommand\makegloss{%
   \newgloss{default}{.gls}{\glossname}{glsplain}}
 
-\def\glso@default#1{\PackageError{gloss}{Missing default glossary}%
+\def\glso@default{\PackageError{gloss}{Missing default glossary}%
   {You missed either \string\makegloss \ or \string\newgloss}}
 
 % Two .aux related commands
@@ -129,7 +126,7 @@
 %  options:
 %       nolink    : when using hyperref in the document, this disables
 %                   hyperlinks made to the glossary from glossary items in the
-%                   text.
+%                   text. 
 %       refpage   : tells \gloss{} to ignore previous references to pages for
 %                   this word.
 %       norefpage : do not use this instance of the word as the reference in
@@ -147,71 +144,68 @@
   \@bsphack%
   \begingroup%
     \def\gls@a{\def\gls@a{,\penalty\@m\ }}%
-    \glso@default{}% use default glossary
-    \glso@word{i}% default 'word' option
+%   set default options for gloss command
+    \glso@default%
+    \glso@word%
 %   loop through each given option and execute
     \@for\gls@b:=#1\do{%
       \@ifundefined{glso@\gls@b}%
-        {\PackageError{gloss}{Unknown option}%
-           {You have used an unknown option in \string\gloss}}%
-        {\csname glso@\gls@b\endcsname{\gls@name}}%
-    }%
-    \@for\gls@b:=#2\do{%
-      \gls@a%%% 2001/08/29 Missing
-      \edef\gls@b{\expandafter\@firstofone\gls@b\@empty}%
-      \if\getcondition{gls@cite@\gls@name}%%% 2001/12/20 a few lines rewritten
+         {\PackageError{gloss}{Unknown option}%
+            {You have used an unknown option in \string\gloss}}%
+         {\csname glso@\gls@b\endcsname}}%
+    \@for\gls@b:=#2\do%
+      {\gls@a%%% 2001/08/29 Missing
+       \edef\gls@b{\expandafter\@firstofone\gls@b\@empty}%
+       \ifgls@cite%%% 2001/12/20 a few lines rewritten
 %   2006/4/10 SEO:  Added support for norefpage option to ignore the refpage
 %                   setting with this instance of a \gloss item
-        \@ifundefined{glspp@\gls@name::\gls@b}{%
-            \if\getcondition{gls@norefpage@\gls@name}%
-            \else%
-               \glso@refpage{\gls@name}%
-            \fi%
-        }{}%
-      \fi%
-      \if\getcondition{gls@refpage@\gls@name}%
-        \protected@write\@auxout{}%
-          {\string\gls@page{\gls@name::\gls@b}{\noexpand\thepage}}%
-        \global\@namedef{glspp@\gls@name::\gls@b}{}%
-      \fi%
-      \if@filesw%
-        \immediate\write\csname glsf@\gls@name\endcsname%
-           {\string\citation{\gls@b}}%
-      \fi%
-      \@ifundefined{gls@\gls@name::\gls@b}{%
-        \if\getcondition{gls@cite@\gls@name}%
+         \@ifundefined{glspp@\gls@name::\gls@b}{%
+             \ifgls@norefpage%
+             \else%
+                \gls@refpagetrue%
+             \fi%
+         }{}%
+       \fi%
+       \ifgls@refpage%
+         \protected@write\@auxout{}%
+           {\string\gls@page{\gls@name::\gls@b}{\noexpand\thepage}}%
+         \global\@namedef{glspp@\gls@name::\gls@b}{}%
+       \fi%
+       \if@filesw%
+         \immediate\write\csname glsf@\gls@name\endcsname%
+            {\string\citation{\gls@b}}%
+       \fi%
+       \@ifundefined{gls@\gls@name::\gls@b}%
+         {\ifgls@cite%
 %   2008/9/7  SEO:  Until mathmode supports bfseries, we change bfseries to
-%                 the LaTeX 2.09 \bf command that can be used in both math
-%                 mode and in normal text without complaining.
-          {\reset@font\bf[\gls@unlabel{#2}??]}%
-        \fi%
-        \G@refundefinedtrue%
-        \PackageWarning{gloss}%
-          {Term `\gls@b' on page \thepage\space%
-              not defined in glossary `\gls@name'}%
-      }% else
-      {%
-        \if\getcondition{gls@cite@\gls@name}{%
+%                   the LaTeX 2.09 \bf command that can be used in both math
+%                   mode and in normal text without complaining. 
+            {\reset@font\bf[\gls@unlabel{#2}??]}%
+          \fi%
+          \G@refundefinedtrue%
+          \PackageWarning{gloss}%
+            {Term `\gls@b' on page \thepage\space%
+                not defined in glossary `\gls@name'}}%
+         {\ifgls@cite%
 %   2008/9/7  SEO:  Added nolink option to avoid linking for special cases
-%                   (especially when in mathmode).
-          \if\getcondition{gls@nolink@\gls@name}{%
-             \expandafter\expandafter\expandafter%
-                \gls@printtext\csname gls@\gls@name::\gls@b\endcsname%
-          }\else{%
-            \edef\@pdfborder{\glosslinkborder}%
-            \edef\@linkcolor{\glosslinkcolor}%
-            \edef\@linkbordercolor{\glosslinkbordercolor}%
-            \gls@hyperlink{\gls@name::\gls@b}{%
-              \expandafter\expandafter\expandafter%
-                \gls@printtext\csname gls@\gls@name::\gls@b\endcsname%
-            }%
-          }\fi%
-        }\fi%
-      }%
-    }%
+%                   (especially when in mathmode). 
+          {\ifgls@nolink%
+              {\expandafter\expandafter\expandafter%
+                \gls@printtext\csname gls@\gls@name::\gls@b\endcsname}%
+           \else%
+              {\edef\@pdfborder{\glosslinkborder}%
+               \edef\@linkcolor{\glosslinkcolor}%
+               \edef\@linkbordercolor{\glosslinkbordercolor}%
+               \gls@hyperlink{\gls@name::\gls@b}{%
+                 \expandafter\expandafter\expandafter
+                   \gls@printtext\csname gls@\gls@name::\gls@b\endcsname}%
+              }%
+           \fi%
+          }%
+          \fi}}%
   \expandafter%
   \endgroup%2002/07/25 wrong tempswa replaced by gls@cite
-  \if\getcondition{gls@cite@\gls@name}\else\expandafter\@esphack\fi}%
+  \ifgls@cite\else\expandafter\@esphack\fi}%
 
 \def\gls@unlabel#1{%
   \expandafter\expandafter\expandafter
@@ -231,58 +225,35 @@
 \def\glosslinkcolor{\@linkcolor}%
 \def\glosslinkbordercolor{\@linkbordercolor}
 
-% Macro to help testing if-conditions correctly
-\newcommand*{\getcondition}[1]{%
-  T\expandafter%
-  \ifx\csname if#1\endcsname\iftrue%
-    \expandafter T%
-  \else%
-    \expandafter F%
-  \fi%
-}
-
 % Options:
-%   Each option takes the name of the glossary as an argument.
 
-%  "nothing"
 %   2006/4/10 SEO:  Simple do-nothing default dummy option to help make
 %   implementations of \newgloss and \gloss simpler.
-\newcommand\glso@nothing[1]{} % option command
+\def\glso@nothing{}
 
-%  "nocite"
-\newcommand\mkglso@nocite[1]{
-  \expandafter\newif\csname ifgls@cite@#1\endcsname % define "if"
-  \csname gls@cite@#1true\endcsname % set to true
-}
-\newcommand\glso@cite[1]{\csname gls@cite@#1true\endcsname}% option command
-\newcommand\glso@nocite[1]{% option command
-  \csname gls@cite@#1false\endcsname
+\newif\ifgls@cite
+\gls@citetrue
+\def\glso@nocite{%
+  \gls@citefalse
   \let\gls@a\@empty}
 
-%  "refpage", "norefpage"
-\newcommand\mkglso@refpage[1]{
-  \expandafter\newif\csname ifgls@refpage@#1\endcsname % false by default
-  %   2006/4/10 SEO:  Added support for norefpage option to ignore the refpage
-  %                   setting with this instance of a \gloss item
-  \expandafter\newif\csname ifgls@norefpage@#1\endcsname % false by default
-}
-% two option commands:
-\newcommand\glso@refpage[1]{\csname gls@refpage@#1true\endcsname}
-\newcommand\glso@norefpage[1]{\csname gls@norefpage@#1true\endcsname}
+\newif\ifgls@refpage % false by default
+\def\glso@refpage{\gls@refpagetrue}
+%   2006/4/10 SEO:  Added support for norefpage option to ignore the refpage
+%                   setting with this instance of a \gloss item
+\newif\ifgls@norefpage % false by default
+\def\glso@norefpage{\gls@norefpagetrue}
 
 
-%  "nolink"
 %   2008/9/7  SEO:  Added nolink (for when hyperref used) to be used by
-%                   newgloss command.
-\newcommand\mkglso@nolink[1]{
-  \expandafter\newif\csname ifgls@nolink@#1\endcsname % false by default
-}
-\newcommand\glso@nolink[1]{%
-  \csname gls@nolink@#1true\endcsname%
-}%
+%                   newgloss command. 
+\newif\ifgls@nolink % false by default
+\def\glso@nolink{\gls@nolinktrue}
+
+
 \newcommand\setglosstext[2]{%
   \@namedef{gls@prtext@#1}##1##2##3{{\def\gls@short{##3}#2}}%
-  \@namedef{glso@#1}##1{%
+  \@namedef{glso@#1}{%
     \def\gls@printtext{\csname gls@prtext@#1\endcsname}}}
 
 \setglosstext{short}{\ifglossshort*{#3}{}}
@@ -328,7 +299,7 @@
 
 \newcommand\printgloss[2][default]{%
   \if@filesw
-    \csname glso@#1\endcsname{}
+    \csname glso@#1\endcsname
     \immediate\write\csname glsf@\gls@name\endcsname
        {\string\bibdata{#2}}%
   \fi
@@ -340,7 +311,7 @@
 \newenvironment{thegloss}
   {\gls@section
    \def\+##1+{}%
-   \@beginparpenalty\@M}%
+   \@beginparpenalty\@M}%  
   {\stopglosslist}
 
 
@@ -351,7 +322,7 @@
 %          a large document that uses many mathematical symbols.   The
 %          printgloss command will still need to be used, but it will not
 %          generate any explicit output, rather only get the bibtex stuff
-%          parsed and ready.
+%          parsed and ready.  
 % #1:key, #2:[word or $word$] #3:[ucword or $word$], #4:short, #5:definition
 \newcommand{\lookupitem}[5]%
   { \begingroup
@@ -390,7 +361,7 @@
 
 % The gloss items:
 
-% 1:key  2:term  3:text  4:shorthand
+% 1:key  2:term  3:text  4:shorthand 
 
 \newcommand\stopglosslist{}
 
