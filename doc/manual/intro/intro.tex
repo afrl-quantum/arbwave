@@ -151,8 +151,11 @@ hardware: one must only implement the interfaces that Arbwave requires.
 
 \subsection{Supported Hardware\index{Supported Hardware}}\label{sec:hardware}
 
-The design of Arbwave abstracts the hardware support such that new hardware does
-not impact the normal functions of the platform.
+Because the design of Arbwave abstracts the hardware support, adding new hardware does
+not impact the normal functions of the platform.  It is possible, therefore, to
+support a range of hardware and hardware drivers.  Tab.~\ref{tab:drivers} shows
+the various hardware drivers and related devices that are currently interfaced
+by Arbwave.
 
 \begin{table}
 \begin{center}
@@ -172,6 +175,7 @@ not impact the normal functions of the platform.
     N/A         & DDSTiming & AFRL DDS/Timing Cape for Beaglebone black & N/A \\
     \hline
   \end{tabular}
+  \label{tab:drivers}
   \caption{Supported Hardware Drivers}
 \end{center}
 \end{table}
