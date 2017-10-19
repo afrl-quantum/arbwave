@@ -26,6 +26,64 @@
 
   \subsection{\textbf{Arbwave} Module (virtual)}
   \subsection{\textbf{arbwave} Module}
-  \subsection{Connecting to Callbacks}
+
+  \subsection{Experimental Control Loop}
+  \subsubsection{Basic Customization}
+
+  \begin{lstlisting}
+  class SimpleRun(Arbwave.Runnable):
+  	def run(self):
+  		Arbwave.update()
+  		return 0
+  \end{lstlisting}
+
+
+  \begin{lstlisting}
+  Arbwave.add_runnable( 'Simple', SimpleRun() )
+  \end{lstlisting}
+
+  \subsection{Advanced Customization}
+
+  \begin{lstlisting}
+  class Runnable(object):
+    """
+    Runnable class to allow more significant complexity during a data run.
+  
+    This implementation mostly defines the interface that runnables provide, but
+    this is also the implementation of the "Default" runnable that is used to
+    execute output in continuous mode.
+    """
+    def extra_data_labels(self):
+      """
+      Returns list of names of extra results returned by self.run()
+      """
+      return list()
+  
+    def onstart(self):
+      """
+      Executed before the runnable is started.
+      """
+      pass
+  
+    def onstop(self):
+      """
+      Executed after the runnable is stopped.
+      """
+      pass
+  
+    def run(self):
+      """
+      The body of any inner loop.
+      """
+  	def run(self):
+  		Arbwave.update()
+  		return 0
+  \end{lstlisting}
 
 \section{Local Scripts}
+In addition to executing scripts that affect the entire experiment globally, it
+is also possible to exucute scripts that have as narrow a scope as a group.  In
+order to specify a local script, the group menu is used to select \textbf{Local
+Script}.  Saving the local script will cause it to be immediately executed as
+the entire waveform is updated.  Each additional waveform update will cause a
+local script to execute.

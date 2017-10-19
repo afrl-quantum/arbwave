@@ -13,13 +13,26 @@ it is more convenient for the channel to be calibrated to describe the actual
 frequency changes occurring with the laser.
 
 The user can right-click a non-digital channel in the channel menu to access the
-scaling dialog.  The scaling dialog, shown in Fig.~\ref{fig:scaling}, gives
+scaling dialog.  The scaling dialog, shown in Fig.~\ref{fig:channel:scaling}, gives
 access to a table of scaling values that can be used to calibrate the channel.
+
+\begin{figure}[hb]
+  \centerline{\includegraphics[width=.4\textwidth]{figures/scaling}}
+  \caption{
+    Using the scaling editor, each channel can be controlled via a set of units
+    and scaling that is natural for the experiment.
+  }
+  \label{fig:channel:scaling}
+\end{figure}
 
 Each row of this table consists of a list of voltage settings that produce the
 corresponding list of output values (such as laser frequency).  The list in each
 column of each row may include one or more items although it is critical that
 the two cells of a row must contain the same number of elements.
+
+In addition to simple scaling, as shown in Fig.~\ref{fig:channel:scaling}, it is
+also possible to apply a $n^{\rm th}$-order smoothing function to the data.
+This may be helpful if the calibration data is somewhat noisy.
 
 \section{Static Values}
 \section{Enabling}

@@ -24,45 +24,63 @@
 %}
 
 % examples:
-@GLOSSDEF{numberdensity,
+@SYMBOL{numberdensity,
         word = {n},
   definition = {Number density of a single species of gas},
    sort-word = {n},
        group = {S}
 }
 
-@GLOSSDEF{mfp,
+@SYMBOL{mfp,
         word = {\lambda_{\rm MFP}},
   definition = {Mean free path},
    sort-word = {lambda},
        group = {S}
 }
 
-@GLOSSDEF{scatT,
+@SYMBOL{scatT,
         word = {\sigma_{\rm T}},
   definition = {Total elastic scattering cross section},
    sort-word = {sigma},
        group = {S}
 }
 
-@GLOSSDEF{duration,
-        word = {$dt$},
+@SYMBOL{duration,
+        word = {\var{dt}},
   definition = {Duration of waveform element or group of elements},
    sort-word = {dt},
        group = {S}
 }
 
-@GLOSSDEF{dt_clk,
-        word = {$dt\_clk$},
+@SYMBOL{dt_clk,
+        word = {\var{dt\_clk}},
   definition = {Minimum clock period of channel as defined by the source with
     which the channel is clocked},
    sort-word = {dt_clk},
        group = {S}
 }
 
-@GLOSSDEF{natural_time,
-        word = {$t$},
+@SYMBOL{natural_time,
+        word = {\var{t}},
   definition = {Natural start time of waveform element or group of elements},
    sort-word = {t},
+       group = {S}
+}
+
+@SYMBOL{U0,
+        word = {\var{U0}},
+  definition = {The value of a channel at the beginning of a waveform element},
+   sort-word = {U0},
+       group = {S}
+}
+
+@SYMBOL{relative_time,
+        word = {\var{x}},
+  definition = {Relative waveform-element time used for value expressions when
+                Sympy is found on the system.  Using this symbol automatically
+                ensures that the expression is interpreted as a value
+                expression.  The value of this variable can be considered to
+                vary from [0..1] over the duration of the waveform element.},
+   sort-word = {x},
        group = {S}
 }

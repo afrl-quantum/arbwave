@@ -1,24 +1,97 @@
 % vim: ts=2:sw=2:tw=80:et
 \thispagestyle{fancy}
 \pagestyle{fancy}
-\section{Natural Time and Duration}
 
-\subsection{Automatically defined local waveform variables}
-\begin{tabular}{|l | c | c | c |}
-  \hline
-  Variable Name  & Description  & Group Scope & Waveform Element Scope \\
-  \hline
-  \symb{natural_time} & Currently progressed natural time & X & X \\
-  \symb{duration}     & Duration of current group & X & X \\
-  \symb{dt_clk}      & Minimum clock period of channel &  & X \\
- \hline
-\end{tabular}
+\section{Waveform Basics}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-0}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-0}}
+  \caption[Very simple waveform]{
+    a) Add some simple waveform elements.
+    b) Plot of simple waveform elements.
+  }
+  \label{fig:quick:waveform-0}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-1}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-1}}
+  \caption{a) Add some simple waveform elements. b) Plot of simple
+  waveform elements.}
+  \label{fig:quick:waveform-1}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-2}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-2}}
+  \caption{a) Add some simple waveform elements. b) Plot of simple
+  waveform elements.}
+  \label{fig:quick:waveform-2}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-3}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-3}}
+  \caption{a) Add some simple waveform elements. b) Plot of simple
+  waveform elements.}
+  \label{fig:quick:waveform-3}
+\end{figure}
+
+
+\subsection{Natural Time and Duration}
+
+\begin{table}
+\begin{center}
+  \begin{tabular}{|l | c | c | c |}
+    \hline
+    Variable Name  & Description  & Group Scope & Waveform Element Scope \\
+    \hline
+    \symb{natural_time} & Currently progressed natural time & X & X \\
+    \symb{duration}     & Duration of current group & X & X \\
+    \symb{dt_clk}       & Minimum clock period of channel &  & X \\
+    \symb{U0}           & Last value of channel &  & X \\
+    \symb{relative_time}& Relative waveform-element time &  & X \\
+   \hline
+  \end{tabular}
+  \caption[Automatic waveform variables]{
+    Automatically defined waveform variables allow natural and easy entry of
+    waveform elements.
+  }
+\end{center}
+\end{table}
 
 
 \section{Groups}
-\section{Subgroups}
-\section{Waveform Elements}
 
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-4}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-4}}
+  \caption{a) Add some simple waveform elements. b) Plot of simple
+  waveform elements.}
+  \label{fig:quick:waveform-4}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-5}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-5}}
+  \caption{a) Waveform elements divided into two main groups. b) Plot of
+  waveform after grouping elements.}
+  \label{fig:quick:waveform-5}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-6}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-6}}
+  \caption{a) Using automatic $dt$ variable. b) Plot of waveform after
+  using $dt$ variable.}
+  \label{fig:quick:waveform-6}
+\end{figure}
+
+\subsection{Subgroups}
+
+
+\section{Waveform Elements}
 \subsection{Value Expressions}
 \subsubsection{Basics}
 The value of each waveform element, in the most basic form, may be specified as
@@ -34,10 +107,10 @@ Generators }--see help menu for more information.
 If the sympy package is available, Arbwave uses it to allow the user to specify
 functional forms of values for a waveform element.  When using expressions, in
 order to define how a channel's value should change over time, one uses the
-symbol \var{x} to represent relative waveform-element time.
-\var{x} always varies
-from 0 to 1.  Thus, for a waveform element with duration \var{dt},
-\var{x} varies from 0 to 1
+symbol \symb{relative_time} to represent relative waveform-element time.
+\symb{relative_time} always varies
+from 0 to 1.  Thus, for a waveform element with duration \symb{duration},
+\symb{relative_time} varies from 0 to 1
 over the duration of the waveform element.
 
 As an example of using expressions, consider the \op{Ramp} value generator

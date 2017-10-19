@@ -14,6 +14,7 @@
 \usepackage{ifthen}            % allows for conditional formatting; used in "comm"[ent] command.
  % END   --added-- by JMM from PHB template
 \usepackage{color}
+\usepackage{enumitem}    % make itemize env more pliable
 \usepackage{graphicx}
 \usepackage{epsfig}
 \usepackage{verbatim}
@@ -56,9 +57,18 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Create the "Definitions and Acronyms" glossary.
+% entries are added using the \gloss[acro]{key} command
+\newgloss{acro}{.gls}{DEFINITIONS AND ACRONYMS}{glsshort}
+\newcommand{\acro}[1]{\gloss[acro]{#1}}
+\newcommand{\acroi}[1]{\gloss[acro,norefpage]{#1}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Create the "List of Symbols" glossary.
 % entries are added using the \gloss[symb]{key} command
-\newgloss[nolink]{symb}{.sym}{List of Symbols}{glslookup}
+%\newgloss[nolink]{symb}{.sym}{List of Symbols}{glslookup}
+\newgloss{symb}{.sym}{LIST OF SYMBOLS}{glsplain}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,8 +159,10 @@
     {\LARGE Version: \revision}\\
     {\LARGE(\revdate)} \\
     \vspace{2em}
+    {\Large Arbitrary Waveform Experimental Control}\\
+    \vspace{1em}
     {\huge\sc--User Manual--}\\
-    \vspace{2em}
+    \vspace{1em}
     \centerline{
       \includegraphics[width=.8\textwidth]{intro/figures/sample-timing}
     }
@@ -226,12 +238,17 @@ Dr. Spencer E. Olson
 \linespread{1.0}
 \selectfont
 
+% Print Acronyms
+\section*{}
+\printgloss[acro]{acronyms}
+
 % Print the index
-\newpage
+%\clearpage
 \section*{}
 \addcontentsline{toc}{chapter}{Index}
 \printindex
-\newpage
+%\clearpage
+
 
 % Print the Bibliography
 %\def\suppressbibtoc{0}
