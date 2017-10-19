@@ -13,15 +13,17 @@
 % This makes sure that the glossary title is printed in the same format as
 % things like the listoffigures and so.  This MUST match in style with what is
 % in the rac.sty file for listoffigures, ...
+\def\gls@mkuppercase{}
+%\def\gls@mkuppercase{\MakeUppercase}
 \def\gls@section{%
  \newpage\small\normalsize
  \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn\fi
  \hbox{ }
  \vspace{0.5in}
- \centerline{\large\bf {\MakeUppercase\gls@title}}
+ \centerline{\large\bf {\gls@mkuppercase\gls@title}}
  \vspace{0.7in}
 
- \@mkboth{\MakeUppercase\gls@title}{\MakeUppercase\gls@title}%
- \addcontentsline{toc}{chapter}{\MakeUppercase\gls@title}
+ \@mkboth{\gls@mkuppercase\gls@title}{\gls@mkuppercase\gls@title}%
+ \addcontentsline{toc}{chapter}{\gls@mkuppercase\gls@title}
 }
 

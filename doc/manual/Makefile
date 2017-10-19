@@ -11,26 +11,20 @@ PDFLATEX=pdflatex
 
 MKINDEX=makeindex
 
-BSTINPUTS=":../common-tex-sty/gloss:./common-tex-sty"
+BSTINPUTS="../common-tex-sty/gloss:../common-tex-sty:"
 
 all: $(PAPER).pdf
 
-%.dvi: %.tex repeat ../common-tex-sty/arbwave-version.sty
-	(export TEXINPUTS=$(TEXINPUTS) && $(LATEX) $<)
 
 %.pdf: %.tex repeat ../common-tex-sty/arbwave-version.sty
 	(export TEXINPUTS=$(TEXINPUTS) && $(PDFLATEX) $<)
 
-.PHONY : repeat
+.PHONY: repeat
 
 ../common-tex-sty/arbwave-version.sty: repeat
 	../common-tex-sty/mk_version.py
 
 distribution: all clean
-
-#manual.htm.tar.gz:  manual.dvi
-#	latex2html manual
-#	tar cf - manual | gzip -c >manual.htm.tar.gz
 
 index:
 	$(MKINDEX) $(PAPER)
@@ -40,7 +34,7 @@ bib:
 	bibtex $(PAPER)
 
 biball:
-	@export BSTINPUTS=$(BSTINPUTS) ; \
+	export BSTINPUTS=$(BSTINPUTS) ; \
 	for i in *.aux; do bibtex `basename $$i .aux`; done;
 	make linkaux
 
@@ -81,11 +75,11 @@ cleanaux:
 spell:
 	aspell -t -c $(PAPER).tex;
 
-LATEX_GARBAGE=$(PAPER).blg $(PAPER).end $(PAPER).bbl $(PAPER).lof \
-              $(PAPER).aux  $(PAPER).dvi  $(PAPER).log  $(PAPER).toc \
-              $(PAPER).sym.aux $(PAPER).sym.blg $(PAPER).sym.bbl \
-              $(PAPER).idx $(PAPER).ilg $(PAPER).ind $(PAPER).loa \
-              $(PAPER).lot $(PAPER).out $(PAPER).brf
+LATEX_GARBAGE=*.blg *.end *.bbl *.lof \
+              *.aux  *.log  *.toc \
+              *.idx *.ilg *.ind *.loa \
+              *.lot *.out *.brf \
+              *Notes.bib
 
 clean:
 	$(RM) $(LATEX_GARBAGE)
