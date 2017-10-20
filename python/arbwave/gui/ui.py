@@ -7,6 +7,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 import logging
+from copy import deepcopy
 
 import traceback
 
@@ -20,6 +21,7 @@ import storage
 from notification import Notification
 import embedded
 
+from ..tools.config_template_update import recursive_update
 from ..processor import default
 from .. import backend
 from .. import version
@@ -618,8 +620,19 @@ class ArbWave(gtk.Window):
       logging.debug('clocks.load(...) finished.')
 
     if 'devices' in vardict:
+      # we are going to attempt to allow device backends to add configuration
+      # items without requiring a file-version upgrade.  This should _only_ be
+      # done if items are simply added.  If they are changed or removed, a
+      # file-version upgrade must be implemented.
+      all_devices = backend.get_devices()
+      device_config = dict()
+      for devname, devcfg in vardict['devices'].iteritems():
+        D = all_devices[devname].get_config_template()
+        recursive_update(D, devcfg)
+        device_config[devname] = D
+
       logging.debug('devices.load(...)..........')
-      self.devcfg.load( vardict['devices'] )
+      self.devcfg.load(device_config)
       logging.debug('devices.load(...) finished.')
 
     if 'runnable_settings' in vardict:
