@@ -21,8 +21,8 @@ from scipy.interpolate import UnivariateSpline
 from helpers import *
 import spreadsheet
 
-def fstr(num):
-  return '{:.12g}'.format(num)
+def fstr(num, if_zero=None):
+  return '{:.12g}'.format(num) if (if_zero is None or num != 0) else if_zero
 
 
 class NumberEntryEnforcer(object):
@@ -329,7 +329,7 @@ class Editor(gtk.Dialog):
     self.order.set_value( chan[self.channels.INTERP_ORDER] )
     self.smoothing.set_value( chan[self.channels.INTERP_SMOOTHING] )
     self.scale_offset.set_text( fstr(chan[self.channels.PLOT_SCALE_OFFSET]) )
-    self.scale_factor.set_text( fstr(chan[self.channels.PLOT_SCALE_FACTOR]) )
+    self.scale_factor.set_text( fstr(chan[self.channels.PLOT_SCALE_FACTOR], 1) )
     store = chan[self.channels.SCALING]
     self.view.set_model( store )
 
