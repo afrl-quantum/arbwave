@@ -5,7 +5,9 @@ channels = \
                     'interp_smoothing': 0.0,
                     'offset': None,
                     'order': 0,
-                    'scaling': [],
+                    'plot_scale_factor': 1.0,
+                    'plot_scale_offset': 0.0,
+                    'scaling': None,
                     'units': None,
                     'value': 'False'},
  'ao0': {'device': 'Analog/ni/Dev1/ao0',
@@ -14,6 +16,8 @@ channels = \
          'interp_smoothing': 0.0,
          'offset': None,
          'order': 1,
+         'plot_scale_factor': 1.0,
+         'plot_scale_offset': 0.0,
          'scaling': [('0', '0'), ('10', '10')],
          'units': 'V',
          'value': '10*V'},
@@ -23,6 +27,8 @@ channels = \
          'interp_smoothing': 0.0,
          'offset': None,
          'order': 2,
+         'plot_scale_factor': 1.0,
+         'plot_scale_offset': 0.0,
          'scaling': [('0', '0'), ('-10', '10')],
          'units': 'V',
          'value': '5*V'}}
@@ -53,7 +59,7 @@ hosts = \
 {'__default__': 'local', 'local': 'localhost'}
 
 version = \
-'0.1.9'
+'1.0.0'
 
 signals = \
 {('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}
@@ -82,7 +88,9 @@ Arbwave.add_runnable( 'Simple', SimpleRun() )
 
 devices = \
 {'ni/Dev1/ao': {'clock': {'type': str, 'value': 'vp/Dev0/A/13'},
-                'clock-settings': {'edge': {'type': str, 'value': 'rising'},
+                'clock-settings': {'Timebase': {'clock': {'type': str,
+                                                          'value': ''}},
+                                   'edge': {'type': str, 'value': 'rising'},
                                    'mode': {'type': str,
                                             'value': 'continuous'}},
                 'default-voltage-range': {'maximum': {'type': float,

@@ -5,6 +5,8 @@ channels = \
          'interp_smoothing': 0.0,
          'offset': None,
          'order': 0,
+         'plot_scale_factor': 1.0,
+         'plot_scale_offset': 0.0,
          'scaling': [('-10', '-10'), ('10', '10')],
          'units': 'V',
          'value': '1*V'},
@@ -14,7 +16,9 @@ channels = \
          'interp_smoothing': 0.0,
          'offset': None,
          'order': 1,
-         'scaling': [],
+         'plot_scale_factor': 1.0,
+         'plot_scale_offset': 0.0,
+         'scaling': None,
          'units': None,
          'value': 'False'}}
 
@@ -70,7 +74,7 @@ hosts = \
 {'__default__': 'local', 'local': 'localhost'}
 
 version = \
-'0.1.9'
+'1.0.0'
 
 signals = \
 {}
