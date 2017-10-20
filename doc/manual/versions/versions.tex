@@ -1,0 +1,66 @@
+% vim: ts=2:sw=2:tw=80:et
+\thispagestyle{fancy}
+\pagestyle{fancy}
+
+\section{Version Numbers}
+Versions are generally defined using tags of the \acro{Git} revision control
+system.  Generally, all Arbwave tags (and hence version strings) should follow
+the format
+\begin{verbatim}
+    arbwave-x.y.z
+\end{verbatim}
+  where:
+\begin{itemize}[leftmargin=2cm]
+  \item[\textbf{x :}] Major revision with major differences of capabilities as compared to
+      other major revisions.  This definition of major differences is somewhat
+      subjective and will be mostly at the whim of maintainers.
+  \item[\textbf{y :}] Minor revision with incompatible differences of interfaces as compared
+      to other earlier revisions.  Interfaces that are considered to impact the
+      minor revision number are external interfaces such as the Pyro remote
+      object interfaces or changes in the standard programming interfaces
+      provided by the `Arbwave` and `arbwave` modules.
+  \item[\textbf{z :}] Micro revision indicating a general acceptance of multiple patches since
+      last tag.  This number may be used to help mark minor development
+      milestones.
+\end{itemize}
+%
+By using the Git command `git describe`, a unique identifier of the full
+version string can be shown as
+\begin{verbatim}
+    arbwave-x.y.z[-n-g<sha1>]
+\end{verbatim}
+  where \verb|[-n-g<sha1>]| shows up automatically if changes have been made
+  since the last tag and
+\begin{itemize}[leftmargin=2cm]
+  \item[\textbf{n :}] Indicates the number of commits since the last tag
+  \item[\textbf{g\textless sha1\textgreater :}] Indicates the abreviated SHA1
+    hash of the latest commit
+\end{itemize}
+
+\vspace{1em}
+For Arbwave installations to be used where \acro{Git} is not available, a static
+file containing the version can be deployed.  This file can be manually created
+from a machine with \acro{Git} installed by executing the following command
+\begin{verbatim}
+    python python/arbwave/version.py save
+\end{verbatim}
+
+
+\section{Save-File Format}
+Arbwave uses a native Python file as its configuration storage format.  The
+format is defined by the structure of the data members that are kept in the
+configuration file.  Because Python is used, it is possible to load the
+configuration file into a Python shell for examination.  Furthermore, if
+desired, it is possible for the save-file to (at least until it is overwritten)
+include various complex Python logic that modifies the configuration structures.
+
+The definitions of the data members are tied to the Arbwave version number with
+various rules:
+\begin{itemize}
+  \item Changes in the save-file format may occur for any change in x,y, or z,
+        but \textbf{will} occur only with at least one of x,y, or z changing.
+  \item The Save-File format includes a marker of the Arbwave version that was
+        used to save the file.
+  \item Arbwave uses the version information to automatically upgrade
+        experimental configuration files to the newest format.
+\end{itemize}
