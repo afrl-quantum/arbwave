@@ -4,6 +4,13 @@ Arbitrary waveform generator for digital and analog signals.
 """
 
 import sys, argparse, logging
+try:
+  import hotshot
+  import hotshot.stats
+  has_hotshot = True
+except:
+  has_hotshot = False
+
 from . import version, options, backend
 from .runnable import Runnable
 
@@ -43,27 +50,58 @@ def main():
   parser.add_argument( '--disable', action='append', default=[],
     choices=backend.connection.get_driver_list(),
     help='Disable specific driver' )
+  if has_hotshot:
+    parser.add_argument('--profile',
+      help='Run this script under the observation of a profiler, writing out to '
+           'the given file.  In order to show results, one can use the '
+           '--profile-show,--profile-sort options.  Perhaps an even '
+           'better way to visualize the profliing results is to use '
+           'kcachegrind:  first convert the results file from this '
+           'profile to calltree format by using: '
+           '"hotshot2calltree file.prof > file.calltree"')
+    parser.add_argument('--profile-show', metavar='PROFILE',
+      help='Calculate the results of a previous profile and show the top PROFILE_N '
+           'worst offenders')
+    parser.add_argument('--profile-sort', type=str, default=['time', 'calls'],
+      help='Specify the columns to sort by [Default: time, calls]. All '
+           'possible columns are: ' +
+           ', '.join(hotshot.stats.pstats.Stats.sort_arg_dict_default.iterkeys()))
+    parser.add_argument('--profile-n', type=int, default=20,
+      help='Specify the number of top offenders to show when showing '
+           'profile results [Default: 20]')
   args = parser.parse_args()
+
+  if has_hotshot and args.profile_show:
+    # sort the output based on time spent in the function
+    # print the top 20 culprits
+    stats = hotshot.stats.load(args.profile_show)
+    stats.sort_stats(args.profile_sort)
+    stats.print_stats(args.profile_n)
+    return
 
   options.simulated = args.simulated
   options.ipython = args.ipython
   options.disabled_drivers = set(args.disable)
   logging.root.setLevel( log_levels[ args.log_level ] )
 
+  if has_hotshot and args.profile:
+    profiler = hotshot.Profile(args.profile)
+    profiler.start()
   if   args.dataviewer:
     import arbwave.gui.dataviewer
     arbwave.gui.dataviewer.main()
-    return
   elif args.service:
     try:
       backend.connection.serve()
     except KeyboardInterrupt:
       print 'exiting'
-    return
   else:
     # create connection to local drivers by default
     backend.reconnect( dict( __default__ = 'local', local='localhost' ) )
     # we have to do this import _after_ the options. module is modified
     import gui_main
     gui_main.main(args)
-    return
+
+  if has_hotshot and args.profile:
+    profiler.stop()
+    profiler.close()
