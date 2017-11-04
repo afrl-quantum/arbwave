@@ -36,7 +36,7 @@ Software Foundation.  This program is distributed in the hope that it will be
 useful, but \underline{WITHOUT} ANY WARRANTY; \underline{without} even the
 implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  For
 full license requirements with regards to copying, modifying, and distributing,
-see the full text of the GPLv3 license.  For clarity, some portions of the
+see the full text of the GPLv3 license.  For convenience, some portions of the
 license are copied here.  You should have received a copy of the GNU General
 Public License along with this program.  If not, see
 \url{https://www.gnu.org/licenses/}.
@@ -132,21 +132,22 @@ procedure, and hook into various external data recorders processors.
 
 As shown in Fig.~\ref{fig:intro:design}, Arbwave is designed as a layered
 operation platform.  Each layer represents a sent of tasks or compartments of
-computational requirements.  The interfaces between each layer is abstracted
+computational requirements.  The interfaces between each layer are abstracted
 such that only hardware-agnostic, generic interfaces are used.  The consistent
 interfaces and abstraction concepts allow interaction between the layers without
 strict need to understand the internals of the other layers.
 
-Furthermore, this abstracted approach allows various levels and components of
+Furthermore, this abstracted approach allows various layers and components of
 Arbwave to be developed and extended without affecting the general operation of
-the entire platform.  For example, since the hardware layers is abstracted away
+the entire platform.  For example, since the hardware layer is abstracted away
 from the computational engine and user interface of Arbwave, it was possible to
 insert a near seamless communication layer that allows parts of the accessible
 hardware to be provided by a remote connection.  Thus, as indicated in the lower
 portion of Fig.~\ref{fig:intro:design}, several devices from various hosts can
 be aggregated together for common control for a single experiment.
 Additionally, because of this abstraction, it is possible to add support for new
-hardware: one must only implement the interfaces that Arbwave requires.
+hardware without disruption to the user interface and computational engine
+layers: one must only implement the interfaces that Arbwave requires.
 
 
 \subsection{Supported Hardware\index{Supported Hardware}}\label{sec:hardware}
@@ -154,31 +155,40 @@ hardware: one must only implement the interfaces that Arbwave requires.
 Because the design of Arbwave abstracts the hardware support, adding new hardware does
 not impact the normal functions of the platform.  It is possible, therefore, to
 support a range of hardware and hardware drivers.  Tab.~\ref{tab:drivers} shows
-the various hardware drivers and related devices that are currently interfaced
-by Arbwave.
+the various hardware drivers and related devices for which the Arbwave backend
+layer implements the required driver interfaces.
 
-\begin{table}
+\begin{table}[ht!]
 \begin{center}
-  \begin{tabular}{|l|c|l|r|}
+  \begin{tabular}{|l|c|p{6.5cm}|p{2cm}|r|}
     \hline
     \textbf{\large Manufacturer} &
     \textbf{\large Model} &
     \textbf{\large Description} &
-    \textbf{\large Supported Driver(s)} \\
+    \textbf{\large Supported Driver(s)} &
+    \textbf{\large Platform(s)} \\
     \hline
     \hline
-    NI          &    *      & Various--see Tab.~\ref{tab:daqmx}& \acro{DAQmx}, \\
-    Various     &    *      & Various third-party devices on Linux & \acro{COMEDI} \\
-    Viewpoint   & DIO-64    & Digital input/output, 64-channel & DIO64 \\
-    Marvin Test & GX164x    & 16-bit Analog output, 64-channel & GxAo (in progress) \\
-    Marvin Test & GX3500    & FPGA based digital output, 120-channel & GxFpga \\
-    N/A         & DDSTiming & AFRL DDS/Timing Cape for Beaglebone black & N/A \\
+    NI          &    *      & Various--see Tab.~\ref{tab:daqmx}& \acro{DAQmx}
+                & Windows \\
+    Various     &    *      & Various third-party devices on Linux & \acro{COMEDI}
+                & Linux \\
+    Viewpoint   & DIO-64    & Digital input/output, 64-channel & DIO64
+                & Windows \\
+    Marvin Test & GX164x    & 16-bit Analog output, 64-channel & GxAo
+                & Linux, Windows \footnotemark \\
+    Marvin Test & GX3500    & FPGA based digital output, 120-channel & GxFpga
+                & Linux, Windows \footnotemark \\
+    N/A         & DDSTiming & AFRL DDS/Timing Cape for Beaglebone black & N/A
+                & N/A \\
     \hline
   \end{tabular}
   \label{tab:drivers}
   \caption{Supported Hardware Drivers}
 \end{center}
 \end{table}
+\footnotetext{Development still in progress}
+\footnotetext{Windows support not yet tested}
 
 
 \subsubsection{National Instruments: \acro{DAQmx}}
