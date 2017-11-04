@@ -680,7 +680,7 @@ def apply_scaling(value, chname, ci):
     assert type(value) is float, unit_err
   else:
     val = value / ci['units']
-    assert type(val) is float, \
+    assert type(val) in [float, int], \
       '{}:  wrong units: {}, expected [{}]'.format(chname, value, ci['units'])
     value = ci['scaling'](val)
 
