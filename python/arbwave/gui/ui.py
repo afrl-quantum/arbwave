@@ -308,6 +308,8 @@ class ArbWave(gtk.Window):
         body
     ))
 
+    self.set_size_request( 780, -1 )
+
     self.show_all()
 
     # ensure that the default_script is executed for default the global env
