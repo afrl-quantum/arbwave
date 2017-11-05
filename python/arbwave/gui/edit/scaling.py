@@ -329,7 +329,7 @@ class Editor(gtk.Dialog):
     self.order.set_value( chan[self.channels.INTERP_ORDER] )
     self.smoothing.set_value( chan[self.channels.INTERP_SMOOTHING] )
     self.scale_offset.set_text( fstr(chan[self.channels.PLOT_SCALE_OFFSET]) )
-    self.scale_factor.set_text( fstr(chan[self.channels.PLOT_SCALE_FACTOR], 1) )
+    self.scale_factor.set_text( fstr(chan[self.channels.PLOT_SCALE_FACTOR], '1.0') )
     store = chan[self.channels.SCALING]
     self.view.set_model( store )
 
