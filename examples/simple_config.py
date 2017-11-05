@@ -49,7 +49,12 @@ waveforms = \
                             'duration': '10*ms',
                             'enable': True,
                             'time': 't+10*ms',
-                            'value': 'ramp(_from=0*V,to=10*V,duration=10*ms)'}]}}
+                            'value': 'ramp(_from=0*V,to=10*V)'},
+                           {'channel': 'ao0',
+                            'duration': '10*ms',
+                            'enable': True,
+                            'time': 't',
+                            'value': 'U0 + (-2*V - U0)*x**0.5'}]}}
 
 clocks = \
 {'vp/Dev0/A/13': {'divider': {'type': int, 'value': 2}},
@@ -74,6 +79,8 @@ from physical.unit import *
 from physical.constant import *
 from physical import unit
 import Arbwave
+
+expr_steps = 40
 
 class SimpleRun(Arbwave.Runnable):
 	def run(self):

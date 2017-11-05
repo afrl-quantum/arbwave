@@ -38,6 +38,13 @@ There will be two types of sample- or update-rates permissible.
 \end{itemize}
 
 
+\begin{figure}[ht]
+  \centerline{\includegraphics[width=.5\textwidth]{figures/empty}}
+  \caption{Configuration window is empty upon startup}
+  \label{fig:devcfg:empty}
+\end{figure}
+
+
 
 \section{Clocks}
 In order to select a clock, you have to:
@@ -58,6 +65,20 @@ In order to select a clock, you have to:
     pane), you will be able to select one of the clocks that you defined in the
     clocks section.
 \end{enumerate}
+
+\begin{figure}[ht]
+  \centerline{\includegraphics[width=.5\textwidth]{figures/add-clock-vp-XO}}
+  \caption{Configuration window while adding a Viewpoint internal crystal
+  oscillator for use as a clock}
+  \label{fig:devcfg:add-clock-vp-XO}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{\includegraphics[width=.5\textwidth]{figures/clocks-added}}
+  \caption{Configuration window after having added various possible clocks}
+  \label{fig:devcfg:clocks-added}
+\end{figure}
+
 
 In other words, you would never really select any of the RTSI lines (aliased as
 \signal{TRIG/0}--\signal{TRIG/7}) directly when you select a clock.
@@ -86,4 +107,19 @@ Until we can get the counters working, you should be able to do:
 
 
 \section{Signal Routes}
+
+\begin{figure}[ht]
+  \centerline{\includegraphics[width=.5\textwidth]{figures/routes-added}}
+  \caption{Configuration window after defining signal routes for clocks}
+  \label{fig:devcfg:routes-added}
+\end{figure}
+
+
 \section{Clock Sources for Devices}
+
+\begin{figure}[ht]
+  \centerline{\includegraphics[width=.5\textwidth]{figures/devices-set-clocks}}
+  \caption{Configuration window after assigning appropriate clocks to
+  devices}
+  \label{fig:devcfg:devices-set-clocks}
+\end{figure}
