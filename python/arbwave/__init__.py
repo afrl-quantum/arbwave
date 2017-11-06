@@ -50,6 +50,12 @@ def main():
   parser.add_argument( '--disable', action='append', default=[],
     choices=backend.connection.get_driver_list(),
     help='Disable specific driver' )
+  parser.add_argument('--pyro-ns', metavar='NAMESERVER[:PORT]',
+    help='Specify Pyro nameserver address (in case it cannot be reached by UDP '
+         'broadcasts).  This option will only affect those backends that use '
+         'the Pyro Nameserver.  The default behavior will be to use a '
+         'broadcast search to find the Pyro Nameserver (which only works if it '
+         'is on the same subnet).')
   if has_hotshot:
     parser.add_argument('--profile',
       help='Run this script under the observation of a profiler, writing out to '
@@ -82,6 +88,7 @@ def main():
   options.simulated = args.simulated
   options.ipython = args.ipython
   options.disabled_drivers = set(args.disable)
+  options.pyro_ns = args.pyro_ns
   logging.root.setLevel( log_levels[ args.log_level ] )
 
   if has_hotshot and args.profile:

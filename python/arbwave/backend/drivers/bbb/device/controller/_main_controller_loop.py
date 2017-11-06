@@ -16,8 +16,11 @@ def main(klass):
     help='Specify the hostid label for this BeagleBone Black [Default: {}]'
          .format(hostname))
   parser.add_argument('--replace', action='store_true',
-    help='replace any currently registered instances matching this '
-         'hostid/deviceid with this instance')
+    help='Replace any currently registered instances matching this '
+         'hostid/deviceid with this instance.')
+  parser.add_argument('--ns', metavar='NAMESERVER[:PORT]',
+    help='Specify Pyro nameserver address (in case it cannot be reached by UDP '
+         'broadcasts).')
   args = parser.parse_args()
 
   import Pyro.core, Pyro.naming
@@ -25,9 +28,14 @@ def main(klass):
 
   # locate the NS
   try:
-    locator = Pyro.naming.NameServerLocator()
-    print 'searching for Naming Service...'
-    ns = locator.getNS()
+    if args.ns:
+      uri = Pyro.core.PyroURI('PYRONAME://{}/:Pyro.NameServer'.format(args.ns))
+      ns = Pyro.naming.NameServerProxy(uri)
+    else:
+      locator = Pyro.naming.NameServerLocator()
+      print 'searching for Naming Service...'
+      ns = locator.getNS()
+
     bind_ip = ns.adapter.conn.sock.getsockname()[0]
   except Pyro.core.NamingError:
     print 'Could not find name server'

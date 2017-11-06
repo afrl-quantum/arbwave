@@ -11,6 +11,7 @@ from itertools import chain
 import Pyro.core
 import Pyro.naming
 
+from .... import options
 from ....tools.path import collect_prefix
 from ...driver import Driver as Base
 from .device import BBB_PYRO_GROUP, create_device
@@ -36,6 +37,11 @@ class Driver(Base):
     # dict: user-specified uri --> (objectId, device uri)
     self.extra_uris   = dict()
 
+    self.resync_ns()
+    options.pyro_resync_set.add(self)
+
+
+  def resync_ns(self):
     if self.simulated:
       import sim
       self._ns = sim.NS()
@@ -45,7 +51,12 @@ class Driver(Base):
       # prepare to discover remote devices
       Pyro.core.initClient()
       try:
-        self._ns = Pyro.naming.NameServerLocator().getNS()
+        if options.pyro_ns:
+          uri = Pyro.core.PyroURI('PYRONAME://{}/:Pyro.NameServer'
+                                  .format(options.pyro_ns))
+          self._ns = Pyro.naming.NameServerProxy(uri)
+        else:
+          self._ns = Pyro.naming.NameServerLocator().getNS()
       except Pyro.core.NamingError:
         self._ns = None
         info('bbb:  could not find Pyro name server')
