@@ -2,7 +2,60 @@
 \thispagestyle{fancy}
 \pagestyle{fancy}
 
-\section{General Discussion}
+Configuration for device connections, clock definitions, signal routing, and
+device paramters is performed using the \textbf{Configure Signals/Triggers, ...}
+dialog.  This dialog can be opened by using the
+\textit{Edit$\rightarrow$Configure Devices} menu item or by selecting the
+\textit{wrench}/\textit{screwdriver} icon on the menu bar.  When Arbwave is
+initially loaded, these actions create the dialog with empty configuration items
+as shown in Fig.~\ref{fig:devcfg:empty}.
+
+\begin{figure}[h!]
+  \centerline{\includegraphics[width=.5\textwidth]{figures/empty}}
+  \caption{Configuration window is empty upon startup}
+  \label{fig:devcfg:empty}
+\end{figure}
+
+
+\section{Device Connections}\label{sec:devcfg:conn}
+Typically, devices that are controlled by Arbwave would also be physically
+connected to the same system on which Arbwave is running.  If this is the case,
+the reader can skip this section and continue to Sec.\ref{sec:devcfg:clocks} to
+configure the clocks.
+
+
+\begin{figure}[h!]
+  \centerline{\includegraphics[width=.5\textwidth]{figures/connections}}
+  \caption{Connection tab of configuration window with a default connection defined for
+  the localhost and a non-default connection to a host with an alias defined as
+  `pxi0'.}
+  \label{fig:devcfg:connection}
+\end{figure}
+
+In addition to controlling devices that are physically connected to the local
+machine, it is entirely possible to also control devices that are connected to
+another machine that is running Arbwave in service mode (see
+Sec.~\ref{sec:overview:cmdline} for relevant command line options).
+These connections to remote devices are managed by the
+Configure$\rightarrow$Connections tab.  On this tab, a user specifies an alias for a
+connection as well as the host name for the connection.
+For all connections, nearly all paths will be prefixed by a
+representation of the remote host or device.  For example, if a remote system is
+identified by the word ``pxi0'', all paths from the corresponding devices of the
+remote system will be prefixed by ``pxi0:''.  For example, `ni/Dev1/ao0' would become
+`pxi0:ni/Dev1/ao0'.  A user can also specify a default host.  In this case, any
+path that does not have the proper ``host:'' prefix will be interpreted to mean
+the default connection.
+
+The default configuration for connections are
+\begin{lstlisting}
+(prefix='local', host='localhost', default=True )
+\end{lstlisting}
+
+
+\section{Clocks}\label{sec:devcfg:clocks}
+
+\subsection{General Discussion}
 Analog and digital output cards generally have the notion of changing the output
 levels at times based upon some digital clock pulse.  As a very generic example,
 a particular hardware device will have a list of output values that it is to
@@ -15,8 +68,8 @@ other hardware, this notion is less explicit.  For Arbwave, regardless of the
 function and/or capability of the hardware, each output device must have a
 driving clock assigned explicitly to it.
 
-\subsection{Sample/Update rates}
-There will be two types of sample- or update-rates permissible.
+\subsubsection{Sample/Update rates}
+There are two types of sample- or update-rates permissible.
 \begin{itemize}
 \item  Fixed update rates.
   An example of this would be a hardware card that updates a channel for every
@@ -38,15 +91,6 @@ There will be two types of sample- or update-rates permissible.
 \end{itemize}
 
 
-\begin{figure}[ht]
-  \centerline{\includegraphics[width=.5\textwidth]{figures/empty}}
-  \caption{Configuration window is empty upon startup}
-  \label{fig:devcfg:empty}
-\end{figure}
-
-
-
-\section{Clocks}
 In order to select a clock, you have to:
 \begin{enumerate}
   \item define a clock in the clocks section (either by defining a
@@ -106,7 +150,7 @@ Until we can get the counters working, you should be able to do:
 \end{enumerate}
 
 
-\section{Signal Routes}
+\section{Signal Routes}\label{sec:devcfg:routes}
 
 \begin{figure}[ht]
   \centerline{\includegraphics[width=.5\textwidth]{figures/routes-added}}
@@ -115,7 +159,8 @@ Until we can get the counters working, you should be able to do:
 \end{figure}
 
 
-\section{Clock Sources for Devices}
+\section{Devices Configuration}\label{sec:devcfg:devices}
+\subsection{Clock Sources for Devices}\label{sec:devcfg:clksrc}
 
 \begin{figure}[ht]
   \centerline{\includegraphics[width=.5\textwidth]{figures/devices-set-clocks}}

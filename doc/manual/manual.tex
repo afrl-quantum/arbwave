@@ -72,6 +72,13 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define alignment characters for tabular environments
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Redefine margins and other page formatting
 
@@ -223,7 +230,7 @@ Dr. Spencer E. Olson
 \newchapter{Introduction}{intro}{intro}
 \newchapter{Installation}{install}{install}
 \newchapter{Quick Start}{quickstart}{quickstart}
-\newchapter{Configuration Overview}{config-overview}{overview}
+\newchapter{Operational Overview}{op-overview}{overview}
 \newchapter{Device Configuration}{devcfg}{devcfg}
 \newchapter{Channel Configuration}{channels}{channels}
 \newchapter{Waveforms}{waveforms}{waveforms}
