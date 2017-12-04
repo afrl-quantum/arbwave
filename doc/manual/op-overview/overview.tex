@@ -39,33 +39,28 @@ generally be done following this outline:
         \end{itemize}
 
     \end{enumerate}
-  \item Configure Channels
+  \item Configure Channels (Chap.~\ref{chap:channels})
     \begin{enumerate}
-      \item Channel Name
-        The channel name should be used to very briefly describe the use of the
-        particular physical output channel.  For example, for a digital output
-        being used to trigger a camera, an appropriate channel name would be
-        \textbf{Camera Trigger}.  \textbf{Channel Name} \textit{must} be unique with respect
-        to all other enabled channels.
-      \item Specifying Device
-        The channel device selection describes the underlying hardware device
-        and channel on that device that will be bound as the given
-        \textbf{Channel Name}.  At most one channel should be bound to an
-        underlying hardware output channel for all enabled channels.
-
-      \item Defining Scaling and Units
-
-      \item Static Values
-      \item Enabling
+      \item Define Channel Name (Sec.~\ref{sec:channels:chname})
+      \item Specifying Device (Sec.~\ref{sec:channels:dev})
+      \item Defining Scaling and Units (Sec.~\ref{sec:channels:scaling})
+      \item Static Values (Sec.~\ref{sec:channels:static})
+      \item Enabling (Sec.~\ref{sec:channels:enable})
     \end{enumerate}
-  \item Build Waveforms
+
+  \item Build Waveforms (Chap.~\ref{chap:waveforms})
     \begin{enumerate}
       \item Define Groups and Waveform Elements
     \end{enumerate}
-  \item Execute Waveform
+  \item Execute Waveform (Sec.~\ref{sec:waveforms:exec} and
+    Chaps.~\ref{chap:scripting}--\ref{chap:iterating})
+    \begin{enumerate}
+      \item Extend with scripting (Chap.~\ref{chap:scripting})
+      \item Iterate/optimize (Chap.~\ref{chap:iterating})
+    \end{enumerate}
 \end{enumerate}
 %
-Chaps.~\ref{chap:devcfg}--\ref{chap:iterating} give greater detail for the
+As noted by the references above, Chaps.~\ref{chap:devcfg}--\ref{chap:iterating} give greater detail for the
 various steps outlined here.
 
 
@@ -74,28 +69,9 @@ Throughout the configuration process, one frequently interact with strings that
 represent various devices and signals.  Generally, these devices, signals, and
 channels are identified by a type of path, similar to a UNIX file path.
 
-Each device, output channel (analog, digital, timing), or other device item is
-uniquely identified by a path that also indicates is logical connections.  For
-example, the National Instruments driver path begins with `ni' and subsequent
-devices served by this driver should be identified by `sub-directories' within
-the `ni' path.  For example, analog channels in the `ni' path are denoted like:
-%
-\begin{itemize}
-  \item ni/Dev1/ao0
-  \item ni/Dev1/ao1
-  \item ni/Dev2/ao0
-  \item ni/Dev2/ao1
-\end{itemize}
-%
-In this example, ni/Dev1/ao is a device that also includes at least channels 0
-and 1.  In this example, it is also clear that each device driver must define
-its own unique root path identifier, i.e. `ni' for National Instruments, `vp'
-for Viewpoint, `uei' for United Electronic Industries, and so forth.
-Currently assigned prefixes are shown in Tab.~\ref{tab:prefixes}.
-
-\begin{table}[h!]
+\begin{table}[b!]
   \begin{center}
-    \begin{tabular}{|lR{8cm}|}
+    \begin{tabular}{|lR{12cm}|}
       \hline
       PREFIX & Backend Driver \\
       \hline
@@ -114,10 +90,35 @@ Currently assigned prefixes are shown in Tab.~\ref{tab:prefixes}.
   \end{center}
 \end{table}
 
+\subsubsection{Driver-Specific Paths}
+Each device, output channel (analog, digital, timing), or other device item is
+uniquely identified by a path that also indicates its logical connections.  For
+example, the National Instruments driver path begins with `ni' and subsequent
+devices served by this driver should be identified by `sub-directories' within
+the `ni' path.  For example, analog channels in the `ni' path are denoted like:
+%
+\begin{itemize}
+  \item ni/Dev1/ao0
+  \item ni/Dev1/ao1
+  \item ni/Dev2/ao0
+  \item ni/Dev2/ao1
+\end{itemize}
+where \texttt{Dev1} and \texttt{Dev2} are separate PCI or PXI cards.
+%
+In this example, \texttt{ni/Dev1/ao} is a device that also includes all the
+analog channels that are logically part of the the same physical analog output
+device (at least channels 0 and 1 in the case shown here).  In this example, it
+is also clear that each device driver must define its own unique root path
+identifier, i.e. `ni' for National Instruments, `vp' for Viewpoint, `uei' for
+United Electronic Industries, and so forth.  Currently assigned prefixes are
+shown in Tab.~\ref{tab:prefixes}.
 
+
+\subsubsection{Common Signal Paths}
 Common paths should use the same name regardless of which device they are on.
 For example, the backplane trigger lines have been given these names (whether
-they are being provided by a PXI chassis or a RTSI bus connection):
+they are being provided by a PXI chassis or a Real-Time System Integration
+(\acro{RTSI}) bus connection for PCI cards):
 \begin{itemize}
   \item TRIG/0
   \item TRIG/1
