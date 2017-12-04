@@ -82,6 +82,9 @@ class NavigationToolbar(_NavigationToolbar):
     else:
       self._active = 'HSPAN'
 
+    if self.canvas.widgetlock.locked():
+      self.canvas.widgetlock.release(self)
+
     if self._idPress is not None:
       self._idPress=self.canvas.mpl_disconnect(self._idPress)
       self.mode = ''
@@ -92,13 +95,11 @@ class NavigationToolbar(_NavigationToolbar):
 
     if  self._active:
       self.mode = 'zoom hspan'
-      self.canvas.widgetlock(self)
     else:
       self.mode = ''
-      self.canvas.widgetlock.release(self)
 
     for s in self.hspan_controls:
-      setattr(s, 'visible', bool(self._active))
+      setattr(s, 'visible', self._active == 'HSPAN')
 
     # for simplicity we'll disable the vspan_controls regardless of whether
     # they were in use or not
@@ -119,6 +120,9 @@ class NavigationToolbar(_NavigationToolbar):
     else:
       self._active = 'VSPAN'
 
+    if self.canvas.widgetlock.locked():
+      self.canvas.widgetlock.release(self)
+
     if self._idPress is not None:
       self._idPress=self.canvas.mpl_disconnect(self._idPress)
       self.mode = ''
@@ -129,13 +133,11 @@ class NavigationToolbar(_NavigationToolbar):
 
     if  self._active:
       self.mode = 'zoom vspan'
-      self.canvas.widgetlock(self)
     else:
       self.mode = ''
-      self.canvas.widgetlock.release(self)
 
     for s in self.vspan_controls:
-      setattr(s, 'visible', bool(self._active))
+      setattr(s, 'visible', self._active == 'VSPAN')
 
     # for simplicity we'll disable the hspan_controls regardless of whether
     # they were in use or not

@@ -26,7 +26,7 @@ def mkxy( (encoding, L), (x0, y0) ):
   y0:  Previous value for a channel.  If y0 is None, this is the first value
        grouping for this channel.
   """
-  if encoding is 'linear':
+  if encoding == 'linear':
     X, Y = zip(*L)
     if y0 is not None:
       # if this is not the first point, we copy the last value for our new first

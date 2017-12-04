@@ -105,23 +105,23 @@ class ScrollMaster:
 
       step = event.step * (x0[1] - x0[0])/10.0
 
-      if ( event.button is 'up'   and not x0[1] >= xb[1] ) or \
-         ( event.button is 'down' and not x0[0] <= xb[0] ):
+      if ( event.button == 'up'   and not x0[1] >= xb[1] ) or \
+         ( event.button == 'down' and not x0[0] <= xb[0] ):
         x1 = ( x0[0]+step, x0[1]+step )
         self.axes.set_xlim(x1)
         event.canvas.draw()
         if self.toolbar: self.toolbar.push_current()
 
-    elif event.key is 'control':
+    elif event.key == 'control':
       x0 = self.axes.get_xlim()
       xb = self.axes_basis.get_xlim()
 
-      if (event.button is 'down'   and (x0[0] > xb[0] or x0[1] < xb[1]) ) or \
-          event.button is 'up':
+      if (event.button == 'down'   and (x0[0] > xb[0] or x0[1] < xb[1]) ) or \
+          event.button == 'up':
         xc = 0.5*( x0[0] + x0[1] )
         xr = ( x0[1] - x0[0] ) * 1.2**(-1*event.step)
 
-        if event.button is 'down' and (xc + xr/2.0) > xb[1] :
+        if event.button == 'down' and (xc + xr/2.0) > xb[1] :
           xc = xb[1] - xr/2.0
 
         if ( xc - xr/2.0 ) < xb[0]:
