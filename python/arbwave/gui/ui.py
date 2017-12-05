@@ -139,6 +139,10 @@ class ArbWave(gtk.Window):
       self.set_screen(parent.get_screen())
     except AttributeError:
       self.connect('destroy', finished)
+      def quit():
+        """Quit Arbwave"""
+        finished(self)
+      self.quit = quit
 
 
     #  ###### SET UP THE UNDO/REDO STACK AND CALLBACKS ######

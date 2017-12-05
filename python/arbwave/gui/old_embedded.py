@@ -545,8 +545,6 @@ class Python(gtk.Frame):
         print (
           '  ArbWave Shell Help: \n'
           '  Some useful ArbWave commands: \n'
-          'quit()\n'
-          '  quit Arbwave!\n\n'
         ) + fundoc
         return
       help(*args, **kwargs)
@@ -574,7 +572,8 @@ class Python(gtk.Frame):
         finally:
           self.ui.config_file = old
 
-      self.shell_cmds += [ save, saveas ]
+
+      self.shell_cmds += [ save, saveas, self.ui.quit ]
 
 
   def get_globals(self, G=None):

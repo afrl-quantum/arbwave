@@ -33,10 +33,7 @@ class Python(ipython_view.IPythonView):
       """
       self.reset(**kwargs)
 
-    def quit():
-      gtk.main_quit()
-
-    self.shell_cmds = [ reset, quit ]
+    self.shell_cmds = [ reset, self.ui.quit ]
 
     if self.ui:
       def save():
