@@ -1,50 +1,176 @@
 % vim: ts=2:sw=2:tw=80:et
 \thispagestyle{fancy}
 \pagestyle{fancy}
+
 \section{Global Script}
-    Some automatic variables are \symb{duration} and \symb{natural_time}.
+The \textbf{Global Script} facility allows the user to fully define and
+customize the Python environment within which Arbwave runs.  For instance,
+modules can be imported to extend the computational tools available to the user.
+Furthermore, functions and classes can be defined to make the users workflow
+more streamlined or simple.  This script is generally executed when a
+configuration file is loaded or any other change to the \textbf{Global Script}
+is made.  It is also possible for the user to manually request the runtime
+environment to be reinitialized and the \textbf{Global Script} to be executed
+anew.  This is done via the command-prompt interface using the \texttt{reset()}
+function.
 
-  \subsection{Variables} \label{script:variables}
-    If you want to use a variable in the waveform element lines, you should
-    probably define that variable in the global variables/functions script.  By
-    doing so, these variables will be available everywhere and also at any time.
-    You can then modify these variables by specifying them as loop variables in
-    the loop editor and selecting ``Global''.
+Using the \textbf{Global Script}, one can initialize connections to cameras,
+initialize serial (USB) hardware, or perform any number of other operations.
 
-    Any valid python expression that can be assigned can be used as a loop
-    variable.  For instance, consider the following variables initialized in the
-    global script:
+\subsection{Arbwave Command Line}
+One way to immediately modify or test the environment established by the
+\textbf{Global Script} is to use the \textbf{Arbwave Command Line} interface
+provided on the main window.  This interface is a Python command interpreter
+operating within the confines of the global environment.  This means that any
+variables or expressions executed in the \textbf{Arbwave Command Line}
+immediately effect the global environment.
 
-    \begin{verbatim}
-    Bfield = [0*Gauss, 10*Gauss, 123*Gauss]
-    CoilCurrent = 4.2*A
-    Frequency = dict( mot = -10*MHz, pgc = -40*MHz, image=0*MHz )
-    \end{verbatim}
+\subsection{Variables} \label{script:variables}
+If you want to use a variable in the waveform element lines, you should
+probably define that variable in the \textbf{Global Script}.  By
+doing so, these variables will be available everywhere and also at any time.
+You can then modify these variables by specifying them as loop variables in
+the loop editor and selecting ``Global''.
 
-    These expressions and any valid Python expression involving these variables
-    can be used anywhere in Arbwave.
+Any valid python expression that can be assigned can be used as a loop
+variable.  For instance, consider the following variables initialized in the
+global script:
 
-  \subsection{\textbf{Arbwave} Module (virtual)}
-  \subsection{\textbf{arbwave} Module}
+\begin{lstlisting}
+  Bfield = [0*Gauss, 10*Gauss, 123*Gauss]
+  CoilCurrent = 4.2*A
+  Frequency = dict(mot = -10*MHz, pgc = -40*MHz, image=0*MHz)
+\end{lstlisting}
 
-  \subsection{Experimental Control Loop}
-  \subsubsection{Basic Customization}
+These expressions and any valid Python expression involving these variables
+can be used anywhere in Arbwave.
 
-  \begin{lstlisting}
+
+\subsection{Arbwave Python Modules}
+Arbwave provides two modules that can be imported for extending or probing the
+functionality in Arbwave.  The first, \textbf{Arbwave}, is a virtual module with
+direct connections to the running process engine.  The second, \textbf{arbwave}
+(all lower-case), is the module hierarchy of the Arbwave code implmentation.
+This module is generally not for everyday use, but rather for exploring and
+testing some of the internals of Arbwave.
+
+\subsubsection{\textbf{Arbwave} Module (virtual)}
+The \textit{Arbwave} module is a virtual module with access to the running
+process Arbwave engine.  Among other things, with the functions of this virtual
+module, it is possible to force a hardware update, save the waveform to an
+external output file.  The available functions from this virtual module are as
+follows.
+
+\begin{lstlisting}
+  Arbwave.add_runnable(label, runnable):
+    """
+    Adds a Runnable class to the list of possible runs.
+    """
+
+  Arbwave.update(stop=ANYTIME, continuous=False, wait=True):
+    """
+    Process inputs to generate waveform output and send to
+    plotter.
+      <b>stop</b>    [Default : Arbwave.ANYTIME]
+        The time at which to test for stop requests during the
+        update function.
+        Valid values:
+          None
+            Do not check for stop requests during the update
+            function.
+          Arbwave.BEFORE
+            Before the waveforms are computed and sent to
+            hardware.
+          Arbwave.AFTER
+            After the waveforms are computed and sent to
+            hardware.
+          Arbwave.ANYTIME
+            Either before or after waveforms are computed
+            and sent to hardware.
+      <b>wait</b>
+        Whether to wait until the non-continuous waveform has
+        completed before returning from the update function.
+    """
+
+  Arbwave.update_static():
+    """
+    Only process static outputs and send to plotter.
+    """
+
+  Arbwave.update_plotter():
+    """
+    Process inputs to send only to plotter.
+    """
+
+  Arbwave.stop_check():
+    """
+    Check to see if a request to stop has been issued and
+    stop if so.
+    """
+
+  Arbwave.save_waveform(filename, fmt='gnuplot'):
+    """
+    Save waveform to a file in the specified output format.
+      filename : the file to save the waveform to
+        If the output file format is for gnuplot, then the filename can be:
+          (1) a filehandle of an open file to write to
+          (2) a name of a file to open then write to
+          (3) or filename format to use for creating files specific to each
+              clock.
+              Example:  file-{}.txt
+               {} will be replaced with the clock name
+          If a single filename is specified, everything is saved in the same file
+
+      fmt : either 'gnuplot' or 'python' to specify the output format
+    """
+
+  Arbwave.find(label, index=0):
+    """
+    Search for either channels or groups at the current level.
+      label : name of channel or group
+      index : select the ith occurance of a channel/group label
+    """
+
+  Arbwave.find_group(label, index=0):
+    """
+    Search for group at the current level.
+      label : name of group
+      index : select the ith occurance of a group label
+    """
+
+  Arbwave.find_channel(label, index=0):
+    """
+    Search for channel at the current level.
+      label : name of channel
+      index : select the ith occurance of a channel label
+    """
+\end{lstlisting}
+
+\subsubsection{\textbf{arbwave} Module}
+The \textbf{arbwave} (all lower-case) module is the module hierarchy of the
+Arbwave code implmentation.  This module is generally not for everyday use, but
+rather for exploring and testing some of the internals of Arbwave.  This module
+is particularly useful in debugging the development of new backend drivers.
+
+
+\subsection{Experimental Control Loop}\label{sec:scripting:runnable}
+\subsubsection{Basic Customization}\label{sec:scripting:simple}
+
+\begin{lstlisting}
   class SimpleRun(Arbwave.Runnable):
   	def run(self):
   		Arbwave.update()
   		return 0
-  \end{lstlisting}
+\end{lstlisting}
 
 
-  \begin{lstlisting}
+\begin{lstlisting}
   Arbwave.add_runnable( 'Simple', SimpleRun() )
-  \end{lstlisting}
+\end{lstlisting}
 
-  \subsection{Advanced Customization}
+\subsection{Advanced Customization}
 
-  \begin{lstlisting}
+\begin{lstlisting}
   class Runnable(object):
     """
     Runnable class to allow more significant complexity during a data run.
@@ -78,7 +204,7 @@
   	def run(self):
   		Arbwave.update()
   		return 0
-  \end{lstlisting}
+\end{lstlisting}
 
 \section{Local Scripts}
 In addition to executing scripts that affect the entire experiment globally, it

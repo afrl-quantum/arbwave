@@ -348,8 +348,21 @@ dt      : the timestep to increment (Default: duration/steps)
 Only one of dt or steps can be used.
 """
 \end{lstlisting}
-
-
-\section{Execution}\label{sec:waveforms:exec}
-
 \end{itemize}
+
+
+\section{Waveform Selector}
+Very often, when defining a very complicated experimental configuration, it can
+be desirable to create and execute a very simple different waveform without
+changing any of the device or channel configuration.  This is possible using the
+\textbf{Waveform Set Editor}.  Selecting different defined waveforms and access
+to the \textbf{Waveform Set Editor} is done by using the ``editor'' button just
+below the \textbf{Delete Waveform Element} button.  One can also select or edit
+waveforms using the context menu within the \textit{Waveform} section of the
+main window.  The insert key is particularly helpful do create blank new waveforms.
+
+
+\section{Execution}
+When the entire waveform has been defined (and hence shown in the plot
+viewport), one is ready to begin excuting the waveform.  The next chapters
+discuss simple and also more complex methods of executing the waveforms.
