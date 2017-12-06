@@ -3,6 +3,7 @@
 from gi.repository import Gtk as gtk, Gdk as gdk
 
 import sys, re, pydoc
+from logging import warning, debug, info, error
 
 import numpy as np
 from matplotlib import mlab
@@ -20,7 +21,10 @@ from ..spreadsheet import keys
 
 from algorithms import algorithms
 
-FMAX = sys.float_info.max
+# some really big number to use for bad constraint merits.  sys.float_info.max
+# used to be used, but it tends to cause floating point errors--probably because
+# the algorithms do some additional math with the merit values.
+MAX_MERIT = 1e200
 
 class Parameters(gtk.ListStore):
   NAME = 0
@@ -325,7 +329,7 @@ class Executor:
     self.cancelled = False
     try:
       if opt.run() not in [ gtk.ResponseType.OK ]:
-        print 'cancelled!'
+        info('Optimization cancelled!')
         self.cancelled = True
         return
     finally:
@@ -413,9 +417,8 @@ class Executor:
         for name, kwargs in self.algorithms.iteritems():
           self.evals = 0
           x0, merit = algorithms[name]['func'](self._call_func, x0, **kwargs)
-          # print parameters rescaled
-          print 'After', name, 'x0: ', x0*scale, ', merit: ', merit
-          print 'Number function evaluations: ', self.evals
+          info('{} optimization: final state:%s, merit:%g', x0*scale, merit)
+          info('{} optimization: Number waveforms executed: %d', self.evals)
 
         self.save_globals( x0 * scale )
 
@@ -449,11 +452,18 @@ class Executor:
     self.save_globals(x)
 
     # now, test constraints before running the function
-    c_failed = [ True  for c in self.constraints
-                  if c[2] and not c[1](self.Globals) ]
+    # first test parameter range constraints
+    if np.any(x < self.params[:,1]) or np.any(x > self.params[:,2]):
+      warning('Optimization parameter range constraint(s) failed')
+      c_failed = True
+    else:
+      # now test all user-provided constraint equations
+      c_failed = [ True  for c in self.constraints
+                    if c[2] and not c[1](self.Globals) ]
+      warning('Optimization constraint equantion(s) failed')
+
     if c_failed:
-      print 'constraint failed'
-      result = [FMAX] + [0]*len(self.runnable.extra_data_labels())
+      result = [MAX_MERIT] + [0]*len(self.runnable.extra_data_labels())
     else:
       def A(r):
         # need better test like "if iterable"
