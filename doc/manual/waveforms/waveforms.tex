@@ -2,17 +2,67 @@
 \thispagestyle{fancy}
 \pagestyle{fancy}
 
-\section{Waveform Basics}
+The primary use of Arbwave is to create a coordinated, arbitrary, multi-channel
+waveform using a multitude of voltages, currents, frequeny sources, digital
+signals, or other experimental controls.  The interface in Arbwave is geared
+towards making arbitrary waveforms as simple as possible while still allowing
+very complex waveform features.  This chapter describes the techniques used in
+Arbwave to define the waveforms.  The first section discusses some basic
+concepts used in all components of the waveform.  The next two sections discuss
+how to create simple to increasingly complex waveform components.
+
+\section{Basic Concepts}
+\begin{figure}[ht]
+  \centerline{\includegraphics[width=.8\textwidth]{figures/basic-waveform}}
+  \caption[Very simple waveform]{
+    A very simple waveform of one channel with explicitly set times and
+    durations.
+  }
+  \label{fig:quick:basic-waveform}
+\end{figure}
+
+The fundamental component of a waveform is a \textit{Waveform Element}.  The
+\textit{Waveform Element} identifies a single output channel, a timeframe for
+the \textit{Waveform Element}, and a value of the output channel for the given
+timeframe.  Thus, each \textit{Waveform Element} represents a single (or set of)
+transition(s)--a transition being any intentional change or reprogramming of the
+output value of a channel.
+
+A waveform consists of one or more transitions, as defined by a sequence of
+\textit{Waveform Element}s, that are coordinated in time such that their
+occurrence is deterministic.  As an example, consider the configuration created
+in Chaps.~\ref{chap:devcfg} and~\ref{chap:channels}.  Using the \textit{Waveform}
+section of the main window, it is possible to define an arbitrary set of
+transitions.
+
+\begin{enumerate}
+  \item Waveform element (Sec.~\ref{sec:waveforms:elements})
+  \item Time (Sec.~\ref{sec:waveforms:nattime})
+  \item Duration (Sec.~\ref{sec:waveforms:nattime})
+  \item Value (Sec.~\ref{sec:waveforms:value})
+  \item Groups (Sec.~\ref{sec:waveforms:groups})
+\end{enumerate}
+
+
+\section{Waveform Element}\label{sec:waveforms:elements}
 
 \begin{figure}[ht]
   \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-0}}
   \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-0}}
   \caption[Very simple waveform]{
-    a) Add some simple waveform elements.
-    b) Plot of simple waveform elements.
+    A very simple waveform consisting of one channel and two waveform elements.
+    a) Definition of the two simple waveform elements.
+    b) Plot of simple digital waveform elements.  Note that this plot shows the first
+    digital waveform element as \texttt{True} with the filled in box for the
+    first 20~ms while the last 10~ms is not filled in, as requested by the
+    second waveform element that shows a \texttt{False} value for the last
+    10~ms.
   }
   \label{fig:quick:waveform-0}
 \end{figure}
+
+
+\subsection{Natural Time and Duration}\label{sec:waveforms:nattime}
 
 \begin{figure}[ht]
   \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-1}}
@@ -39,19 +89,21 @@
 \end{figure}
 
 
-\subsection{Natural Time and Duration}
+\subsection{Automatic Waveform-Element Variables}
 
-\begin{table}
+\begin{table}[htb!]
 \begin{center}
-  \begin{tabular}{|l | c | c | c |}
+  \begin{tabular}{|L{1.5cm}|c|C{1cm}|C{2cm}|C{2cm}|C{2cm}|}
     \hline
-    Variable Name  & Description  & Group Scope & Waveform Element Scope \\
+    Variable Name  & Description  & Group Scope & Waveform Element Scope
+                   & \hyperref[sec:waveforms:expr]{Value Expressions}
+                   & \hyperref[sec:waveforms:generators]{Value Generators}\\
     \hline
-    \symb{natural_time} & Currently progressed natural time & X & X \\
-    \symb{duration}     & Duration of current group & X & X \\
-    \symb{dt_clk}       & Minimum clock period of channel &  & X \\
-    \symb{U0}           & Last value of channel &  & X \\
-    \symb{relative_time}& Relative waveform-element time &  & X \\
+    \symb{natural_time} & Currently progressed natural time & X & X & X & X\\
+    \symb{duration}     & Duration of current group         & X & X & X & X\\
+    \symb{dt_clk}       & Minimum clock period of channel   &   & X & X & X\\
+    \symb{U0}           & Last value of channel             &   & X & X & X\\
+    \symb{relative_time}& Relative waveform-element time    &   & X & X &  \\
    \hline
   \end{tabular}
   \caption[Automatic waveform variables]{
@@ -62,50 +114,38 @@
 \end{table}
 
 
-\section{Groups}
 
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-4}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-4}}
-  \caption{a) Add some simple waveform elements. b) Plot of simple
-  waveform elements.}
-  \label{fig:quick:waveform-4}
-\end{figure}
+\section{Waveform Element-Values}\label{sec:waveforms:value}
 
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-5}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-5}}
-  \caption{a) Waveform elements divided into two main groups. b) Plot of
-  waveform after grouping elements.}
-  \label{fig:quick:waveform-5}
-\end{figure}
-
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-6}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-6}}
-  \caption{a) Using automatic $dt$ variable. b) Plot of waveform after
-  using $dt$ variable.}
-  \label{fig:quick:waveform-6}
-\end{figure}
-
-\subsection{Subgroups}
-
-
-\section{Waveform Elements}
-\subsection{Value Expressions}
-\subsubsection{Basics}
 The value of each waveform element, in the most basic form, may be specified as
 a single value with units appropriate for the respective channel.
-
+%
 Often times, a single value for a waveform element is not sufficient.  Arbwave
 provides two mechanisms that allow a single waveform element to represent a
 time-varying function.  The simplest of these two is using \textit{Value
-Expressions}, as described in here.  The second mechanism is using the much more
-powerful, extensible, but much more complicated-to-extend \textit{Value
-Generators }--see help menu for more information.
+Expressions}.  The second mechanism is using the much more powerful, extensible,
+but much more complicated-to-extend \textit{Value Generators}.  These two
+mechanisms areas discussed in the following Sec.~\ref{sec:waveforms:expr} and
+Sec.~\ref{sec:waveforms:generators} respectively.
 
-If the sympy package is available, Arbwave uses it to allow the user to specify
-functional forms of values for a waveform element.  When using expressions, in
+
+\subsection{Value Expressions}\label{sec:waveforms:expr}
+\textit{Value Expressions} provide a fairly simple mechanism to have a single
+waveform element represent a larger time-varying function.  \textit{Value
+Expressions} rely on the Python SymPy package being installed.  From the SymPy
+webpage~\cite{sympy}:
+\begin{quote}
+SymPy is a Python library for symbolic computation. It provides computer algebra
+capabilities either as a standalone application, as a library to other
+applications\ldots
+\end{quote}
+After Arbwave successfully automatically tests if the SymPy package is
+available, the \textit{Value Expressions} interface is enabled and the user may
+specify functional forms of values for a waveform element.
+
+\subsubsection{Basics}
+
+When using expressions, in
 order to define how a channel's value should change over time, one uses the
 symbol \symb{relative_time} to represent relative waveform-element time.
 \symb{relative_time} always varies
@@ -183,7 +223,7 @@ parameters:
 
 
 
-\subsection{Value Generators}
+\subsection{Value Generators}\label{sec:waveforms:generators}
 Value generators allow more power waveform generation control for a single
 waveform element.  Rather than simply expressing the functional form of the
 waveform element, a value generator instantiates the respective value-generator
@@ -349,6 +389,37 @@ Only one of dt or steps can be used.
 """
 \end{lstlisting}
 \end{itemize}
+
+
+\section{Groups}\label{sec:waveforms:groups}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-4}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-4}}
+  \caption{a) Add some simple waveform elements. b) Plot of simple
+  waveform elements.}
+  \label{fig:quick:waveform-4}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-5}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-5}}
+  \caption{a) Waveform elements divided into two main groups. b) Plot of
+  waveform after grouping elements.}
+  \label{fig:quick:waveform-5}
+\end{figure}
+
+\begin{figure}[ht]
+  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-6}}
+  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-6}}
+  \caption{a) Using automatic $dt$ variable. b) Plot of waveform after
+  using $dt$ variable.}
+  \label{fig:quick:waveform-6}
+\end{figure}
+
+\subsection{Subgroups}
+
+
 
 
 \section{Waveform Selector}
