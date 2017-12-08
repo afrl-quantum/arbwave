@@ -116,7 +116,7 @@ facilitates execution of these waveforms in various operation patterns, such
 as control-variable nested loop iteration and multi-variable optimization.
 Finally, user scripting, via Python, can be inserted into the execution to
 customize a particular experimental procedure, customize an optimization
-procedure, and hook into various external data recorders processors.
+procedure, and hook into various external data recorders' processors.
 
 
 \section{Design Approach}
@@ -131,7 +131,7 @@ procedure, and hook into various external data recorders processors.
 \end{figure}
 
 As shown in Fig.~\ref{fig:intro:design}, Arbwave is designed as a layered
-operation platform.  Each layer represents a sent of tasks or compartments of
+operation platform.  Each layer represents a set of tasks or compartments of
 computational requirements.  The interfaces between each layer are abstracted
 such that only hardware-agnostic, generic interfaces are used.  The consistent
 interfaces and abstraction concepts allow interaction between the layers without

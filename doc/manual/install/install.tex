@@ -10,7 +10,7 @@ first be installed.
 \subsection{Dependencies}
 Arbwave is dependent on various packages, both generally available and also
 several that are distributed with the arbwave project repository.  This list
-enumerate the various specific packages that Arbwave depends on.  Those
+enumerates the various specific packages that Arbwave depends on.  Those
 distributed as a part of the Arbwave project repository are marked below.
 
 \begin{itemize}
@@ -47,7 +47,7 @@ distributed as a part of the Arbwave project repository are marked below.
 
       \item \textbf{pylibnidaqmx}
         \begin{itemize}
-          \item must have modifications by S Olson
+          \item must have modifications by S. Olson
           \item Python wrapper library (wraps NI DAQmx nicaiu.dll c library)
             provides actual linkage to the NIDAQmx drivers
           \item Only needed if NIDAQmx relevant hardware is going to be used
@@ -100,8 +100,8 @@ but rather a set of guidelines that might be used to get Arbwave operational.
 
 \subsection{Windows Platforms}
 
-Note that you may need to specify a web proxy:\\
-to get conda to use our web proxy, I had to do:
+Note that you may need to specify a web proxy;\\
+the commands to get conda to use a web proxy, in some cases, is:
 \begin{verbatim}
 set http_proxy=http://proxy.server:port
 set https_proxy=http://proxy.server:port
@@ -113,7 +113,7 @@ These are the steps I took to get Arbwave functional:
   \item Install Anaconda python (2.7)
   \item install \verb|pygi-aio-3.x.x_ref<N>-setup.exe| \\
     This is available from pygnome project.
-    During the installation process, make at least the following choices:
+    During the installation process, choose at least the following:
     \begin{itemize}
       \item GNOME libraries:
         \begin{itemize}
@@ -132,17 +132,18 @@ These are the steps I took to get Arbwave functional:
     \end{itemize}
 
   \item Install Pyro (v3) \\
-    I simply used Anaconda to install the latest version of Pyro.  Doing a
-    search, like, \verb|anaconda search -t conda pyro| yielded a source such
-    that I was able to install Pyro by doing:
+    Anaconda may be able to assist in installing the appropriate version of pyro.
+      Searching, for example, \verb|anaconda search -t conda pyro| yielded a source such
+    that pyro installation was performed by:
     \begin{verbatim}
       conda install -c david_baddeley pyro
     \end{verbatim}
 
   \item Install graph library [you can skip this step] \\
     It seems that \textbf{networkx} is already installed by default with
-    anaconda and I could not figure out how to install \textbf{python-igraph}
-    cleanly.
+    anaconda and a clean install of \textbf{python-igraph}
+    was not trivial.  However, note that taking the time to install 
+    \textbf{python-igraph} will result in significant performance improvement.
 
   \item Do either of these:
     \begin{enumerate}
