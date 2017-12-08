@@ -8,17 +8,18 @@ signals, or other experimental controls.  The interface in Arbwave is geared
 towards making arbitrary waveforms as simple as possible while still allowing
 very complex waveform features.  This chapter describes the techniques used in
 Arbwave to define the waveforms.  The first section discusses some basic
-concepts used in all components of the waveform.  The next two sections discuss
+concepts used in all components of the waveform.  The next three sections discuss
 how to create simple to increasingly complex waveform components.
 
 \section{Basic Concepts}
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centerline{\includegraphics[width=.8\textwidth]{figures/basic-waveform}}
   \caption[Very simple waveform]{
     A very simple waveform of one channel with explicitly set times and
-    durations.
+    durations.  The bottom of the highlighted portion, shows how the analog
+    \textbf{X-Bias} channel varies over time.
   }
-  \label{fig:quick:basic-waveform}
+  \label{fig:waveforms:basic}
 \end{figure}
 
 The fundamental component of a waveform is a \textit{Waveform Element}.  The
@@ -31,65 +32,46 @@ output value of a channel.
 A waveform consists of one or more transitions, as defined by a sequence of
 \textit{Waveform Element}s, that are coordinated in time such that their
 occurrence is deterministic.  As an example, consider the configuration created
-in Chaps.~\ref{chap:devcfg} and~\ref{chap:channels}.  Using the \textit{Waveform}
-section of the main window, it is possible to define an arbitrary set of
-transitions.
+in Chaps.~\ref{chap:devcfg} and~\ref{chap:channels}.  Continuing this example,
+one can use the \textit{Waveform} section of the main window to define an
+arbitrary set of transitions.  For instance, a simple waveform representing four
+sequential steps of the \textbf{X-Bias} current can easily be created, as
+represented in the highlighted portion of Fig.~\ref{fig:waveforms:basic}.  As
+shown, each \textit{Waveform Element} (or row in the \textit{Waveforms} section)
+has an associated output channel, a beginning time, a duration, a constant
+value, and a flag that indicates whether the element should be enabled.
 
-\begin{enumerate}
-  \item Waveform element (Sec.~\ref{sec:waveforms:elements})
-  \item Time (Sec.~\ref{sec:waveforms:nattime})
-  \item Duration (Sec.~\ref{sec:waveforms:nattime})
-  \item Value (Sec.~\ref{sec:waveforms:value})
-  \item Groups (Sec.~\ref{sec:waveforms:groups})
-\end{enumerate}
+As a waveform is built, Arbwave ensures that each transition occurs exactly in
+accordance to the timing of the device clock source (see
+Chap.~\ref{chap:devcfg}).  Using this precise time information, Arbwave shows
+the analog and digital waveforms that should be generated in waveform-plot
+viewport--the reader should easily note this Arbwave waveform plotting facility,
+as shown in the bottom of the highlighted portion of
+Fig.~\ref{fig:waveforms:basic}.
 
+Although Fig.~\ref{fig:waveforms:basic} explicitly specifies absolute start time
+and duration of the \textit{Waveform Element}s, it is often much more
+advantagous to specify these in relative mode, taking advantage of Arbwave's
+ability to automatically calculate the acutal time of a \textit{Waveform
+Element}.  Furthermore, it is often desirable to specify the value of a channel
+in a manner that (at least somewhat) smoothly varies the channel over the
+duration of \textit{Waveform Element}.  Both of these concepts are discussed in
+more depth in Secs.~\ref{sec:waveforms:nattime} and~\ref{sec:waveforms:value}
+respectively.  Furthermore, more complicated waveforms using hierarchical groups
+will be discussed in Sec.~\ref{sec:waveforms:groups}.
 
-\section{Waveform Element}\label{sec:waveforms:elements}
-
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-0}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-0}}
-  \caption[Very simple waveform]{
-    A very simple waveform consisting of one channel and two waveform elements.
-    a) Definition of the two simple waveform elements.
-    b) Plot of simple digital waveform elements.  Note that this plot shows the first
-    digital waveform element as \texttt{True} with the filled in box for the
-    first 20~ms while the last 10~ms is not filled in, as requested by the
-    second waveform element that shows a \texttt{False} value for the last
-    10~ms.
-  }
-  \label{fig:quick:waveform-0}
-\end{figure}
-
-
-\subsection{Natural Time and Duration}\label{sec:waveforms:nattime}
-
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-1}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-1}}
-  \caption{a) Add some simple waveform elements. b) Plot of simple
-  waveform elements.}
-  \label{fig:quick:waveform-1}
-\end{figure}
-
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-2}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-2}}
-  \caption{a) Add some simple waveform elements. b) Plot of simple
-  waveform elements.}
-  \label{fig:quick:waveform-2}
-\end{figure}
-
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-3}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-3}}
-  \caption{a) Add some simple waveform elements. b) Plot of simple
-  waveform elements.}
-  \label{fig:quick:waveform-3}
-\end{figure}
 
 
 \subsection{Automatic Waveform-Element Variables}
+
+In order to help ease more complex waveforms, Arbwave automatically defines a
+few variables that can be used by the user.  These variables represent various
+useful quantities such as current start time of a waveform component, taking
+into account all \textit{Waveform Element}s that have gone before, and also
+another representing the value of a particular channel as it settled before the
+current \textit{Waveform Element}.  The various automatically-defined variables
+are listed in Tab.~\ref{tab:waveforms:autovars}.  The meaning and use of these
+variables will become more clear through the remainder of this chapter.
 
 \begin{table}[htb!]
 \begin{center}
@@ -107,11 +89,60 @@ transitions.
    \hline
   \end{tabular}
   \caption[Automatic waveform variables]{
+    \label{tab:waveforms:autovars}
     Automatically defined waveform variables allow natural and easy entry of
     waveform elements.
   }
 \end{center}
 \end{table}
+
+
+
+
+\section{Natural Time}\label{sec:waveforms:nattime}
+
+\begin{figure}[ht!]
+  \centerline{\includegraphics[width=.8\textwidth]{figures/basic-waveform_t}}
+  \caption[Very simple waveform]{
+    A very simple waveform of one channel with explicit durations but using
+    \textit{Natural Time} to indicate the start of each \textit{Waveform
+    Element}.  Note that highlighting a \textit{Waveform Element} shows a popup
+    with the final-computed time of the \textit{Waveform Element}.
+  }
+  \label{fig:waveforms:basic_t}
+\end{figure}
+
+One of the first automatically generated variables that a user becomes
+acquainted with is denoted \symb{natural_time}.  As shown in
+Tab.~\ref{tab:waveforms:autovars}, the definition of this variable is not simply
+time, but rather the \textit{Natural Time} to start a \textit{waveform Element}
+or group of elements, based on what has preceded.  Consider the earlier waveform
+shown in Fig.~\ref{fig:waveforms:basic}.  Instead of specifying the start time
+of each \textit{Waveform Element} explicitly in absolute time (with respect to
+the start of the waveform), we could choose to instead allow Arbwave to
+calculate the correct start time for each of the \textit{Waveform Elements}.  By
+specifying the start time as \textit{Natural Time} \symb{natural_time}, we get
+the same waveform, but without the need to calculate the actual start time of
+each \textit{Waveform Element}--this is shown in
+Fig.~\ref{fig:waveforms:basic_t}.
+
+Just as in any other input in Arbwave, the expression that is put into
+the \textit{Time} column for a \textit{Waveform Element} may be any Python
+expression that evaluates to a value with units of time.  Thus, it is possible
+to offset the \textit{Natural Time} \symb{natural_time} with any other time
+expression.  It is even possible to put the time of one \textit{Waveform Element} in absolute
+form (such as in Fig.~\ref{fig:waveforms:basic}) while others use the
+automatically calculated \textit{Natural Time} \symb{natural_time}.
+
+Finally, in specifying the times and durations of various \textit{Waveform
+Element}s, one should be aware that \textit{Waveform Element}s of any single
+output channel \underline{cannot} overlap in time with any other
+\textit{Waveform Elements} of the same channel.  Arbwave does take care to test
+all \textit{Waveform Elements} for overlap with others from the same channel.
+If such overlapping \textit{Waveform Elements} are detected, an error is emitted
+and the waveform processing is halted.  In such a case, the user must correct
+the situation before Arbwave will successfully complete the next waveform
+generation.
 
 
 
@@ -393,29 +424,11 @@ Only one of dt or steps can be used.
 
 \section{Groups}\label{sec:waveforms:groups}
 
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-4}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-4}}
-  \caption{a) Add some simple waveform elements. b) Plot of simple
-  waveform elements.}
-  \label{fig:quick:waveform-4}
-\end{figure}
-
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-5}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-5}}
-  \caption{a) Waveform elements divided into two main groups. b) Plot of
-  waveform after grouping elements.}
-  \label{fig:quick:waveform-5}
-\end{figure}
-
-\begin{figure}[ht]
-  \centerline{a)\includegraphics[width=.5\textwidth]{figures/waveform-6}}
-  \centerline{b)\includegraphics[width=.8\textwidth]{figures/plot-6}}
-  \caption{a) Using automatic $dt$ variable. b) Plot of waveform after
-  using $dt$ variable.}
-  \label{fig:quick:waveform-6}
-\end{figure}
+Concepts to discus:
+\begin{enumerate}
+  \item Natural time
+  \item Inherited duration
+\end{enumerate}
 
 \subsection{Subgroups}
 
