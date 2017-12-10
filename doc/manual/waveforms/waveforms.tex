@@ -31,7 +31,15 @@ output value of a channel.
 
 A waveform consists of one or more transitions, as defined by a sequence of
 \textit{Waveform Element}s, that are coordinated in time such that their
-occurrence is deterministic.  As an example, consider the configuration created
+occurrence is deterministic.  \textit{Waveform Element}s are added/deleted using
+the buttons on the left side of the \textit{Waveforms} section of the main
+window--the top of the highlighted area in Fig.~\ref{fig:waveforms:basic}.  Once
+added, \textit{Waveform Element}s can be rearranged using drag-drop maneuvers.
+Additionally, \textit{Waveform Elements} can be copied using the
+\textbf{Control} key while dragging \textit{Waveform Element}s.
+
+As an example of a simple waveform and sequence of transitions, consider the
+configuration created
 in Chaps.~\ref{chap:devcfg} and~\ref{chap:channels}.  Continuing this example,
 one can use the \textit{Waveform} section of the main window to define an
 arbitrary set of transitions.  For instance, a simple waveform representing four
@@ -62,7 +70,7 @@ will be discussed in Sec.~\ref{sec:waveforms:groups}.
 
 
 
-\subsection{Automatic Waveform-Element Variables}
+\subsection{Automatic Waveform-Element Variables}\label{sec:waveforms:vars}
 
 In order to help ease more complex waveforms, Arbwave automatically defines a
 few variables that can be used by the user.  These variables represent various
@@ -103,7 +111,7 @@ variables will become more clear through the remainder of this chapter.
 
 \begin{figure}[ht!]
   \centerline{\includegraphics[width=.8\textwidth]{figures/basic-waveform_t}}
-  \caption[Very simple waveform]{
+  \caption[Very simple waveform using \textit{Natural Time} \symb{natural_time}]{
     A very simple waveform of one channel with explicit durations but using
     \textit{Natural Time} to indicate the start of each \textit{Waveform
     Element}.  Note that highlighting a \textit{Waveform Element} shows a popup
@@ -424,14 +432,59 @@ Only one of dt or steps can be used.
 
 \section{Groups}\label{sec:waveforms:groups}
 
-Concepts to discus:
-\begin{enumerate}
-  \item Natural time
-  \item Inherited duration
-\end{enumerate}
+More complicated waveforms can be achieved by creating a hierarchical set of
+groups and subgroups of \textit{Waveform Element}s.  This is done by performing
+a grouping operation where dragging one \textit{Waveform Element} onto another
+promotes the second to acting as a \textit{Group Element}.  Because
+\textit{Group Element}s are not tied to any specific output channels,
+\textit{Group Element}s do not have any value associated with them.
+Additionally, the label of a \textit{Group Element} is not taken from a list of
+channel names, but rather should be edited by the user to reflect something
+meaningful for the group.
 
-\subsection{Subgroups}
+\subsection{Natural Time with Groups}
+\textit{Natural Time} for groups is calculated slightly differently than for
+\textit{Waveform Element}s.  While only preceding \textit{Waveform Elements} in
+the same group (or at the root level of the hierarchy) of the same channel
+affect \textit{Natural Time} of subsequent \textit{Waveform Element}s, all groups of
+the same hierarchical level affect subsequent groups.  Furthermore, no
+\textit{Waveform Element}s affect the calculation of \textit{Natural Time}.
 
+For the \textit{Waveform Element}s or groups within a group, \textit{Natural
+Time} is relative to the beginning of the group.  Thus, if the start time of the
+\textit{Group Element} is modified, all children of the group move in time by
+the same amount and direction.  This feature provides a very simple means to
+move an entire subsection of the experimental output waveform from one timeframe
+to another.
+
+\subsection{Duration Inheritance}
+
+\begin{figure}[hbt!]
+  \centerline{\includegraphics[width=.8\textwidth]{figures/basic-waveform_group}}
+  \caption{
+    Waveform demonstrating duration \symb{duration} inherited from the
+    \textit{Group Element}
+  }
+  \label{fig:waveforms:basic_group}
+\end{figure}
+
+In Sec.~\ref{sec:waveforms:vars}, the notion of automatic variables is
+introduced.  One of these variables is \symb{duration}, described there as
+\textit{duration of current group}.  This variable is automatically provided to
+all children of a group with the value being the duration of the \textit{Group
+Element}.  Fig.~\ref{fig:waveforms:basic_group} shows our previous example
+modified such that each of the \textit{Waveform Element}s belongs to the same
+group and inherits its duration information from the \textit{Group Element}.
+For the \textit{Waveform Element}s of the \textbf{X-Bias} channel, each duration
+is calculated as a fraction of the duration of the \textit{Group Element}.
+
+Instead of specifying some fraction (or all) of the \textit{Group Element}
+duration, one can also simply omit the duration field---in this case, the
+duration will automatically be set to the full duration of the parent
+\textit{Group Element}.  As also shown in Fig.~\ref{fig:waveforms:basic_group},
+this is demonstrated in the last \textit{Waveform Element} where the output
+channel \textbf{Camera Trigger} is pulsed on for the entire duration of the
+\textit{Group Element}.
 
 
 
