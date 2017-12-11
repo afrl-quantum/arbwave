@@ -215,3 +215,30 @@ optional arguments:
                         Specify the number of top offenders to show when
                         showing profile results [Default: 20]
 \end{verbatim}
+
+\section{Errors}
+
+\begin{figure}[hb!]
+  \centerline{\includegraphics[width=.8\textwidth]{figures/arbwave_error}}
+  \caption{A standard error message, in red with a black background, is 
+  highlighted at the bottom of an Arbwave window.}
+  \label{fig:quick:arbwave_error}
+\end{figure}
+
+In the event that the current settings of Arbwave have some kind of conflict,
+mistake, or overlap, Arbwave will produce a small text box, as shown in Figure
+\ref{fig:quick:arbwave_error} with details about the nature of the error, as
+well as how many configuration changes have been made since the last valid
+configuration.
+
+Potential errors include device conflicts, errors in writing channel names,
+unit mismatches, waveform overlaps, etc.  Depending on the exact details of the
+error, information in the error window may provide information useful for
+finding and debugging the error.  
+
+However, in the event that an error is made in
+the iteration commands (see Chapter \ref{chap:iterating}), the error information
+will typically appear in the console window from which Arbwave was launched, 
+rather than the main window,
+and the iteration will stop, with the \textit{Stop} button at the top of the
+window reverting to \textit{Play} without performing the iteration.
