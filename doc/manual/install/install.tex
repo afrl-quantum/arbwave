@@ -74,7 +74,7 @@ distributed as a part of the Arbwave project repository are marked below.
 
       \item \textbf{billiard}
         \begin{itemize}
-          \item must have modifications by S Olson
+          \item must have modifications by S. Olson
           \item Not required for Windows platforms
           \item backport of python3 multiprocessing library
         \end{itemize}
@@ -95,8 +95,10 @@ distributed as a part of the Arbwave project repository are marked below.
 \end{itemize}
 
 \section{Installation\index{Installing Arbwave}}
-This is not necessarily a strict set of instructions for ``installing'' Arbwave,
-but rather a set of guidelines that might be used to get Arbwave operational.
+Since Arbwave is a set of Python scripts and other related code that has certain 
+dependencies and requirements,
+it is not feasible to write a strict set of instructions for ``installing'' Arbwave,
+but the following is a set of guidelines that might be used to make Arbwave operational.
 
 \subsection{Windows Platforms}
 
@@ -108,7 +110,7 @@ set https_proxy=http://proxy.server:port
 \end{verbatim}
 
 
-These are the steps I took to get Arbwave functional:
+The following are a set of steps used to make Arbwave functional on a Windows system:
 \begin{enumerate}
   \item Install Anaconda python (2.7)
   \item install \verb|pygi-aio-3.x.x_ref<N>-setup.exe| \\
@@ -153,14 +155,14 @@ These are the steps I took to get Arbwave functional:
           \item Execute 'python project-shell'
           \item cd arbwave/
           \item 'python run.py [options]'\\
-            use --help to see options
+            use \verb|--help| to see options
         \end{enumerate}
       \item
         \begin{enumerate}
           \item Put all the other packages in your PYTHONPATH somehow
           \item cd path/to/arbwave-project/arbwave/
           \item 'python run.py [options]'\\
-            use --help to see options
+            use \verb|--help| to see options
         \end{enumerate}
     \end{enumerate}
 \end{enumerate}
@@ -187,13 +189,13 @@ Do either of:
       \item Execute project-shell
       \item cd arbwave/
       \item ./run.py [options]\\
-        use --help to see options
+        use \verb|--help| to see options
     \end{enumerate}
   \item
     \begin{enumerate}
       \item Put all the other packages in your PYTHONPATH somehow
       \item cd path/to/arbwave-project/arbwave/
       \item ./run.py [options]\\
-        use --help to see options
+        use \verb|--help| to see options
     \end{enumerate}
 \end{enumerate}
