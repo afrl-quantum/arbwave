@@ -9,7 +9,7 @@ towards making arbitrary waveforms as simple as possible while still allowing
 very complex waveform features.  This chapter describes the techniques used in
 Arbwave to define the waveforms.  The first section discusses some basic
 concepts used in all components of the waveform.  The next three sections discuss
-how to create simple to increasingly complex waveform components.
+how to create waveform components, with increasing levels of complexity covered.
 
 \section{Basic Concepts}
 \begin{figure}[ht!]
@@ -60,7 +60,7 @@ Fig.~\ref{fig:waveforms:basic}.
 Although Fig.~\ref{fig:waveforms:basic} explicitly specifies absolute start time
 and duration of the \textit{Waveform Element}s, it is often much more
 advantagous to specify these in relative mode, taking advantage of Arbwave's
-ability to automatically calculate the acutal time of a \textit{Waveform
+ability to automatically calculate the actual time of a \textit{Waveform
 Element}.  Furthermore, it is often desirable to specify the value of a channel
 in a manner that (at least somewhat) smoothly varies the channel over the
 duration of \textit{Waveform Element}.  Both of these concepts are discussed in
@@ -72,8 +72,8 @@ will be discussed in Sec.~\ref{sec:waveforms:groups}.
 
 \subsection{Automatic Waveform-Element Variables}\label{sec:waveforms:vars}
 
-In order to help ease more complex waveforms, Arbwave automatically defines a
-few variables that can be used by the user.  These variables represent various
+In order to help ease the creation of more complex waveforms, Arbwave automatically 
+defines a few variables for the user.  These variables represent various
 useful quantities such as current start time of a waveform component, taking
 into account all \textit{Waveform Element}s that have gone before, and also
 another representing the value of a particular channel as it settled before the
@@ -123,8 +123,12 @@ variables will become more clear through the remainder of this chapter.
 One of the first automatically generated variables that a user becomes
 acquainted with is denoted \symb{natural_time}.  As shown in
 Tab.~\ref{tab:waveforms:autovars}, the definition of this variable is not simply
-time, but rather the \textit{Natural Time} to start a \textit{waveform Element}
-or group of elements, based on what has preceded.  Consider the earlier waveform
+time, but rather the \textit{Natural Time} to start a \textit{Waveform Element}
+or group of elements, based on what has preceded.  Generally, this time
+corresponds with the time that all previous \textit{Waveform Elements} have
+completed their prescribed changes, ignoring any \textit{Waveform Elements} which
+have been set to be Asynchronous (which can be done by right clicking on a 
+\textit{Waveform Element} and checking the box that appears.  Consider the earlier waveform
 shown in Fig.~\ref{fig:waveforms:basic}.  Instead of specifying the start time
 of each \textit{Waveform Element} explicitly in absolute time (with respect to
 the start of the waveform), we could choose to instead allow Arbwave to
