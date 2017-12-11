@@ -59,14 +59,18 @@ generally be done following this outline:
     \end{enumerate}
 \end{enumerate}
 %
-As noted by the references above, Chaps.~\ref{chap:devcfg}--\ref{chap:iterating} give greater detail for the
-various steps outlined here.
+As noted by the references above, Chaps.~\ref{chap:devcfg}--\ref{chap:iterating} 
+give greater detail for the
+various steps outlined here.  Once a set of Channels, Waveforms, etc. has been configured,
+the configuration can be Saved using the File menu or the Save icon in the bar 
+at the top of the window, allowing the user to call up the configuration after 
+closing and reopening Arbwave.
 
 
 \subsection{Device Naming Conventions/Styles}\label{sec:op-overview:naming}
 Throughout the configuration process, one frequently interact with strings that
 represent various devices and signals.  Generally, these devices, signals, and
-channels are identified by a type of path, similar to a UNIX file path.
+channels are identified by a string which resembles a UNIX file path.
 
 \begin{table}[b!]
   \begin{center}
@@ -94,7 +98,7 @@ Each device, output channel (analog, digital, timing), or other device item is
 uniquely identified by a path that also indicates its logical connections.  For
 example, the National Instruments driver path begins with `ni' and subsequent
 devices served by this driver should be identified by `sub-directories' within
-the `ni' path.  For example, analog channels in the `ni' path are denoted like:
+the `ni' path.  For example, analog channels in the `ni' path might be denoted:
 %
 \begin{itemize}
   \item ni/Dev1/ao0
