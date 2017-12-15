@@ -25,14 +25,19 @@ class Device(Base):
   firmware/hardware.
   """
 
+  # there are 10 channels with channels 0:7 corresponding to bits 0:7 and
+  # channels 8:9 corresponding to bits 14:15.
+  N_CHANNELS = 10
 
   def __init__(self, *a, **kw):
     super(Device,self).__init__(*a, **kw)
     self.digital_channels = [
-      channels.Digital('{}/{}'.format(self,i), dev=self) for i in xrange(4)
+      channels.Digital('{}/{}'.format(self,i), dev=self)
+      for i in xrange(self.N_CHANNELS)
     ]
     self.timing_channels = [
-      channels.Timing('{}/{}'.format(self,i), dev=self) for i in xrange(4)
+      channels.Timing('{}/{}'.format(self,i), dev=self)
+      for i in xrange(self.N_CHANNELS)
     ]
     self.timing_channels.append(
       channels.AM335x_L3_CLK('{}/InternalClock'.format(self), dev=self)
