@@ -40,7 +40,7 @@ def main(klass):
   except Pyro.core.NamingError:
     print 'Could not find name server'
     ns = None
-    bind_ip = hostid
+    bind_ip = args.hostid
 
   daemon = Pyro.core.Daemon(host=bind_ip)
   if ns:
@@ -63,6 +63,7 @@ def main(klass):
   try:
     daemon.requestLoop()
   except:
-    # try removing self from Pyro name server
-    try: ns.unregister(device.objectId)
-    except Pyro.core.NamingError: pass
+    if ns:
+      # try removing self from Pyro name server
+      try: ns.unregister(device.objectId)
+      except Pyro.core.NamingError: pass
