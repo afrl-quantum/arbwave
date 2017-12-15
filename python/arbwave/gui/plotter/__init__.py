@@ -48,7 +48,8 @@ class Plotter(object):
 
 
   def set_max_ranges(self):
-    self.xlim = (0.0,self.ranges['analog'][0])
+    max_x = max(self.ranges['analog'][0], self.ranges['digital'][0])
+    self.xlim = (0.0, max_x)
     self.axes['t'].set_xlim( self.xlim )
     self.axes['analog' ].set_xlim( self.xlim )
     self.axes['analog' ].set_ylim( self.ranges['analog' ][1] )
