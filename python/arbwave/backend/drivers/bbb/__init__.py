@@ -34,7 +34,7 @@ class Driver(Base):
     # dict: device uri  --> Device instance
     self.all_devices  = dict() # both configured and unconfigured
 
-    # dict: user-specified uri --> (objectId, device uri)
+    # dict: user-specified uri --> (device uri, objectId)
     self.extra_uris   = dict()
 
     self.resync_ns()
@@ -98,7 +98,7 @@ class Driver(Base):
         uris[ str(self._ns.resolve(objectId)) ] = objectId
 
     # add in all device uris derived from user-specified extra URIs
-    uris.update({ uri:oid for uri,oid in self.extra_uris.itervalues() })
+    uris.update(self.extra_uris.itervalues())
 
     # remove old uris
     for uri in (set(self.all_devices) - set(uris)):
@@ -150,8 +150,8 @@ class Driver(Base):
       except Pyro.core.ProtocolError:
         debug('cannot find bbb::{} object at extra uri: {}', objectId, p.URI)
 
-      # record user-uri  --> device uri
-      self.extra_uris[uri] = (objectId, str(p.URI))
+      # record user-specified-uri  --> (device-uri, objectId)
+      self.extra_uris[uri] = (str(p.URI), objectId)
       p._release() # release this connection
       del p
 

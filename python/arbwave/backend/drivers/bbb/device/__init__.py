@@ -13,5 +13,5 @@ type_to_device_klass_map = {
 
 def create_device(driver, uri, objectId):
   grp, devname, type = parse_objectId(objectId)
-  assert grp == BBB_PYRO_GROUP, 'Non-bbb group found'
+  assert grp == BBB_PYRO_GROUP, 'Non-bbb group found in "{}"'.format(objectId)
   return type_to_device_klass_map[type](driver, uri, devname)
