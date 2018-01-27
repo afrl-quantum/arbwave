@@ -94,7 +94,7 @@ class NiDAQmx:
         board = 'PCI-6229',
         product_number = 0x2A, # ???
         serial = 0xdeadbeef,
-        num_ao_channels = 4, # we might just want to make this big for fun
+        num_ao_channels = 32, # we might just want to make this big for fun
         num_do_ports = 6,
         port_size = 8, # number of lines per port
         num_counters = 2,
@@ -141,6 +141,28 @@ class NiDAQmx:
         num_ao_channels = 0, # we might just want to make this big for fun
         num_do_ports = 4,
         port_size = 8, # number of lines per port
+        num_counters = 0,
+        ao_sample_clock_supported = False,
+        do_sample_clock_supported = True,
+      ),
+      PXI1Slot1 = Dict(
+        board = 'PXIe-6738',
+        product_number = 0x2E, # ???
+        serial = 0xbadfeeed,
+        num_ao_channels = 32, # we might just want to make this big for fun
+        num_do_ports = 1,
+        port_size = 2, # number of lines per port
+        num_counters = 0,
+        ao_sample_clock_supported = True,
+        do_sample_clock_supported = True,
+      ),
+      PXI1Slot2 = Dict(
+        board = 'PXIe-6535',
+        product_number = 0x2F, # ???
+        serial = 0xbaadfeed,
+        num_ao_channels = 0, # we might just want to make this big for fun
+        num_do_ports = 1,
+        port_size = 32, # number of lines per port
         num_counters = 0,
         ao_sample_clock_supported = False,
         do_sample_clock_supported = True,

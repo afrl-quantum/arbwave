@@ -11,7 +11,7 @@ from ....tools.expand import expand_braces
 class ImplicitRoute(tuple): pass
 class NoDevTerminal(str): pass
 
-
+Ext = ('External/', None)
 T5  = 'TRIG/{0..5}'
 T6  = 'TRIG/{0..6}'
 T7  = 'TRIG/{0..7}'
@@ -19,31 +19,54 @@ Ti7 = 'TRIG/7'
 R6  = 'RTSI{0..6}'
 R7  = 'RTSI{0..7}'
 Ri7 = 'RTSI7'
+P5  = 'PFI{0..5}'
 P7  = 'PFI{0..7}'
 P9  = 'PFI{0..9}'
 P15 = 'PFI{0..15}'
-ao_sig = 'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}'
-ai_sig = 'ai/{SampleClock,StartTrigger,ReferenceTrigger,ConvertClock,' \
-             'PauseTrigger,SampleClockTimebase}'
-do_SC = 'do/SampleClock'
-di_SC = 'di/SampleClock'
-dio_SC = 'd{i,o}/SampleClock'
-
-Ext = ('External/', None)
-PXI5= '{PXI_Trig{0..5}}'
+PXI5= 'PXI_Trig{0..5}'
+PXI7 = 'PXI_Trig{0..7}'
 PXIi7 = 'PXI_Trig7'
+
 MTB = 'MasterTimebase'
+Ctr0  = ImplicitRoute( ('Ctr0', 'Ctr0InternalOutput') )
+Ctr1  = ImplicitRoute( ('Ctr1', 'Ctr1InternalOutput') )
+Ctr2  = ImplicitRoute( ('Ctr2', 'Ctr2InternalOutput') )
+Ctr3  = ImplicitRoute( ('Ctr3', 'Ctr3InternalOutput') )
+
 ao_SC = 'ao/SampleClock'
 ao_OC = ImplicitRoute( (ao_SC, NoDevTerminal('OnboardClock')) )
 ao_ST = 'ao/StartTrigger'
+ao_PT = 'ao/PauseTrigger'
 ao_SCTB = 'ao/SampleClockTimebase'
 ai_SCTB = 'ai/SampleClockTimebase'
 ai_CCTB = 'ai/ConvertClockTimebase'
 ai_SC = 'ai/SampleClock'
 ai_CC = 'ai/ConvertClock'
 ai_ST = 'ai/StartTrigger'
-Ctr0  = ImplicitRoute( ('Ctr0', 'Ctr0InternalOutput') )
-Ctr1  = ImplicitRoute( ('Ctr1', 'Ctr1InternalOutput') )
+ai_RT = 'ai/ReferenceTrigger'
+ao_RT = 'ao/ReferenceTrigger'
+ao_sig = 'ao/{SampleClock,StartTrigger,PauseTrigger,SampleClockTimebase}'
+ai_sig = 'ai/{SampleClock,StartTrigger,ReferenceTrigger,ConvertClock,' \
+             'PauseTrigger,SampleClockTimebase}'
+do_SC = 'do/SampleClock'
+di_SC = 'di/SampleClock'
+dio_SC = 'd{i,o}/SampleClock'
+di_ST = 'di/StartTrigger'
+do_ST = 'do/StartTrigger'
+dio_ST = 'd{i,o}/StartTrigger'
+di_PT = 'di/PauseTrigger'
+do_PT = 'do/PauseTrigger'
+dio_PT = 'd{i,o}/PauseTrigger'
+di_RT = 'di/ReferenceTrigger'
+do_RT = 'do/ReferenceTrigger'
+do_SCTB = 'do/SampleClockTimebase'
+di_SCTB = 'di/SampleClockTimebase'
+di_sig = 'di/{StartTrigger,ReferenceTrigger,PauseTrigger}'
+do_sig = 'do/{StartTrigger,PauseTrigger}'
+di_all = 'di/{SampleClock,SampleClockTimebase,StartTrigger,ReferenceTrigger,' \
+             'PauseTrigger}'
+do_all = 'do/{SampleClock,SampleClockTimebase,StartTrigger,PauseTrigger}'
+
 
 available = {
   'pci-6221' : {
@@ -124,7 +147,7 @@ available = {
     #   port 0..1               Group 0
     #   port 2..3               Group 1
     #   port 0..3               Group 0
-    do_SC                 : { do_SC },
+    do_SC                 : { do_SC }, # allows OnboardClock --> do_SC
   },
 
   'pci-6723' : {
@@ -182,6 +205,227 @@ available = {
     'Ctr1Source'          : { 'PFI3' },
     Ctr1                  : { ao_SC, 'Ctr1Out', 'Ctr0Gate' },
     "{"+MTB+",100kHzTimebase}" : {         ao_SCTB, 'Ctr{0,1}Source' },
+  },
+
+  'pxie-6738' : {
+    Ext                   : { P7 },
+    P7                    : { (T7,PXI7), ao_sig, di_all, do_all,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                              Ext },
+    (T7,PXI7)             : { P7, ao_sig, di_all, do_all,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    '20MHzTimebase'       : { ao_SCTB, di_SCTB, do_SCTB, 'Ctr{0,1,2,3}Source' },
+    '100MHzTimebase'      : { ao_SCTB, di_SCTB, do_SCTB, 'Ctr{0,1,2,3}Source' },
+    '10MHzRefClock'       : { P7, (T7,PXI7),
+                              ao_PT, ao_SC, ao_ST,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_PT, do_SC, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    ao_PT                 : { P7, (T7,PXI7),
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_PT, do_SC, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    ao_SC                 : { P7, (T7,PXI7),
+                              ao_SC, # allows OnboardClock --> ao_SC
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_PT, do_SC, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    ao_ST                 : { P7, (T7,PXI7),
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_PT, do_SC, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    di_SC                 : { P7, (T7,PXI7),
+                              ao_PT, ao_SC, ao_ST,
+                              do_PT, do_SC, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    di_ST                 : { P7, (T7,PXI7),
+                              ao_PT, ao_ST,
+                              do_PT, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    di_RT                 : { P7, (T7,PXI7),
+                              ao_PT, ao_SC, ao_ST,
+                              do_PT, do_SC, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    di_PT                 : { P7, (T7,PXI7),
+                              ao_PT, ao_SC, ao_ST,
+                              do_PT, do_SC, do_ST,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    do_PT                 : { P7, (T7,PXI7),
+                              ao_PT, ao_SC, ao_ST,
+                              di_SC, di_ST, di_RT, di_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    do_SC                 : { P7, (T7,PXI7),
+                              do_SC, # allows OnboardClock --> do_SC
+                              ao_PT, ao_SC, ao_ST,
+                              di_SC, di_ST, di_RT, di_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    do_ST                 : { P7, (T7,PXI7),
+                              ao_PT, ao_SC, ao_ST,
+                              di_SC, di_ST, di_RT, di_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    '100kHzTimebase'      : { ao_SCTB, di_SCTB, do_SCTB, 'Ctr{0,1,2,3}Source' },
+    'PXI_Clk10'           : { ao_SCTB, di_SCTB, do_SCTB, 'Ctr{0,1,2,3}Source' },
+    'ChangeDetectionEvent': { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'WatchdogExpiredEvent': { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr0Source'          : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr1Source'          : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr2Source'          : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr3Source'          : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr0Gate'            : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{1,2,3}{Gate,Source,SampleClock,ArmStartTrigger,A,B,Z}',
+                              'Ctr{0,1,2,3}{Aux}',
+                            },
+    'Ctr1Gate'            : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,2,3}{Gate,Source,SampleClock,ArmStartTrigger,A,B,Z}',
+                              'Ctr{0,1,2,3}{Aux}',
+                            },
+    'Ctr2Gate'            : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,3}{Gate,Source,SampleClock,ArmStartTrigger,A,B,Z}',
+                              'Ctr{0,1,2,3}{Aux}',
+                            },
+    'Ctr3Gate'            : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2}{Gate,Source,SampleClock,ArmStartTrigger,A,B,Z}',
+                              'Ctr{0,1,2,3}{Aux}',
+                            },
+    'Ctr0SampleClock'     : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr1SampleClock'     : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr2SampleClock'     : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr3SampleClock'     : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr0ArmStartTrigger' : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr1ArmStartTrigger' : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr2ArmStartTrigger' : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr3ArmStartTrigger' : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    Ctr0                  : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    Ctr1                  : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    Ctr2                  : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    Ctr3                  : { P7, (T7,PXI7), ao_SC, ao_ST, ao_PT,
+                              di_SC, di_ST, di_RT, di_PT,
+                              do_SC, do_ST, do_PT,
+                              'Ctr{0,1,2,3}{Gate,Source,Aux,SampleClock,ArmStartTrigger,A,B,Z}',
+                            },
+    'Ctr{0,1,2,3}Z'       : { (T7,PXI7) },
+  },
+
+ 'pxie-6535' : {
+    Ext                                 : { P5 },
+    'PFI0'                              : { 'PFI{1..5}',          (T7, PXI7), di_sig, do_sig, Ext },
+    'PFI1'                              : { 'PFI{{0..0},{2..5}',  (T7, PXI7), di_sig, do_sig, Ext },
+    'PFI2'                              : { 'PFI{{0..1},{3..5}}', (T7, PXI7), di_sig, do_sig, Ext },
+    'PFI3'                              : { 'PFI{{0..2},{4..5}}', (T7, PXI7), di_sig, do_sig, Ext },
+    'PFI4'                              : { 'PFI{{0..3},{5..5}}', (T7, PXI7), do_SC, di_sig, do_sig, Ext },
+    'PFI5'                              : { 'PFI{0..4}',          (T7, PXI7), di_SC, di_sig, do_sig, Ext },
+    ('TRIG/0', 'PXI_Trig0')             : { P5, ('TRIG/{1..7}',          'PXI_Trig{1..7}'), di_sig, do_sig },
+    ('TRIG/1', 'PXI_Trig1')             : { P5, ('TRIG/{{0..0},{2..7}}', 'PXI_Trig{{0..0},{2..7}}'), di_sig, do_sig },
+    ('TRIG/2', 'PXI_Trig2')             : { P5, ('TRIG/{{0..1},{3..7}}', 'PXI_Trig{{0..1},{3..7}}'), di_sig, do_sig },
+    ('TRIG/3', 'PXI_Trig3')             : { P5, ('TRIG/{{0..2},{4..7}}', 'PXI_Trig{{0..2},{4..7}}'), di_sig, do_sig },
+    ('TRIG/4', 'PXI_Trig4')             : { P5, ('TRIG/{{0..3},{5..7}}', 'PXI_Trig{{0..3},{5..7}}'), di_sig, do_sig },
+    ('TRIG/5', 'PXI_Trig5')             : { P5, ('TRIG/{{0..4},{6..7}}', 'PXI_Trig{{0..4},{6..7}}'), di_sig, do_sig },
+    ('TRIG/6', 'PXI_Trig6')             : { P5, ('TRIG/{{0..5},{7..7}}', 'PXI_Trig{{0..5},{7..7}}'), di_sig, do_sig },
+    ('TRIG/7', 'PXI_Trig7')             : { 'PFI{4..5}', do_SC, di_SC },
+    do_SC                               : { 'PFI4',      (Ti7, PXIi7),
+                                            do_SC, # allows OnboardClock --> do_SC
+                                          },
+    di_SC                               : { 'PFI5',                 },
+    di_ST                               : { P5, (T7, PXI7) },
+    di_RT                               : { P5, (T7, PXI7) },
+    do_ST                               : { P5, (T7, PXI7) },
+    'di/ChangeDetectionEvent'           : { P5, (T7, PXI7) },
+    'di/InputBufferFull'                : { P5, (T7, PXI7) },
+    'di/ReadyForStartEvent'             : { P5, (T7, PXI7) },
+    'di/ReadyForTransferEventBurst'     : { P5, (T7, PXI7) },
+    'di/ReadyForTransferEventPipelined' : { P5, (T7, PXI7) },
+    'do/DataActiveEvent'                : { P5, (T7, PXI7) },
+    'do/ReadyForStartEvent'             : { P5, (T7, PXI7) },
+    'do/ReadyForTransferEvent'          : { P5, (T7, PXI7) },
+    'do/OutputBufferFull'               : { P5, (T7, PXI7) },
   },
 }
 
