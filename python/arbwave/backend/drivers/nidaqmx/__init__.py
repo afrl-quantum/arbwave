@@ -156,7 +156,7 @@ class Driver(Base):
     # (configs are already naturally separated by device)
     chans = { k:dict()  for k in config }
     for c in channels:
-      m = re.match( '((' + self.prefix + '/Dev[0-9]*/[ap]o).*)', c)
+      m = re.match( '((' + self.prefix + '/[^/]*/[ap]o).*)', c)
       # we change '/po' to '/do' to correspond with the task name given above for
       # digital channels.
       chans[ m.group(2).replace('/po','/do') ][ m.group(1) ] = channels[c]
