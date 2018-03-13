@@ -104,7 +104,7 @@ def optimize(expression, ti, dti, expr_steps, expr_err,
   # calculate & cache all values of the expression that will be used
   xsym = sympy.Symbol('x')
   cache = tuple(
-    from_sympy(expression.subs(xsym,x), channel_units)
+    from_sympy(expression.subs(xsym,x).evalf(), channel_units)
     for x in xarange(0,1+10*machine_arch.eps,0.5*dx)
   )
 
@@ -145,14 +145,14 @@ def uniform(expression, ti, dti, expr_steps, channel_units, **kw):
   for tij, x in izip( xrange(ti, ti+dti-1 - dtij, dtij),
                      xarange(0, 1, dx)):
 
-    yield tij, dtij, from_sympy(expression.subs(xsym, x), channel_units)
+    yield tij, dtij, from_sympy(expression.subs(xsym, x).evalf(), channel_units)
 
   # second to last transition. Make sure it is not too long
   yield tij+dtij, min(dtij, ti+dti-1 - (tij+dtij)), \
-        from_sympy(expression.subs(xsym,x+dx), channel_units)
+        from_sympy(expression.subs(xsym,x+dx).evalf(), channel_units)
 
   # last point is added very explicitly to reach the end of time (x=1)
-  yield ti+dti-1, 1, from_sympy(expression.subs(xsym,1), channel_units)
+  yield ti+dti-1, 1, from_sympy(expression.subs(xsym,1).evalf(), channel_units)
 
 
 
