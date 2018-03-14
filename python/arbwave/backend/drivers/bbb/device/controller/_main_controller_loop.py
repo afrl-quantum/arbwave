@@ -28,13 +28,18 @@ def main(klass):
 
   # locate the NS
   try:
+    loc = Pyro.naming.NameServerLocator()
+    host, port = None, None
+
     if args.ns:
-      uri = Pyro.core.PyroURI('PYRONAME://{}/:Pyro.NameServer'.format(args.ns))
-      ns = Pyro.naming.NameServerProxy(uri)
-    else:
-      locator = Pyro.naming.NameServerLocator()
-      print 'searching for Naming Service...'
-      ns = locator.getNS()
+      host_port = args.ns.split(':')
+      host = host_port[0]
+
+      if len(host_port) > 1:
+        port = int(host_port[1])
+
+    print 'searching for Naming Service...'
+    ns = loc.getNS(host, port)
 
     bind_ip = ns.adapter.conn.sock.getsockname()[0]
   except Pyro.core.NamingError:

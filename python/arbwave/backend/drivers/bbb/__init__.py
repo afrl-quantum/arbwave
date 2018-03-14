@@ -50,13 +50,18 @@ class Driver(Base):
     else:
       # prepare to discover remote devices
       Pyro.core.initClient()
+      loc = Pyro.naming.NameServerLocator()
       try:
+        host, port = None, None
+
         if options.pyro_ns:
-          uri = Pyro.core.PyroURI('PYRONAME://{}/:Pyro.NameServer'
-                                  .format(options.pyro_ns))
-          self._ns = Pyro.naming.NameServerProxy(uri)
-        else:
-          self._ns = Pyro.naming.NameServerLocator().getNS()
+          host_port = options.pyro_ns.split(':')
+          host = host_port[0]
+
+          if len(host_port) > 1:
+            port = int(host_port[1])
+
+        self._ns = loc.getNS(host, port)
       except Pyro.core.NamingError:
         self._ns = None
         info('bbb:  could not find Pyro name server')
