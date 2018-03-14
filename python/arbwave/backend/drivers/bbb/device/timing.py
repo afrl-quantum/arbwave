@@ -42,6 +42,10 @@ class Device(Base):
     self.timing_channels.append(
       channels.AM335x_L3_CLK('{}/InternalClock'.format(self), dev=self)
     )
+    self.signals = [
+      channels.Backplane('{}/{}'.format(self,i), ['External/'])
+      for i in xrange(self.N_CHANNELS)
+    ]
     self.config = None
     self.clocks = None
 
@@ -56,6 +60,10 @@ class Device(Base):
     return [
       '{dev}/InternalClock'.format(dev=self),
     ]
+
+
+  def get_routeable_backplane_signals(self):
+    return self.signals
 
 
   def get_config_template(self):
@@ -166,6 +174,12 @@ class Device(Base):
     if self.clocks == clocks:
       return
     self.clocks = copy.deepcopy(clocks)
+
+
+  def set_signals(self, signals):
+    debug('bbb.Device(%s).set_signals(signals=%s)', self, signals)
+    # for now, we only have timing/* --> External/* routes, for which we don't
+    # have to do anything particular
 
 
   def get_output_channels(self):
