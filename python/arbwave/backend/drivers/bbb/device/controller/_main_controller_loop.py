@@ -6,6 +6,7 @@ This file is not really for a normal package import
 """
 
 from bbb_pyro import BBB_PYRO_GROUP, format_objectId
+import sys
 
 def main(klass):
   import argparse, socket
@@ -21,6 +22,9 @@ def main(klass):
   parser.add_argument('--ns', metavar='NAMESERVER[:PORT]',
     help='Specify Pyro nameserver address (in case it cannot be reached by UDP '
          'broadcasts).')
+  parser.add_argument('--nop', action='store_true',
+    help='A do-nothing command line argument.  Any number can be used.  This '
+         ' helps for writing system start scripts (such as with systemd).')
   args = parser.parse_args()
 
   import Pyro.core, Pyro.naming
