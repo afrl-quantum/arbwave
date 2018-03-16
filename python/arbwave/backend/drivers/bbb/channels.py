@@ -49,9 +49,7 @@ class DDS(DDSBase):
 _bbb_digital_minimum_neighbor_period = 15*5*unit.ns
 """
 The BeagleBone Black timing firmware _does_ have timing resolution of 5*ns, but
-any two transitions must be separated by at least 45*ns.  We may want to limit
-this to 50*ns instead of 45*ns to be consistent with the timing provided by
-viewpoint and gxt.
+any two transitions must be separated by at least 75*ns..
 """
 
 class Digital(DBase):

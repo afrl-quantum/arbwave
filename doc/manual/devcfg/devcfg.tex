@@ -64,17 +64,18 @@ samples/updates:
 
 \begin{itemize}
 \item \textbf{Update/Sample per Clock}\\
-  A very typical timing implementation of data acquisition hardware is to cause
-  an update (change in output) for each time that a clocks pulse is received by
-  the hardware.  For example, a particular hardware device will have a list of
-  output values that it is to generate.  Each time that the rising edge
-  (usually) of a clock pulse is detected, the circuitry of the particular
-  hardware device reads the next output value and sets its actual output
-  accordingly.  A side effect of this strategy is to easily overburden device
-  memory or device communication bandwidth.  This is because the data must be
-  padded throughout an output waveform if ever any clock pulse is desired to not
-  change the output.  This very often occurs if either a fixed update clock is
-  used or if more than one hardware device is connected to the same clock.
+  A very typical timing implementation of data acquisition hardware is to use a
+  fixed-rate clock signal--with each clock pulse causing an update, or change in
+  the output hardware.  For example, a particular hardware device will have a
+  list of output values that it is to generate.  Each time that the rising edge
+  (usually) of the fixed-rate clock pulse is detected, the circuitry of the
+  particular hardware device reads the next output value and sets its actual
+  output accordingly.  A side effect of this strategy is to easily overburden
+  device memory or device communication bandwidth.  This is because the data
+  must be padded throughout an output waveform if ever any clock pulse is
+  desired to not change the output.  This very often occurs if either a fixed
+  update clock is used or if more than one hardware device is connected to the
+  same clock.
 
   In spite of the high potential to waste device/system resources, Arbwave does
   simplify the use of this type of hardware.  For hardware devices configured to
