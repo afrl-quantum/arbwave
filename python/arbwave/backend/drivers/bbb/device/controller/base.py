@@ -16,7 +16,7 @@ from logging import debug
 from version import version as arbwave_version
 from bbb_pyro import format_objectId
 
-BBB_VERSION = 'bbb-0.0.1'
+BBB_VERSION = 'bbb-0.1.0'
 
 
 
