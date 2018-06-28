@@ -46,6 +46,27 @@ tuple_to_ver = lambda t : '.'.join( str(ti) for ti in t )
 file_versions.sort( key=version_tuple )
 
 
+def read_file_version():
+  """
+  Read (only) the git-version that is stashed in the VERSION_FILE
+  """
+  if path.isfile(VERSION_FILE):
+    with open( VERSION_FILE ) as f:
+      gv = f.readline()
+      return gv.strip()
+  else:
+    return None
+
+def write_version_file(v=None):
+  """
+  Write the git-version to the VERSION_FILE
+  """
+  if v is None:
+    v = git_version()
+  f = open( VERSION_FILE, 'w' )
+  f.write(v)
+  f.close()
+
 def _read_git_version():
   try:
     if path.isdir('.git'):
@@ -54,32 +75,26 @@ def _read_git_version():
       args = {'cwd' : THIS_DIR }
     p = Popen(['git', 'describe'], stdout=PIPE, **args)
     out,err = p.communicate()
-    return out.strip(), True
+    return out.strip()
   except:
-    return DEFAULT_PREFIX + '-' + file_versions[-1], False
+    # no git, let's try using a stashed VERSION file
+    v = read_file_version()
+    if v is not None:
+      return v
+    # no git and not VERSION stash, let's make something up based on latest
+    # save-file version known
+    return DEFAULT_PREFIX + '-' + file_versions[-1] + '-g00000000'
 
 GIT_VERSION = _read_git_version()
+VERSION = GIT_VERSION[GIT_VERSION.find('-')+1:] 
 def git_version():
   return GIT_VERSION
 
-def _read_version():
-  gv, failover = _read_git_version()
-  if failover and path.isfile(VERSION_FILE):
-    f = open( VERSION_FILE )
-    gv = f.readline()
-    f.close()
-  if not gv:
-    return file_versions[-1]
-  return gv[ (gv.find('-')+1): ]
-
-
-VERSION = _read_version()
 def version():
   return VERSION
 
 def prefix():
   return git_version()[0].split('-')[0]
-
 
 def get_file_version( test_version=None ):
   """
@@ -120,12 +135,17 @@ def abi_compatible(v0, v1):
 
 
 if __name__ == '__main__':
-  import sys
-  if len(sys.argv) > 1:
-    if sys.argv[1] == 'save':
-      gv = git_version()[0]
-      f = open( VERSION_FILE, 'w' )
-      f.write(gv)
-      f.close()
-    elif sys.argv[1] == 'get':
-      print version()
+  import sys, argparse
+  p = argparse.ArgumentParser()
+  p.add_argument( '--save', action='store_true',
+    help='Store version to '+VERSION_FILE)
+  p.add_argument( '--read-file-version', action='store_true',
+    help='Read the version stored in '+VERSION_FILE)
+  args = p.parse_args()
+
+  v = version()
+  if args.save:
+    write_version_file(v)
+  if args.read_file_version:
+    v = read_file_version()
+  print(v)
