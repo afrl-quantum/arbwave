@@ -1,0 +1,53 @@
+#!/usr/bin/make -f
+# debian/rules
+# -*- makefile -*-
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+DH_VERBOSE = 1
+
+# see EXAMPLES in dpkg-buildflags(1) and read /usr/share/dpkg/*
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/default.mk
+
+# see FEATURE AREAS in dpkg-buildflags(1)
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# see ENVIRONMENT in dpkg-buildflags(1)
+# package maintainers to append CFLAGS
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# package maintainers to append LDFLAGS
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+# main packaging script based on dh7 syntax
+%:
+	dh $@ --with python2,systemd
+#	dh $@ --with python2,python3
+
+build binary clean :  $(CURDIR)/debian/changelog
+
+override_dh_auto_build : $(CURDIR)/doc/manual/manual.pdf prep_service_scripts
+	python setup.py build --force
+
+override_dh_auto_install : install_service_defaults
+	python setup.py install --force --root=$(CURDIR)/debian/python-arbwave \
+		--no-compile -O0 --install-layout=deb
+
+SERVICE_SCRIPTS = $(CURDIR)/python/arbwave/backend/drivers/bbb/device/controller/service-scripts
+prep_service_scripts :
+	cp       $(SERVICE_SCRIPTS)/bbb-dds.service \
+	         $(CURDIR)/debian/arbwave-bbb-dds.service
+	cp       $(SERVICE_SCRIPTS)/bbb-timing.service \
+	         $(CURDIR)/debian/arbwave-bbb-timing.service
+
+install_service_defaults :
+	@echo "Installing arbwave-service-defaults"
+	mkdir -p $(CURDIR)/debian/arbwave-service-defaults/etc/default
+	cp       $(SERVICE_SCRIPTS)/arbwave \
+		 $(CURDIR)/debian/arbwave-service-defaults/etc/default/
+
+$(CURDIR)/debian/changelog : $(CURDIR)/debian/mk_changelog
+	$(CURDIR)/debian/mk_changelog > $(CURDIR)/debian/changelog
+
+$(CURDIR)/doc/manual/manual.pdf :
+	cd doc/manual && \
+		make && make biball && make && make biball && make && make

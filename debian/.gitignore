@@ -1,0 +1,17 @@
+changelog
+python-arbwave/
+*.log
+*.substvars
+files
+.debhelper/
+debhelper-build-stamp
+*.postinst.debhelper
+*.prerm.debhelper
+*.postrm.debhelper
+*.swp
+*.service
+arbwave-bbb-dds/
+arbwave-bbb-services/
+arbwave-bbb-timing/
+tmp/
+arbwave-service-defaults
