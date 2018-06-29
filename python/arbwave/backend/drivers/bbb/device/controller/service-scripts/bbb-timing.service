@@ -6,11 +6,11 @@ After=network.target auditd.service
 
 [Service]
 EnvironmentFile=/etc/default/arbwave
-ExecStart=/home/labrat/src/arbwave/python/arbwave/backend/drivers/bbb/device/controller/timing.py \
+ExecStart=/usr/bin/arbwave-bbb_timing_controller \
   ${HOSTID_ARG} \
   ${REPLACE_ARG} \
   ${NS_ARG}
-#User=labrat
+User=${USER}
 WorkingDirectory=/tmp/
 ExecStartPre=/bin/sh -c "if [ ! -c /dev/rpmsg_pru30 ] ; then sleep 25; fi"
 TimeoutStopSec=8

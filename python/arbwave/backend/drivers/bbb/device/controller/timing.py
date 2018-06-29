@@ -160,9 +160,11 @@ class Device(Base, bbb.timing.Device):
       wi.data = data
 
 
-
-if __name__ == '__main__':
+def main():
   import sys, _main_controller_loop as Main
 
   Main.main(Device)
   sys.exit()
+
+if __name__ == '__main__':
+  main()

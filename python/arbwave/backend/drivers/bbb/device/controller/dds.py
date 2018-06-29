@@ -195,8 +195,11 @@ class Device(Base, bbb.ad9959.Device):
     return [wi[1] for wi in waveform]
 
 
-if __name__ == '__main__':
+def main():
   import sys, _main_controller_loop as Main
 
   Main.main(Device)
   sys.exit()
+
+if __name__ == '__main__':
+  main()
