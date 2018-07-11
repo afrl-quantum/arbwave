@@ -2,17 +2,17 @@
 [Unit]
 Description=Arbwave BBB backend for the Timing device
 After=network.target auditd.service
-#ConditionPathExists=/dev/rpmsg_pru30
+Requires=afrl-timing-fw.service
+After=afrl-timing-fw.service
 
 [Service]
 EnvironmentFile=/etc/default/arbwave
-ExecStart=/usr/bin/arbwave-bbb_timing_controller \
-  ${HOSTID_ARG} \
-  ${REPLACE_ARG} \
-  ${NS_ARG}
-User=${USER}
+User=arbwave
 WorkingDirectory=/tmp/
-ExecStartPre=/bin/sh -c "if [ ! -c /dev/rpmsg_pru30 ] ; then sleep 25; fi"
+# give up to 10 seconds for PRU to boot
+ExecStartPre=/bin/sh -c "if [ ! -c /dev/rpmsg_pru30 ] ; then sleep 10; fi"
+ExecStartPre=/usr/bin/test -e /dev/rpmsg_pru30
+ExecStart=/usr/bin/arbwave-bbb_timing_controller $ARBWAVE_BBB_CNTRL_ARGS
 TimeoutStopSec=8
 KillSignal=SIGINT
 

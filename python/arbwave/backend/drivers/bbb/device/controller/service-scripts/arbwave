@@ -1,20 +1,21 @@
 # This file belongs in /etc/default/arbwave
-# User to run as:
-USER=arbwave
 
-# Specify the hostid label for this BeagleBone Black
-# --nop : is specified, the hostname of the device will be used.
+# We specify multiple command lines arguments to be passed to the controller
+# processs.
+
+# Options:
 # --hostid=<label> : use <label> as the hostid label with the nameserver
-HOSTID_ARG="--nop"
-# Replace any currently registered instances matching this hostid/deviceid with
-# this instance.
-# --nop : Do not replace...
+#     Specify the hostid label for this BeagleBone Black.
+#     default : is specified, the hostname of the device will be used.
 # --replace : Perform the replacement.
-REPLACE_ARG="--replace"
-# Specify Pyro nameserver address (in case it cannot be reached by UDP
-# broadcasts).
-# --nop : only try to reach the nameserver via UDP broadcasts
+#     Replace any currently registered instances matching this hostid/deviceid
+#     with this instance.
+#     default : Do not replace...
 # --ns=192.168.7.2:9090 : connect directly to nameserver
-NS_ARG="--nop"
+#     Specify Pyro nameserver address (in case it cannot be reached by UDP
+#     broadcasts).
+#     default : only try to reach the nameserver via UDP broadcasts
+
+ARBWAVE_BBB_CNTRL_ARGS=--replace
 
 # Specify any other environmental variables as needed
