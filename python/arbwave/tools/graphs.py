@@ -91,7 +91,7 @@ try:
         terminals : a set of all terminals that are also nodes in this graph
       """
       D = networkx.shortest_path(self, source)
-      L = [ v for k,v in networkx.shortest_path(self, source).iteritems()
+      L = [ v for k,v in networkx.shortest_path(self, source).items()
             if k in terminals ]
       if not L:
         return None

@@ -1,10 +1,9 @@
-#!/usr/bin/env python
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from subprocess import Popen, PIPE
 from os import path
 from bisect import bisect_left
-from tools import compatibility
+from .tools import compatibility
 
 THIS_DIR = path.dirname(__file__)
 VERSION_FILE = path.join( THIS_DIR, 'VERSION' )
@@ -74,8 +73,7 @@ def _read_git_version():
     else:
       args = {'cwd' : THIS_DIR }
     p = Popen(['git', 'describe'], stdout=PIPE, **args)
-    out,err = p.communicate()
-    return out.strip()
+    return p.communicate()[0].decode().strip()
   except:
     # no git, let's try using a stashed VERSION file
     v = read_file_version()
@@ -134,7 +132,7 @@ def abi_compatible(v0, v1):
   return v0[:2] == v1[:2]
 
 
-if __name__ == '__main__':
+def main():
   import sys, argparse
   p = argparse.ArgumentParser()
   p.add_argument( '--save', action='store_true',
@@ -149,3 +147,6 @@ if __name__ == '__main__':
   if args.read_file_version:
     v = read_file_version()
   print(v)
+
+if __name__ == '__main__':
+  main()

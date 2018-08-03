@@ -8,7 +8,7 @@ import viewpoint as vp
 from ...device import Device as Base
 from ....tools.float_range import float_range
 from ....tools.signal_graphs import nearest_terminal
-from capabilities import get_routing_bits
+from .capabilities import get_routing_bits
 
 
 ignored_settings = {
@@ -153,15 +153,15 @@ class Device(Base):
 
     transition_map = dict()
     # first add the waveform transitions
-    for channel, groups in waveforms.iteritems():
-      for wf_path, (encoding, transitions) in groups.iteritems():
+    for channel, groups in waveforms.items():
+      for wf_path, (encoding, transitions) in groups.items():
         # encoding is currently ignored (i.e. not defined) for digital
         # channel data
         for timestamp, value in transitions:
           transition_map.setdefault(timestamp, {})[channel] = value
 
     # second, add transtions for channels being used as aperiod clocks
-    for channel, cfg in clock_transitions.iteritems():
+    for channel, cfg in clock_transitions.items():
       if 'Internal' in channel:
         continue
 

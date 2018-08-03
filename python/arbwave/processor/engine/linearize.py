@@ -18,7 +18,6 @@ supported:
 """
 
 import numpy as np
-from itertools import izip, repeat
 
 from physical.sympy_util import has_sympy, from_sympy
 
@@ -117,7 +116,7 @@ def optimize(expression, ti, dti, expr_steps, expr_err,
   xL = calc(0, 2*expr_steps, 2, func, err_max)
 
   # now convert the time spacing into (tij, dtij, v(tij)) tuples
-  for (x0, err0), (x1, err1) in izip(xL[:-1], xL[1:]):
+  for (x0, err0), (x1, err1) in zip(xL[:-1], xL[1:]):
     x0f = x0 / (2.*expr_steps)
     x1f = x1 / (2.*expr_steps)
     yield int(round(ti + x0f*(dti-1))), int((x1f-x0f)*(dti-1)), func(x0)
@@ -138,11 +137,12 @@ def uniform(expression, ti, dti, expr_steps, channel_units, **kw):
   returns an iterator of tuples of the form:
     (section time/dt_clk, section duration/dt_clk, relative time of section)
   """
-  dtij = 1 if dti < expr_steps else (dti/expr_steps) # step size for integer time
+  # dtij: step size for integer time
+  dtij = 1 if dti < expr_steps else int(dti/expr_steps)
   dx = dtij/float(dti) # step size for relative (0-1) time
 
   xsym = sympy.Symbol('x')
-  for tij, x in izip( xrange(ti, ti+dti-1 - dtij, dtij),
+  for tij, x in zip( range(ti, ti+dti-1 - dtij, dtij),
                      xarange(0, 1, dx)):
 
     yield tij, dtij, from_sympy(expression.subs(xsym, x).evalf(), channel_units)

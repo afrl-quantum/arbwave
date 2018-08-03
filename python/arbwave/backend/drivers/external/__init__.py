@@ -3,7 +3,7 @@
 import logging
 import re
 from ...driver import Driver as Base
-from channels import Timing, Backplane
+from .channels import Timing, Backplane
 
 
 class Driver(Base):
@@ -37,7 +37,7 @@ class Driver(Base):
     retval = [ Timing(clk, self) for clk in self.clocks ]
 
     # now we add just one more (new) timing channel for the user to add
-    for i in xrange(10000):
+    for i in range(10000):
       clk = 'External/clk{}'.format(i)
       if clk not in self.clocks:
         retval.append( Timing(clk, self) )

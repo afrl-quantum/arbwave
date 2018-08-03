@@ -1,8 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import logging
-from device import Device
-import capabilities
+from .device import Device
+from . import capabilities
 from ...driver import Driver as Base
 from ....tools.path import collect_prefix
 
@@ -11,17 +11,17 @@ class Driver(Base):
   prefix      = 'vp'
   description = 'Viewpoint Driver'
   has_simulated_mode = True
-  boards_to_probe = xrange(10)
+  boards_to_probe = range(10)
 
   def __init__(self, *a, **kw):
     super(Driver,self).__init__(*a, **kw)
     # hook the simulated library if needed
     if self.simulated:
-      import sim
+      from . import sim
       import viewpoint as vp
       self._old_dio64 = vp.clib.dio64
       vp.board.dio64 = vp.clib.dio64 = sim.DIO64()
-      self.boards_to_probe = xrange(1)
+      self.boards_to_probe = range(1)
 
     # mapping from board index to device
     self.devices = dict()

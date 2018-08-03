@@ -47,7 +47,7 @@ def set_item( cell, path, new_item, model, ITEM, add_undo=None,
             model.get_string_from_iter(i.iter) != path ) or \
            (type(path) != str and i.path != path ) ) and \
            i[ITEM] == new_item:
-        print 'Please use unique labels'
+        print('Please use unique labels')
         return
 
   if model[path][ITEM] == new_item:
@@ -101,7 +101,7 @@ def add_path_to_combobox_tree(T, p, k, M):
     M : dictionary that maps 'path/to/device' to tree node.  This is for
         parenting subsequent nodes properly.
   """
-  for i in xrange(len(p)):
+  for i in range(len(p)):
     si = '/'.join(p[0:(i+1)])
     if si not in M:
       if i == 0:
@@ -110,13 +110,12 @@ def add_path_to_combobox_tree(T, p, k, M):
         M[si] = T.append( M['/'.join(p[0:i])], ('/'.join(p[k:(i+1)]), p[i]) )
 
 
-def pcmp(p0,p1):
+def pkey(p0):
   m0 = re.search('([0-9]*$)', p0)
-  m1 = re.search('([0-9]*$)', p1)
-  cr = cmp(p0[:m0.start()], p1[:m1.start()])
-  if cr == 0 and m0.start() < len(p0) and m1.start() < len(p1):
-    return cmp(int(p0[m0.start():]), int(p1[m1.start():]))
-  return cr
+  base = p0[:m0.start()]
+  if m0.start() < len(p0):
+    return (base, int(p0[m0.start():]))
+  return (base, )
 
 
 def add_paths_to_combobox_tree( T, P, category=None, M=None, skip_CAT=None ):
@@ -150,8 +149,7 @@ def add_paths_to_combobox_tree( T, P, category=None, M=None, skip_CAT=None ):
   if skip_CAT is None:
     skip_CAT = len(CAT)
 
-  P = list(P)
-  P.sort(cmp=pcmp)
+  P = sorted(P, key=pkey)
   for c in P:
     add_path_to_combobox_tree( T, CAT + c.split('/'), skip_CAT, M )
 

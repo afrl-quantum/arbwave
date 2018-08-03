@@ -43,7 +43,7 @@ class Driver(Base):
 
   def resync_ns(self):
     if self.simulated:
-      import sim
+      from . import sim
       self._ns = sim.NS()
       self.getProxyForURI = self._ns.getProxyForURI
 
@@ -103,7 +103,7 @@ class Driver(Base):
         uris[ str(self._ns.resolve(objectId)) ] = objectId
 
     # add in all device uris derived from user-specified extra URIs
-    uris.update(self.extra_uris.itervalues())
+    uris.update(self.extra_uris.values())
 
     # remove old uris
     for uri in (set(self.all_devices) - set(uris)):
@@ -114,8 +114,8 @@ class Driver(Base):
     # self.devices, or in self.all_devices--we simply ensure the objects are
     # listed in self.all_devices.  We also look in self.devices, in case a user
     # has accidentally lost the URI for one device that is already in service.
-    active_devices = {d.uri : d for d in self.devices.itervalues()}
-    for uri, objectId in uris.iteritems():
+    active_devices = {d.uri : d for d in self.devices.values()}
+    for uri, objectId in uris.items():
       if uri in self.all_devices:
         continue
 
@@ -163,24 +163,24 @@ class Driver(Base):
 
   def get_output_channels(self):
     return list(chain(*(
-      d.get_output_channels() for d in self.devices.itervalues()
+      d.get_output_channels() for d in self.devices.values()
     )))
 
 
   def get_timing_channels(self):
     return list(chain(*(
-      d.get_timing_channels() for d in self.devices.itervalues()
+      d.get_timing_channels() for d in self.devices.values()
     )))
 
 
   def get_routeable_backplane_signals(self):
     return list(chain(*(
-      d.get_routeable_backplane_signals() for d in self.devices.itervalues()
+      d.get_routeable_backplane_signals() for d in self.devices.values()
     )))
 
 
   def open_required_devices(self, devnames):
-    unopened = (set(devnames) - set(self.devices.iterkeys()))
+    unopened = (set(devnames) - set(self.devices.keys()))
     if unopened:
       # devices configured but not open?; open them
       name_to_device = { str(d):d for d in self.all_devices.values() }
@@ -198,22 +198,22 @@ class Driver(Base):
     chans = collect_prefix(channels, 0, 3, 3)
 
     # devices not configured anymore; remove them
-    for devname in (set(self.devices.iterkeys()) - set(config.iterkeys())):
+    for devname in (set(self.devices.keys()) - set(config.keys())):
       dev = self.devices.pop(devname)
       dev.close()
       debug('bbb: closed unused device: %s', devname)
 
-    self.open_required_devices(config.iterkeys())
+    self.open_required_devices(config.keys())
 
-    for d,dev in self.devices.iteritems():
+    for d,dev in self.devices.items():
       dev.set_config( config[d], chans.get(d,{}) )
 
 
   def set_clocks( self, clocks ):
     clocks = collect_prefix(clocks, 0, 3, 3)
-    self.open_required_devices(clocks.iterkeys())
+    self.open_required_devices(clocks.keys())
 
-    for devname, clks in clocks.iteritems():
+    for devname, clks in clocks.items():
       self.devices[devname].set_clocks(clks)
 
 
@@ -221,9 +221,9 @@ class Driver(Base):
     debug('bbb.set_signals(signals=%s)', signals)
     signals = collect_prefix(signals, 0, 3, prefix_list=self.devices)
 
-    self.open_required_devices(signals.iterkeys())
+    self.open_required_devices(signals.keys())
 
-    for devname, sigs in signals.iteritems():
+    for devname, sigs in signals.items():
       self.devices[devname].set_signals(sigs)
 
 
@@ -231,7 +231,7 @@ class Driver(Base):
     debug('bbb.set_static')
     D =       collect_prefix(digital, 0, 3, 3)
     D.update( collect_prefix(analog,  0, 3, 3) )
-    for devname, data in D.iteritems():
+    for devname, data in D.items():
       self.devices[ devname ].set_output( data )
 
 
@@ -241,6 +241,6 @@ class Driver(Base):
     D.update( collect_prefix(analog,  0, 3, 3) )
 
     C = collect_prefix(transitions, 0, 3, 3)
-    for d,dev in self.devices.iteritems():
+    for d,dev in self.devices.items():
       if d in D or d in C:
         dev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, continuous )

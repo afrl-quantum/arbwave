@@ -2,10 +2,10 @@
 from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 import logging
 
-from helpers import *
-from script import edit as do_script_edit
+from .helpers import *
+from .script import edit as do_script_edit
 import threading
-import waveformsset
+from . import waveformsset
 
 from ...tools.gui_callbacks import do_gui_operation
 
@@ -51,8 +51,8 @@ def mkUIManager():
   merge.insert_action_group(create_action_group(), 0)
   try:
     mergeid = merge.add_ui_from_string(ui_info)
-  except gobject.GError, msg:
-    print 'building popup menu failed: ' + msg
+  except gobject.GError as msg:
+    print('building popup menu failed:', msg)
   return merge
 
 def is_group( model, path ):

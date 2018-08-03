@@ -30,7 +30,7 @@ class Timing(Base):
       'divider' : {
         'value' : 2,
         'type'  : int,
-        'range' : xrange(2, sys.maxint),
+        'range' : range(2, sys.maxint),
       }
     }
 

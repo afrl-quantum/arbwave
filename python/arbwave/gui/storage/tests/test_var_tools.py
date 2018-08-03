@@ -25,7 +25,5 @@ class ReadWriteVars(unittest.TestCase):
     writevars(F, self.original_dict)
     F.close()
 
-    F = open( self.tmpfilename )
-    read_dict = readvars(F)
-    F.close()
+    read_dict = readvars(self.tmpfilename)
     self.assertEqual( self.original_dict, read_dict )

@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from gi.repository import Gtk as gtk
 
-from dispatcher import TreeModelDispatcher
+from .dispatcher import TreeModelDispatcher
 
 
 class Hosts(TreeModelDispatcher, gtk.ListStore):

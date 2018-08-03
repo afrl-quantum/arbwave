@@ -3,9 +3,9 @@
 from gi.repository import Gtk as gtk
 import logging, sys
 
-from dispatcher import TreeModelDispatcher
+from .dispatcher import TreeModelDispatcher
 
-from waveforms import Waveforms
+from .waveforms import Waveforms
 
 class WaveformsSet(TreeModelDispatcher, gtk.ListStore):
   LABEL     =0
@@ -109,7 +109,7 @@ class WaveformsSet(TreeModelDispatcher, gtk.ListStore):
 
   def get_default(self):
     keys = self.wf_dict().keys()
-    for i in xrange(sys.maxint):
+    for i in range(sys.maxsize):
       ldefault = self.DEFAULT + ( (i != 0 and '_'+str(i)) or '' )
       if ldefault not in keys: break
     return (ldefault, Waveforms( **self.kwargs ))

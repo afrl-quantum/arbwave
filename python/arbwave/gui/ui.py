@@ -12,14 +12,14 @@ from copy import deepcopy
 import traceback
 
 # local packages
-import about, tips, configure, stores, edit
-import edit.optimize
-import edit.loop
-from plotter import Plotter
-from packing import Args as PArgs, hpack, vpack, VBox
-import storage
-from notification import Notification
-import embedded
+from . import about, tips, configure, stores, edit
+from .edit import optimize as edit_optimize
+from .edit import loop as edit_loop
+from .plotter import Plotter
+from .packing import Args as PArgs, hpack, vpack, VBox
+from . import storage
+from .notification import Notification
+from . import embedded
 
 from ..tools.config_template_update import recursive_update
 from ..processor import default
@@ -199,7 +199,7 @@ class ArbWave(gtk.Window):
     self.add_accel_group(merge.get_accel_group())
     try:
       mergeid = merge.add_ui_from_string(ui_info)
-    except gobject.GError, msg:
+    except gobject.GError as msg:
       logging.critical( 'building menus failed: %s', str(msg) )
 
     chlabel = gtk.Label('Channels')
@@ -367,9 +367,9 @@ class ArbWave(gtk.Window):
       runnable  = self.runnable_tree[ active_i ][0]
       run_label = self.runnable_tree[ active_i ][1]
       if 'Loop' in run_label:
-        return runnable, edit.loop.Make(self, run_label, self.runnable_settings)
+        return runnable, edit_loop.Make(self, run_label, self.runnable_settings)
       elif 'Optimize' in run_label:
-        return runnable, edit.optimize.Make(self, run_label, self.runnable_settings)
+        return runnable, edit_optimize.Make(self, run_label, self.runnable_settings)
       else:
         return runnable, None
     return 'Default', None
@@ -489,7 +489,7 @@ class ArbWave(gtk.Window):
 
     def show_exception( action, fun, *args, **kwargs ):
       try: fun( action, *args, **kwargs )
-      except Exception, e: self.notify.show( str(e) )
+      except Exception as e: self.notify.show( str(e) )
 
     # Finish off with creating references to each of the actual actions
     self.actions = {
@@ -632,7 +632,7 @@ class ArbWave(gtk.Window):
       # file-version upgrade must be implemented.
       all_devices = backend.get_devices()
       device_config = dict()
-      for devname, devcfg in vardict['devices'].iteritems():
+      for devname, devcfg in vardict['devices'].items():
         D = all_devices[devname].get_config_template()
         recursive_update(D, devcfg)
         device_config[devname] = D
@@ -735,7 +735,7 @@ class ArbWave(gtk.Window):
         toggle_run=toggle_run,
       )
       self.next_untested_undo = len(self.undo)
-    except Exception, e:
+    except Exception as e:
       traceback.print_exc()
       self.notify.show(
         '<span color="red"><b>Error</b>: \n' \

@@ -1,10 +1,10 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from base import Device
-import dds
-import timing
+from .base import Device
+from . import dds
+from . import timing
 
-from controller.bbb_pyro import *
+from .controller.bbb_pyro import *
 
 type_to_device_klass_map = {
   'dds' : dds.Device,

@@ -6,7 +6,7 @@ from .. import conversion_path
 
 def get_conversion_path_str(_from, to):
   path = conversion_path(_from, to)
-  return [ (f.__module__.rpartition('.')[-1], f.func_name) for f in path ]
+  return [ (f.__module__.rpartition('.')[-1], f.__name__) for f in path ]
 
 class Compatibility(unittest.TestCase):
   short_path = [ ('from_0_1_2', 'to_0_1_3') ]

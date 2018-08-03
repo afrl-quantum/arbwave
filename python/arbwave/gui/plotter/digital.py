@@ -5,7 +5,7 @@ Utilities for plotting digital signals
 from matplotlib.colors import ColorConverter
 
 import numpy as np
-from common import *
+from .common import *
 
 # broken_barh( xranges, yrange, **kwargs )
 #  xranges : sequence of (xmin, xwidth)
@@ -15,9 +15,9 @@ fc=get_face_color
 ls=get_linestyle
 
 
-def mkbbars( (encoding, L), dt, xscale ):
+def mkbbars(encoding, L, dt, xscale):
   # only pick out the true value transitions
-  return [ (L[i][0]*xscale, dt[i]*xscale)   for i in xrange(len(L)) if L[i][1] ]
+  return [ (L[i][0]*xscale, dt[i]*xscale)   for i in range(len(L)) if L[i][1] ]
 
 
 class BBWrapper(object):
@@ -39,7 +39,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
     t_final = get_t_final( signals )
     t_final *= 1.001
 
-  channels = signals.items()
+  channels = list(signals.items())
   if name_map:
     channels.sort( key = lambda v: -name_map[v[0]]['order'] )
     get_label = lambda n : name_map[n]['name']
@@ -60,13 +60,12 @@ def plot( ax, signals, name_map=None, t_final=None ):
     xscale = get_scale( c[0] )
     dt = mkdt( c[1], t_final / xscale )
 
-    groups = c[1].items()
-    groups.sort( key = lambda v : v[0] )
+    groups = sorted(c[1].items(), key = lambda v : v[0])
     for g in groups:
       group_lines[(g[0],c[0])] = \
         BBWrapper(
           ax.broken_barh(
-            mkbbars( g[1], dt[ g[0] ], xscale ), (i,1),
+            mkbbars(g[1][0], g[1][1], dt[ g[0] ], xscale), (i,1),
             facecolors=cconv.to_rgba(fc(i)), linewidth=2 ) )
     i += 1
 

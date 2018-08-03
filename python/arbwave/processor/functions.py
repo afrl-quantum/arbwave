@@ -30,7 +30,7 @@ class step_iter:
     self.fun = fun
   def __iter__(self):
     return self
-  def next(self):
+  def __next__(self):
     if self.t >= self.tf_stop:
       raise StopIteration()
 
@@ -405,7 +405,7 @@ class PulseTrain(ScaledFunction):
   def __iter__(self):
     L = list()
     t = self.t
-    for i in xrange(self.n):
+    for i in range(self.n):
       L.append( (t,               self.dt_on, self.high) )
       L.append( (t + self.dt_on, self.dt_off,  self.low) )
       t += self.pulse_period

@@ -7,7 +7,7 @@ import comedi as clib
 from ctypes import c_ubyte, cast, pointer, POINTER, addressof, c_uint, sizeof
 from logging import log, debug, info, warn, error, critical, DEBUG
 import os, re, time, tempfile
-from itertools import izip, chain
+from itertools import chain
 from ....tools.expand import expand_braces
 
 from . import sim_device_routes
@@ -74,14 +74,14 @@ class SimSubDev(dict):
     self.setdefault('type', clib.SUBD_UNUSED)
     self.setdefault('n_channels', 0)
     # FIXME:  replace this with a non static digital/analog representation
-    self.setdefault('state', [0 for i in xrange(self.n_channels)])
+    self.setdefault('state', [0 for i in range(self.n_channels)])
     # for dio subdev:
-    self.setdefault('ioconfig', [clib.INPUT for i in xrange(self.n_channels)])
+    self.setdefault('ioconfig', [clib.INPUT for i in range(self.n_channels)])
 
     # for PFI, TRIG
     self.setdefault('routable', False)
     if self.routable:
-      self.setdefault('routing', [-1 for i in xrange(self.n_channels)])
+      self.setdefault('routing', [-1 for i in range(self.n_channels)])
 
     self.setdefault('flags', 0)
     self.setdefault('cmd', dict())
@@ -182,7 +182,7 @@ class SimSubDev(dict):
     assert min <= max, 'comedi_find_range:  min > max'
     # self.ranges is sorted increasingly
     ranges = [ r for r in self.ranges if r.unit == unit ]
-    for i, r in izip( xrange(len(ranges)), ranges ):
+    for i, r in zip( range(len(ranges)), ranges ):
       if r.min <= min and max <= r.max:
         return i
     return -1
@@ -219,7 +219,7 @@ class SimSubDev(dict):
     try:
       with self.busy_body:
         # dereference the pointer and set a value
-        data._obj[0:n] = [self.state[channel] for i in xrange(n)]
+        data._obj[0:n] = [self.state[channel] for i in range(n)]
         return n
     except BusyError:
       return -1
@@ -321,8 +321,8 @@ class SimSubDev(dict):
   def dio_bitfield2(self, write_mask, bits, base_channel):
     try:
       with self.busy_body:
-        for i, ch in izip( xrange(8*sizeof(c_uint)),
-                           xrange( base_channel, self.n_channels ) ):
+        for i, ch in zip( range(8*sizeof(c_uint)),
+                          range( base_channel, self.n_channels ) ):
           if write_mask & (1 << i):
             self.state[ch] = bits._obj.value & ( 1 << i )
           bits._obj.value &= ~( 1 << i ) # clear bit
@@ -398,7 +398,7 @@ class SimCard(object):
   def cleanup(self):
     # must import to make sure it exists upon exit
     import logging
-    for k, s in self.subdevs.iteritems():
+    for k, s in self.subdevs.items():
       logging.debug('cleanup subdev %d', k)
       s.cleanup()
 
@@ -536,10 +536,10 @@ class SimCard(object):
   def get_routes(self, routelist, len_routelist):
     if (not routelist) or len_routelist == 0:
       # just return the number of routes
-      return sum([len(v) for k,v in self.routes.iteritems()])
+      return sum([len(v) for k,v in self.routes.items()])
 
-    S = set(chain(*[{(k,vi) for vi in v} for k,v in self.routes.iteritems()]))
-    for route,p in izip(S,routelist[:len_routelist]):
+    S = set(chain(*[{(k,vi) for vi in v} for k,v in self.routes.items()]))
+    for route,p in zip(S,routelist[:len_routelist]):
       p.source, p.destination = route
     return min(len(S), len(routelist), len_routelist)
 
@@ -721,7 +721,7 @@ class ComediSim(object):
       import logging
       logging.debug('comedi.sim:  removing injected simulated library from c-interface')
       # delete cards and associated buffers
-      for k, c in self.cards.iteritems():
+      for k, c in self.cards.items():
         logging.debug('comedi.sim: cleaning up card(%d)', k)
         c.cleanup()
       del self.cards
@@ -985,7 +985,7 @@ class ComediSim(object):
     debug('comedi_do_insn(%d, %s)', fp, i)
     if ( i.insn == clib.INSN_WRITE ):
       C,R,A = ( f(i.chanspec) for f in [clib.CR_CHAN,clib.CR_RANGE,clib.CR_AREF] )
-      for j in xrange(i.n):
+      for j in range(i.n):
         self[fp][i.subdev].data_write(C,R,A,i.data[j])
       return i.n
     if ( i.insn == clib.INSN_READ ):
@@ -1011,7 +1011,7 @@ class ComediSim(object):
   def comedi_do_insnlist(self, fp, instruction_list):
     debug('comedi_do_insnlist(%d, %s)', fp, instruction_list)
     successes = 0
-    for i in xrange(instruction_list.n_insns):
+    for i in range(instruction_list.n_insns):
       ri = self.comedi_do_insn( fp, instruction_list.insns[i] )
       if ri >= 0: successes += 1
       else: break

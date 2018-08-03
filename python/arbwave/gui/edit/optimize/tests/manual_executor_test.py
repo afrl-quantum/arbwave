@@ -15,10 +15,10 @@ class func:
     self.ne = Nextra
 
   def onstart(self):
-    print 'nothing to get ready for!'
+    print('nothing to get ready for!')
 
   def onstop(self):
-    print 'nothing to clean up!'
+    print('nothing to clean up!')
 
   def run(self):
     global var0, var1, var2
@@ -30,8 +30,8 @@ class func:
     f = xx**2 + abs(yy-100) * abs(yy+100) + abs(zz0-100) + (zz1+50)**2
     R = list(rand(self.ne))
     if self.avg:
-      #return average([ f for i in xrange(10) ])
-      return [average([ poisson( f ) for i in xrange(10) ])] + R
+      #return average([ f for i in range(10) ])
+      return [average([ poisson( f ) for i in range(10) ])] + R
     else:
       return [f] + R
 
@@ -51,13 +51,13 @@ def main():
   win = gtk.Window()
   e = Make(win, 'func', main_settings)( func(), globals() )
 
-  print 'e: ', e
+  print('e: ', e)
   return e
   try:
     while e(): pass
   except: traceback.print_exc()
   if e.results:
-    print 'cache length: ', len(e.results)
-    print 'skipped evals: ', e.skipped_evals
-    #print 'results: '
+    print('cache length: ', len(e.results))
+    print('skipped evals: ', e.skipped_evals)
+    #print('results: ')
     #pprint.pprint( e.results )

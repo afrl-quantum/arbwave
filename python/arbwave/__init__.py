@@ -29,9 +29,7 @@ log_levels = {
 
 def main():
   if sys.platform != 'win32':
-    # until we get a better multiprocessing with set_start_method (by a backport
-    # or moving to python3), we need to use billiard on non-windows systems
-    import billiard as mp
+    import multiprocessing as mp # is this ok for windows?
     mp.set_start_method('spawn')
 
   parser = argparse.ArgumentParser(prog=version.prefix())
@@ -71,7 +69,7 @@ def main():
     parser.add_argument('--profile-sort', type=str, default=['time', 'calls'],
       help='Specify the columns to sort by [Default: time, calls]. All '
            'possible columns are: ' +
-           ', '.join(hotshot.stats.pstats.Stats.sort_arg_dict_default.iterkeys()))
+           ', '.join(hotshot.stats.pstats.Stats.sort_arg_dict_default.keys()))
     parser.add_argument('--profile-n', type=int, default=20,
       help='Specify the number of top offenders to show when showing '
            'profile results [Default: 20]')
@@ -101,12 +99,12 @@ def main():
     try:
       backend.connection.serve()
     except KeyboardInterrupt:
-      print 'exiting'
+      print('exiting')
   else:
     # create connection to local drivers by default
     backend.reconnect( dict( __default__ = 'local', local='localhost' ) )
     # we have to do this import _after_ the options. module is modified
-    import gui_main
+    from . import gui_main
     gui_main.main(args)
 
   if has_hotshot and args.profile:

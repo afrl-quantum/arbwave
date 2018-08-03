@@ -182,10 +182,10 @@ class Editor(gtk.Dialog):
         self.vadjval = self.vadj.get_value()
         self.contents.grab_focus()
 
-      except Exception, e:
+      except Exception as e:
         # It looks like the target rejected our text...
         self.update_statusbar('  Could not save text!!!!')
-        print e
+        print(e)
         return
 
     if response_id in [gtk.ResponseType.OK, gtk.ResponseType.CANCEL] and self.target:
@@ -211,8 +211,8 @@ def edit(title='Edit Script', parent=None, text=''):
 def main(argv):
   text='\n'.join(argv[1:])
   res = edit(text=text)
-  print res[0] == gtk.ResponseType.OK
-  print res[1]
+  print(res[0] == gtk.ResponseType.OK)
+  print(res[1])
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))

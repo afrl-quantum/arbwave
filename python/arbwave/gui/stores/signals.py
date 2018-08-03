@@ -2,7 +2,7 @@
 
 from gi.repository import Gtk as gtk
 
-from dispatcher import TreeModelDispatcher
+from .dispatcher import TreeModelDispatcher
 
 class Signals(TreeModelDispatcher, gtk.ListStore):
   SOURCE  =0

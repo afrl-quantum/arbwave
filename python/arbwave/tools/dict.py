@@ -13,4 +13,4 @@ class Dict(dict):
     Returns a dictionary with the key/value roles reversed.  Obviously, if
     values are not unique, this function is not reversible.
     """
-    return Dict({v:k for k,v in self.iteritems()})
+    return Dict({v:k for k,v in self.items()})

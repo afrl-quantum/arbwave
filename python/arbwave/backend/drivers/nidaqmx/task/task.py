@@ -4,7 +4,6 @@ import copy
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 from ....device import Device as Base
 from .....tools.signal_graphs import nearest_terminal
-from .....tools.cmp import cmpeps
 from .....tools import cached
 from physical import unit
 import nidaqmx
@@ -290,10 +289,10 @@ class Task(Base):
     n_channels = len(chlist)
     scans = dict.fromkeys( transitions )
     nones = [None] * n_channels
-    for i in xrange( n_channels ):
+    for i in range( n_channels ):
       if chlist[i] not in waveforms:
         continue
-      for wf_path, (encoding,group_trans) in waveforms[ chlist[i] ].iteritems():
+      for wf_path, (encoding,group_trans) in waveforms[ chlist[i] ].items():
         assert encoding == 'step', \
           'non-step transition encoding for NIDAQmx: '+encoding
         for timestamp, value in group_trans:
@@ -317,7 +316,7 @@ class Task(Base):
       last = scans[ transitions[0] ] = [0] * n_channels
     else:
       scans[ transitions[0] ] = [
-        zero_if_none(v,i) for v,i in zip( S0, xrange(len(S0)) )
+        zero_if_none(v,i) for v,i in zip( S0, range(len(S0)) )
       ]
       last = scans[ transitions[0] ]
 
@@ -341,7 +340,7 @@ class Task(Base):
         # must be sharing a clock with another card.  keep last values
         scans[t] = last
       else:
-        for i in xrange( n_channels ):
+        for i in range( n_channels ):
           if t_array[i] is None:
             t_array[i] = last[i]
         last = t_array
@@ -374,7 +373,7 @@ class Task(Base):
       if self.use_case == Task.WAVEFORM_CONTINUOUS:
         raise RuntimeError('Cannot wait for continuous waveform tasks')
       try: self.task.wait_until_done( timeout = self.t_max*2 )
-      except nidaqmx.libnidaqmx.NIDAQmxRuntimeError, e:
+      except nidaqmx.libnidaqmx.NIDAQmxRuntimeError as e:
         debug('NIDAQmx:  task.wait() timed out! finished=%s',
               self.task.is_done())
       log(DEBUG-1,'NIDAQmx: task (%s) finished', self.task)

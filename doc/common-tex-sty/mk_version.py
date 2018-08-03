@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from subprocess import Popen, PIPE
 from os import path
 
@@ -8,9 +8,9 @@ MANDIR = path.join( COMMON_DIR, path.pardir, 'manual' )
 def get_version():
   try:
     git = Popen(['git','describe'], stdout=PIPE)
-    name,version = git.communicate()[0].strip().split('-',1)
+    name,version = git.communicate()[0].decode().strip().split('-',1)
     git = Popen(['git','log','--format=%ci','-1'],stdout=PIPE)
-    revdate = git.communicate()[0].split()[0]
+    revdate = git.communicate()[0].decode().split()[0]
 
     return version, revdate
   except:
@@ -19,7 +19,7 @@ def get_version():
 def get_man_version():
   try:
     git = Popen(['git','log','--format=%ci','-1',MANDIR],stdout=PIPE)
-    mandate = git.communicate()[0].split()[0]
+    mandate = git.communicate()[0].decode().split()[0]
     return mandate
   except:
     return '2012-08-01'

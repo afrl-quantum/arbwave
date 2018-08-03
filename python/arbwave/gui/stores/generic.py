@@ -2,7 +2,7 @@
 
 from gi.repository import Gtk as gtk
 
-from dispatcher import TreeModelDispatcher
+from .dispatcher import TreeModelDispatcher
 
 def ifthen(state, true_val, false_val):
   if state: return true_val
@@ -90,7 +90,7 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
   def _load_recursive(self, D, parent=None):
     items = D.items()
     if self.keep_order:
-      items.sort( key = lambda i : i[1]['order'] )
+      items = sorted(items, key = lambda i : i[1]['order'] )
 
     for i in items:
       row = list(self.default)
@@ -120,50 +120,50 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
     return self.dict(store_range)
 
 if __name__ == '__main__':
-  print 'testing loading with empty config-tree:'
+  print('testing loading with empty config-tree:')
   data0 = { 'clock' : { }, }
 
   g = Generic()
   g.load( data0 )
-  print '... no complaints so far'
+  print('... no complaints so far')
 
-  print 'testing representation:'
+  print('testing representation:')
   data_out = g.representation()
   if data0 == data_out:
-    print 'success!'
+    print('success!')
   else:
-    print 'input does not equal output'
+    print('input does not equal output')
 
 
-  print ''
-  print 'testing loading with more complicated config-tree:'
+  print('')
+  print('testing loading with more complicated config-tree:')
   data0 = {
     'Dev1' : {
       'out' : {
-        'param0' : { 'type': int, 'range':xrange(10), 'value': 2 },
+        'param0' : { 'type': int, 'range':range(10), 'value': 2 },
         'param1' : { 'type': str, 'range':['a','b'], 'value': 'b' },
       },
       'in' : {
         'param2' : { 'type': bool, 'range':None, 'value': False },
-        'param3' : { 'type': float, 'range':xrange(-10,30), 'value': 0.3 },
+        'param3' : { 'type': float, 'range':range(-10,30), 'value': 0.3 },
       },
     },
   }
 
   g = Generic(store_range=True)
   g.load( data0 )
-  print '... no complaints so far'
+  print('... no complaints so far')
 
-  print 'testing representation:'
+  print('testing representation:')
   data_out = g.representation()
   if data0 == data_out:
-    print 'success!'
+    print('success!')
   else:
-    print 'input does not equal output'
+    print('input does not equal output')
 
 
-  print ''
-  print 'testing loading with more complicated config-tree:'
+  print('')
+  print('testing loading with more complicated config-tree:')
   data0 = {
     'Dev1' : {
       'enable' : True,
@@ -171,7 +171,7 @@ if __name__ == '__main__':
         'out' : {
           'enable' : True,
           'parameters' : {
-            'param0' : { 'enable':True, 'type': int, 'range':xrange(10), 'value': 2 },
+            'param0' : { 'enable':True, 'type': int, 'range':range(10), 'value': 2 },
             'param1' : { 'enable':True, 'type': str, 'range':['a','b'], 'value': 'b' },
           },
         },
@@ -179,7 +179,7 @@ if __name__ == '__main__':
           'enable': True,
           'parameters' : {
             'param2' : { 'enable':True, 'type': bool, 'range':None, 'value': False },
-            'param3' : { 'enable':True, 'type': float, 'range':xrange(-10,30), 'value': 0.3 },
+            'param3' : { 'enable':True, 'type': float, 'range':range(-10,30), 'value': 0.3 },
           }
         },
       },
@@ -188,38 +188,38 @@ if __name__ == '__main__':
 
   g = Generic(store_range=True,use_enable=True)
   g.load( data0 )
-  print '... no complaints so far'
+  print('... no complaints so far')
 
-  print 'testing representation:'
+  print('testing representation:')
   data_out = g.representation()
   if data0 == data_out:
-    print 'success!'
+    print('success!')
   else:
-    print 'input does not equal output'
+    print('input does not equal output')
 
 
-  print ''
-  print 'testing loading with only a list of parameters:'
+  print('')
+  print('testing loading with only a list of parameters:')
   data0 = {
     'param2' : { 'enable':True, 'type': bool, 'range':None, 'value': False },
-    'param3' : { 'enable':True, 'type': float, 'range':xrange(-10,30), 'value': 0.3 },
+    'param3' : { 'enable':True, 'type': float, 'range':range(-10,30), 'value': 0.3 },
   }
   g = Generic(store_range=True,use_enable=True)
   g.load( data0 )
-  print '... no complaints so far'
+  print('... no complaints so far')
 
-  print 'testing representation:'
+  print('testing representation:')
   data_out = g.representation()
   if data0 == data_out:
-    print 'success!'
+    print('success!')
   else:
-    print 'input does not equal output'
+    print('input does not equal output')
 
 
 
 
-  print ''
-  print 'testing loading with more complicated config-tree with order maintained:'
+  print('')
+  print('testing loading with more complicated config-tree with order maintained:')
   data0 = {
     'Dev0' : {
       'enable' : True,
@@ -229,7 +229,7 @@ if __name__ == '__main__':
           'enable' : True,
           'order'  : 0,
           'parameters' : {
-            'param0' : { 'order':1, 'enable':True, 'type': int, 'range':xrange(10), 'value': 2 },
+            'param0' : { 'order':1, 'enable':True, 'type': int, 'range':range(10), 'value': 2 },
             'param1' : { 'order':0, 'enable':True, 'type': str, 'range':['a','b'], 'value': 'b' },
           },
         },
@@ -238,7 +238,7 @@ if __name__ == '__main__':
           'order'  : 1,
           'parameters' : {
             'param2' : { 'order':1, 'enable':True, 'type': bool, 'range':None, 'value': False },
-            'param3' : { 'order':0, 'enable':True, 'type': float, 'range':xrange(-10,30), 'value': 0.3 },
+            'param3' : { 'order':0, 'enable':True, 'type': float, 'range':range(-10,30), 'value': 0.3 },
           }
         },
       },
@@ -251,7 +251,7 @@ if __name__ == '__main__':
           'enable' : True,
           'order'  : 0,
           'parameters' : {
-            'param0' : { 'order':1, 'enable':True, 'type': int, 'range':xrange(10), 'value': 2 },
+            'param0' : { 'order':1, 'enable':True, 'type': int, 'range':range(10), 'value': 2 },
             'param1' : { 'order':0, 'enable':True, 'type': str, 'range':['a','b'], 'value': 'b' },
           },
         },
@@ -260,7 +260,7 @@ if __name__ == '__main__':
           'order'  : 1,
           'parameters' : {
             'param2' : { 'order':1, 'enable':True, 'type': bool, 'range':None, 'value': False },
-            'param3' : { 'order':0, 'enable':True, 'type': float, 'range':xrange(-10,30), 'value': 0.3 },
+            'param3' : { 'order':0, 'enable':True, 'type': float, 'range':range(-10,30), 'value': 0.3 },
           }
         },
       },
@@ -269,11 +269,11 @@ if __name__ == '__main__':
 
   g = Generic(store_range=True,use_enable=True,keep_order=True)
   g.load( data0 )
-  print '... no complaints so far'
+  print('... no complaints so far')
 
-  print 'testing representation:'
+  print('testing representation:')
   data_out = g.representation()
   if data0 == data_out:
-    print 'success!'
+    print('success!')
   else:
-    print 'input does not equal output'
+    print('input does not equal output')

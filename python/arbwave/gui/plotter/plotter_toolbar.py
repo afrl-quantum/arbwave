@@ -109,7 +109,7 @@ class NavigationToolbar(_NavigationToolbar):
     self.set_message(self.mode)
 
     # push the current view to define home if stack is empty
-    if self._views.empty():
+    if self._nav_stack.empty():
       self.push_current()
 
 
@@ -147,5 +147,5 @@ class NavigationToolbar(_NavigationToolbar):
     self.set_message(self.mode)
 
     # push the current view to define home if stack is empty
-    if self._views.empty():
+    if self._nav_stack.empty():
       self.push_current()

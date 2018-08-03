@@ -28,7 +28,7 @@ class Device(Base):
   def __init__(self, *a, **kw):
     super(Device,self).__init__(*a, **kw)
     self.channels = [
-      channels.DDS('{}/{}'.format(self,i), self) for i in xrange(4)
+      channels.DDS('{}/{}'.format(self,i), self) for i in range(4)
     ]
     self.config = None
     self.number_configured_channels = 0
@@ -95,7 +95,7 @@ class Device(Base):
       'clock': {
         'value': '',
         'type': str,
-        'range': self.possible_clock_sources.keys(),
+        'range': list(self.possible_clock_sources.keys()),
       },
     }
 
@@ -139,8 +139,8 @@ class Device(Base):
     if self.number_configured_channels != len(channels):
       self.number_configured_channels = len(channels)
       self.min_period = max(
-        self.proxy.get_minimum_period(self.number_configured_channels)
-                  .itervalues()
+          self.proxy.get_minimum_period(self.number_configured_channels)
+              .values()
         ) * 5*units.ns
 
     if self.config == config:

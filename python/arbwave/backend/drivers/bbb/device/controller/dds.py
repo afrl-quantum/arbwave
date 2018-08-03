@@ -5,11 +5,9 @@
 Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 """
 
-
-from itertools import izip
 import bbb.ad9959
 
-from base import Device as Base
+from .base import Device as Base
 
 CHARGE_PUMP = bbb.Dict(bbb.ad9959.regs.FR1.CHARGE_PUMP)
 CHARGE_PUMP.pop('Default')
@@ -53,7 +51,7 @@ class Device(Base, bbb.ad9959.Device):
     values.
     """
     # remove the '_'_ prefix
-    return tuple(v[1:] for v in CHARGE_PUMP.iterkeys())
+    return tuple(v[1:] for v in CHARGE_PUMP.keys())
 
 
   def set_output(self, values):
@@ -68,7 +66,7 @@ class Device(Base, bbb.ad9959.Device):
     if not isinstance(values, dict):
       values = dict(values)
 
-    for ch, val in values.iteritems():
+    for ch, val in values.items():
       ch = int(ch)
       assert 0 <= ch <= 3, \
         '{}.set_output:  invalid channel number [{}]'.format(self, ch)
@@ -150,13 +148,13 @@ class Device(Base, bbb.ad9959.Device):
     # Note that I am not using physicsal.units pacakge since I'm trying to limit
     # brining _any_ packages into the code that runs on the beaglebone that
     # isn't *entirely* necessary.
-    dt = max(self.get_minimum_period(n_chans).itervalues()) * 5e-9
+    dt = max(self.get_minimum_period(n_chans).values()) * 5e-9
 
     transitions_map = dict() # timestamp -> dict(ch->op)
-    for ch, wfm in waveforms.iteritems():
+    for ch, wfm in waveforms.items():
       ch = int(ch)
 
-      for wfe_path, (encoding, wfe) in wfm.iteritems():
+      for wfe_path, (encoding, wfe) in wfm.items():
 
         if encoding == 'step':
           for timestamp, value in wfe:
@@ -178,7 +176,7 @@ class Device(Base, bbb.ad9959.Device):
             ('set_frequency_ramp', freq0, freq1, freq_last, (t1-t0)*dt)
 
           # Subsequent components only update the slope.
-          for (t0,f0), (t1,f1) in izip(wfe[1:-1], wfe[2:]): # skip first and last
+          for (t0,f0), (t1,f1) in zip(wfe[1:-1], wfe[2:]): # skip first and last
             transitions_map.setdefault(t0, {})[ch] = \
               ('update_frequency_ramp', f0, f1, (t1-t0)*dt)
 
@@ -190,8 +188,8 @@ class Device(Base, bbb.ad9959.Device):
             'bbb.dds: Unsupported waveform encoding [{}]'.format(encoding)
           )
 
-    waveform = transitions_map.items()
-    waveform.sort(key = lambda (timestep, data): timestep)
+    waveform = list(transitions_map.items())
+    waveform.sort(key = lambda timestep_data: timestep_data[0])
     return [wi[1] for wi in waveform]
 
 

@@ -3,8 +3,8 @@
 import gi
 gi.check_version( (3,0,0) )
 
-from ui import ArbWave
-import about
+from .ui import ArbWave
+from . import about
 
 # remove things we don't want around
 del gi

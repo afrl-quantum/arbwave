@@ -195,7 +195,7 @@ class ToDriver:
     least-dependent to most-dependent (opposite of how they are started).
     """
     logging.info( 'sending stop signal to all hardware for waveform output' )
-    for i in xrange(len(self.sorted_device_list)-1,-1,-1):
+    for i in range(len(self.sorted_device_list)-1,-1,-1):
       self.sorted_device_list[i].stop()
     logging.info( 'sent stop signal to all hardware for waveform output' )
 

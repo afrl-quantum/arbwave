@@ -29,7 +29,8 @@ def load_config_file():
     [path.pardir]*5 + ['examples','simple_config.py']
   ))
   variables = dict()
-  execfile( simple_config_path, globals(), variables )
+  exec(compile(open( simple_config_path ).read(), simple_config_path, 'exec'),
+       globals(), variables)
   return simple_config_path, variables
 
 
@@ -47,7 +48,7 @@ class ComputeBase(unittest.TestCase):
     # we are not yet executing L['global_script'] because I don't want
     # to have to import Arbwave fake module as well (yet).
     self.G = default.get_globals()
-    exec physical_import in self.G
+    exec(physical_import, self.G)
 
     self.simple_config_path, self.L = load_config_file()
     load_simulated_drivers(self.L['hosts'])
@@ -269,7 +270,7 @@ class ComputeBase(unittest.TestCase):
 
 def add_waveform_paths( waveforms, parent_path=() ):
   waveforms = copy.deepcopy( waveforms )
-  for sibling_number, wve in zip( xrange(len(waveforms)), waveforms ):
+  for sibling_number, wve in zip( range(len(waveforms)), waveforms ):
     current_path = parent_path + (sibling_number,)
     if 'elements' in wve:
       # recurse to elements within group

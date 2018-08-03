@@ -10,6 +10,7 @@ import comedi
 from .analog  import Analog
 from .digital import Digital
 from .timing  import Timing
+from functools import reduce
 
 
 def subdev_iterator(fp, typ):

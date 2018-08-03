@@ -11,7 +11,7 @@ def get_channels(devices, C, *args, **kwargs):
     #nin = dev.config['number-input-ports']
     nin = 0
     for port in [ 'A', 'B', 'C', 'D' ][:(4-nin)]:
-      for line in xrange(16):
+      for line in range(16):
         retval.append(
           C('{}/{}/{}'.format(dev, port,line), dev=dev, *args, **kwargs)
         )

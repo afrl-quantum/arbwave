@@ -5,7 +5,7 @@ Default environment settings.
 
 import numpy as np
 from ..tools.float_range import float_range, xarange
-import functions
+from . import functions
 
 registered_globals = {
   'float_range' : float_range,

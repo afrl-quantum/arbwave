@@ -18,7 +18,8 @@ from matplotlib.transforms import Bbox, TransformedBbox, \
 from mpl_toolkits.axes_grid1.inset_locator import BboxPatch, BboxConnector,\
      BboxConnectorPatch
 
-from mpl_toolkits.axes_grid import Divider, Size
+from mpl_toolkits.axes_grid1.axes_divider import Divider
+from mpl_toolkits.axes_grid1 import axes_size as Size
 
 from matplotlib.widgets import MultiCursor, SpanSelector
 
@@ -51,7 +52,7 @@ def connect_bbox( bbox1, bbox2,
 
 
 def zoom_effect(ax1, ax2, **kwargs):
-  u"""
+  """
   ax1 : the main axes
   ax1 : the zoomed axes
 
@@ -91,11 +92,11 @@ class ScrollMaster:
     self.toolbar    = None
 
   def onpress(self,event):
-    print 'hi'
+    print('hi')
 
   def onscroll(self,event):
     # push the current view to define home if stack is empty
-    if self.toolbar and self.toolbar._views.empty():
+    if self.toolbar and self.toolbar._nav_stack.empty():
       self.toolbar.push_current()
 
     event.canvas.grab_focus()

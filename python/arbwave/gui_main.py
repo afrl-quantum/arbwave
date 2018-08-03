@@ -20,8 +20,8 @@ def main(args):
   if sys.platform == 'win32':
     glib.timeout_add(400, sleeper)
 
-  import gui
-  from processor.default import get_globals
+  from . import gui
+  from .processor.default import get_globals
   prog = gui.ArbWave()
   if args.filename:
     assert os.path.isfile( args.filename ), 'expected configuration filename'
@@ -30,7 +30,7 @@ def main(args):
         logging.debug('Trying to load config file at startup...')
         gui.storage.load_file( args.filename, prog, get_globals() )
         logging.debug('Loaded config file at startup.')
-      except Exception, e:
+      except Exception as e:
         do_gui_operation( prog.notify.show, str(e) )
 
     # This has to be done in a separate thread so that all gui notifications are

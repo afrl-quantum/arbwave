@@ -47,8 +47,16 @@ class UniqueElement:
     # we do this comparison with integer values of clocks
     assert dti > 0, 'transition width too small at \n\t{}'.format( self )
 
+  def __eq__(self, other):
+    return self.cmp(other) == 0
 
-  def __cmp__(self, other):
+  def __lt__(self, other):
+    return self.cmp(other) == -1
+
+  def __gt__(self, other):
+    return self.cmp(other) == 1
+
+  def cmp(self, other):
     if self.ti < other.ti and self.tf <= other.ti:
       return -1
     elif other.ti < self.ti and other.tf <= self.ti:
@@ -91,7 +99,7 @@ class ClampedInterp1d:
 
   def __call__(self, xs):
     if np.iterable(xs):
-      return np.array( map(self.pointwise, np.array(xs)) )
+      return np.array( list(map(self.pointwise, np.array(xs))) )
     else:
       return self.pointwise(xs)
 
@@ -275,7 +283,7 @@ class WaveformEvalulator:
         L = locals.copy()
         L['t'] = t    # natural start time for the sub-group
         if gi['script']:
-          exec gi['script'] in globals, L
+          exec(gi['script'], globals, L)
 
         # 2.  establish local start time and durations...
         gi_t = evalIfNeeded( gi['time'], globals, L )
@@ -526,7 +534,7 @@ class WaveformEvalulator:
         self.transitions[clk].add(end_clk_t)
 
       # for simplicity, we just assume that the largest clock was needed.
-      self.t_max += max( self.min_periods.viewvalues() )
+      self.t_max += max( self.min_periods.values() )
 
 
     debug('final t_max: %s', self.t_max)
@@ -551,7 +559,7 @@ class WaveformEvalulator:
         # for devices like national instruments, but not true for devices such
         # as the viewpoint card where each output transition is timed with a
         # timestamp, regardless of how its clock operates.
-        self.transitions[i] = xrange( 0, max(self.transitions[i]) + 1 )
+        self.transitions[i] = range( 0, max(self.transitions[i]) + 1 )
 
       clock_transitions[i] = dict(
         dt = self.min_periods[i],

@@ -2,7 +2,7 @@
 
 from gi.repository import Gtk as gtk
 
-from dispatcher import TreeModelDispatcher
+from .dispatcher import TreeModelDispatcher
 
 def scaling_cb( scaling, p, i, channels ):
   # since rows/paths/iters can change, we have to search through and find this
@@ -94,8 +94,7 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
 
   def load(self, D):
     self.clear()
-    items = D.items()
-    items.sort(key=lambda i: i[1]['order'])
+    items = sorted(D.items(), key=lambda i: i[1]['order'])
     for i in items:
       slist = None
       if i[1]['scaling']:

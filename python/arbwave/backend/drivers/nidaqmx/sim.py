@@ -15,7 +15,7 @@ polarity_map = None
 def load_nidaqmx_h(module):
   nidaqmx_version = module.get_nidaqmx_version()
   nidaqmx_h_name = 'nidaqmx_h_%s' % (nidaqmx_version.replace ('.', '_'))
-  exec 'from nidaqmx import %s as nidaqmx_h' % (nidaqmx_h_name)
+  exec('from nidaqmx import {} as nidaqmx_h'.format(nidaqmx_h_name))
   module.libnidaqmx.DAQmx     = nidaqmx_h.DAQmx
   module.libnidaqmx.error_map = nidaqmx_h.error_map
 
@@ -206,8 +206,7 @@ class NiDAQmx:
 
 
   def DAQmxGetSysDevNames(self,buf_ref,bufsize):
-    devices = self.devices.keys()
-    devices.sort()
+    devices = sorted(self.devices.keys())
     buf_ref._obj.value = ', '.join(devices)[:bufsize]
     log(DEBUG-1, 'DAQmxGetSysDevNames() = %s', buf_ref._obj.value)
     return 0
@@ -275,7 +274,7 @@ class NiDAQmx:
 
   def DAQmxGetDevAOPhysicalChans(self, dev, buf_ref, bufsize):
     chans = ','.join([ '{}/ao{}'.format(dev,i)
-      for i in xrange(self.devices[str(dev)].num_ao_channels) ])
+      for i in range(self.devices[str(dev)].num_ao_channels) ])
     buf_ref._obj.value = chans[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevAOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0
@@ -283,7 +282,7 @@ class NiDAQmx:
 
   def DAQmxGetDevDOPorts(self, dev, buf_ref, bufsize):
     chans = ','.join([ '{}/port{}'.format(dev,i)
-      for i in xrange(self.devices[str(dev)].num_do_ports) ])
+      for i in range(self.devices[str(dev)].num_do_ports) ])
     buf_ref._obj.value = chans[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevDOPorts(%s) = %s', dev, buf_ref._obj.value)
     return 0
@@ -293,8 +292,8 @@ class NiDAQmx:
     # this is not really consistent right now, but we're simulating 32 lines
     D = self.devices[str(dev)]
     chans = ','.join( chain(* [
-      [ '{}/port{}/line{}'.format(dev,pi,li) for li in xrange(D.port_size) ]
-      for pi in xrange(D.num_do_ports)
+      [ '{}/port{}/line{}'.format(dev,pi,li) for li in range(D.port_size) ]
+      for pi in range(D.num_do_ports)
     ]) )
     buf_ref._obj.value = chans[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevDOLines(%s) = %s', dev, buf_ref._obj.value)
@@ -303,7 +302,7 @@ class NiDAQmx:
 
   def DAQmxGetDevCOPhysicalChans(self, dev, buf_ref, bufsize):
     buf_ref._obj.value = ','.join([
-      '{}/ctr{}'.format(dev,i) for i in xrange(self.devices[str(dev)].num_counters)
+      '{}/ctr{}'.format(dev,i) for i in range(self.devices[str(dev)].num_counters)
     ])[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevCOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0

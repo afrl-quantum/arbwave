@@ -3,7 +3,7 @@
 #       Py_Shell.py : inserts the python prompt in a gtk interface
 #
 
-import ipython_view
+from . import ipython_view
 from gi.repository import Gtk as gtk, \
                           GLib as glib
 
@@ -58,7 +58,7 @@ class Python(ipython_view.IPythonView):
       self.shell_cmds += [ save, saveas ]
 
   def register_shell_cmds(self):
-      self.updateNamespace({ f.func_name:f for f in self.shell_cmds })
+      self.updateNamespace({ f.__name__:f for f in self.shell_cmds })
 
   def update_globals(self, G=None):
     """

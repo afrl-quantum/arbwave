@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from task import Task as Base
+from .task import Task as Base
 import nidaqmx
 
 class Timing(Base):

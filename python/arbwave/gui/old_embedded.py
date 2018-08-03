@@ -4,7 +4,7 @@
 #
 
 import sys, code, os
-import __builtin__
+import builtins
 
 
 from gi.repository import Gtk as gtk, \
@@ -64,9 +64,9 @@ class Completer:
     import keyword
     matches = []
     n = len(text)
-    for list in [keyword.kwlist, __builtin__.__dict__.keys(), self.locals.keys()]:
+    for list in [keyword.kwlist, builtins.__dict__.keys(), self.locals.keys()]:
       for word in list:
-        if word[:n] == text and word != "__builtins__":
+        if word[:n] == text and word != "builtins":
           matches.append(word)
     return matches
 
@@ -96,7 +96,7 @@ class Completer:
     matches = []
     n = len(attr)
     for word in words:
-      if word[:n] == attr and word != "__builtins__":
+      if word[:n] == attr and word != "builtins":
         matches.append("%s.%s" % (expr, word))
     return matches
 
@@ -135,8 +135,9 @@ class Dummy_File:
   def writelines(self, l):
     glib.idle_add( self._writelines, l )
 
-  def _writelines(self, l):
-    map(self._write, l)
+  def _writelines(self, L):
+    for l in L:
+      self._write(l)
 
   def flush(self):
     pass
@@ -159,8 +160,7 @@ class PopUp:
       if dim>n_chars:
         n_chars=dim
       tmp[item]=None 
-    list=tmp.keys()
-    list.sort()
+    list = sorted(tmp.keys())
     
     self.list=list
     self.position=position
@@ -542,13 +542,12 @@ class Python(gtk.Frame):
       """help(object) for help about object"""
       if not (args or kwargs):
         fundoc = '\n'.join([ textDoc.docroutine(f) for f in self.shell_cmds ])
-        print (
-          '  ArbWave Shell Help: \n'
-          '  Some useful ArbWave commands: \n'
-        ) + fundoc
+        print('  ArbWave Shell Help: \n',
+              '  Some useful ArbWave commands: \n',
+              fundoc)
         return
       help(*args, **kwargs)
-    shell_help.func_name = 'help'
+    shell_help.__name__ = 'help'
 
     self.shell_cmds = [ reset, clear, history, store, store_kwargs, shell_help ]
 
@@ -580,7 +579,7 @@ class Python(gtk.Frame):
     if G is None:
       G = self.remote_get_globals()
     G.update(
-      { f.func_name:f for f in self.shell_cmds },
+      { f.__name__:f for f in self.shell_cmds },
       self=self,
       **self.locals
     )
@@ -672,7 +671,7 @@ class Python(gtk.Frame):
           file.close()
           
               
-        except Exception, x:
+        except Exception as x:
           box=gtk.MessageDialog(dlg,
                             gtk.DialogFlags.DESTROY_WITH_PARENT,
                             gtk.MessageType.ERROR,gtk.ButtonsType.CLOSE,
@@ -712,7 +711,7 @@ class Python(gtk.Frame):
           file.write(text)
           file.close()
           
-        except Exception, x:
+        except Exception as x:
           box=gtk.MessageDialog(dlg,
                             gtk.DialogFlags.DESTROY_WITH_PARENT,
                             gtk.MessageType.ERROR,gtk.ButtonsType.CLOSE,
@@ -818,7 +817,7 @@ class Python(gtk.Frame):
 
 
   def drag_data_received(self, source, drag_context, n1, n2, selection_data, long1, long2):
-      print selection_data.data
+      print(selection_data.data)
       
       
   def exec_code(self, text):

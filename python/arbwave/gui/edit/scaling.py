@@ -18,8 +18,8 @@ import pylab
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
-from helpers import *
-import spreadsheet
+from .helpers import *
+from . import spreadsheet
 
 def fstr(num, if_zero=None):
   return '{:.12g}'.format(num) if (if_zero is None or num != 0) else if_zero
@@ -278,7 +278,7 @@ class Editor(gtk.Dialog):
     if label == None:
       return
     if label != self.channels[self.channel_select.get_active()]:
-      for i in xrange(len(self.channels)):
+      for i in range(len(self.channels)):
         if label == self.channels[i][self.channels.LABEL]:
           self.channel_select.set_active(i)
           # we rely on the channel_select callback to finish this
@@ -436,7 +436,7 @@ def evalIfNeeded( s, G, L=dict() ):
   if type(s) is str:
     try:
       return eval( s, G, L )
-    except Exception, e:
+    except Exception as e:
       raise RuntimeError('Could not evaluate python text: "{}"\n{}'.format(s,e))
   else:
     return s
@@ -485,8 +485,7 @@ def calculate( scaling, units, offset, globals, return_range=False ):
     return min(XVALS), max(XVALS)
 
   # make sure that the order of data is correct
-  D = D.items()
-  D.sort(key=lambda v: v[0]) # sort by x
+  D = sorted(D.items(), key=lambda v: v[0]) # sort by x
   D = np.array(D)
   return D
 
@@ -522,7 +521,7 @@ data = np.array([
 """
 
   Globals = dict()
-  exec Global_script in Globals
+  exec(Global_script, Globals)
 
   class Channels(gtk.ListStore):
     LABEL            = 0

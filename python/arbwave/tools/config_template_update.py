@@ -12,7 +12,7 @@ def recursive_update(D, new):
     - a new configuration item does not come with reasonable defaults
   then a new file-version upgrade _must_ be implemented.
   """
-  for k, dsub in new.iteritems():
+  for k, dsub in new.items():
     if 'value' in dsub:
       D[k] = dsub.copy()
     else:

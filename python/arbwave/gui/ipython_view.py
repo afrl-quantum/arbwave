@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # vim: et:ts=2:sw=2:tw=80:nowrap
 '''
 Provides IPython console widget.
@@ -588,7 +588,7 @@ class UnicodeStringIO(StringIO):
   def __init__(self):
     super(UnicodeStringIO,self).__init__()
   def write(self, *args):
-    args = [ unicode(i) for i in args ]
+    args = [ str(i) for i in args ]
     return super(UnicodeStringIO,self).write(*args)
 
 class IPythonView(ConsoleView, IterableIPShell):

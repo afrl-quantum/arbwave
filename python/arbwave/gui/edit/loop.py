@@ -9,11 +9,11 @@ from matplotlib import mlab
 
 from ...tools.print_units import M
 
-import helpers
-from helpers import GTVC, GCRT
+from . import helpers
+from .helpers import GTVC, GCRT
 
 from .. import dataviewer as viewers
-from spreadsheet import keys
+from .spreadsheet import keys
 
 nan = float('nan')
 
@@ -188,7 +188,7 @@ class Executor:
     self.cancelled = False
     try:
       if loop.run() not in [ gtk.ResponseType.OK ]:
-        print 'cancelled!'
+        print('cancelled!')
         self.cancelled = True
         return
     finally:
@@ -197,12 +197,11 @@ class Executor:
     self.parameters = loop.params.representation()
     V = self.get_columns( self.parameters )
     self.variables = dict()
-    for i in xrange(len(V)):
+    for i in range(len(V)):
       if V[i][0] in self.variables: continue # don't overwrite
       self.variables[ V[i][0] ] = { 'order':i, 'value':nan, 'isglobal':V[i][1] }
     # now get sorted unique list of variables
-    V = self.variables.items()
-    V.sort( key = lambda v: v[1]['order'] )
+    V = sorted(self.variables.items(), key = lambda v: v[1]['order'])
 
     self.show = viewers.db.get(
       columns=([ vi[0] for vi in V] \
@@ -246,12 +245,12 @@ class Executor:
   def _for_loop(self, p, Locals):
     assert p['enable'], 'for loop should be enabled here!'
     if p['isglobal'] and not re.search('["\'\[(\.]', p['name']):
-      exec 'global ' + p['name']
+      exec('global ' + p['name'])
 
     iterable = eval( p['iterable'], self.Globals, Locals )
     for xi in iterable:
       if p['isglobal']:
-        exec '{n} = {xi}'.format(n=p['name'], xi=M(xi)) in self.Globals
+        exec('{n} = {xi}'.format(n=p['name'], xi=M(xi)), self.Globals)
       else:
         Locals[ p['name'] ] = xi
         self.variables[ p['name'] ]['value'] = xi # global values reread below
@@ -282,8 +281,7 @@ class Executor:
     # regardless of whether we are currently in a loop that changes them.
     for vi in self.variables.items():
       if vi[1]['isglobal']: vi[1]['value'] = eval(vi[0], self.Globals)
-    results = self.variables.values()
-    results.sort( key = lambda v : v['order'] )
+    results = sorted(self.variables.values(), key = lambda v : v['order'])
     results = [ v['value'] for v in results ] + L( self.runnable.run() )
     self.show.add( *M(results) )
 
@@ -305,8 +303,8 @@ main_settings = dict()
 
 def main():
   import traceback, pprint
-  from optimize import test
+  from .optimize import test
   e = Make(None, 'func', main_settings)( test.func(), test.get_globals() )
 
-  print 'e: ', e
+  print('e: ', e)
   return e

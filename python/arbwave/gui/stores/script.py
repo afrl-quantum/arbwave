@@ -72,7 +72,7 @@ class Script(object):
   def edit(self, **kwargs):
 
     def unset_editor(*args):
-      print 'unsettling'
+      print('unsettling')
       self.editor = None
 
     if not self.editor:

@@ -3,7 +3,6 @@
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re
 from ctypes import c_uint, sizeof
-from itertools import izip
 import comedi
 
 from .....tools.float_range import float_range

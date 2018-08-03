@@ -3,7 +3,7 @@
 from logging import log, debug, info, warn, error, critical, DEBUG
 from itertools import chain
 import numpy as np
-from task import Task as Base
+from .task import Task as Base
 import nidaqmx
 
 class Digital(Base):
@@ -13,8 +13,7 @@ class Digital(Base):
 
   def add_channels(self):
     # populate the task with output channels and accumulate the data
-    chans = self.channels.items()
-    chans.sort( key = lambda v : v[1]['order'] )
+    chans = sorted(self.channels.items(), key = lambda v : v[1]['order'])
     if self.clocks:
       OC = self.onboardclock_name # we ignore the onboard clock
       # add DOTiming clock channels

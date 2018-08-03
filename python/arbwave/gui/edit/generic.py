@@ -2,9 +2,9 @@
 
 from gi.repository import Gtk as gtk, Gdk as gdk
 from math import log10
-import spreadsheet
-import helpers
-from helpers import GTVC, GCRT
+from . import spreadsheet
+from . import helpers
+from .helpers import GTVC, GCRT
 
 def get_leaf_node( D, path ):
   if len(path) > 1:
@@ -358,7 +358,7 @@ if __name__ == '__main__':
     return [ (42, 'Answer to the universe'), (-42, 'Other universe?'), 10212 ]
 
   # valid range values:
-  #   xrange object (valid for integer _and_ float types)
+  #   range object (valid for integer _and_ float types)
   #   any object that supports min(), max(), 'in' and 'not in'
   #   list/tuple of combo box entries. combo box entries can either be a simple
   #   value or a value/label pair.  For example:
@@ -371,8 +371,8 @@ if __name__ == '__main__':
   template = {
     'Dev1' : {
       'group0' : {
-        'param0' : {'range':xrange(11)},
-        'param2' : {'range':xrange(-3,10)},
+        'param0' : {'range':range(11)},
+        'param2' : {'range':range(-3,10)},
         'intlst' : {'range':[(0,'zero'), 5, (10,'ten')]},
       },
       'group1' : {

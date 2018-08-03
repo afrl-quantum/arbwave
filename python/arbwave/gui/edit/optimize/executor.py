@@ -19,7 +19,7 @@ from .. import helpers
 from ..helpers import GTVC, GCRT
 from ..spreadsheet import keys
 
-from algorithms import algorithms
+from .algorithms import algorithms
 
 # some really big number to use for bad constraint merits.  sys.float_info.max
 # used to be used, but it tends to cause floating point errors--probably because
@@ -93,11 +93,11 @@ def set_item_value( cell, path, new_item, model, Globals, typ=str ):
     return
   try:
     if not re.search('["\'\[]', name):
-      exec 'global ' + name
+      exec('global ' + name)
     if eval(name,Globals) == eval(new_item,Globals) and \
        model[path][model.VALUE] == new_item:
       return
-    exec '{n} = {v}'.format(n=name, v=new_item) in Globals
+    exec('{n} = {v}'.format(n=name, v=new_item), Globals)
     model[path][model.VALUE] = new_item
   except:
     return
@@ -142,7 +142,7 @@ class OptimView(gtk.Dialog):
     self.set_border_width(10)
 
     self.repetitions = gtk.SpinButton.new(
-      gtk.Adjustment(lower=1, upper=sys.maxint, step_incr=1, page_incr=5),
+      gtk.Adjustment(lower=1, upper=sys.maxsize, step_incr=1, page_incr=5),
       1,
       10,
     )
@@ -414,7 +414,7 @@ class Executor:
         scale = self.params[:,3]
         # first unscale all parameters
         x0 /= scale
-        for name, kwargs in self.algorithms.iteritems():
+        for name, kwargs in self.algorithms.items():
           self.evals = 0
           x0, merit = algorithms[name]['func'](self._call_func, x0, **kwargs)
           info('{} optimization: final state:%s, merit:%g', x0*scale, merit)
@@ -433,9 +433,9 @@ class Executor:
     # (str,int,float, ...)
     globalize = [ i for i in self.pnames if not re.search('["\'\[]', i) ]
     if globalize:
-      exec 'global ' + ','.join( globalize )
-    for i in xrange(len(x)):
-      exec '{n} = {v}'.format(n=self.pnames[i], v=M(x[i])) in self.Globals
+      exec('global ' + ','.join( globalize ))
+    for i in range(len(x)):
+      exec('{n} = {v}'.format(n=self.pnames[i], v=M(x[i])), self.Globals)
 
 
   def _call_func(self, x):
@@ -476,7 +476,7 @@ class Executor:
 
       # average result for the given number of repetitions
       result = np.array([
-        A(self.runnable.run()) for i in xrange(self.repetitions)
+        A(self.runnable.run()) for i in range(self.repetitions)
       ]).mean(axis=0)
 
       # result is necessarily a numpy array by now

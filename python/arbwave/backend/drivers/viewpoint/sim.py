@@ -61,8 +61,8 @@ class DIO64:
 
   def DIO64_Out_Status( self, board, scans_avail_out, status_out ):
     # we'll pretend to be _really_ generous
-    scans_avail_out._obj.value = sys.maxint
-    status_out._obj.time.value = sys.maxint
+    scans_avail_out._obj.value = sys.maxsize
+    status_out._obj.time.value = sys.maxsize
     debug('DIO64_Out_Status(%d,%s,%s)', board, scans_avail_out, status_out )
 
   def DIO64_Out_Write( self, board, buf, buf_len, status_in_out ):
@@ -87,11 +87,11 @@ class DIO64:
     if valid_vals is None:
       v_type = vp.attributes.values[aid][1]
       if v_type is int:
-        retval = random.randint(0, sys.maxint)
+        retval = random.randint(0, sys.maxsize)
       elif v_type is float:
         retval = random.random()
       else:
-        retval = v_type( random.randint(0, sys.maxint) )
+        retval = v_type( random.randint(0, sys.maxsize) )
     else:
       retval = random.sample( valid_vals, 1 )[0]
 

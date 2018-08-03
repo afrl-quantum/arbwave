@@ -50,7 +50,7 @@ class float_range(object):
         iself.pos = 0
       def __iter__(iself):
         return iself
-      def next(iself):
+      def __next__(iself):
         i = iself.pos
         iself.pos += 1
         if i < 1:
@@ -79,4 +79,4 @@ if __name__ == '__main__':
   assert .2 in fr, '"in float_range" failed'
   assert -.2 not in fr, '"in float_range" failed'
   assert 5.2 not in fr, '"in float_range" failed'
-  print 'made it!'
+  print('made it!')

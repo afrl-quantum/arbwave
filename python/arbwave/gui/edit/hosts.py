@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from gi.repository import Gtk as gtk, Pango as pango
-from helpers import *
+from .helpers import *
 
 def create(hosts):
   editor = dict(

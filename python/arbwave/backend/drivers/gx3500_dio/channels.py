@@ -41,13 +41,13 @@ class Timing(BaseTiming):
     """
     Get the config_dict template for this channel.
 
-    :return: a dict('setting-name': {'value':v, 'type':t, 'range':xrange})
+    :return: a dict('setting-name': {'value':v, 'type':t, 'range':range})
     """
     return {
       'divider' : {
         'value' : 2,
         'type'  : int,
-        'range' : xrange(2, sys.maxint),
+        'range' : range(2, sys.maxint),
       }
     }
 
@@ -71,6 +71,6 @@ class PrimaryOscillator(BaseTiming):
     """
     Get the config_dict template for this channel.
 
-    :return: a dict('setting-name': {'value':v, 'type':t, 'range':xrange})
+    :return: a dict('setting-name': {'value':v, 'type':t, 'range':range})
     """
     return {}

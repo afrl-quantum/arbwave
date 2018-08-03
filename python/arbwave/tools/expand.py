@@ -67,9 +67,9 @@ if __name__ == "__main__":
     def e(s, r):
         res = " ".join(expand_braces(s))
         if res != r:
-            print "*** FAILED: '%s'" % s
-            print "  -EXPECTED '%s'" % r
-            print "  ------GOT '%s'" % res
+            print("*** FAILED: '{}'".format(s))
+            print("  -EXPECTED '{}'".format(r))
+            print("  ------GOT '{}'".format(res))
     e('hello', 'hello')
     e('{hello,world}', 'hello world')
     e('x{a,b}', 'xa xb')

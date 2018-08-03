@@ -48,7 +48,7 @@ def ni_names(host, dev):
   for fun,fmt,ext in ni_macros:
     f = getattr(comedi, fun)
     name_dict.update({
-      f(i):fN(fun,fmt,i, ext) for i in xrange(1 + f(-1) - f(0))
+      f(i):fN(fun,fmt,i, ext) for i in range(1 + f(-1) - f(0))
     })
 
   # now load all the static names; start with those that do not begin with NI_
@@ -56,7 +56,7 @@ def ni_names(host, dev):
   name_dict[comedi.PXI_Clk10] = entry('PXI_Clk10', 'PXI_Clk10')
   # finish static names by loading all in the ni_common_signal_names enum
   name_dict.update({
-    v:entry(k, dev+'/'+ni_fmt(k[3:])) for k,v in comedi.__dict__.iteritems()
+    v:entry(k, dev+'/'+ni_fmt(k[3:])) for k,v in comedi.__dict__.items()
     if (k.startswith('NI_') and
         comedi.NI_COUNTER_NAMES_MAX < v < (comedi.NI_NAMES_BASE + comedi.NI_NUM_NAMES))
   })

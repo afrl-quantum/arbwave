@@ -61,8 +61,8 @@ class ConfigDialog(gtk.Dialog):
     self.add_accel_group(merge.get_accel_group())
     try:
       mergeid = merge.add_ui_from_string(ui_info)
-    except gobject.GError, msg:
-      print "building menus failed: %s" % msg
+    except gobject.GError as msg:
+      print("building menus failed: {}".format(msg))
 
 
     def mkbox(label, toolbar, editor, sz_x=300, sz_y=190):
@@ -200,7 +200,7 @@ class ConfigDialog(gtk.Dialog):
 
     def add_dev_config( action, devcfg ):
       devices = backend.get_devices()
-      S = set( devices.iterkeys() )
+      S = set( devices.keys() )
       configured_devices = [ D[devcfg.LABEL]  for D in devcfg ]
       L = list( S.difference( configured_devices ) )
       L.sort()

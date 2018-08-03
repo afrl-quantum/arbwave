@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from logging import log, DEBUG
-from base import Base
+from .base import Base
 
 class Backplane(Base):
   """Base Backplane channel class"""

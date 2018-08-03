@@ -185,7 +185,7 @@ class Device(Base):
         kwroutes = {}
         used_triggers = set()
 
-        for src, dest in signals.iterkeys():
+        for src, dest in signals.keys():
             if src.startswith( str(self) ) and 'TRIG' in dest:
                 n = int(dest[-1])
                 if n < 0 or n > 7:
@@ -221,7 +221,7 @@ class Device(Base):
         if not isinstance(values, dict):
             values = dict(values)
 
-        for channel, val in values.iteritems():
+        for channel, val in values.items():
             (port, bit) = _port_bit(channel)
             if val:
                 self.ports[port] |= (1 << bit)
@@ -251,15 +251,15 @@ class Device(Base):
 
 #        debug('gx3500: input waveforms are \n%s', waveforms)
         # first reformat the waveforms: this is straightforward
-        for channel, groups in waveforms.iteritems():
-            for _, (encoding, transitions) in groups.iteritems():
+        for channel, groups in waveforms.items():
+            for _, (encoding, transitions) in groups.items():
                 # encoding is currently ignored (i.e. not defined) for digital
                 # channel data
                 for timestamp, value in transitions:
                     transition_map.setdefault(timestamp, {})[channel] = value
 
         # then add the clock transitions
-        for channel, cfg in clock_transitions.iteritems():
+        for channel, cfg in clock_transitions.items():
             if 'Internal' in channel:
                 continue
 
@@ -275,7 +275,7 @@ class Device(Base):
 
         # add a dummy transition to the end to finish the sequence
         ts_max = int(round(t_max * 20e6 / units.s)) # convert to 50ns units
-        ts_max = max([max(transition_map.iterkeys())+1, ts_max])
+        ts_max = max([max(transition_map.keys())+1, ts_max])
         transition_map[ts_max] = {}
 
         return transition_map
@@ -298,7 +298,7 @@ class Device(Base):
         transitions = []
         ports = np.array(self.ports, copy=True)
         for timestamp in sorted(transition_map.keys()):
-            for channel, value in transition_map[timestamp].iteritems():
+            for channel, value in transition_map[timestamp].items():
                 port, bit = _port_bit(channel)
                 if value:
                     ports[port] |= (1 << bit)
@@ -339,7 +339,7 @@ class Device(Base):
             # store the main instruction
             instr_list.append(_make_instr(dt, new_ports))
             # and then store the additional hold instructions
-            for _ in xrange(nr_hold_instrs):
+            for _ in range(nr_hold_instrs):
                 instr_list.append(_make_instr(MAX_DURATION - 1, [None]*4))
 
             # then figure out which ports have changed for the next instruction
@@ -385,17 +385,17 @@ class Device(Base):
         :param continuous: bool of continuous or single-shot mode
         """
 
-        if set(waveforms.iterkeys()).intersection(clock_transitions.iterkeys()):
+        if set(waveforms.keys()).intersection(clock_transitions.keys()):
             raise RuntimeError('GX3500 channels cannot be used as clocks and ' \
                                'digital output simultaneously')
 
         # remove Internal clocks from the clock_transitions
-        clock_transitions = { c:p for c, p in clock_transitions.iteritems()
+        clock_transitions = { c:p for c, p in clock_transitions.items()
                               if 'Internal' not in c }
 #        debug('gx3500: clock transitions for %s', clock_transitions)
 
         assert set([str(self) + '/' + c for c in clock_transitions]) \
-                 .issubset(self.clocks.iterkeys()), \
+                 .issubset(self.clocks.keys()), \
             'got clock transitions for channels not defined as clocks'
 
         transition_map = self._compile_transition_map(waveforms, clock_transitions, t_max)

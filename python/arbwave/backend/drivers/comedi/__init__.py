@@ -27,7 +27,8 @@ class Driver(Base):
     super(Driver,self).__init__(*a, **kw)
     # hook the simulated library if needed
     if self.simulated:
-      import sim # rehook comedi lib so that hardware is simulated.
+      # rehook comedi lib so that hardware is simulated:
+      from . import sim
       self.csim = sim.ComediSim()
       self.glob_comedi_device_files = self.csim.glob_device_files
 
@@ -48,7 +49,7 @@ class Driver(Base):
         card = Card( self, df )
       except:
         traceback.print_exc()
-        print 'Could not open comedi card: ', df
+        print('Could not open comedi card: ', df)
         continue
       self.cards[ str(card) ] = card
       self.subdevices.update( card.subdevices )
@@ -155,7 +156,7 @@ class Driver(Base):
     # separate channels into subdevice groups.  We cannot use collect_prefix
     # because some of the subdevice channel names have an extra slash.
     sdev_data = dict()
-    for c, data in dict( analog, **digital ).viewitems():
+    for c, data in dict( analog, **digital ).items():
       for d in self.subdevices:
         if c.startswith( d ):
           sdev_data.setdefault( d, dict() )
@@ -171,7 +172,7 @@ class Driver(Base):
     # separate channels into subdevice groups.  We cannot use collect_prefix
     # because some of the subdevice channel names have an extra slash.
     sdev_data = dict()
-    for c, data in dict( analog, **digital ).viewitems():
+    for c, data in dict( analog, **digital ).items():
       for d in self.subdevices:
         if c.startswith( d ):
           sdev_data.setdefault( d, dict() )

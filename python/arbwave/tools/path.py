@@ -20,6 +20,8 @@ def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0,
     #need postponed loading to allow backends to import this
     if __name__ != '__main__':
       from .. import backend
+    else:
+      global backend
     prefix_list = backend.all_drivers
   retval = dict()
   for d in D.items():
@@ -70,9 +72,9 @@ if __name__ == '__main__':
     { c[1]['device']:None   for c in channels.items()},
     1 )
 
-  print collected
+  print(collected)
 
-  print collect_prefix( collected['vp'], 0, 2, 2 )
+  print(collect_prefix( collected['vp'], 0, 2, 2 ))
 
 
   signals = {
@@ -81,9 +83,9 @@ if __name__ == '__main__':
     ('TRIG/4',  'ni/Dev2/ctr0Gate') : {'inv': True},
   }
 
-  print '\n',collect_prefix( signals, 0, 1, 1 )
-  print '\n',collect_prefix( signals )
+  print('\n', collect_prefix( signals, 0, 1, 1 ))
+  print('\n', collect_prefix( signals ))
 
 
   clocks = set(['vp/Dev0/A/15', 'vp/Dev0/A/14', 'vp/Dev1/A/0'])
-  print '\n',collect_prefix( dict.fromkeys(clocks), 0, 2, 2 )
+  print('\n', collect_prefix( dict.fromkeys(clocks), 0, 2, 2 ))

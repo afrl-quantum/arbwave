@@ -10,9 +10,9 @@ try:
   import IPython
   assert IPython.version_info <= (2,0,0,''), ''
 
-  from embedded_ipython import Python
+  from .embedded_ipython import Python
 except:
-  from old_embedded import Python
+  from .old_embedded import Python
 
 if __name__ == "__main__":
   from gi.repository import Gtk as gtk

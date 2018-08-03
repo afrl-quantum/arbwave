@@ -42,12 +42,12 @@ def main(klass):
       if len(host_port) > 1:
         port = int(host_port[1])
 
-    print 'searching for Naming Service...'
+    print('searching for Naming Service...')
     ns = loc.getNS(host, port)
 
     bind_ip = ns.adapter.conn.sock.getsockname()[0]
   except Pyro.core.NamingError:
-    print 'Could not find name server'
+    print('Could not find name server')
     ns = None
     bind_ip = args.hostid
 
@@ -63,11 +63,11 @@ def main(klass):
   device = klass(args.hostid)
   obj.delegateTo(device)
 
-  if args.replace and ns and device.objectId in dict(ns.flatlist()).iterkeys():
+  if args.replace and ns and device.objectId in dict(ns.flatlist()).keys():
     ns.unregister(device.objectId)
 
   uri = daemon.connect(obj, device.objectId)
-  print 'my uri is: ', uri
+  print('my uri is: ', uri)
 
   try:
     daemon.requestLoop()

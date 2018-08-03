@@ -100,10 +100,6 @@ Dependencies:
       - not yet openly available--get from S Olson
       - python wrapper library around MarvinTest c-libraries
       - only required if using MarvinTest FPGA or analog output hardware
-    billiard
-      - must have modifications by S Olson
-      - Not required for Windows platforms
-      - backport of python3 multiprocessing library
 
 
   C Libraries (for hardware support in non-simulated mode):

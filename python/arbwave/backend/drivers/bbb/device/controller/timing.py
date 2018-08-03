@@ -6,11 +6,10 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 """
 
 
-from itertools import izip
 from physical import unit
 import bbb.timing
 
-from base import Device as Base
+from .base import Device as Base
 
 
 class Device(Base, bbb.timing.Device):
@@ -40,7 +39,7 @@ class Device(Base, bbb.timing.Device):
       values = dict(values)
 
     value = 0
-    for ch, val in values.iteritems():
+    for ch, val in values.items():
       ch = int(ch)
       if 8 <= ch <= 9:
         ch += 6 # channel 8 and 9 are bits 14 and 15
@@ -69,7 +68,7 @@ class Device(Base, bbb.timing.Device):
                               (see processor/engine/compute.py for format)
     :param t_max: the maximum duration of any channel
     """
-    if set(waveforms.iterkeys()).intersection(clock_transitions.iterkeys()):
+    if set(waveforms.keys()).intersection(clock_transitions.keys()):
       raise RuntimeError('bbb::timing channels cannot be used as clocks and ' \
                          'digital output simultaneously')
 
@@ -98,15 +97,15 @@ class Device(Base, bbb.timing.Device):
     base_clk = int(base_clk_cfg['dt'] / unit_time)
 
     # first reformat the waveforms: this is straightforward
-    for channel, groups in waveforms.iteritems():
-      for _, (encoding, transitions) in groups.iteritems():
+    for channel, groups in waveforms.items():
+      for _, (encoding, transitions) in groups.items():
         # encoding is currently ignored (i.e. not defined) for digital
         # channel data
         for timestamp, value in transitions:
           transition_map.setdefault(timestamp*base_clk, {})[channel] = value
 
     # then add the clock transitions
-    for channel, cfg in clock_transitions.iteritems():
+    for channel, cfg in clock_transitions.items():
       # calculate the time in units if `unit_time`
       period = int(round(cfg['dt'] / unit_time))
       for edge in cfg['transitions']:
@@ -121,7 +120,7 @@ class Device(Base, bbb.timing.Device):
     # convert to #minimum_period#s, then to unit_time
     ts_max = int(round(t_max / (self.minimum_period * unit_time))) \
            * self.minimum_period
-    ts_max = max([max(transition_map.iterkeys())+self.minimum_period, ts_max])
+    ts_max = max([max(transition_map.keys())+self.minimum_period, ts_max])
     transition_map[ts_max] = {}
 
     return transition_map
@@ -142,10 +141,10 @@ class Device(Base, bbb.timing.Device):
                            create the delay for the last real transition.
     """
     # sort and format the transitions
-    TM = sorted(transition_map.iterkeys())
+    TM = sorted(transition_map.keys())
     data = self.data
-    for wi, t0, t1 in izip(self.waveform, TM[:-1], TM[1:]):
-      for ch, value in transition_map[t0].iteritems():
+    for wi, t0, t1 in zip(self.waveform, TM[:-1], TM[1:]):
+      for ch, value in transition_map[t0].items():
         ch = int(ch)
         if 8 <= ch <= 9:
           ch += 6 # channel 8 and 9 are bits 14 and 15

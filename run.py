@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vim: ts=2:sw=2:tw=80:nowrap
 """
 Arbitrary waveform generator for digital and analog signals.

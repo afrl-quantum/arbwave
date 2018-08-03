@@ -1,7 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import pprint
-import repr as reprlib
+import reprlib as reprlib
 
 # tweak the repr used by pprint
 class MyRepr(reprlib.Repr):
@@ -11,7 +11,18 @@ class MyRepr(reprlib.Repr):
   """
   def __init__(self, *args, **kwargs):
     reprlib.Repr.__init__(self, *args, **kwargs)
-    self.maxother=100
+    self.maxother   = 100000
+    self.maxstring  = 100000
+    self.maxlevel   = 100000
+    self.maxdict    = 100000
+    self.maxlist    = 100000
+    self.maxtuple   = 100000
+    self.maxset     = 100000
+    self.maxfrozenset = 10000
+    self.maxdeque   = 10000
+    self.maxarray   = 10000
+
+
   def repr_type(self,obj,level):
     return obj.__name__
 
@@ -30,8 +41,6 @@ def writevars( F, vardict ):
       pprint.pprint(i[1], F )
     F.write('\n')
 
-def readvars( source, globals=globals(), **locals ):
-  if not source:
-    return None
-  exec source in globals, locals
+def readvars( filename, globals=globals(), **locals ):
+  exec(compile(open(filename).read(), filename, 'exec'), globals, locals)
   return locals

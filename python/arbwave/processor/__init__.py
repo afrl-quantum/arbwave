@@ -5,10 +5,10 @@ to more explicit channel-specific full waveforms.
 """
 
 import sys, threading, traceback
-import engine
+from . import engine
 from ..tools.gui_callbacks import do_gui_operation
-import default
-import messages as msg
+from . import default
+from . import messages as msg
 
 class ModuleLike(object):
   def __init__(self, D):
@@ -35,7 +35,7 @@ class Processor(object):
 
 
   def __del__(self):
-    try: exec '__del__()' in self.Globals
+    try: exec('__del__()', self.Globals)
     except: pass
 
   def connect_listener(self, functor):
@@ -70,7 +70,7 @@ class Processor(object):
     self.Globals.update( default.get_globals() ) # reset the global environment
     # ensure that the kwargs is not using the original dictionary
     self.Globals['kwargs'] = dict(self.Globals['_kwargs'], **kwargs )
-    exec script in self.Globals
+    exec(script, self.Globals)
     self.script = script
     if script:
       self.ui.update_runnables( self.engine.runnables.keys() )
@@ -155,18 +155,18 @@ class Processor(object):
         runnable.onstart()
         runnable.run()
 
-      except engine.StopGeneration, e:
+      except engine.StopGeneration as e:
         do_restart = e.request & engine.RESTART
-      except Exception, e:
-        print 'halting waveform output because of unexpected error: ', e
+      except Exception as e:
+        print('halting waveform output because of unexpected error: ', e)
         traceback.print_exc()
 
       self.engine.halt() # ensure that generation is stopped!
 
       try:
         runnable.onstop()
-      except Exception, e:
-        print 'unexpected error in stopping waveform: ', e
+      except Exception as e:
+        print('unexpected error in stopping waveform: ', e)
         traceback.print_exc()
 
     finally:
@@ -187,7 +187,7 @@ class Processor(object):
     run_label, Control = self.ui.get_active_runnable()
 
     if run_label not in self.engine.runnables:
-      print 'Runnable ({r}) not found'.format(r=run_label)
+      print('Runnable ({r}) not found'.format(r=run_label))
       return
     runnable = self.engine.runnables[run_label]
 

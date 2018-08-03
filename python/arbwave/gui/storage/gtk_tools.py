@@ -3,7 +3,7 @@
 from gi.repository import Gtk as gtk
 import os, sys, traceback, logging
 
-from var_tools import *
+from .var_tools import *
 
 current_dir = '~'
 
@@ -85,15 +85,12 @@ class LoadException(Exception):
 
 
 def load_file( filename, stor, globals=globals(), **locals ):
-  F = open( filename )
   try:
     logging.debug('interpreting python in config file %s...', filename)
-    V = readvars( F, globals, **locals )
+    V = readvars( filename, globals, **locals )
     logging.debug('finished interpreting python in config file %s.', filename)
   except:
     raise LoadException( *sys.exc_info() )
-  finally:
-    F.close()
   logging.debug('stor.clearvars()...')
   stor.clearvars()
   logging.debug('stor.clearvars() finished.')

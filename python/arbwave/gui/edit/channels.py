@@ -1,8 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from gi.repository import Gtk as gtk, GObject as gobject
 
-from helpers import *
-import scaling
+from .helpers import *
+from . import scaling
 from ... import backend
 from .. import hosts_changed
 
@@ -15,7 +15,7 @@ ui_info = \
 
 
 def edit_device(action, path, model, add_undo=None):
-  print 'should edit the device settings (clock, trigger,...)'
+  print('should edit the device settings (clock, trigger,...)')
 
 
 def create_action_group():
@@ -41,8 +41,8 @@ def mkUIManager():
   merge.insert_action_group(create_action_group(), 0)
   try:
     mergeid = merge.add_ui_from_string(ui_info)
-  except gobject.GError, msg:
-    print 'building popup menu failed: ' + msg
+  except gobject.GError as msg:
+    print('building popup menu failed:', msg)
   return merge
 
 
@@ -57,8 +57,8 @@ def build_device_combobox_tree():
   T.clear()
 
   M = dict()
-  chans = backend.get_output_channels().items()
-  chans.sort( cmp = lambda i0, i1 : pcmp(i0[0], i1[0]) )
+  chans = sorted(backend.get_output_channels().items(),
+                 key = lambda i0 : pkey(i0[0]))
   for c, chan_info in chans:
     add_path_to_combobox_tree( T, [chan_info.type()] + c.split('/'), 0, M )
 

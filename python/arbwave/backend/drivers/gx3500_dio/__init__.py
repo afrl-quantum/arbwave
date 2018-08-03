@@ -7,9 +7,9 @@ GX3500 FPGA PXI card.
 @author: bks
 """
 
-from device import Device
+from .device import Device
 from marvin.exceptions import NotATimingBoard
-import capabilities
+from . import capabilities
 import logging
 from ...driver import Driver as Base
 from .. import pci_utils

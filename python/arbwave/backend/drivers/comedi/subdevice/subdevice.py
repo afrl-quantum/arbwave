@@ -6,14 +6,12 @@ from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 import numpy as np
 import ctypes
 from ctypes import memset, sizeof, byref
-from itertools import izip
 
 from physical import unit
 
 import comedi
 
 from .....tools.signal_graphs import nearest_terminal
-from .....tools.cmp import cmpeps
 from .....tools import cached
 from ....device import Device as Base
 from .. import channels
@@ -198,7 +196,7 @@ class Subdevice(Base):
 
     return [
       klass('{}{}'.format(self, i), self)
-      for i in xrange(comedi.get_n_channels( self.card, self.subdevice ))
+      for i in range(comedi.get_n_channels( self.card, self.subdevice ))
     ]
 
 
@@ -237,7 +235,7 @@ class Subdevice(Base):
       # simple find did not work, try harder (?)
       #ch_ranges = [
       #  ( i, comedi.get_range(C, S, ch, i) )
-      #  for i in xrange( comedi.get_n_ranges( C, S, ch ) )
+      #  for i in range( comedi.get_n_ranges( C, S, ch ) )
       #]
 
       #ch_ranges.sort(key = lambda ri : ri[1].contents.max - ri[1].contents.min)
@@ -304,7 +302,7 @@ class Subdevice(Base):
     debug('comedi: creating command:  %s', self.name)
 
     #### Now set self.cmd ####
-    channels = self.config_all_channels().items()
+    channels = list(self.config_all_channels().items())
     channels.sort( key = lambda i : i[1]['order'] )
     self.cmd_chanlist = create_chanlist(self.cr_pack, channels)
 
@@ -388,15 +386,15 @@ class Subdevice(Base):
 
     This version allows the caller to add items to the channel list.
     """
-    data = data.items()
+    data = list(data.items())
     data.sort( key = lambda i : channels[i[0]]['order'] )
 
     insn_list = comedi.insnlist()
     insn_list.set_length( len(data) )
     # we allocate the data to ensure it does not get garbage collected too soon
-    L = [ comedi.lsampl_t() for i in xrange( len(data) ) ]
+    L = [ comedi.lsampl_t() for i in range( len(data) ) ]
 
-    for i, (chname, value), di in izip( insn_list, data, L ):
+    for i, (chname, value), di in zip( insn_list, data, L ):
       di.value = self.convert_data( chname, value )
 
       i.insn = comedi.INSN_WRITE
@@ -420,7 +418,7 @@ class Subdevice(Base):
       ret = comedi.get_clock_source(self.card, self.subdevice, chan, clock,
                                     period)
       raiserr(ret, 'get_clock_source')
-      print self.subdevice, "timing device"
+      print(self.subdevice, "timing device")
       return int(period.value)*unit.ns
     else:
       # we use the new comedi facility to query async subdevice speeds
@@ -507,10 +505,10 @@ class Subdevice(Base):
 
     scans = dict.fromkeys( transitions )
     nones = [None] * n_channels
-    for i in xrange( n_channels ):
+    for i in range( n_channels ):
       if chlist[i] not in waveforms:
         continue
-      for wf_path, (encoding,group_trans) in waveforms[ chlist[i] ].iteritems():
+      for wf_path, (encoding,group_trans) in waveforms[ chlist[i] ].items():
         assert encoding == 'step', \
           'non-step transition encoding for comedi: '+encoding
         for timestamp, value in group_trans:
@@ -534,7 +532,7 @@ class Subdevice(Base):
       last = scans[ transitions[0] ] = [0] * n_channels
     else:
       scans[ transitions[0] ] = [
-        zero_if_none(v,i) for v,i in izip( S0, xrange(len(S0)) )
+        zero_if_none(v,i) for v,i in zip( S0, range(len(S0)) )
       ]
       last = scans[ transitions[0] ]
 
@@ -560,7 +558,7 @@ class Subdevice(Base):
         # must be sharing a clock with another card.  keep last values
         scans[t] = last
       else:
-        for i in xrange( n_channels ):
+        for i in range( n_channels ):
           if t_array[i] is None:
             t_array[i] = last[i]
         last = t_array
@@ -587,7 +585,7 @@ class Subdevice(Base):
     # for this
     #data[:] = scans
     # scale the data to sampl type.
-    for ch_i, ch in zip(xrange(n_channels), chlist):
+    for ch_i, ch in zip(range(n_channels), chlist):
       data[:,ch_i] = self.convert_data( ch, scans[:,ch_i] )
 
     self.t_max = t_max
@@ -698,6 +696,6 @@ def create_chanlist(cr_pack, channels):
   """
   cmd_chanlist = ( ctypes.c_uint * len(channels) )()
 
-  for i, (chname, chinfo) in izip( xrange( len(channels) ), channels ):
+  for i, (chname, chinfo) in zip( range( len(channels) ), channels ):
     cmd_chanlist[i] = cr_pack( chname, chinfo )
   return cmd_chanlist

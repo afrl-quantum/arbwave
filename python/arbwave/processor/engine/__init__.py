@@ -2,8 +2,8 @@
 
 from ...runnable import Runnable
 
-from callfunc import CallFunc
-import send, compute
+from .callfunc import CallFunc
+from . import send, compute
 
 class StopGeneration(Exception):
   def __init__(self, request, *args, **kwargs):

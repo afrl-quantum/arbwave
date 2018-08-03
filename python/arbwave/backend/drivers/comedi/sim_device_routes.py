@@ -21,12 +21,12 @@ def csv_to_dict(content, evaluate=True):
   F = csv.StringIO(content)
   dR = csv.DictReader(F, delimiter=delimiter, quotechar=quotechar)
   D = {
-    e(r[key]):{e(f) for f,c in r.iteritems()
+    e(r[key]):{e(f) for f,c in r.items()
             if f != key and f[:1] not in ['', C] and c.strip()[:1] == '1'}
     for r in dR if r[key][:1] not in ['', C]
   }
   # now, go back through and eliminate all empty dictionaries
-  D = {k:v for k,v in D.iteritems() if v}
+  D = {k:v for k,v in D.items() if v}
   return D
 #### END CSV FILE READING ####
 

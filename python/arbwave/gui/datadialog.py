@@ -99,7 +99,7 @@ class ComputeStats:
     ax.plot(self.x,self.y0,lt)
 
   def plot(self, label, ax, lt):
-    exec 'self.{l}(ax,lt)'.format(l=label)
+    exec('self.{l}(ax,lt)'.format(l=label))
 
 
 class DataDialog(gtk.Window):
@@ -145,8 +145,8 @@ class DataDialog(gtk.Window):
     self.add_accel_group(merge.get_accel_group())
     try:
       mergeid = merge.add_ui_from_string(ui_info)
-    except gobject.GError, msg:
-      print 'building menus failed: {msg}'.format(msg=msg)
+    except gobject.GError as msg:
+      print('building menus failed: {msg}'.format(msg=msg))
     self.vbox.pack_start( merge.get_widget('/MenuBar'), False, False, 0 )
 
     def set_predef(combo, entry, is_xaxis):
@@ -157,14 +157,14 @@ class DataDialog(gtk.Window):
       else:
         data_text = entry.get_text()
         if is_xaxis and data_text == '':
-          data_text = 'xrange( len( y_data ) )'
+          data_text = 'range( len( y_data ) )'
           entry.set_text(data_text)
       self.update_plot()
 
     def set_custom(entry, combo, is_xaxis):
       combo.set_active(0)
       if is_xaxis and entry.get_text() == '':
-        entry.set_text( 'xrange( len( y_data ) )' )
+        entry.set_text( 'range( len( y_data ) )' )
       self.update_plot()
 
     def mk_xy_combo(is_xaxis, text_column=0,model=None):
@@ -292,7 +292,7 @@ class DataDialog(gtk.Window):
   def exec_script(self, *a):
     self.Globals.clear()
     self.Globals.update( self.default_globals )
-    exec self.script.representation() in self.Globals
+    exec(self.script.representation(), self.Globals)
     self.shell.update_globals()
     self.Globals['data'] = self.get_all_data()
 
@@ -327,7 +327,7 @@ class DataDialog(gtk.Window):
     c_enable = GTVC( '?', r_enable )
     c_enable.add_attribute( r_enable, 'active', 0 )
     self.view.append_column( c_enable )
-    for i in xrange(len(columns)):
+    for i in range(len(columns)):
       self.view.append_column(GTVC(columns[i], GCRT(), text=i+1))
 
 
@@ -390,9 +390,9 @@ class DataDialog(gtk.Window):
       L = dict()
       y_data = eval( ytxt, self.Globals, L )
       L['y_data'] = y_data
-      data = zip( eval( xtxt, self.Globals, L ), y_data )
       # reorder the data with respect to x-axis
-      data.sort( key = lambda i : i[0] )
+      data = sorted(zip(eval( xtxt, self.Globals, L ), y_data),
+                    key = lambda i : i[0])
       x_data = np.array([ i[0] for i in data ], dtype=float)
       y_data = np.array([ i[1] for i in data ], dtype=float)
 
@@ -412,7 +412,7 @@ class DataDialog(gtk.Window):
       self.axes.set_xlabel(x_label)
       self.axes.set_ylabel(y_label)
       self.canvas.draw()
-    except Exception, e:
+    except Exception as e:
       traceback.print_exc()
       logging.debug( 'dataviewer: %s', e )
     return True
@@ -563,7 +563,7 @@ class DataDialog(gtk.Window):
 
     def Y(m,start=1):
       # yield all except the first, blank, entry
-      for i in xrange(start,len(m)):
+      for i in range(start,len(m)):
         yield m[i][0]
 
     # save column info

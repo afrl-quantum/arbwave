@@ -5,14 +5,13 @@ Utilities for plotting analog signals
 from matplotlib.colors import ColorConverter
 
 import numpy as np
-from itertools import izip
-from common import *
+from .common import *
 
 fc=get_face_color
 ls=get_linestyle
 
 
-def mkxy( (encoding, L), (x0, y0) ):
+def mkxy(encoding, L, x0, y0):
   """
   Convert the grouping data into (x,y) points for various types of transitions.
   encoding : Specifies the type of output to create:
@@ -27,7 +26,7 @@ def mkxy( (encoding, L), (x0, y0) ):
        grouping for this channel.
   """
   if encoding == 'linear':
-    X, Y = zip(*L)
+    X, Y = list(zip(*L))
     if y0 is not None:
       # if this is not the first point, we copy the last value for our new first
       # time to ensure that a 'step' from a previous grouping remains a step
@@ -55,7 +54,7 @@ def mkxy( (encoding, L), (x0, y0) ):
       y[0] = y0
 
     # loop through the rest
-    for i, (l0, l1) in izip(xrange(1, 2*len(L) + 1, 2), L[istart:]):
+    for i, (l0, l1) in zip(range(1, 2*len(L) + 1, 2), L[istart:]):
       x[i:i+2] = [ float(l0), float(l0) ]
       y[i:i+2] = [ float(y0), float(l1) ] # remove units
       x0, y0 = l0, float(l1)
@@ -68,7 +67,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
     t_final = get_t_final( signals )
     t_final *= 1.001
 
-  channels = signals.items()
+  channels = list(signals.items())
   if name_map:
     channels.sort( key = lambda v: -name_map[v[0]]['order'] )
     get_label  = lambda n : name_map[n]['name']
@@ -108,10 +107,9 @@ def plot( ax, signals, name_map=None, t_final=None ):
 
     x0 = None
     y0 = None
-    groups = c[1].items()
-    groups.sort( key = lambda v : v[0] )
+    groups = sorted(c[1].items(), key = lambda v : v[0] )
     for g in groups:
-      xg, yg, x0, y0 = mkxy( g[1], (x0, y0) )
+      xg, yg, x0, y0 = mkxy(g[1][0], g[1][1], x0, y0)
       xg *= xscale
       apply_yscale(yg, yscale)
 

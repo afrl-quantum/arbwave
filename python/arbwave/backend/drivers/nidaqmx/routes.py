@@ -501,9 +501,9 @@ class RouteLoader(object):
         ni_dest += ND
       src, ni_src = format_terminals( device, sources,
                                       self.host_prefix, self.prefix )
-      for i in xrange( len(src) ):
+      for i in range( len(src) ):
         agg_map[ src[i] ] = dest
-        for j in xrange( len(dest) ):
+        for j in range( len(dest) ):
           route_map[ (src[i], dest[j]) ] = \
             ( strip_prefix(ni_src[i],   self.prefix),
               strip_prefix(ni_dest[j],  self.prefix) )
@@ -514,7 +514,7 @@ class RouteLoader(object):
     self.signal_route_map.update( route_map )
     # for the aggregate map, we'll need to loop through each key to update the
     # target list if the key already has an existing target list.
-    for k,v in agg_map.iteritems():
+    for k,v in agg_map.items():
       if k in self.aggregate_map:
         self.aggregate_map[k].extend( v )
       else:

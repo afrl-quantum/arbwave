@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from os import path
-from itertools import chain, izip
+from itertools import chain
 import numpy as np
 import physical
 
@@ -102,7 +102,7 @@ class SignalsSet(dict):
           A.append( v )
 
       # now let's save this into the final output array
-      table = np.array( map( lambda i: [i[0]]+i[1], TI ) )
+      table = np.array( [[i[0]]+i[1] for i in TI] )
       table[:,0] *= dt_clk # scale time by clock rate
       output[clk] = {
         'titles'  : [ i[1]['name'] for i in L ],
@@ -124,7 +124,7 @@ class _FakeStuffCreator(object):
     import sys
     sys.path.insert( 0, PLOTDIR )
     import digital, analog
-    from cStringIO import StringIO
+    from io import StringIO
     self.StringIO = StringIO
     self.mod_D, self.mod_A = digital, analog
     D, A = self.mod_D.example_signals, self.mod_A.example_signals
@@ -134,13 +134,13 @@ class _FakeStuffCreator(object):
     self.transitions = _create_fake_transitions(D, A)
 
   def print_fake_stuff(self):
-    print 'type: ', type(self.signals)
-    print 'clocks: ', self.clocks
-    print 'channels: ', self.channels
-    print 'transitions: ', self.transitions
-    print 'name_map: ', create_channel_name_map(self.channels, self.clocks)
+    print('type: ', type(self.signals))
+    print('clocks: ', self.clocks)
+    print('channels: ', self.channels)
+    print('transitions: ', self.transitions)
+    print('name_map: ', create_channel_name_map(self.channels, self.clocks))
     A = self.signals.to_arrays(self.transitions, self.clocks, self.channels)
-    print 'array:\n',A
+    print('array:\n', A)
 
   def test_gnuplot(self):
     A = self.signals.to_arrays(self.transitions, self.clocks, self.channels)
@@ -158,11 +158,11 @@ def _create_fake_channels(digital, analog):
       i += 1
   o = Order()
   channels = {
-    ('Digital '+k) : dict( device='Digital/D/'+k, enable=True, order=o.next() )
+    ('Digital '+k) : dict( device='Digital/D/'+k, enable=True, order=next(o) )
     for k in digital
   }
   channels.update({
-    ('Analog '+k) : dict( device='Analog/A/'+k, enable=True, order=o.next() )
+    ('Analog '+k) : dict( device='Analog/A/'+k, enable=True, order=next(o) )
     for k in analog
   })
   return channels
@@ -198,4 +198,4 @@ def _create_fake_transitions(digital, analog):
 
 if __name__ == '__main__':
   fake = _FakeStuffCreator()
-  print fake.test_gnuplot()
+  print(fake.test_gnuplot())

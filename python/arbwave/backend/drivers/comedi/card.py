@@ -79,14 +79,14 @@ class Card( POINTER(comedi.comedi_t) ):
 
   @cached.property
   def name_table(self):
-    return {v['arbwave']:k for k,v in self.signal_names['signals'].iteritems()}
+    return {v['arbwave']:k for k,v in self.signal_names['signals'].items()}
 
   @cached.property
   def available_routes(self):
     # first generate all external-cable routes
     D = self.signal_names['signals']
     R = list()
-    for n in D.itervalues():
+    for n in D.values():
       if n['external_in']:
         R.append(('External/', n['arbwave']))
       if n['external_out']:
@@ -174,7 +174,7 @@ class Card( POINTER(comedi.comedi_t) ):
     self.__del__()
 
   def start(self):
-    print "dev start not implemented"
+    print("dev start not implemented")
 
   @cached.property
   def board(self):

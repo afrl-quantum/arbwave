@@ -83,8 +83,8 @@ def get_t_final( signals ):
   """
   t_final = 0.0
   for c in signals.values(): # for each channel's data
-    L = c.items()
-    L.sort( key = lambda i : i[0] )# sort by group number (i.e. path)
+    # sort by group number (i.e. path):
+    L = sorted(c.items(), key = lambda i : i[0])
     t_final = max( t_final, L[-1][1][1][-1][0] )
   return t_final
 
@@ -93,9 +93,9 @@ def mkdt( signal, t_final ):
   dt = copy.deepcopy( signal )
 
   #append the first item of the next grouping
-  items = signal.items()
-  items.sort(key = lambda i : i[0]) # ensure that these are sorted by group/path
-  for i in xrange(1,len(items)):
+  # ensure that these are sorted by group/path:
+  items = sorted(signal.items(), key = lambda i : i[0])
+  for i in range(1,len(items)):
     dt[ items[i-1][0] ][1].append( items[i][1][1][0] )
   #append a pseudo-item for the last grouping time length
   dt[ items[-1][0] ][1].append( (t_final, None) )

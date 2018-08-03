@@ -7,9 +7,9 @@ from ....tools.path import collect_prefix
 from ....tools.expand import expand_braces
 
 import nidaqmx
-import routes
-import task
-import channels
+from . import routes
+from . import task
+from . import channels
 
 class Driver(Base):
   prefix      = 'ni'
@@ -20,7 +20,7 @@ class Driver(Base):
     super(Driver,self).__init__(*a, **kw)
     # hook the simulated library if needed
     if self.simulated:
-      import sim
+      from . import sim
       self._old_libnidaqmx = nidaqmx.libnidaqmx.libnidaqmx
       nidaqmx.libnidaqmx.libnidaqmx = sim.NiDAQmx()
       sim.load_nidaqmx_h( nidaqmx )
@@ -67,7 +67,7 @@ class Driver(Base):
                       if nidaqmx.physical.get_do_sample_clock_supported(do)
                   ]
       if available:
-        available = zip(*available) # unzip
+        available = list(zip(*available)) # unzip
         self.tasks[ str(t) ] = t
         self.outputs          += available[0]
         self.timing_channels  += available[1]

@@ -1,8 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 from gi.repository import Gtk as gtk, Gdk as gdk
 import sys
-from helpers import *
-from spreadsheet import keys
+from .helpers import *
+from .spreadsheet import keys
 
 class Dragger(object):
   def __init__(self, V, ui):
@@ -28,13 +28,13 @@ class Dragger(object):
       self.drop_info = w.get_dest_row_at_pos(x, y)
 
   def drag_begin(self, w, ctx):
-    print 'begin'
+    print('begin')
     # pause updates because of waveform updates
     self.ui.pause()
     self.drop_started = False
 
   def drag_drop(self, w,ctx,x,y,time):
-    print 'drop'
+    print('drop')
     self.drop_started = True
 
   def drag_end(self, w, ctx):
@@ -46,14 +46,14 @@ class Dragger(object):
 
       new_label = model[ path ][model.LABEL] + '-copy-'
       all_labels = [ l[model.LABEL] for l in model ]
-      for i in xrange(sys.maxint):
+      for i in range(sys.maxsize):
         if new_label + str(i) not in all_labels:
           break
 
       model[path][model.LABEL] = new_label + str(i)
       model[path][model.WAVEFORMS] = model[path][model.WAVEFORMS].copy()
 
-    print 'end'
+    print('end')
     self.drop_started = False
     # unpause updates, no need to trigger update unless waveform changes
     self.ui.unpause()

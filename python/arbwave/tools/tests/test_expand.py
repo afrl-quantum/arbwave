@@ -7,7 +7,7 @@ from .. import expand
 def e(tc, s,r):
   res = " ".join(expand.expand_braces(s))
   if res != r:
-    print "*** FAILED: '%s'" % s
+    print("*** FAILED: '{}'".format(s))
   tc.assertEqual( r, res )
 
 class Expand(unittest.TestCase):

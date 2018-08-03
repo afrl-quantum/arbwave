@@ -7,7 +7,7 @@ if __name__ == '__main__':
   sys.path.insert(0, path_join( dirname(__file__), pardir, pardir ) )
   if sys.platform != 'win32':
     # this will change for the distant future of python3 with arbwave
-    import billiard as mp
+    import multiprocessing as mp
     mp.set_start_method('spawn')
   import arbwave.gui.dataviewer
   arbwave.gui.dataviewer.main()
@@ -21,17 +21,7 @@ def main():
   dv.join()
 
 
-if sys.platform == 'win32':
-  # windows already normally uses spawn instead of fork
-  import multiprocessing as mp
-else:
-  # We are currently using billiard on non-windows systems because the
-  # multiprocessing library in python2.7 is not good for gtk--in only forks and
-  # does not spawn-->causes many memory collisions with gtk internal pipes.
-  # When we move to python3 some far future day (or when
-  # multiprocessing.set_start_method is backported to python2), we'll use the
-  # builtin module instead of billiard.
-  import billiard as mp
+import multiprocessing as mp
 
 
 

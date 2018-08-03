@@ -177,7 +177,7 @@ class Callbacks:
       model, rows = self.treeview.get_selection().get_selected_rows()
       for p in rows:
         r = model[p]
-        for j in xrange(len(self.default)):
+        for j in range(len(self.default)):
           r[j] = self.default[j]
       return True
 
@@ -212,8 +212,8 @@ class Callbacks:
   def finished_edit( self, renderer, path, new_text, set_item, *args, **kwargs):
     try:
       set_item(renderer, path, new_text, *args, **kwargs)
-    except Exception, e:
-      print e
+    except Exception as e:
+      print(e)
       self.set_error()
 
 

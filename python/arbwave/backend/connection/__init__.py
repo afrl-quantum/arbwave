@@ -23,7 +23,7 @@ DRIVER_DIR = path.join( path.dirname( __file__ ), path.pardir, 'drivers' )
 def get_driver_list():
   return [
     P for P in os.listdir(DRIVER_DIR)
-    if path.isdir( path.join(DRIVER_DIR,P) )
+    if P[:2] != '__' and path.isdir( path.join(DRIVER_DIR,P) )
   ]
 
 class Local(object):
@@ -51,8 +51,8 @@ class Local(object):
           )
 
         self.klasses[D.prefix] = D
-      except Exception, e:
-        print "could not import backend '" + P + "'"
+      except Exception as e:
+        print("could not import backend '{}'".format(P))
         if logging.root.getEffectiveLevel() <= (DEBUG-1):
           debug( e )
           debug( traceback.format_exc() )
@@ -71,7 +71,7 @@ class Local(object):
       except:
         try: traceback.print_exc()
         except: pass
-        print 'driver not cleanly closed: ', prefix
+        print('driver not cleanly closed: ', prefix)
 
   def open(self):
     for k,D in self.klasses.items():

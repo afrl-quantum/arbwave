@@ -1,8 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-import gui
-from plotter_toolbar import NavigationToolbar
-import digital, analog
-import common
+from . import gui
+from .plotter_toolbar import NavigationToolbar
+from . import digital, analog
+from . import common
 
 from ...tools.eval import evalIfNeeded
 

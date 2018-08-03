@@ -23,7 +23,7 @@ def get_channels(devices, C, *args, **kwargs):
   for dev in devices.values():
     for port in 'ABCD':
       for group in 'EFGHJKLM':
-        for line in xrange(4):
+        for line in range(4):
           retval.append(
             C('{}/{}/{}{}'.format(dev, port, group, line), dev=dev, *args, **kwargs)
           )
@@ -72,7 +72,7 @@ def get_routeable_backplane_signals(devices):
 
   def add_destinations(chan):
     host = chan.dev.driver.host_prefix
-    destinations = ['External/'] + [F('{}TRIG/{}', host, n) for n in xrange(8)]
+    destinations = ['External/'] + [F('{}TRIG/{}', host, n) for n in range(8)]
     return channels.Backplane(chan.name, destinations=destinations, invertible=False)
 
   return [add_destinations(chan) for chan in template]
