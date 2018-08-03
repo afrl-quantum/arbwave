@@ -234,7 +234,10 @@ class Channels:
 
 
   def insert_row(self):
-    i = self.channels.insert_before(self.view.get_selection().get_selected()[1])
+    i = self.channels.insert_before(
+      self.view.get_selection().get_selected()[1],
+      self.channels.default_channel,
+    )
     self.add_undo( ListUndo(i, self.channels) )
 
   def delete_row(self):

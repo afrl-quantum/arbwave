@@ -45,6 +45,20 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
   PLOT_SCALE_OFFSET = 9
   PLOT_SCALE_FACTOR = 10
 
+  default_channel=(
+    '',   # Label
+    '',   # device
+    '',   # value
+    None, # scaling
+    None, # units
+    False,# enable
+    1,    # interpolation order
+    0,    # interpolation smoothing
+    None, # output offset
+    0.0,  # plot offset
+    1.0,  # plot scaling
+  )
+
   def __init__(self, **kwargs):
     super(Channels,self).__init__(
       model=gtk.ListStore,
