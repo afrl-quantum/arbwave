@@ -35,7 +35,7 @@ class TreeModelDispatcher(object):
 
   def __del__(self):
     for cb in self.cb:
-      self.Model.disconnect(cb)
+      self.Model.disconnect(self, cb)
 
   def connect(self, signal, callback, *args, **kwargs):
     if signal == 'changed':
