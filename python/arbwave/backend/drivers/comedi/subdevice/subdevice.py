@@ -251,7 +251,8 @@ class Subdevice(Base):
 
 
   def set_config(self, config=None, channels=None, signal_graph=None):
-    debug('comedi[%s].set_config', self)
+    debug('comedi[%s].set_config(config=%s, channels=%s, signal_graph=%s)',
+          self, config, channels, signal_graph)
 
     if channels is not None and self.channels != channels:
       self.channels = channels

@@ -104,7 +104,7 @@ class Device(Base):
       self.config = config
     return config
 
-  def set_config(self, config, channels):
+  def set_config(self, config, channels, signal_graph):
     """
     Set the internal configuration for the board. This
     does not include the sequence specification or the backplane routing.
@@ -115,12 +115,13 @@ class Device(Base):
                    value returned is actually a dictionary including max, min
                    output values for the channel and also the order of the
                    channel in the channel list on the gui.
+    :param signal_graph: directed graph of signal routing
 
     DDS device uses channel info to configure what value is returned for the
     get_min_period function (depends on the number of channels configured).
     """
-    debug('bbb.Device(%s).set_config(config=%s, channels=%s)',
-          self, config, channels)
+    debug('bbb.Device(%s).set_config(config=%s, channels=%s, signal_graph=%s)',
+          self, config, channels, signal_graph)
     valid_keys = set([
       'sysclk', 'refclk', 'pll_chargepump', 'clock'
     ])

@@ -190,7 +190,8 @@ class Driver(Base):
 
 
   def set_device_config( self, config, channels, signal_graph ):
-    debug('bbb.set_device_config(%s, %s, %s)', config, channels, signal_graph)
+    debug('bbb.set_device_config(config=%s, channels=%s, signal_graph=%s)',
+          config, channels, signal_graph)
     # we need to separate channels first by device
     # (configs are already naturally separated by device)
     # in addition, we use collect_prefix to drop the 'bbb/DevX' part of the
@@ -206,7 +207,7 @@ class Driver(Base):
     self.open_required_devices(config.keys())
 
     for d,dev in self.devices.items():
-      dev.set_config( config[d], chans.get(d,{}) )
+      dev.set_config( config[d], chans.get(d,{}), signal_graph )
 
 
   def set_clocks( self, clocks ):

@@ -57,6 +57,8 @@ class Device(Base):
 
 
   def set_config(self, config, channels, signal_graph):
+    debug('vp.Device(%s).set_config(config=%s)', self, config)
+
     C = self.board.configs
     old_config = deepcopy(C)
     N = config.copy()

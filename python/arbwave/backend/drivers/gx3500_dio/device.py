@@ -293,6 +293,8 @@ class Device(Base):
         :param transition_map: a dict(timestamp: {channel: value})
         :return: a list of tuple(timestamp, port_vals[4])
         """
+        log(DEBUG-1, 'gx3500(%s)._compile_transitions(%s)',
+            self, transition_map)
 
         # sort and format the transitions
         transitions = []
@@ -319,6 +321,7 @@ class Device(Base):
         :return: a list of instruction word tuples
         """
         debug('gx3500: assembling a program with %d transitions', len(transitions))
+        log(DEBUG-1, 'gx3500(%s)._assemble_program(%s)', self, transitions)
         instr_list = []
         ports = new_ports = transitions[0][1] # the first instruction writes all 4 ports
         t_last = 0
@@ -384,6 +387,8 @@ class Device(Base):
         :param t_max: the maximum duration of any channel
         :param continuous: bool of continuous or single-shot mode
         """
+        debug('gx3500(%s).set_waveforms(%s, %s, %s, %s)',
+              self, waveforms, clock_transitions, t_max, continuous)
 
         if set(waveforms.keys()).intersection(clock_transitions.keys()):
             raise RuntimeError('GX3500 channels cannot be used as clocks and ' \

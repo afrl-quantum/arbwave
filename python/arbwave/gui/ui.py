@@ -544,6 +544,9 @@ class ArbWave(gtk.Window):
 
 
   def getvars(self):
+    """
+    Used to provide data to save to Arbwave configuration file.
+    """
     return {
       'hosts'     : self.hosts.representation(),
       'devices'   : self.devcfg.representation(),

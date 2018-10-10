@@ -62,7 +62,7 @@ class Device(Base):
     info('found BeagleBone Black+AFRL device: %s', self)
 
 
-  def set_config(self, config, channels):
+  def set_config(self, config, channels, signal_graph):
     """
     Set the internal configuration for the board. This
     does not include the sequence specification or the backplane routing.
@@ -73,6 +73,7 @@ class Device(Base):
                    value returned is actually a dictionary including max, min
                    output values for the channel and also the order of the
                    channel in the channel list on the gui.
+    :param signal_graph: directed graph of signal routing
     """
     pass
 
