@@ -101,7 +101,7 @@ class Device(Base):
 
     if self.config is None:
       # If this is not set yet, this is the first time accessing device
-      self.config = config
+      self.config = copy.deepcopy(config)
     return config
 
   def set_config(self, config, channels, signal_graph):
@@ -135,7 +135,7 @@ class Device(Base):
 
     if self.config is None:
       # If this is not set yet, this is the first time accessing device
-      self.config = self.get_config_template()
+      self.get_config_template()
 
     if self.number_configured_channels != len(channels):
       self.number_configured_channels = len(channels)
