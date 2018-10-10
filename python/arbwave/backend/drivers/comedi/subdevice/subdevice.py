@@ -124,14 +124,14 @@ class Subdevice(Base):
       error("No clocks found for clock-able device '%s' (%s)",
             self, self.card.board)
     else:
-      self.config_template['clock']['range'] = self.clock_sources
+      self._config_template['clock']['range'] = self.clock_sources
 
     if not self.trig_sources:
       # internal trigger only
-      self.config_template = self.config_template.copy()
-      self.config_template.pop('trigger')
+      self._config_template = self._config_template.copy()
+      self._config_template.pop('trigger')
     else:
-      self.config_template['trigger']['source']['range'] = self.trig_sources
+      self._config_template['trigger']['source']['range'] = self.trig_sources
 
     self.config = self.get_config_template()
 
@@ -650,9 +650,9 @@ class Subdevice(Base):
 
 
   def get_config_template(self):
-    return self.config_template.copy()
+    return self._config_template.copy()
 
-  config_template = {
+  _config_template = {
     'trigger' : {
       'enable' : {
         'value' : False,

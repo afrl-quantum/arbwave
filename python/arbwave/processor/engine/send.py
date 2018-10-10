@@ -111,10 +111,16 @@ class ToDriver:
     logging.info( 'sending go signal to all hardware for waveform output' )
     # 1.  Create a graph of signals and clocks; map 'name' to dev
     graph = signal_graphs.build_graph(signals, *clocks)
-    to_dev = backend.get_devices() # get_devices returns a new dict everytime
-    to_dev.update({ clk[0]:clk[1].device
-                    for clk in backend.get_timing_channels().items() })
 
+    # Need the clock ranges for clock signal graph
+    to_dev = backend.get_devices_attrib('device', 'device_str', 'config_template',
+      devices = set(devcfg.keys())
+    )
+    to_dev.update(
+      backend.get_timing_channels_attrib('device', 'device_str',
+        channels = set(clocks)
+      )
+    )
 
     # 2.  Add each use device into the graph:
     #   a.  get clock ranges from device.get_config_template
@@ -125,7 +131,7 @@ class ToDriver:
     for dev, cfg in devcfg.items():
       term = signal_graphs.nearest_terminal(
         cfg['clock']['value'],
-        set(to_dev[dev].get_config_template()['clock']['range']),
+        set(to_dev[dev]['config_template']['clock']['range']),
         graph,
       )
       graph.add_node( dev )
@@ -142,9 +148,9 @@ class ToDriver:
       # more than one time to the list
 
       if i in to_dev:
-        d = to_dev[i]
-        if d not in self.sorted_device_list:
-          self.sorted_device_list.append( d )
+        d_n = to_dev[i]['device'], to_dev[i]['device_str']
+        if d_n not in self.sorted_device_list:
+          self.sorted_device_list.append( d_n )
       else:
         # we ignore all intermediate routing nodes, since they are not
         # 'startable'
@@ -154,7 +160,9 @@ class ToDriver:
     # devices to be last in line
     self.sorted_device_list.reverse()
 
-    for d in self.sorted_device_list:
+    logging.debug('starting devices in order:')
+    for d, n in self.sorted_device_list:
+      logging.debug('starting device %s(%s)', n, d)
       d.start()
     logging.info( 'sent go signal all hardware for waveform output' )
 
@@ -180,7 +188,7 @@ class ToDriver:
         except Exception as e:
           self.excObj = e
           raise
-    tids = [ Waiter(target=d.wait) for d in self.sorted_device_list ]
+    tids = [ Waiter(target=d.wait) for d,_ in self.sorted_device_list ]
     for t in tids: t.start()
     for t in tids: t.join()
     # return all errors
@@ -195,9 +203,9 @@ class ToDriver:
     least-dependent to most-dependent (opposite of how they are started).
     """
     logging.info( 'sending stop signal to all hardware for waveform output' )
-    for i in range(len(self.sorted_device_list)-1,-1,-1):
-      self.sorted_device_list[i].stop()
-    logging.info( 'sent stop signal to all hardware for waveform output' )
+    for d, n in reversed(self.sorted_device_list):
+      d.stop()
+    logging.debug( 'sent stop signal to all hardware for waveform output' )
 
 
   def config(self, config, channels, signals, clocks, globals):

@@ -169,9 +169,26 @@ class WaveformEvalulator:
     self.continuous = continuous
 
     # all the currently known possible channels
-    self.timing_channels = backend.get_timing_channels()
+    self.timing_channels = backend.get_timing_channels_attrib(
+      'is_aperiodic',
+      'min_period',
+      channels = self.clocks.keys(),
+    )
     self.used_clocks = dict() # cache of clock values
-    self.output_channels = backend.get_output_channels()
+
+    # only load what we need to save on network bandwidth for Pyro4 connections
+    output_channels = backend.get_output_channels_attrib(
+      'type',
+      'capabilities',
+      'device_str',
+      'padded_timing',
+      'min_period',
+      'finite_mode_requires_end_clock',
+      channels = {
+        ch['device'] for ch in channels.values()
+        if ch['device'] and ch['enable']
+      }
+    )
 
     self.transitions = dict()
     # dictionary of clocks that serve channels that require padding (like NI
@@ -194,16 +211,16 @@ class WaveformEvalulator:
       chan_dev = self.output_channels[ chan['device'].partition('/')[-1] ]
 
       # record the channel capabilities (set of 'step', 'linear', 'bezier')
-      ci['capabilities'] = chan_dev.get_capabilities()
+      ci['capabilities'] = chan_dev['capabilities']
 
       # set type and clock
-      ci['type'] = chan_dev.type()
+      ci['type'] = chan_dev['type']
       try:
-        clk = self.devcfg[ str(chan_dev.device) ]['clock']['value']
+        clk = self.devcfg[ chan_dev['device_str'] ]['clock']['value']
       except KeyError:
-        raise UserWarning( str(chan_dev.device) + ': Device not configured' )
+        raise UserWarning( chan_dev['device_str'] + ': Device not configured' )
       assert clk in self.clocks, \
-             str(chan_dev.device) + ': device clock not selected'
+             chan_dev['device_str'] + ': device clock not selected'
       ci['clock'] = clk
 
       if clk not in self.transitions:
@@ -212,7 +229,7 @@ class WaveformEvalulator:
 
       # determine if the channel needs explicit timing (in case its clock
       # source is not aperiodic)
-      self.padded_timing[clk] |= chan_dev.padded_timing()
+      self.padded_timing[clk] |= chan_dev['padded_timing']
 
       # sets ci['units'], ci['scaling'], etc
       # units and scaling only get to refer to globals
@@ -241,12 +258,12 @@ class WaveformEvalulator:
       # clock_periods.
       self.min_periods[ clk ] = max(
         self.min_periods.get(clk, clock_period),
-        ceil(chan_dev.get_min_period() / clock_period *(1-machine_arch.eps))
+        ceil(chan_dev['min_period'] / clock_period *(1-machine_arch.eps))
             * clock_period,
       )
 
       # check whether channel requires end-clock pulse for non-continuous mode
-      if chan_dev.finite_mode_requires_end_clock():
+      if chan_dev['finite_mode_requires_end_clock']:
         self.finite_mode_end_clocks_required.add( ci['clock'] )
 
     debug('compute.waveforms: assigning limiting min_period for each channel...')
@@ -551,7 +568,7 @@ class WaveformEvalulator:
     # ensure that we have a unique set of transitions
     clock_transitions = dict()
     for i in self.transitions:
-      if (not self.timing_channels[i].is_aperiodic()) and self.padded_timing[i]:
+      if (not self.timing_channels[i]['is_aperiodic']) and self.padded_timing[i]:
         # for these types of clocks, we will just use an xrange, since every
         # possible clock cycle must be used.
         # NOTE:  padded_timing is the notion that an output device must be
@@ -571,9 +588,9 @@ class WaveformEvalulator:
 
   def get_clock_period(self, clk_name):
     """Recursively determine the minimum separation of a clock pulse"""
-    clk = self.timing_channels[ clk_name ].get_min_period()
+    clk = self.timing_channels[ clk_name ]['min_period']
     if issubclass( type(clk), backend.channels.RecursiveMinPeriod ):
-      if self.timing_channels[ clk.parent_clock ].is_aperiodic():
+      if self.timing_channels[ clk.parent_clock ]['is_aperiodic']:
         raise RuntimeError('Recursive clock cannot depend on aperiodic clocks')
       return clk( self.get_clock_period(clk.parent_clock) )
     return clk
@@ -588,7 +605,7 @@ class WaveformEvalulator:
     already calculated in other member functions before self.finish() gets
     called.
     """
-    clk = self.timing_channels[ clk_name ].get_min_period()
+    clk = self.timing_channels[ clk_name ]['min_period']
     if issubclass( type(clk), backend.channels.RecursiveMinPeriod ):
       # clk_name has a parent clock, so insert transitions into its parent after
       # scaling.
@@ -740,6 +757,12 @@ def static( devcfg, channels, globals ):
 
   channel_info = make_channel_info(channels)
 
+  output_channels = backend.get_output_channels_attrib('type',
+    channels = {
+      ch['device'] for ch in channels.values() if ch['device'] and ch['enable']
+    }
+  )
+
   for chname in channels:
     ci = channel_info[chname]
     chan = channels[chname]
@@ -756,7 +779,7 @@ def static( devcfg, channels, globals ):
     chan_dev = output_channels[ chan['device'].partition('/')[-1] ]
 
     # we do most of the same basic things as for waveforms without transitions
-    ci['type'] = chan_dev.type()
+    ci['type'] = chan_dev['type']
     set_units_and_scaling(chname, ci, chan, globals)
     value = evalIfNeeded( chan['value'], globals )
     value = apply_scaling(value, chname, ci)

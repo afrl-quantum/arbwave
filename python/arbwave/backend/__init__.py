@@ -76,7 +76,19 @@ def get_devices():
   D = dict()
   for d in all_drivers.values():
     for c in d.get_devices():
-      D[ str(c) ] = c
+      D[ c.name ] = c
+  return D
+
+def get_devices_attrib(*attribs, devices=None):
+  """
+  Hopefully a faster interface to get low-info requests when using Pyro4.
+   options:
+    *attribs : list of attributes to collect
+    devices  : list of device.names for which to collect data
+  """
+  D = dict()
+  for d in all_drivers.values():
+    D.update(d.get_devices_attrib(*attribs, devices=devices))
   return D
 
 def get_output_channels():
@@ -86,6 +98,19 @@ def get_output_channels():
       D[ str(c) ] = c
   return D
 
+def get_output_channels_attrib(*attribs, channels=None):
+  """
+  Hopefully a faster interface to speed up low-info requests on all channels
+  when using Pyro4.
+   options:
+    *attribs : list of attributes to collect
+    channels : list of channels for which to collect data
+  """
+  D = dict()
+  for d in all_drivers.values():
+    D.update(d.get_output_channels_attrib(*attribs, channels=channels))
+  return D
+
 def get_timing_channels():
   D = dict()
   for d in all_drivers.values():
@@ -93,8 +118,39 @@ def get_timing_channels():
       D[ str(c) ] = c
   return D
 
+def get_timing_channels_attrib(*attribs, channels=None):
+  """
+  Hopefully a faster interface to speed up low-info requests on all channels
+  when using Pyro4.
+   options:
+    *attribs : list of attributes to collect
+    channels : list of channels for which to collect data
+               It should be noted that this function will _most likely_ fail
+               unless the channels are limited to those that have actually been
+               configured.
+  """
+  D = dict()
+  for d in all_drivers.values():
+    D.update(d.get_timing_channels_attrib(*attribs, channels=channels))
+  return D
+
 def get_routeable_backplane_signals():
   L = list()
   for d in all_drivers.values():
     L.extend( d.get_routeable_backplane_signals() )
+  return L
+
+def get_routeable_backplane_signals_attrib(*attribs, channels=None):
+  """
+  Hopefully a faster interface to speed up low-info requests on all channels
+  when using Pyro4.
+   options:
+    *attribs : list of attributes to collect
+    channels : list of channels for which to collect data
+  """
+  L = list()
+  for d in all_drivers.values():
+    L.extend(
+      d.get_routeable_backplane_signals_attrib(*attribs, channels=channels)
+    )
   return L

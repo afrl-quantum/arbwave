@@ -633,10 +633,10 @@ class ArbWave(gtk.Window):
       # items without requiring a file-version upgrade.  This should _only_ be
       # done if items are simply added.  If they are changed or removed, a
       # file-version upgrade must be implemented.
-      all_devices = backend.get_devices()
+      all_devices = backend.get_devices_attrib('config_template')
       device_config = dict()
       for devname, devcfg in vardict['devices'].items():
-        D = all_devices[devname].get_config_template()
+        D = all_devices[devname]['config_template']
         recursive_update(D, devcfg)
         device_config[devname] = D
 

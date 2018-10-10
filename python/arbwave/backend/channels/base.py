@@ -24,26 +24,43 @@ class Base(object):
 
   def __init__(self, name, dev=None):
     super(Base,self).__init__()
-    self.name = name
+    self._name = name
     self.dev = dev
 
   def __str__(self):
-    return self.name
+    return self._name
 
   def __repr__(self):
     return str(self)
+
+  @property
+  def name(self):
+    return self._name
+
+  @property
+  def config_template(self):
+    return self.get_config_template()
 
   def get_config_template(self):
     return dict()
 
   @property
   def prefix(self):
-    return self.name.partition('/')[0]
+    return self._name.partition('/')[0]
 
   @property
   def device(self):
     return self.dev
 
+  @property
+  def device_str(self):
+    """
+    This interface is provided primarily for speed and easiness for
+    get_output_channels_attrib (and because we do need the device string).
+    """
+    return str(self.dev)
+
+  @property
   def padded_timing(self):
     """
     Identifies a channel that simply writes an output value for every clock.
@@ -57,9 +74,22 @@ class Base(object):
     """
     Returns the minimum timing period (period between two rising edges of this
     clock pulse) in units of seconds.
+
+    This one should be overridden by sub-classes.
     """
     return 0*unit.s
 
+  @property
+  def min_period(self):
+    """
+    Attrib access to get_min_period for Pyro4--but used in compute.py everywhere
+    for consistency with Pyro4.
+
+    This one should not be overridden by sub-classes.
+    """
+    return self.get_min_period()
+
+  @property
   def finite_mode_requires_end_clock(self):
     """
     Identifies a channel as requiring a special extra clock pulse at the end of
@@ -75,15 +105,12 @@ class Base(object):
     """
     return self._finite_end_clock
 
+  @property
   def type(self):
     return self._type
 
-  def fullname(self):
-    # we capitalize the first letter!
-    T = self.type()
-    return '{}{}/{}'.format( T[0].upper(), T[1:], self.name )
-
-  def get_capabilities(self):
+  @property
+  def capabilities(self):
     """
     set of 'step', 'linear', and/or 'bezier'
 

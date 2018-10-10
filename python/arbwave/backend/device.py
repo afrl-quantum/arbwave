@@ -5,10 +5,33 @@ class Device(object):
   _pyro_ = True # For remote connections, this class must use pyro
 
   def __init__(self, name):
-    self.name = name
+    self._name = name
 
   def __str__(self):
-    return self.name
+    return self._name
+
+  @property
+  def device(self):
+    """
+    Just to make it easier to query device as an attribute too.
+    """
+    return self
+
+  @property
+  def name(self):
+    return self._name
+
+  @property
+  def device_str(self):
+    """
+    Just to make it easier to query device name with same interface as for
+    channels.
+    """
+    return self._name
+
+  @property
+  def config_template(self):
+    return self.get_config_template()
 
   def get_config_template(self):
     return dict()
@@ -19,7 +42,7 @@ class Device(object):
     Parse the name of the device to return the prefix of the device.  The prefix
     is composed of [host_prefix:]driver_prefix
     """
-    return self.name.partition('/')[0]
+    return self._name.partition('/')[0]
 
   def start(self):
     """

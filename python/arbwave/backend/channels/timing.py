@@ -7,6 +7,7 @@ class Timing(Base):
   _type = 'timing'
   aperiodic = False
 
+  @property
   def is_aperiodic(self):
     """
     Returns whether this clock represents an aperiodic signal.

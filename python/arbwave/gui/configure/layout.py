@@ -199,7 +199,7 @@ class ConfigDialog(gtk.Dialog):
 
 
     def add_dev_config( action, devcfg ):
-      devices = backend.get_devices()
+      devices = backend.get_devices_attrib() # only get names
       S = set( devices.keys() )
       configured_devices = [ D[devcfg.LABEL]  for D in devcfg ]
       L = list( S.difference( configured_devices ) )
@@ -209,14 +209,17 @@ class ConfigDialog(gtk.Dialog):
         return
 
       self.store.pause()
-      template = devices[devname].get_config_template()
+      template = backend.get_devices_attrib(
+        'config_template',
+        devices={devname},
+      )[devname]['config_template']
       devcfg.load( { devname : template }, clear=False )
       self.store.unpause()
       self.store.update(devcfg)
 
 
     def add_clock( action, clocks ):
-      channels = backend.get_timing_channels()
+      channels = backend.get_timing_channels_attrib() #only get names
       S = set( channels.keys() )
       configured_clocks = [ C[clocks.LABEL]  for C in clocks ]
       L = list( S.difference( configured_clocks ) )
@@ -226,7 +229,10 @@ class ConfigDialog(gtk.Dialog):
         return
 
       self.store.pause()
-      template = channels[clk].get_config_template()
+      template = backend.get_timing_channels_attrib(
+        'config_template',
+        channels={clk},
+      )[clk]['config_template']
       clocks.load( { clk : template }, clear=False )
       self.store.unpause()
       self.store.update(clocks)
@@ -282,7 +288,7 @@ class Range:
     """
     Return the full config item.
     """
-    return get_leaf_node( self.dev.get_config_template(), self.cfg_path )
+    return get_leaf_node( self.dev['config_template'], self.cfg_path )
 
   def __call__(self):
     """
@@ -321,8 +327,7 @@ class ClockRange:
     self.clocks     = clocks
     self.signals    = signals
 
-    assert type(self.terminals()) in [list, tuple], \
-      'device clocks must be lists/tuples'
+    assert iter(self.terminals()), 'device clocks must be iterable'
 
   def is_combo(self):
     return True
@@ -346,9 +351,9 @@ class RangeFactory:
 
   def __call__(self, path, i, model):
     if self.for_clocks:
-      devs = backend.get_timing_channels()
+      devs = backend.get_timing_channels_attrib('config_template')
     else:
-      devs = backend.get_devices()
+      devs = backend.get_devices_attrib('config_template')
 
     r = Range( devs[path[0]], path[1:] )
     if path[-1] == 'clock':
