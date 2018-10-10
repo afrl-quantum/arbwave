@@ -38,8 +38,9 @@ class ConfigDialog(gtk.Dialog):
     super(ConfigDialog,self).__init__(
       'Configure Signals/Triggers, ...',win,
       gtk.DialogFlags.DESTROY_WITH_PARENT,
-      (gtk.STOCK_OK, gtk.ResponseType.OK,
-       gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL)
+      (gtk.STOCK_CLOSE, gtk.ResponseType.OK)
+      #(gtk.STOCK_OK, gtk.ResponseType.OK,
+      # gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL)
     )
 
 
@@ -48,7 +49,7 @@ class ConfigDialog(gtk.Dialog):
     self.signal_editor = edit.signals.create(store.signals)
     self.devcfg_editor = edit.Generic(store.devcfg,
                                       range_factory=RangeFactory(store,False))
-    self.clock_editor  = edit.Generic( store.clocks,
+    self.clock_editor  = edit.Generic(store.clocks,
                                       range_factory=RangeFactory(store,True))
     self.hosts         = edit.hosts.create(store.hosts)
 
@@ -366,7 +367,8 @@ class RangeFactory:
 
 def show(win, store):
   dialog = ConfigDialog(win, store)
-  return dialog.run()
+  dialog.show()
+  #return dialog.run()
 
 
 
