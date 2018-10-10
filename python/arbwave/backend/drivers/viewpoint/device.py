@@ -68,15 +68,16 @@ class Device(Base):
     N = config.copy()
     clk = N.pop('clock')['value']
 
-    # we have to strip off the device prefix...
+    if not clk:
+      raise UserWarning('vp.Device({}): please assign clock'.format(self))
 
     # ensure that clock channels are added to the output list
     C['out']['channels'] = self.timing_channels.union(channels)
     C['in']['clock'    ] = C['out']['clock'] = \
       self.possible_clock_sources[
-        nearest_terminal( clk,
-                          set(self.possible_clock_sources.keys()),
-                          signal_graph )
+        nearest_terminal(clk,
+                         set(self.possible_clock_sources.keys()),
+                         signal_graph)
       ]
     # we'll not set the scan_rate:
     # If we are using an internal clock, this should have already been set

@@ -261,7 +261,8 @@ class Subdevice(Base):
       self.config = config
 
     if not self.config['clock']['value']:
-      self.clock_terminal = None
+      raise UserWarning('comedi.Device({}): please assign clock'.format(self))
+      #self.clock_terminal = None
     else:
       if signal_graph:
         if self.has_onboardclock and \
@@ -271,9 +272,9 @@ class Subdevice(Base):
           self.clock_terminal = 'internal'
         else:
           self.clock_terminal = \
-              nearest_terminal( self.config['clock']['value'],
-                                  set(self.clock_sources),
-                                  signal_graph )
+              nearest_terminal(self.config['clock']['value'],
+                               set(self.clock_sources),
+                               signal_graph)
 
     if self.clock_terminal == 'internal':
       frequency = self.clocks[ self.onboardclock_name ]['rate']['value']
