@@ -731,7 +731,7 @@ class ArbWave(gtk.Window):
         ( self.devcfg.representation(),   item in [ self.ALL_ITEMS, self.devcfg] ),
         ( self.clocks.representation(),   item in [ self.ALL_ITEMS, self.clocks] ),
         ( self.signals.representation(),  item in [ self.ALL_ITEMS, self.signals] ),
-        ( self.channels.representation(), item in [ self.ALL_ITEMS, self.channels] ),
+        ( self.channels.representation(1),item in [ self.ALL_ITEMS, self.channels] ),
         ( self.waveform_editor.get_waveform().representation(store_path=True),
                                           item in [ self.ALL_ITEMS, self.waveform_editor.get_waveform()] ),
         ( self.script.representation(),   item in [ self.ALL_ITEMS, self.script] ),

@@ -207,8 +207,7 @@ class WaveformEvalulator:
         continue
 
       ci = self.channel_info[chname]
-      # drop the "Analog/" "Digital/" prefix to lookup actual device
-      chan_dev = self.output_channels[ chan['device'].partition('/')[-1] ]
+      chan_dev = output_channels[ chan['device'] ]
 
       # record the channel capabilities (set of 'step', 'linear', 'bezier')
       ci['capabilities'] = chan_dev['capabilities']
@@ -732,16 +731,12 @@ def make_channel_info(channels):
 
 
 
-def prefix( devname ):
+def prefix( dev ):
   """
-  Remove the non-device 'Analog' or 'Digital' prefix and return the driver
-  prefix and the device name (minus the non-device prefix).
-  For example, given a devname like 'Analog/ni/Dev/ao1', this function returns a
-  tuple:
+  Return the driver prefix and the device name (minus the non-device prefix).
+  For example, given a dev like 'ni/Dev/ao1', this function returns a tuple:
     ('ni', 'ni/Dev1/ao1')
   """
-  # we have to make sure we chop off the 'Analog' and 'Digital' part
-  dev = devname.partition('/')[-1]
   return dev.partition('/')[0], dev
 
 
@@ -774,9 +769,7 @@ def static( devcfg, channels, globals ):
     if not dev:
       continue
 
-    output_channels = backend.get_output_channels()
-    # drop the "Analog/" "Digital/" prefix to lookup actual device
-    chan_dev = output_channels[ chan['device'].partition('/')[-1] ]
+    chan_dev = output_channels[ dev ]
 
     # we do most of the same basic things as for waveforms without transitions
     ci['type'] = chan_dev['type']

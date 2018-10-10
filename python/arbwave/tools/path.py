@@ -61,20 +61,25 @@ def collect_prefix(D, drop_prefixes=0, prefix_len=1, drop_path_len=0,
 
 if __name__ == '__main__':
   channels = {
-    'label0' : {'device':'Digital/vp/Dev1/A/12'},
-    'label1' : {'device':'Digital/vp/Dev1/A/13'},
-    'label2' : {'device':'Digital/vp/Dev2/A/14'},
-    'label3' : {'device':'Analog/ni/Dev2/ao14'},
+    'label0' : {'device':'vp/Dev1/A/12'},
+    'label1' : {'device':'vp/Dev1/A/13'},
+    'label2' : {'device':'vp/Dev2/A/14'},
+    'label3' : {'device':'ni/Dev2/ao14'},
   }
+  ans1 = {
+    'vp': {'vp/Dev1/A/12': None, 'vp/Dev1/A/13': None, 'vp/Dev2/A/14': None},
+    'ni': {'ni/Dev2/ao14': None},
+  }
+  ans2 = {'vp/Dev1': {'A/12': None, 'A/13': None}, 'vp/Dev2': {'A/14': None}}
 
   collected = \
-  collect_prefix(
-    { c[1]['device']:None   for c in channels.items()},
-    1 )
+  collect_prefix({ c[1]['device']:None   for c in channels.items()})
 
-  print(collected)
+  print('collect-channels-:\n', collected)
+  print(' Should be:\n', ans1, '\n')
 
-  print(collect_prefix( collected['vp'], 0, 2, 2 ))
+  print('collect-channels-vp:\n', collect_prefix( collected['vp'], 0, 2, 2 ))
+  print(' Should be:\n', ans2, '\n')
 
 
   signals = {
@@ -82,10 +87,28 @@ if __name__ == '__main__':
     ('vp/Dev0/A/13',      'TRIG/3') : {'inv':False},
     ('TRIG/4',  'ni/Dev2/ctr0Gate') : {'inv': True},
   }
+  ans3 = {
+    'ni': {
+      ('Dev1/ctr0Output', 'TRIG/0'): {'inv': True},
+      ('TRIG/4', 'Dev2/ctr0Gate'): {'inv': True},
+    },
+    'vp': {('Dev0/A/13', 'TRIG/3'): {'inv': False}},
+  }
+  ans4 = {
+    'ni': {
+      ('ni/Dev1/ctr0Output', 'TRIG/0'): {'inv': True},
+      ('TRIG/4', 'ni/Dev2/ctr0Gate'): {'inv': True},
+    },
+    'vp': {('vp/Dev0/A/13', 'TRIG/3'): {'inv': False}},
+  }
+  ans5 = {'vp/Dev0': {'A/15': None, 'A/14': None}, 'vp/Dev1': {'A/0': None}}
 
-  print('\n', collect_prefix( signals, 0, 1, 1 ))
-  print('\n', collect_prefix( signals ))
+  print('collect-signals-0:\n', collect_prefix( signals, 0, 1, 1 ))
+  print(' Should be:\n', ans3, '\n')
+  print('collect-signals-1:\n', collect_prefix( signals ))
+  print(' Should be:\n', ans4, '\n')
 
 
   clocks = set(['vp/Dev0/A/15', 'vp/Dev0/A/14', 'vp/Dev1/A/0'])
-  print('\n', collect_prefix( dict.fromkeys(clocks), 0, 2, 2 ))
+  print('collect-clocks:\n', collect_prefix( dict.fromkeys(clocks), 0, 2, 2 ))
+  print(' Should be:\n', ans5, '\n')

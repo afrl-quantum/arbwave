@@ -20,8 +20,6 @@ def create_channel_name_map(channels, clocks):
     if not dev:
       continue
 
-    # the partition is to get rid of the 'Analog/' or 'Digital/' prefix
-    dev = dev.partition('/')[2]
     if dev and c[1]['enable']:
       if dev in names:
         raise NameError('Device channels can only be used once')
@@ -158,11 +156,11 @@ def _create_fake_channels(digital, analog):
       i += 1
   o = Order()
   channels = {
-    ('Digital '+k) : dict( device='Digital/D/'+k, enable=True, order=next(o) )
+    ('Digital '+k) : dict( device='D/'+k, enable=True, order=next(o) )
     for k in digital
   }
   channels.update({
-    ('Analog '+k) : dict( device='Analog/A/'+k, enable=True, order=next(o) )
+    ('Analog '+k) : dict( device='A/'+k, enable=True, order=next(o) )
     for k in analog
   })
   return channels

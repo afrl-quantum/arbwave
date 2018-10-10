@@ -83,12 +83,20 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
     self.connect('row-deleted', rm_scaling_cb)
 
 
-  def dict(self):
+  def dict(self, strip_dev_type = False):
+    """
+    See notes in Channels.representation(...).
+    """
+    if strip_dev_type:
+      strip_pfx = lambda x : x.partition('/')[-1] if x else None
+    else:
+      strip_pfx = lambda x : x
+
     D = dict()
     order = 0
     for i in iter(self):
       D[ i[Channels.LABEL] ] = {
-        'device'  : i[Channels.DEVICE],
+        'device'  : strip_pfx(i[Channels.DEVICE]),
         'value'   : i[Channels.VALUE],
         'scaling' : [(row[0], row[1]) for row in i[Channels.SCALING]
                       if row[0] or row[1]
@@ -130,5 +138,15 @@ class Channels(TreeModelDispatcher, gtk.ListStore):
         i[1]['plot_scale_factor'],
       ])
 
-  def representation(self):
-    return self.dict()
+  def representation(self, strip_dev_type = False):
+    """
+    Give a native python representation of the channels table.
+    Options:
+      strip_dev_type: Whether 'Digital' and 'Analog' prefixes should be kept in
+                      tact or removed. [Default: False]
+                      It should be noted that the Arbwave configuration file
+                      does not remove these prefixes.  Thus, load(...) should
+                      *only* be called using a version that is similar to that
+                      generated with strip_dev_type==False.
+    """
+    return self.dict(strip_dev_type)
