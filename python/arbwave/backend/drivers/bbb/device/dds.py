@@ -14,6 +14,7 @@ import time
 from .....tools.float_range import float_range
 from .....tools.dict import Dict
 from .....tools import cached
+from .....tools.signal_graphs import nearest_terminal
 from .. import channels
 from .base import Device as Base
 
@@ -156,14 +157,32 @@ class Device(Base):
 
     if self.config['refclk']['source'] != config['refclk']['source']:
       self.proxy.refclk_src = config['refclk']['source']['value']
-        
-    if self.config['clock'] !=  config['clock'] and \
-       config['clock']['value'] != '':
-      self.proxy.update_src = \
-        self.possible_clock_sources[config['clock']['value']]
 
-    # finally, keep a copy of the config given to us
+    # keep a copy of the config given to us
+    old_config = self.config
     self.config = copy.deepcopy(config)
+
+    # set the clock.  Have to map the actual clock source to the clock terminal
+    # (one of the items in self.possible_clock_sources) that needs to be
+    # connected.
+    if not self.config['clock']['value']:
+      # set it to something that will never be an input
+      self.config['clock']['value'] = 'No clock selected'
+      raise UserWarning('bbb.Device({}): please assign clock'.format(self))
+
+    try:
+      if old_config['clock'] !=  self.config['clock']:
+        clock_terminal = nearest_terminal(self.config['clock']['value'],
+                                          set(self.possible_clock_sources),
+                                          signal_graph)
+        update_src = self.possible_clock_sources[clock_terminal]
+        debug('bbb.Device(%s).update_src = (terminal=%s, internal=%s)',
+              self, clock_terminal, update_src)
+
+        self.proxy.update_src = update_src
+    finally:
+      # We'll set this to something that will never be an input
+      self.config['clock']['value'] = 'clock selection error'
 
 
   def get_min_period(self):
