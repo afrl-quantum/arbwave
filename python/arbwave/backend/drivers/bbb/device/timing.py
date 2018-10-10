@@ -91,6 +91,16 @@ class Device(Base):
           'type': bool,
           'range': None,
         },
+        'level': {
+          'value': 'low',
+          'type': str,
+          'range': ('high', 'low'),
+        },
+        'pull': {
+          'value': 'down',
+          'type': str,
+          'range': ('down', 'up'),
+        },
       },
       'start_delay' : {
         'value' : self.proxy.start_delay * 5*units.ns,
@@ -131,7 +141,7 @@ class Device(Base):
     assert set(config.keys()).issubset(valid_keys), \
       'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone Black' \
       .format(self)
-    valid_trigger_keys = set(['enable', 'retrigger'])
+    valid_trigger_keys = set(['enable', 'retrigger', 'level', 'pull'])
     assert set(config['trigger'].keys()).issubset(valid_trigger_keys), \
       'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone ' \
                        'Black timing trigger' \
@@ -152,6 +162,12 @@ class Device(Base):
 
       if my_trg_config['retrigger'] != trg_config['retrigger']:
         self.proxy.retrigger = trg_config['retrigger']['value']
+
+      if my_trg_config['level'] != trg_config['level']:
+        self.proxy.trigger_level = trg_config['level']['value']
+
+      if my_trg_config['pull'] != trg_config['pull']:
+        self.proxy.trigger_pull = trg_config['pull']['value']
 
     if self.config['start_delay'] != config['start_delay']:
       self.proxy.start_delay = \

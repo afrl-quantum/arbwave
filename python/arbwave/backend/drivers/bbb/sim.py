@@ -127,4 +127,6 @@ class Timing(Device):
   data = 0
   triggered = False
   retrigger = False
+  trigger_level = 'low'
+  trigger_pull = 'down'
   start_delay = 3
