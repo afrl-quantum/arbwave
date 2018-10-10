@@ -57,7 +57,7 @@ def ni_names(host, dev):
   # finish static names by loading all in the ni_common_signal_names enum
   name_dict.update({
     v:entry(k, dev+'/'+ni_fmt(k[3:])) for k,v in comedi.__dict__.items()
-    if (k.startswith('NI_') and
+    if (k.startswith('NI_') and (not callable(v)) and
         comedi.NI_COUNTER_NAMES_MAX < v < (comedi.NI_NAMES_BASE + comedi.NI_NUM_NAMES))
   })
   return dict(
