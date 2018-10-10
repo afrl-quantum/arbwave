@@ -735,9 +735,6 @@ class ComediSim(object):
       del comedi_t_ptr.__eq__
       reload(clib)
 
-  def __del__(self):
-    self.remove_from_clib()
-
   def __getitem__(self, i):
     """Quick access to cards by index or by comedi_t_ptr"""
     if type(i) is int:

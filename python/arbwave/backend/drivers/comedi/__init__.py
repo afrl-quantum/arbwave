@@ -93,11 +93,13 @@ class Driver(Base):
     while self.cards:
       cardname, card = self.cards.popitem()
       debug( 'closing comedi card: %s', cardname )
+      card.close()
       del card
 
     # clean up the simulated library if necessary
-    if self.simulated:
+    if hasattr(self, 'csim') and self.simulated:
       self.csim.remove_from_clib()
+      del self.csim
 
   @Pyro4.expose
   def get_devices(self):

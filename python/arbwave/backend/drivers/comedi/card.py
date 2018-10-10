@@ -140,20 +140,21 @@ class Card( POINTER(comedi.comedi_t) ):
   def __str__(self):
     return '{}/{}'.format(self.driver, self.device)
 
-  def __del__(self):
+  def close(self):
     # first instruct each one of the subdevs to be deleted
     # the intent is that this will (for each subdevice):
     #   - cancel all running jobs ( comedi.cancel )
     while self.subdevices:
       subname, subdev = self.subdevices.popitem()
+      subdev.clear()
       del subdev
 
-    gus = subdevice.enum.get_useful_subdevices
-    List = gus(self, comedi.SUBD_DIO, ret_index_list=True)
+    List = subdevice.enum.get_useful_subdev_list(self, comedi.SUBD_DIO)
 
-    for device, index in List:
+    for index in List:
       chans = comedi.get_n_channels(self, index)
-      comedi.dio_config(self, index, chans, comedi.INPUT)
+      for ch in range(chans):
+        comedi.dio_config(self, index, ch, comedi.INPUT)
 
 
     # Fixed?
@@ -168,10 +169,9 @@ class Card( POINTER(comedi.comedi_t) ):
     comedi.close(self)
     self._zero() # zero the address of this device pointer
 
-
   def stop(self):
     # FIXME:  This is BAD!
-    self.__del__()
+    self.close()
 
   def start(self):
     print("dev start not implemented")

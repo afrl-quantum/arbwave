@@ -137,9 +137,6 @@ class Subdevice(Base):
     self.config = self.get_config_template()
 
 
-  def __del__(self):
-    self.clear()
-
   def clear(self):
     debug( 'comedi: cancelling commands for comedi subdevice %s', self )
     raiserr( comedi.cancel( self.card, self.subdevice ), 'cancel' )
