@@ -233,12 +233,15 @@ class Channels:
     self.scaling_editor.present()
 
 
-  def insert_row(self):
+  def insert_row(self, parent):
+    # there is no point in updating for just inserting a blank channel
+    parent.pause()
     i = self.channels.insert_before(
       self.view.get_selection().get_selected()[1],
       self.channels.default_channel,
     )
     self.add_undo( ListUndo(i, self.channels) )
+    parent.unpause()
 
   def delete_row(self):
     i = self.view.get_selection().get_selected()[1]

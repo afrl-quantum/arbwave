@@ -507,7 +507,7 @@ class ArbWave(gtk.Window):
       'Exprs'     : lambda a: tips.show_expressions(self),
       'VGens'     : lambda a: tips.show_generators(self),
       'arbhelp'   : lambda a: tips.show_arbwavefunctions(self),
-      'CH:Add'    : lambda a: self.channel_editor.insert_row(),
+      'CH:Add'    : lambda a: self.channel_editor.insert_row(self),
       'CH:Delete' : lambda a: self.channel_editor.delete_row(),
       'WF:Add'    : lambda a: self.waveform_editor.insert_waveform(),
       'WF:Delete' : lambda a: self.waveform_editor.delete_row(),
