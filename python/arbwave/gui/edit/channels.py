@@ -51,19 +51,23 @@ def mkUIManager():
 
 device_combobox_tree = gtk.TreeStore(str,str)
 
+def clear_device_combobox_tree():
+  device_combobox_tree.clear()
+
 def build_device_combobox_tree():
+  clear_device_combobox_tree()
+
   global device_combobox_tree
   T = device_combobox_tree
-  T.clear()
 
   M = dict()
-  chans = sorted(backend.get_output_channels().items(),
+  chans = sorted(backend.get_output_channels_attrib('type').items(),
                  key = lambda i0 : pkey(i0[0]))
   for c, chan_info in chans:
-    add_path_to_combobox_tree( T, [chan_info.type()] + c.split('/'), 0, M )
+    add_path_to_combobox_tree( T, [chan_info['type']] + c.split('/'), 0, M )
 
 
-hosts_changed.callbacks.append( build_device_combobox_tree )
+hosts_changed.callbacks.append( clear_device_combobox_tree )
 
 
 

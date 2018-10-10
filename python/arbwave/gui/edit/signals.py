@@ -10,14 +10,18 @@ dest_combobox_tree = dict()
 dest_combobox_tree_all = gtk.TreeStore(str,str)
 dest_to_sig_tree = dict()
 
-def build_device_combobox_tree():
-  global signal_combobox_tree, dest_combobox_tree, dest_to_sig_tree
-  dest_to_sigs = dict()
-  T = signal_combobox_tree
-  T.clear()
+def clear_device_combobox_tree():
+  signal_combobox_tree.clear()
   dest_combobox_tree.clear()
   dest_combobox_tree_all.clear()
   dest_to_sig_tree.clear()
+
+def build_device_combobox_tree():
+  clear_device_combobox_tree()
+
+  global signal_combobox_tree, dest_combobox_tree, dest_to_sig_tree
+  dest_to_sigs = dict()
+  T = signal_combobox_tree
 
   routes = backend.get_routeable_backplane_signals_attrib('src', 'dest')
   add_paths_to_combobox_tree( T, [ r['src'] for r in routes ] )
@@ -41,7 +45,7 @@ def build_device_combobox_tree():
   add_paths_to_combobox_tree(dest_combobox_tree_all, dest_to_sigs.keys())
 
 
-hosts_changed.callbacks.append( build_device_combobox_tree )
+hosts_changed.callbacks.append( clear_device_combobox_tree )
 
 
 

@@ -749,7 +749,7 @@ class ArbWave(gtk.Window):
         .format(len(self.undo) - self.next_untested_undo,
                 str(e).replace('<', '&lt;').replace('>', '&gt;')) )
       #raise e
-    if item == self.hosts:
+    if item in [self.ALL_ITEMS, self.hosts, self.devcfg]:
       # callbacks for host changes...
       hosts_changed.callback()
 
