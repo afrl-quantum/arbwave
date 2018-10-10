@@ -2,6 +2,8 @@
 
 import logging
 import re
+import Pyro4
+
 from ...driver import Driver as Base
 from ....tools.path import collect_prefix
 from ....tools.expand import expand_braces
@@ -100,6 +102,7 @@ class Driver(Base):
     return False if nidaqmx.libnidaqmx.libnidaqmx is None else True
 
 
+  @Pyro4.expose
   def close(self):
     """
     Set all channels to a save value, close all devices, and uninitialize stuff
@@ -135,22 +138,26 @@ class Driver(Base):
       # restore the nidaqmx lib
       nidaqmx.libnidaqmx.libnidaqmx = self._old_libnidaqmx
 
+  @Pyro4.expose
   def get_devices(self):
     """
     Returns the set of configurable tasks..
     """
     return self.tasks.values()
 
+  @Pyro4.expose
   def get_output_channels(self):
     return self.outputs
 
+  @Pyro4.expose
   def get_timing_channels(self):
     return self.timing_channels
 
+  @Pyro4.expose
   def get_routeable_backplane_signals(self):
     return self.signals
 
-
+  @Pyro4.expose
   def set_device_config( self, config, channels, signal_graph ):
     # we need to separate channels first by device
     # (configs are already naturally separated by device)
@@ -166,7 +173,7 @@ class Driver(Base):
       if d in config or d in chans:
         T.set_config( config.get(d,{}), chans.get(d,{}), signal_graph )
 
-
+  @Pyro4.expose
   def set_clocks( self, clocks ):
     # clocks:  {'ni/Dev1': {'ni/Dev1/port0/line0': {}}}
     # d,T:  ni/Dev1/to ni/Dev1/to
@@ -199,7 +206,7 @@ class Driver(Base):
       if ao_timing:
         self.tasks[ dev+'/ao' ].set_clocks( ao_timing )
 
-
+  @Pyro4.expose
   def set_signals( self, signals ):
     """
     NIDAQmx signal router.
@@ -236,7 +243,7 @@ class Driver(Base):
 
       self.routed_signals = signals
 
-
+  @Pyro4.expose
   def set_static(self, analog, digital):
     D = collect_prefix(digital, 0, 2)
     A = collect_prefix(analog, 0, 2)
@@ -247,9 +254,8 @@ class Driver(Base):
     for dev, data in A.items():
       self.tasks[ dev+'/ao' ].set_output( data )
 
-
-  def set_waveforms( self, analog, digital, transitions,
-                     t_max, continuous ):
+  @Pyro4.expose
+  def set_waveforms( self, analog, digital, transitions, t_max, continuous ):
     """
     Viewpoint ignores all transition information since it only needs absolute
     timing information.

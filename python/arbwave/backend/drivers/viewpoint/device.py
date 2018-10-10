@@ -3,6 +3,7 @@
 from copy import deepcopy
 from logging import error, warn, debug, log, DEBUG, INFO
 import time
+import Pyro4
 import viewpoint as vp
 
 from ...device import Device as Base
@@ -223,6 +224,7 @@ class Device(Base):
       self.board.out_state )
 
 
+  @Pyro4.expose
   def get_config_template(self):
     T = deepcopy(vp.config.template)
     drop_some_settings( T )
@@ -236,10 +238,12 @@ class Device(Base):
     return T
 
 
+  @Pyro4.expose
   def start(self):
     self.board.out_start()
 
 
+  @Pyro4.expose
   def wait(self):
     if self.board.configs['out']['repetitions'] == 0:
       raise RuntimeError('Cannot wait for continuous waveform to finish')
@@ -252,7 +256,7 @@ class Device(Base):
       time.sleep(.01) # only need small sleep; allow CPU to switch context
 
 
-
+  @Pyro4.expose
   def stop(self):
     try: #allow for a non-initialized board to 'stop'
       b = self.board

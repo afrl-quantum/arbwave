@@ -1,5 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import Pyro4
+
 from .base import Base
 
 class Timing(Base):
@@ -7,6 +9,7 @@ class Timing(Base):
   _type = 'timing'
   aperiodic = False
 
+  @Pyro4.expose
   @property
   def is_aperiodic(self):
     """

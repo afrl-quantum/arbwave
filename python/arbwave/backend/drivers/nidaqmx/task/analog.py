@@ -1,6 +1,8 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from logging import log, debug, info, warn, error, critical, DEBUG
+import Pyro4
+
 from .....tools.float_range import float_range
 from .task import Task as Base
 from physical import unit
@@ -40,7 +42,7 @@ class Analog(Base):
             * unit.s / self.task.get_sample_clock_max_rate()
     return 0*unit.s
 
-
+  @Pyro4.expose
   def get_config_template(self):
     template = Base.get_config_template(self)
     template['default-voltage-range'] = {

@@ -8,10 +8,11 @@ Logical device driver for GX3500 timing/DIO board.
 
 import copy
 import itertools
-from logging import debug
+from logging import debug, log, DEBUG
 import numpy as np
 from physical import units
 import time
+import Pyro4
 
 from ...device import Device as Base
 
@@ -103,6 +104,7 @@ class Device(Base):
         if hasattr(self, 'board'):
             self.board.command('STOP')
 
+    @Pyro4.expose
     def get_config_template(self):
         """
         Create the configuration template (the set of possible configuration
@@ -421,6 +423,7 @@ class Device(Base):
 
         self.is_continuous = continuous
 
+    @Pyro4.expose
     def start(self):
         """
         Start the sequence: arm the board, and trigger if it is not waiting
@@ -439,6 +442,7 @@ class Device(Base):
         debug('gx3500: ARMing the board')
         self.board.command('ARM')
 
+    @Pyro4.expose
     def wait(self):
         """
         Wait for the sequence to finish.
@@ -450,6 +454,7 @@ class Device(Base):
             time.sleep(0.1)
 #            debug('gx3500: waiting, board is in %s', self.board.state)
 
+    @Pyro4.expose
     def stop(self):
         """
         Forceably stop any running sequence.

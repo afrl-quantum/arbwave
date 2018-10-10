@@ -2,6 +2,7 @@
 
 import re, glob, traceback
 from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
+import Pyro4
 
 from ....tools.path import collect_prefix
 from ...driver import Driver as Base
@@ -84,8 +85,7 @@ class Driver(Base):
 
     info('found %d comedi supported boards',len(self.cards))
 
-
-
+  @Pyro4.expose
   def close(self):
     """
     Close each card.  Each card will first close each of its subdevices.
@@ -99,6 +99,7 @@ class Driver(Base):
     if self.simulated:
       self.csim.remove_from_clib()
 
+  @Pyro4.expose
   def get_devices(self):
     """
     Return the arbwave notion of devices.  In comedi nomenclature, this
@@ -106,16 +107,19 @@ class Driver(Base):
     """
     return self.subdevices.values()
 
+  @Pyro4.expose
   def get_output_channels(self):
     return self.outputs
 
+  @Pyro4.expose
   def get_timing_channels(self):
     return self.timing_channels
 
+  @Pyro4.expose
   def get_routeable_backplane_signals(self):
     return self.signals
 
-
+  @Pyro4.expose
   def set_device_config( self, config, channels, signal_graph ):
     debug('comedi.set_device_config')
     chans = { k:dict() for k in config }
@@ -131,7 +135,7 @@ class Driver(Base):
       if d in config or d in chans:
         sdev.set_config( config.get(d,{}), chans.get(d,[]), signal_graph )
 
-
+  @Pyro4.expose
   def set_clocks( self, clocks ):
     # FIXME:  look at new version of this in nidaqmx
     debug('comedi.set_clocks')
@@ -140,16 +144,14 @@ class Driver(Base):
       if d in clocks:
         sdev.set_clocks( clocks[d] )
 
-
+  @Pyro4.expose
   def set_signals( self, signals ):
     debug('comedi.set_signals(signals=%s)', signals)
     C = collect_prefix( signals, prefix_len=2, prefix_list=self.cards.keys() )
     for d, dev in self.cards.items():
       dev.set_signals( C.get(d,{}) )
 
-
-
-
+  @Pyro4.expose
   def set_static( self, analog, digital ):
     debug('comedi.set_static')
 
@@ -166,6 +168,7 @@ class Driver(Base):
       if d in sdev_data:
         sdev.set_output( sdev_data[d] )
 
+  @Pyro4.expose
   def set_waveforms( self, analog, digital, transitions, t_max, continuous ):
     debug('comedi.set_waveforms')
 

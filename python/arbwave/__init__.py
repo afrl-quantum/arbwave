@@ -97,7 +97,7 @@ def main():
     arbwave.gui.dataviewer.main()
   elif args.service:
     try:
-      backend.connection.serve()
+      backend.connection.serve(ns=options.pyro_ns)
     except KeyboardInterrupt:
       print('exiting')
   else:

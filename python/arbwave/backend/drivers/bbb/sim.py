@@ -5,7 +5,7 @@ Simulated remote connections to AFRL/Beaglebone Black devices.
 
 from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
 import time
-import Pyro.core
+import Pyro4
 from physical import units
 
 from .device.controller.bbb_pyro import format_objectId
@@ -19,30 +19,29 @@ class NS(object):
 
   def __init__(self):
     self.registry = {
-      ':bbb.bbb0/dds'     : DDS,
-      ':bbb.bbb1/dds'     : DDS,
-      ':bbb.bbb0/timing'  : Timing,
-      ':bbb.bbb1/timing'  : Timing,
+      format_objectId('bbb0','dds')    : DDS,
+      format_objectId('bbb1','dds')    : DDS,
+      format_objectId('bbb0','timing') : Timing,
+      format_objectId('bbb1','timing') : Timing,
     }
 
-  def list(self, pyro_group):
-    return [
-      (r.partition('.')[2], 1)
-      for r in self.registry if r.startswith(pyro_group)
-    ]
+  def list(self, prefix=None, regex=None, metadata_all=None, metadata_any=None,
+           return_metadata=False):
+    if not {regex,metadata_all,metadata_any}.issubset({None}) or \
+       return_metadata != False:
+      raise RuntimeError('bbb.sim.NS: other args not yet supported')
 
-  def resolve(self, objectId):
-    if objectId in self.registry:
-      return self.protocol + objectId
-    else:
-      raise Pyro.core.NamingError('name not found', objectId)
+    return {
+      obj : '{protocol}{obj}'.format(protocol=self.protocol, obj=obj)
+      for obj in self.registry if obj.startswith(prefix + '.')
+    }
 
-  def getProxyForURI(self, uri):
+  def Proxy(self, uri):
     _, protocol, oid = uri.partition(self.protocol)
     if _ != '' or protocol != self.protocol:
-      raise Pyro.core.ProtocolError('unsupported protocol')
+      raise Pyro4.errors.ProtocolError('unsupported protocol')
     if oid not in self.registry:
-      raise Pyro.core.ProtocolError('connection failed')
+      raise Pyro4.errors.ProtocolError('connection failed')
 
     hostid = oid.partition('.')[-1].split('/')[0]
     return self.registry[oid](uri, hostid)

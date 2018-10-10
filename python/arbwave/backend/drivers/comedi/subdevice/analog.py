@@ -3,6 +3,7 @@
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re
 import comedi
+import Pyro4
 
 from .....tools.float_range import float_range
 from .subdevice import Subdevice as Base
@@ -15,7 +16,7 @@ class Analog(Base):
   default_range_max   = ['default-voltage-range','maximum','value']
   reference_value     = ['reference','value']
 
-
+  @Pyro4.expose
   def get_config_template(self):
     template = Base.get_config_template(self)
     template.update( {

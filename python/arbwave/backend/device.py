@@ -1,8 +1,9 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import Pyro4
+
 class Device(object):
   """Base device class"""
-  _pyro_ = True # For remote connections, this class must use pyro
 
   def __init__(self, name):
     self._name = name
@@ -10,6 +11,7 @@ class Device(object):
   def __str__(self):
     return self._name
 
+  @Pyro4.expose
   @property
   def device(self):
     """
@@ -17,10 +19,12 @@ class Device(object):
     """
     return self
 
+  @Pyro4.expose
   @property
   def name(self):
     return self._name
 
+  @Pyro4.expose
   @property
   def device_str(self):
     """
@@ -29,13 +33,16 @@ class Device(object):
     """
     return self._name
 
+  @Pyro4.expose
   @property
   def config_template(self):
     return self.get_config_template()
 
+  @Pyro4.expose
   def get_config_template(self):
     return dict()
 
+  @Pyro4.expose
   @property
   def prefix(self):
     """
@@ -44,18 +51,21 @@ class Device(object):
     """
     return self._name.partition('/')[0]
 
+  @Pyro4.expose
   def start(self):
     """
     Starts a device.  This should be overridden by inheriting classes.
     """
     pass
 
+  @Pyro4.expose
   def wait(self):
     """
     Waits on device task.  This should be overridden by inheriting classes.
     """
     pass
 
+  @Pyro4.expose
   def stop(self):
     """
     Stops a device.  This should be overridden by inheriting classes.

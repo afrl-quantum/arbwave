@@ -10,6 +10,7 @@ class Driver(Base):
   prefix      = 'External'
   description = 'External Hardware'
   has_simulated_mode = True
+  allow_remote_connection = False
 
   def __init__(self, *a, **kw):
     super(Driver,self).__init__(*a, **kw)

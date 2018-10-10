@@ -10,6 +10,15 @@ igraph.Graph(directed=True) if igraph is found, or a networkx.DiGraph
 Each of these classes is mildly extended in order to support Arbwave needs.
 """
 
+def _reconstruct(factory, attrs, *args, **kwargs):
+  """
+  Simple reconstructor function to help deserialize graphs.  Followed concept
+  from igraph.DiGraph._reconstruct
+  """
+  r = factory(*args, **kwargs)
+  r.__dict__.update(attrs)
+  return r
+
 try:
   import igraph
   inf = float('inf')
@@ -69,6 +78,17 @@ try:
       for vi in self.predecessors(vertex):
         yield self.vs[vi]['name']
 
+    @staticmethod
+    def to_dict(g):
+      _, args, attrs = g.__reduce__()
+      return dict(__class__=DiGraph_igraph.__name__, args=args, attrs=attrs)
+
+    @staticmethod
+    def from_dict(clsname, D):
+      assert clsname == DiGraph_igraph.__name__, \
+        'mismatch dict on deserializing'
+      return _reconstruct(DiGraph_igraph, D['attrs'], *D['args'])
+
   default_DiGraph = 'igraph'
 except:
   DiGraph_igraph = None
@@ -103,6 +123,22 @@ try:
 
     def topological_sorted_nodes(self):
       return networkx.topological_sort(self)
+
+    @staticmethod
+    def to_dict(g):
+      _, args, attrs = g.__reduce__()
+      # we are not going to support changing out the dict models (don't want to
+      # serialize them)
+      for i in ['adjlist_dict_factory', 'edge_attr_dict_factory',
+                'node_dict_factory']:
+        attrs.pop(i, None)
+      return dict(__class__=DiGraph_networkx.__name__, args=args, attrs=attrs)
+
+    @staticmethod
+    def from_dict(clsname, D):
+      assert clsname == DiGraph_networkx.__name__, \
+        'mismatch dict on deserializing'
+      return _reconstruct(DiGraph_networkx, D['attrs'], *D['args'])
 
 except:
   DiGraph_networkx = None

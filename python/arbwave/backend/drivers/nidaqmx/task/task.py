@@ -2,6 +2,8 @@
 
 import copy
 from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
+import Pyro4
+
 from ....device import Device as Base
 from .....tools.signal_graphs import nearest_terminal
 from .....tools import cached
@@ -360,12 +362,12 @@ class Task(Base):
     self.task.write( scans, auto_start=False, layout='group_by_scan_number' )
     self.t_max = t_max
 
-
+  @Pyro4.expose
   def start(self):
     if self.task:
       self.task.start()
 
-
+  @Pyro4.expose
   def wait(self):
     if self.task:
       log(DEBUG-1,'NIDAQmx: waiting for task (%s) to finish...', self.task)
@@ -380,13 +382,13 @@ class Task(Base):
       # may as well stop the task since we are finished
       self.stop()
 
-
+  @Pyro4.expose
   def stop(self):
     if self.task:
       debug('nidaqmx: stopping task for %s', self)
       self.task.stop()
 
-
+  @Pyro4.expose
   def get_config_template(self):
     C = {
       'use-only-onboard-memory' : {

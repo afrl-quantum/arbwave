@@ -10,6 +10,28 @@ class float_range(object):
     self.include_beginning = include_beginning
     self.include_end = include_end
 
+  @staticmethod
+  def to_dict(fr):
+    """
+    Serialization for float_range.
+    """
+    return dict(__class__='float_range',
+      mn=fr.mn, mx=fr.mx, step=fr.step,
+      include_beginning = fr.include_beginning,
+      include_end       = fr.include_end,
+    )
+
+  @staticmethod
+  def from_dict(clsname, D):
+    """
+    Deserialization for float_range.
+    """
+    assert D['__class__'] == 'float_range', 'mismatch of deserialization'
+    return float_range(
+      mn=D['mn'], mx=D['mx'], step=D['step'],
+      include_beginning = D['include_beginning'],
+      include_end       = D['include_end'],
+    )
 
   def __contains__(self, v):
     if   self.include_beginning:
@@ -63,7 +85,11 @@ class float_range(object):
 
 
 def xarange(i, f=None, step=1):
-  """Something akin to xrange, except that for floats and syntax of arange"""
+  """
+  Something akin to (x)range, except that for floats and syntax of arange.  The
+  benefit of this function is that memory is not heavily impacted by a range of
+  float numbers that can be arbitrarily precise or long.
+  """
   if f is None:
     f = i
     i = 0

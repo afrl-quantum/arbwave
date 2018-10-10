@@ -46,7 +46,7 @@ class Device(Base):
     if self.proxy:
       raise RuntimeError('bbb.Device({}): Connection already opened'.format(self))
 
-    self.proxy = self.driver.getProxyForURI(self.uri)
+    self.proxy = self.driver.Proxy(self.uri)
 
     ## test and assert version compatibility
     if not abi_compatible(arbwave_version(), self.proxy.get_version()):

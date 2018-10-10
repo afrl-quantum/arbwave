@@ -8,8 +8,7 @@ output, and DDS frequency generation.
 
 from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
 from itertools import chain
-import Pyro.core
-import Pyro.naming
+import Pyro4
 
 from .... import options
 from ....tools.path import collect_prefix
@@ -22,7 +21,10 @@ class Driver(Base):
   description = 'Driver for BeagleBone Black w/ AFRL firmware/hardware'
   has_simulated_mode = True
 
-  getProxyForURI = staticmethod(Pyro.core.getAttrProxyForURI)
+  # we will only connect to bbb devices directly
+  allow_remote_connection = False
+
+  Proxy = Pyro4.Proxy
 
 
   def __init__(self, *a, **kw):
@@ -45,12 +47,10 @@ class Driver(Base):
     if self.simulated:
       from . import sim
       self._ns = sim.NS()
-      self.getProxyForURI = self._ns.getProxyForURI
+      self.Proxy = self._ns.Proxy
 
     else:
       # prepare to discover remote devices
-      Pyro.core.initClient()
-      loc = Pyro.naming.NameServerLocator()
       try:
         host, port = None, None
 
@@ -61,10 +61,10 @@ class Driver(Base):
           if len(host_port) > 1:
             port = int(host_port[1])
 
-        self._ns = loc.getNS(host, port)
-      except Pyro.core.NamingError:
+        self._ns = Pyro4.locateNS(host, port)
+      except Pyro4.errors.NamingError:
         self._ns = None
-        info('bbb:  could not find Pyro name server')
+        info('bbb:  could not find Pyro4 name server')
 
     if self._ns:
       self.get_devices()
@@ -97,10 +97,8 @@ class Driver(Base):
     # first all URIs from the name server
     uris = dict() # uri --> objectId
     if self._ns:
-      for name, typ in self._ns.list(BBB_PYRO_GROUP):
-        if typ != 1: continue # silently skip sub-groups
-        objectId = '{}.{}'.format(BBB_PYRO_GROUP,name)
-        uris[ str(self._ns.resolve(objectId)) ] = objectId
+      uris.update((uri,name)
+        for name, uri in self._ns.list(BBB_PYRO_GROUP).items())
 
     # add in all device uris derived from user-specified extra URIs
     uris.update(self.extra_uris.values())
@@ -132,7 +130,7 @@ class Driver(Base):
   def set_extra_device_URIs(self, uri_list):
     """
     Add list of static URIs to the device discoverer.  Using this interface from
-    a global script may be necessary if a Pyro name server is not accessible.
+    a global script may be necessary if a Pyro4 name server is not accessible.
     """
     # ensure these are plain string URIs
     uri_list = set(str(uri) for uri in uri_list)
@@ -148,11 +146,11 @@ class Driver(Base):
 
       # need to find device uris from user uris.  The only way I know how to do
       # that is to make/use a connection.
-      p = self.getProxyForURI(uri) # makes
+      p = self.Proxy(uri) # makes
       try:
         objectId = p.get_objectId()       # uses
         debug('found bbb::{} object at extra uri: {}', objectId, p.URI)
-      except Pyro.core.ProtocolError:
+      except Pyro4.errors.ProtocolError:
         debug('cannot find bbb::{} object at extra uri: {}', objectId, p.URI)
 
       # record user-specified-uri  --> (device-uri, objectId)

@@ -12,6 +12,7 @@ from ...channels import Timing as BaseTiming
 
 from physical import unit
 import sys
+import Pyro4
 
 class Digital(DBase):
   _padded_timing = False
@@ -28,6 +29,7 @@ class Timing(BaseTiming):
   def _divider(self):
     return self.device.clocks[ str(self) ]['divider']['value']
 
+  @Pyro4.expose
   def get_min_period(self):
     """
     Returns the minimum timing period (period between two rising edges of this
@@ -37,6 +39,7 @@ class Timing(BaseTiming):
     """
     return 50e-9 * self._divider() * unit.s
 
+  @Pyro4.expose
   def get_config_template(self):
     """
     Get the config_dict template for this channel.
@@ -58,6 +61,7 @@ class PrimaryOscillator(BaseTiming):
   for the timing board.
   """
 
+  @Pyro4.expose
   def get_min_period(self):
     """
     Returns the minimum timing period (period between two rising edges of this
@@ -67,6 +71,7 @@ class PrimaryOscillator(BaseTiming):
     """
     return 50e-9 * unit.s
 
+  @Pyro4.expose
   def get_config_template(self):
     """
     Get the config_dict template for this channel.

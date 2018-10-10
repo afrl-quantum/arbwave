@@ -1,8 +1,11 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import Pyro4
+
 from ....channels import Base as root_base
 
 class Base(root_base):
+  @Pyro4.expose
   def get_min_period(self):
     """
     Returns the minimum timing period (period between two rising edges of this

@@ -6,6 +6,7 @@ from logging import error, warn, debug, log, DEBUG, INFO, root as rootlog
 import numpy as np
 import ctypes
 from ctypes import memset, sizeof, byref
+import Pyro4
 
 from physical import unit
 
@@ -592,6 +593,7 @@ class Subdevice(Base):
     self.t_max = t_max
 
 
+  @Pyro4.expose
   def start(self):
     if not self.busy and len(self.cmd_chanlist) > 0:
       # 1. Start the command
@@ -621,7 +623,7 @@ class Subdevice(Base):
       debug('comedi: waiting for external trigger')
 
 
-
+  @Pyro4.expose
   def wait(self):
     if self.busy:
       log(DEBUG-1,'comedi: waiting for (%s) to finish...', self)
@@ -642,13 +644,13 @@ class Subdevice(Base):
       # when the subdevice is busy.
       self.stop()
 
-
+  @Pyro4.expose
   def stop(self):
     if self.busy:
       debug('comedi: cancelling cmd for %s', self)
       raiserr( comedi.cancel(self.card, self.subdevice), 'cancel' )
 
-
+  @Pyro4.expose
   def get_config_template(self):
     return self._config_template.copy()
 

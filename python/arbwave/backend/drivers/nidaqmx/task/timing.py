@@ -1,5 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import Pyro4
+
 from .task import Task as Base
 import nidaqmx
 
@@ -18,6 +20,7 @@ class Timing(Base):
         duty_cycle  = c[1]['duty-cycle'],
       )
 
+  @Pyro4.expose
   def get_config_template(self):
     template = Base.get_config_template(self)
     template.pop('use-only-onboard-memory')

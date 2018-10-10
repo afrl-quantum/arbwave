@@ -7,6 +7,8 @@ GX3500 FPGA PXI card.
 @author: bks
 """
 
+import Pyro4
+
 from .device import Device
 from marvin.exceptions import NotATimingBoard
 from . import capabilities
@@ -57,6 +59,7 @@ class Driver(Base):
         self.timing_channels = capabilities.get_timing_channels(self.devices)
         self.signals = capabilities.get_routeable_backplane_signals(self.devices)
 
+    @Pyro4.expose
     def close(self):
         """
         Close all the devices and uninitialize.
@@ -66,6 +69,7 @@ class Driver(Base):
           dev.close()
           del dev
 
+    @Pyro4.expose
     def get_devices(self):
         """
         Get the list of present devices.
@@ -74,6 +78,7 @@ class Driver(Base):
         """
         return self.devices.values()
 
+    @Pyro4.expose
     def get_output_channels(self):
         """
         Get the complete list of available digital channels.
@@ -82,6 +87,7 @@ class Driver(Base):
         """
         return self.digital_channels
 
+    @Pyro4.expose
     def get_timing_channels(self):
         """
         Get the list of available timing channels.
@@ -90,6 +96,7 @@ class Driver(Base):
         """
         return self.timing_channels
 
+    @Pyro4.expose
     def get_routeable_backplane_signals(self):
         """
         Get the list of signals which can be routed to the backplane.
@@ -98,6 +105,7 @@ class Driver(Base):
         """
         return self.signals
 
+    @Pyro4.expose
     def set_device_config( self, config, channels, signal_graph ):
         """
         Set the device configurations for all devices controlled by this
@@ -111,6 +119,7 @@ class Driver(Base):
             if d in config:
                 dev.set_config( config.get(d,{}) )
 
+    @Pyro4.expose
     def set_clocks( self, clocks ):
         """
         Set the clock configurations for all devices controlled by this
@@ -124,6 +133,7 @@ class Driver(Base):
             if d in clocks:
                 dev.set_clocks( clocks[d] )
 
+    @Pyro4.expose
     def set_signals( self, signals ):
         """
         Sets the signal routing for all devices controlled by this driver.
@@ -134,6 +144,7 @@ class Driver(Base):
         for d,dev in self.devices.items():
            dev.set_signals( signals.get(d,{}) )
 
+    @Pyro4.expose
     def set_static(self, analog, digital):
         """
         Set immediate output values.
@@ -146,7 +157,7 @@ class Driver(Base):
         for dev in D.items():
             self.devices[ dev[0] ].set_output( dev[1] )
 
-
+    @Pyro4.expose
     def set_waveforms(self, analog, digital, transitions, t_max, continuous):
         """
         Load waveforms to all the devices controlled by this driver.

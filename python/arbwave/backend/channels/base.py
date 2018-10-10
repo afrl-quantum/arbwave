@@ -1,10 +1,11 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
+import Pyro4
+
 from physical import unit
 
 class Base(object):
   """Base channel class"""
-  _pyro_ = True # For remote connections, this class must use pyro
   _padded_timing   = True
   _finite_end_clock = False
 
@@ -33,25 +34,31 @@ class Base(object):
   def __repr__(self):
     return str(self)
 
+  @Pyro4.expose
   @property
   def name(self):
     return self._name
 
+  @Pyro4.expose
   @property
   def config_template(self):
     return self.get_config_template()
 
+  @Pyro4.expose
   def get_config_template(self):
     return dict()
 
+  @Pyro4.expose
   @property
   def prefix(self):
     return self._name.partition('/')[0]
 
+  @Pyro4.expose
   @property
   def device(self):
     return self.dev
 
+  @Pyro4.expose
   @property
   def device_str(self):
     """
@@ -60,6 +67,7 @@ class Base(object):
     """
     return str(self.dev)
 
+  @Pyro4.expose
   @property
   def padded_timing(self):
     """
@@ -79,6 +87,7 @@ class Base(object):
     """
     return 0*unit.s
 
+  @Pyro4.expose
   @property
   def min_period(self):
     """
@@ -89,6 +98,7 @@ class Base(object):
     """
     return self.get_min_period()
 
+  @Pyro4.expose
   @property
   def finite_mode_requires_end_clock(self):
     """
@@ -105,10 +115,12 @@ class Base(object):
     """
     return self._finite_end_clock
 
+  @Pyro4.expose
   @property
   def type(self):
     return self._type
 
+  @Pyro4.expose
   @property
   def capabilities(self):
     """

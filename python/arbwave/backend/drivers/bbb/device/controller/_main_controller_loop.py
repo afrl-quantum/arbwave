@@ -5,8 +5,9 @@
 This file is not really for a normal package import
 """
 
-from bbb_pyro import BBB_PYRO_GROUP, format_objectId
+from .bbb_pyro import BBB_PYRO_GROUP, format_objectId
 import sys
+import Pyro4
 
 def main(klass):
   import argparse, socket
@@ -27,12 +28,10 @@ def main(klass):
          ' helps for writing system start scripts (such as with systemd).')
   args = parser.parse_args()
 
-  import Pyro.core, Pyro.naming
-  Pyro.core.initServer()
+  import Pyro4
 
   # locate the NS
   try:
-    loc = Pyro.naming.NameServerLocator()
     host, port = None, None
 
     if args.ns:
@@ -43,30 +42,27 @@ def main(klass):
         port = int(host_port[1])
 
     print('searching for Naming Service...')
-    ns = loc.getNS(host, port)
+    ns = Pyro4.locateNS(host, port)
 
-    bind_ip = ns.adapter.conn.sock.getsockname()[0]
-  except Pyro.core.NamingError:
+    bind_ip = ns._pyroConnection.sock.getsockname()[0]
+  except Pyro4.errors.NamingError:
     print('Could not find name server')
     ns = None
     bind_ip = args.hostid
 
-  daemon = Pyro.core.Daemon(host=bind_ip)
+  daemon = Pyro4.Daemon(host=bind_ip)
   if ns:
     daemon.useNameServer(ns)
-
-    # make sure our namespace group exists
-    try: ns.createGroup(BBB_PYRO_GROUP)
-    except Pyro.core.NamingError: pass
 
   obj = Pyro.core.ObjBase()
   device = klass(args.hostid)
   obj.delegateTo(device)
 
-  if args.replace and ns and device.objectId in dict(ns.flatlist()).keys():
-    ns.unregister(device.objectId)
+  if args.replace and ns and ns.lookup(device.objectId):
+    ns.remove(device.objectId)
 
-  uri = daemon.connect(obj, device.objectId)
+  uri = daemon.register(obj, device.objectId)
+  ns.register(_name_, uri)
   print('my uri is: ', uri)
 
   try:
@@ -75,4 +71,4 @@ def main(klass):
     if ns:
       # try removing self from Pyro name server
       try: ns.unregister(device.objectId)
-      except Pyro.core.NamingError: pass
+      except Pyro4.errors.NamingError: pass
