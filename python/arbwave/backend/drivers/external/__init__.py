@@ -38,6 +38,7 @@ class Driver(Base):
     retval = [ Timing(clk, self) for clk in self.clocks ]
 
     # now we add just one more (new) timing channel for the user to add
+    # FIXME:!!!!!!  Is this used/necessary?????
     for i in range(10000):
       clk = 'External/clk{}'.format(i)
       if clk not in self.clocks:

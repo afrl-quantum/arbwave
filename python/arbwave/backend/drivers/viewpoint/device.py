@@ -41,7 +41,7 @@ class Device(Base):
       vp.Config('out', []),
       board=board_number,
     )
-    self.clocks = None
+    self.clocks = dict()
     self.signals = dict()
     self.routes = 0x0
     self.t_max = 0.0 * unit.s
@@ -53,6 +53,7 @@ class Device(Base):
       '{d}/Internal_OCXO'.format(d=self)      : vp.CLCK_OCXO,
     }
     self.routing_bits = get_routing_bits(driver.host_prefix)
+    self.timing_channels = set()
 
 
   def __del__(self):
@@ -173,7 +174,7 @@ class Device(Base):
       # as in processor/engine/compute, dt_clk already should be an integer
       # multiple of 1/scan_rate (where multiple is >= 2)
       period = int(round( cfg['dt'] * scan_rate ))
-      half_period = period/2
+      half_period = period//2
       for t_rise in cfg['transitions']:
         t_rise *= period # rescale t_rise from dt_clk units to 1/scan_rate units
         t_fall = t_rise + half_period

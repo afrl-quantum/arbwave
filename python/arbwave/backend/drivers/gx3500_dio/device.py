@@ -273,10 +273,10 @@ class Device(Base):
                 # add clock edges to the transtion map
                 # FIXME: it would not be too hard to support inverted channels...
                 transition_map.setdefault(edge, {})[channel] = True
-                transition_map.setdefault(edge + period/2, {})[channel] = False
+                transition_map.setdefault(edge + period//2, {})[channel] = False
 
         # add a dummy transition to the end to finish the sequence
-        ts_max = int(round(t_max * 20e6 / units.s)) # convert to 50ns units
+        ts_max = int(round(t_max.coeff * 20e6)) # convert to 50ns units
         ts_max = max([max(transition_map.keys())+1, ts_max])
         transition_map[ts_max] = {}
 

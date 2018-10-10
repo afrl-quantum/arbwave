@@ -7,6 +7,7 @@ import comedi as clib
 from ctypes import c_ubyte, cast, pointer, POINTER, addressof, c_uint, sizeof
 from logging import log, debug, info, warn, error, critical, DEBUG
 import os, re, time, tempfile
+from importlib import reload
 from itertools import chain
 from ....tools.expand import expand_braces
 
@@ -96,7 +97,7 @@ class SimSubDev(dict):
       self.buf_file = self.buf_name = None
     else:
       buf_fd, self.buf_name = tempfile.mkstemp('.comedi_simbuf')
-      self.buf_file = os.fdopen(buf_fd, 'rw')
+      self.buf_file = os.fdopen(buf_fd, 'r+')
       self.set_buffer_size(self.pop('buffer_sz', self.SIMULATED_BUFFER_SIZE))
       self.setdefault('convert_rng_ns',     (1000,0xffffffff))
       self.setdefault('scan_begin_rng_ns',  (1000,0xffffffff))
