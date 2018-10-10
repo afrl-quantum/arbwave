@@ -165,7 +165,7 @@ class Driver(Base):
         :param analog: the dict of waveform elements for the analog channels
         :param digital: the dict of waveform elements for the digital channels
         :param transitions: the dict of transitions for the clock channels
-        :param t_max: the total duration of the waveform set
+        :param t_max: the total duration of the waveform set in units of time.
         :param continuous: bool of whether to run in continuous or single-shot
                            mode
         """

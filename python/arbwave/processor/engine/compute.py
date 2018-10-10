@@ -584,7 +584,7 @@ class WaveformEvalulator:
       )
 
     return retvals['analog'], retvals['digital'], clock_transitions, clocks, \
-           self.t_max.coeff, self.eval_cache
+           self.t_max, self.eval_cache
 
   def get_clock_period(self, clk_name):
     """Recursively determine the minimum separation of a clock pulse"""

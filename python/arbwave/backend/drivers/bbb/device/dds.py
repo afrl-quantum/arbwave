@@ -197,10 +197,10 @@ class Device(Base):
                       where wfe-path means waveform element path, referring to
                       the unique identifier of the specific waveform element a
                       particular set of values refers to.
-    :param clock_transitions: a dict('channel': { 'dt': dt, 
+    :param clock_transitions: a dict('channel': { 'dt': dt,
                               'transitions': iterable})
                               (see processor/engine/compute.py for format)
-    :param t_max: the maximum duration of any channel
+    :param t_max: the maximum duration of any channel in units of time.
     """
     if self.proxy:
       self.proxy.set_waveforms(waveforms, self.number_configured_channels)

@@ -217,7 +217,7 @@ class Device(Base):
     :param clock_transitions: a dict('channel': { 'dt': dt, 
                               'transitions': iterable})
                               (see processor/engine/compute.py for format)
-    :param t_max: the maximum duration of any channel
+    :param t_max: the maximum duration of any channel in units of time.
     """
     used_clocks_set = set(clock_transitions.keys())
     if not used_clocks_set.issubset(self.clocks.keys()):

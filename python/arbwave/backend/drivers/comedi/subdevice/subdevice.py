@@ -69,7 +69,7 @@ class Subdevice(Base):
     self.clocks = dict()
     self.clock_terminal = None
     self.use_case = None
-    self.t_max = 0.0
+    self.t_max = 0.0 * unit.s
     self.cmd = comedi.cmd()
     self.cmd_chanlist = None
 
@@ -143,7 +143,7 @@ class Subdevice(Base):
   def clear(self):
     debug( 'comedi: cancelling commands for comedi subdevice %s', self )
     raiserr( comedi.cancel( self.card, self.subdevice ), 'cancel' )
-    self.t_max = 0.0
+    self.t_max = 0.0 * unit.s
     memset( byref(self.cmd), 0, sizeof(self.cmd) )
     del self.cmd_chanlist
     self.cmd_chanlist = None
@@ -538,7 +538,7 @@ class Subdevice(Base):
       ]
       last = scans[ transitions[0] ]
 
-    min_dt = self.get_min_period().coeff
+    min_dt = self.get_min_period()
 
     if len(transitions) > 1:
       # NI seems to have problems with only one transition any way, but...
@@ -630,7 +630,7 @@ class Subdevice(Base):
       if self.cmd_is_continuous():
         raise RuntimeError('Cannot wait for continuous waveform tasks')
 
-      timeout = self.t_max*2
+      timeout = self.t_max.coeff*2
       t0 = time.time()
       while self.running:
         t1 = time.time()

@@ -86,7 +86,7 @@ class Device(Base, bbb.ad9959.Device):
     :param clock_transitions: a dict('channel': { 'dt': dt,
                               'transitions': iterable})
                               (see processor/engine/compute.py for format)
-    :param t_max: the maximum duration of any channel
+    :param t_max: the maximum duration of any channel in units of time.
     :param continuous: bool of continuous or single-shot mode
     :param n_chans: The number of channels configured for output.  This is used
                     to define the base time unit using get_minimum_period(...).
@@ -107,7 +107,7 @@ class Device(Base, bbb.ad9959.Device):
     :param clock_transitions: a dict('channel': { 'dt': dt,
                               'transitions': iterable})
                               (see processor/engine/compute.py for format)
-    :param t_max: the maximum duration of any channel
+    :param t_max: the maximum duration of any channel in units of time.
     :param continuous: bool of continuous or single-shot mode
     :param n_chans: The number of channels configured for output.  This is used
                     to define the base time unit using get_minimum_period(...).

@@ -141,7 +141,7 @@ class ComputeBase(unittest.TestCase):
         'ni/Dev1/ao0': ('vp/Dev0/A/13', 6e-07 * unit.s),
         'ni/Dev1/ao1': ('vp/Dev0/A/13', 6e-07 * unit.s),
       },
-      0.04, # t_max
+      0.04*unit.s, # t_max
       { # eval_cache
         (0,): { 'dt': 0.01 * unit.s, 't': 0.01 * unit.s,
                 'val': 'pulse(True, False)'},
@@ -215,7 +215,7 @@ class ComputeBase(unittest.TestCase):
         'ni/Dev1/ao0': ('vp/Dev0/A/13', 6e-07 * unit.s),
         'ni/Dev1/ao1': ('vp/Dev0/A/13', 6e-07 * unit.s),
       },
-      0.04000125, # t_max
+      0.04000125*unit.s, # t_max
       { # eval_cache
         (0,): { 'dt': 0.01 * unit.s, 't': 0.01 * unit.s,
                 'val': 'pulse(True, False)'},

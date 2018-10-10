@@ -27,7 +27,7 @@ class Task(Base):
     self.clocks = dict()
     self.clock_terminal = None
     self.use_case = None
-    self.t_max = 0.0
+    self.t_max = 0.0 * unit.s
 
     # first find the possible trigger and clock sources
     self.trig_sources = list()
@@ -60,7 +60,7 @@ class Task(Base):
       debug( 'nidaqmx: clearing NIDAQmx task %s', self.task )
       del self.task
       self.task = None
-      self.t_max = 0.0
+      self.t_max = 0.0 * unit.s
 
   def format_ni_terminal_name(self, terminal):
     return self.name[len(self.prefix):] + '/' + terminal
@@ -197,7 +197,7 @@ class Task(Base):
 
       waveforms : see gui/plotter/{analog.py,digital.py} for format
       clock_transitions :  dictionary of clocks to dict(ignore,transitions)
-      t_max : maximum time of waveforms
+      t_max : maximum time of waveforms in units of time.
     """
     if self.use_case in [None, Task.WAVEFORM_SINGLE, Task.WAVEFORM_CONTINUOUS]:
       if self.use_case is not None:
@@ -374,7 +374,7 @@ class Task(Base):
       log(DEBUG-1,'NIDAQmx:  already done? %s', self.task.is_done())
       if self.use_case == Task.WAVEFORM_CONTINUOUS:
         raise RuntimeError('Cannot wait for continuous waveform tasks')
-      try: self.task.wait_until_done( timeout = self.t_max*2 )
+      try: self.task.wait_until_done( timeout = self.t_max.coeff*2 )
       except nidaqmx.libnidaqmx.NIDAQmxRuntimeError as e:
         debug('NIDAQmx:  task.wait() timed out! finished=%s',
               self.task.is_done())

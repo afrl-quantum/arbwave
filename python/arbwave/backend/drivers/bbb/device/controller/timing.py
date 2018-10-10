@@ -66,7 +66,7 @@ class Device(Base, bbb.timing.Device):
     :param clock_transitions: a dict('channel': { 'dt': dt,
                               'transitions': iterable})
                               (see processor/engine/compute.py for format)
-    :param t_max: the maximum duration of any channel
+    :param t_max: the maximum duration of any channel in units of time.
     """
     if set(waveforms.keys()).intersection(clock_transitions.keys()):
       raise RuntimeError('bbb::timing channels cannot be used as clocks and ' \
@@ -85,7 +85,7 @@ class Device(Base, bbb.timing.Device):
     :param waveforms: the dict of waveforms from the processor engine
     :param clock_transitions: the dict of required clock transitions from the
                               processor engine
-    :param t_max: the total duration of the sequence
+    :param t_max: the total duration of the sequence in units of time.
 
     :return: a dict(timestamp: {channel: value})
     """

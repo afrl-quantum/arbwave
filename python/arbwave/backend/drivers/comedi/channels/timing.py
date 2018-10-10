@@ -1,6 +1,9 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import Pyro4
+
+from physical import unit
+
 from .....tools.float_range import float_range
 from ....channels import Timing as TBase, RecursiveMinPeriod
 from .base import Base

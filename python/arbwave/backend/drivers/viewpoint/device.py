@@ -6,6 +6,8 @@ import time
 import Pyro4
 import viewpoint as vp
 
+from physical import unit
+
 from ...device import Device as Base
 from ....tools.float_range import float_range
 from ....tools.signal_graphs import nearest_terminal
@@ -42,7 +44,7 @@ class Device(Base):
     self.clocks = None
     self.signals = dict()
     self.routes = 0x0
-    self.t_max = 0.0
+    self.t_max = 0.0 * unit.s
 
     self.possible_clock_sources = { # look at viewpoint library
       '{d}/Internal_XO'.format(d=self)        : vp.CLCK_INTERNAL,
@@ -143,7 +145,7 @@ class Device(Base):
     Set the waveform on the DIO64 device.
       waveforms : see gui/plotter/digital.py for format
       clock_transitions :  dictionary of clocks to dict(ignore,transitions)
-      t_max : maximum time of waveforms
+      t_max : maximum time of waveforms with units of time
     """
     if set(waveforms.keys()).intersection( clock_transitions.keys() ):
       raise RuntimeError('Viewpoint channels cannot be used as clocks and ' \
@@ -180,12 +182,12 @@ class Device(Base):
         # finish the clock pulse by lowering it to logic zero
         transition_map.setdefault(t_fall, {})[channel] = False
 
-    t_last = int(round( t_max * scan_rate ))
+    t_last = int(round( t_max.coeff * scan_rate ))
 
     # Add the last "transition" which is really just a final duration
     transition_map[ t_last ] = None
 
-    self.t_max = t_last / scan_rate # save for self.wait()
+    self.t_max = t_last / scan_rate * unit.s# save for self.wait()
 
     C['out']['repetitions'] = {True:0, False:1}[continuous]
     # VIEWPOINT FIXME:  They need to fix their bug!
@@ -250,7 +252,7 @@ class Device(Base):
     debug('dio64: waiting for waveform time to elapse...')
     while True:
       scans, stat = self.board.out_status()
-      if (stat.time.value/self.board.configs['out']['scan_rate']) >= self.t_max:
+      if (stat.time.value/self.board.configs['out']['scan_rate']) >= self.t_max.coeff:
         debug('dio64: waveform time elapsed.')
         return
       time.sleep(.01) # only need small sleep; allow CPU to switch context
@@ -263,7 +265,7 @@ class Device(Base):
     except AttributeError:
       return
     b.out_stop()
-    self.t_max = 0.0
+    self.t_max = 0.0 * unit.s
 
 
 def drop_some_settings( T ):

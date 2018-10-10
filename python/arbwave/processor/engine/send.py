@@ -43,7 +43,7 @@ def to_plotter( plotter, analog, digital, clocks, channels, t_max ):
   # take components of device-categorized dictionaries to
   a = signals.merge_signals_sets( [analog] )
   d = signals.merge_signals_sets( [digital] )
-  do_gui_operation( plot_stuff, plotter, a, d, names, t_max )
+  do_gui_operation( plot_stuff, plotter, a, d, names, t_max.coeff )
 
 def to_ui_notify( ui, message ):
   do_gui_operation( ui.notify.show, message )

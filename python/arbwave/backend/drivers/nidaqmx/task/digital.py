@@ -48,7 +48,7 @@ class Digital(Base):
 
       waveforms : see gui/plotter/{analog.py,digital.py} for format
       clock_transitions :  dictionary of clocks to dict(ignore,transitions)
-      t_max : maximum time of waveforms
+      t_max : maximum time of waveforms in units of time.
     """
     if set(waveforms.keys()).intersection( clock_transitions.keys() ):
       raise RuntimeError('NI channels cannot be used as clocks and ' \
