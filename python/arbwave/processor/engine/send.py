@@ -1,7 +1,10 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-import threading, logging
+import threading, logging, time, traceback
 import physical
+
+from Pyro4 import Future
+
 from ... import backend
 from ...tools.gui_callbacks import do_gui_operation
 from ...tools.path import collect_prefix
@@ -78,15 +81,110 @@ def to_file( analog, digital, transitions, clocks, channels, filename,
   else:
     raise RuntimeError('unknown output file format to save waveform: ' + fmt)
 
+class AsyncCaller:
+  def __init__(self, ui_notify = lambda x : None):
+    # used to provide one-level deep asynchronous calling of a few driver
+    # functions (these are dictionaries of the drivers-> Pyro4.FutureResult):
+    self.async = dict()
+    self.ui_notify = ui_notify
+
+  def cleanup_async(self, limit = None):
+    while self.async and (limit is None or limit > 0):
+      # go through all items still there and remove the finished ones
+      for driver_func, result in list(self.async.items()):
+        if result.ready:
+          self.async.pop(driver_func)
+
+      # sleep until the next iteration.  not much sleep is required, just to
+      # make sure we relinquish the CPU
+      time.sleep(0.01)
+      if limit is not None:
+        limit -= 1
+
+  def __call__(self, driver, func, *a, **kw):
+    if (driver,func) in self.async:
+      self.async[(driver,func)].wait()
+      self.async.pop((driver,func))
+
+    def handle_backend_exception(exc_value):
+      logging.critical('Arbwave Backend Exception--%s: %s',
+                       type(exc_value).__name__, exc_value)
+      if not isinstance(exc_value, UserWarning):
+        logging.critical(''.join(traceback.format_tb(exc_value.__traceback__)))
+
+      self.ui_notify(
+        '<span color="red"><b>Error</b>: \n'
+        '   Arbwave Backend Exception--{}: {}\n'
+        '</span>\n'
+        .format(type(exc_value).__name__, exc_value)
+      )
+
+    f = Future(getattr(driver,func)).iferror(handle_backend_exception)
+    self.async[(driver,func)] = f(*a, **kw)
+
+  def __enter__(self):
+    # we cannot start new execution chains until all old ones are complete.
+    # This is because most calls (e.g set_waveform) are dependent on previous
+    # calls (e.g set_config) finishing.
+    self.cleanup_async()
+    return self
+
+  def __exit__(self, exc_type, exc_value, exc_tb):
+    # have to make sure that all calls are finished
+    if exc_type:
+      self.cleanup_async(10) # error occurred, we'll just try to cleanup nicely
+      # forget trying to be clean.  We're just removing all ....
+      if self.async:
+        logging.warn('to_driver.send: %d asynchronous functions still in play',
+                     len(self.async))
+        logging.warn('                ignoring the rest')
+      self.async.clear()
+    else:
+      self.cleanup_async()
+
+
 class ToDriver:
   def __init__(self):
     self.sorted_device_list = list()
+    self._async = AsyncCaller(self.ui)
+    self._ui = None
+    self._cache = dict()
+
+  def _use_pyro_cache(self, current):
+    # use cached Pyro4 connections if driver is remote.  This should help us
+    # avoid having to reopen connections again and again.
+    for n, dev_info in current.items():
+      d = dev_info['device']
+      if hasattr(d, '_pyroRelease'):
+        if n in self._cache:
+          dev_info['device'] = self._cache[n]
+        else:
+          self._cache[n] = d
+
+    self._clean_pyro_cache(current)
+
+  def _clean_pyro_cache(self, current = set()):
+    # now free up any obsolete connections
+    S = set(self._cache) - set(current)
+    for i in S:
+      proxy = self._cache.pop(i)
+      proxy._pyroRelease()
+
+  def register_ui(self, ui):
+    self._ui = ui
+
+  def ui(self, message):
+    if self._ui:
+      to_ui_notify(self._ui, message)
 
   def static(self, analog, digital):
     """Send a bunch of static values to each of the drivers"""
     logging.info( 'trying to update the hardware to static output!!!!' )
-    for D,driver in backend.all_drivers.items():
-      driver.set_static(analog.get(D,{}), digital.get(D,{}))
+    with self._async:
+      # using async call here allows us to send all data out as fast as possible,
+      # then wait for everything to finish.
+      for D,driver in backend.all_drivers.items():
+        self._async(driver, 'set_static', analog.get(D,{}), digital.get(D,{}))
     logging.debug('updated hardware to static output')
 
 
@@ -94,10 +192,13 @@ class ToDriver:
     logging.info( 'trying to update the hardware to waveform output!!!!' )
     if continuous:
       logging.info( 'requesting continuous regeneration...' )
-
-    for D,driver in backend.all_drivers.items():
-      driver.set_waveforms(analog.get(D,{}), digital.get(D,{}),
-                           transitions, t_max, continuous)
+    with self._async:
+      # using async call here allows us to send all data out as fast as possible,
+      # then wait for everything to finish.
+      for D,driver in backend.all_drivers.items():
+        self._async(driver, 'set_waveforms',
+                    analog.get(D,{}), digital.get(D,{}),
+                    transitions, t_max, continuous)
     logging.debug('send waveform to hardware')
 
 
@@ -121,6 +222,8 @@ class ToDriver:
         channels = set(clocks)
       )
     )
+
+    self._use_pyro_cache(to_dev)
 
     # 2.  Add each use device into the graph:
     #   a.  get clock ranges from device.get_config_template
@@ -203,10 +306,12 @@ class ToDriver:
     least-dependent to most-dependent (opposite of how they are started).
     """
     logging.info( 'sending stop signal to all hardware for waveform output' )
-    for d, n in reversed(self.sorted_device_list):
-      d.stop()
+    with self._async:
+      for d, n in reversed(self.sorted_device_list):
+        self._async(d, 'stop')
     logging.debug( 'sent stop signal to all hardware for waveform output' )
 
+    self._clean_pyro_cache()
 
   def config(self, config, channels, signals, clocks, globals):
     """
@@ -242,11 +347,12 @@ class ToDriver:
         for  c in channels.values()
           if c['enable']
       },
-      1,
     )
 
-    for D,driver in backend.all_drivers.items():
-      driver.set_device_config( C.get(D,{}), CH.get(D,{}), graph )
+    with self._async:
+      for D,driver in backend.all_drivers.items():
+        self._async(driver,'set_device_config',
+                    C.get(D,{}), CH.get(D,{}), graph)
 
 
   def hosts(self, hosts):
@@ -260,15 +366,17 @@ class ToDriver:
   def clocks(self, config):
     """Send clock(s) configuration information to drivers"""
     C = collect_prefix( config )
-    for D,driver in backend.all_drivers.items():
-      driver.set_clocks( C.get(D,{}) )
+    with self._async:
+      for D,driver in backend.all_drivers.items():
+        self._async(driver, 'set_clocks', C.get(D,{}))
 
 
   def signals(self, config):
     """Send clock(s) configuration information to drivers"""
     C = collect_prefix( config )
-    for D,driver in backend.all_drivers.items():
-      driver.set_signals( C.get(D,{}) )
+    with self._async:
+      for D,driver in backend.all_drivers.items():
+        self._async(driver, 'set_signals', C.get(D,{}))
 
 
 to_driver = ToDriver()

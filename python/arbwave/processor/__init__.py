@@ -20,6 +20,7 @@ class Processor(object):
     self.ui = ui
     self.script = ''
     self.Globals = default.get_globals()
+    engine.send.to_driver.register_ui(ui)
     self.engine = engine.Arbwave.instance(self,ui)
     self.engine.defaults = ModuleLike( default.registered_globals )
     sys.modules['Arbwave'] = self.engine # fake Arbwave module
