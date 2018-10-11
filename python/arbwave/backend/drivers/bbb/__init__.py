@@ -149,13 +149,14 @@ class Driver(Base):
       p = self.Proxy(uri) # makes
       try:
         objectId = p.get_objectId()       # uses
-        debug('found bbb::{} object at extra uri: {}', objectId, p.URI)
+        debug('found bbb::{} object at extra uri: {}', objectId, p._pyroUri)
       except Pyro4.errors.ProtocolError:
-        debug('cannot find bbb::{} object at extra uri: {}', objectId, p.URI)
+        debug('cannot find bbb::{} object at extra uri: {}',
+              objectId, p._pyroUri)
 
       # record user-specified-uri  --> (device-uri, objectId)
-      self.extra_uris[uri] = (str(p.URI), objectId)
-      p._release() # release this connection
+      self.extra_uris[uri] = (str(p._pyroUri), objectId)
+      p._pyroRelease() # release this connection
       del p
 
 
