@@ -72,8 +72,12 @@ def _read_git_version():
       args = {}
     else:
       args = {'cwd' : THIS_DIR }
-    p = Popen(['git', 'describe'], stdout=PIPE, **args)
-    return p.communicate()[0].decode().strip()
+    devnull = open(os.devnull, 'w')
+    p = Popen(['git', 'describe'], stdout=PIPE, stderr=devnull, **args)
+    out,err = p.communicate()
+    if p.returncode:
+      raise RuntimeError('no version defined?')
+    return out.strip().decode()
   except:
     # no git, let's try using a stashed VERSION file
     v = read_file_version()
