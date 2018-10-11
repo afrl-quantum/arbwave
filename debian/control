@@ -2,23 +2,20 @@ Source: arbwave
 Section: universe/science
 Priority: optional
 Build-Depends: debhelper (>= 9), dh-python,
- texlive-latex-base,
- python-setuptools, python-all (>=2.6.6-3~)
-#, python3-all (>=3.2), python3-setuptools
+ texlive-latex-base, python3-setuptools python3-all (>=3.4)
 Maintainer: Spencer E. Olson <olsonse@umich.edu>
 Standards-Version: 3.9.2
 Homepage: https://github.com/afrl-quantum/arbwave
 Vcs-Git: https://github.com/afrl-quantum/arbwave.git
-X-Python-Version: >= 2.7
-#X-Python3-Version: >= 3.2
-XS-Python-Version: >= 2.7
-#XS-Python3-Version: >= 3.2
+X-Python3-Version: >= 3.4
+XS-Python3-Version: >= 3.4
 
-Package: python-arbwave
+Package: python3-arbwave
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, python-physical,
- pyro, python-numpy,
- python-igraph | python-networkx
+Depends: ${python3:Depends}, ${misc:Depends}, python3-physical,
+ python3-pyro4, python3-numpy, python3-igraph | python3-networkx
+Conflicts: python-arbwave
+Replaces: python-arbwave
 Description: Arbitrary Waveform Experimental Control
  Arbwave is part of an effort from the Air Force Research Laboratory (AFRL)
  Cold-Atoms group to develop a platform suitable for typical atomic physics
@@ -30,7 +27,7 @@ Description: Arbitrary Waveform Experimental Control
  special experimental expertise permeating throughout the scientific community.
  .
  This package includes the main Arbwave application.
-Provides: ${python:Provides}
+Provides: ${python3:Provides}
 
 Package: arbwave-service-defaults
 Architecture: all
@@ -48,7 +45,7 @@ Description: Arbitrary Waveform Experimental Control
 
 Package: arbwave-bbb-dds
 Architecture: all
-Depends: systemd, python-arbwave, arbwave-service-defaults, python-afrl-bbb
+Depends: systemd, python3-arbwave, arbwave-service-defaults, python3-afrl-bbb
 Description: Arbitrary Waveform Experimental Control
  Arbwave is part of an effort from the Air Force Research Laboratory (AFRL)
  Cold-Atoms group to develop a platform suitable for typical atomic physics
@@ -65,7 +62,7 @@ Description: Arbitrary Waveform Experimental Control
 
 Package: arbwave-bbb-timing
 Architecture: all
-Depends: systemd, python-arbwave, arbwave-service-defaults, python-afrl-bbb
+Depends: systemd, python3-arbwave, arbwave-service-defaults, python3-afrl-bbb
 Description: Arbitrary Waveform Experimental Control
  Arbwave is part of an effort from the Air Force Research Laboratory (AFRL)
  Cold-Atoms group to develop a platform suitable for typical atomic physics
@@ -78,19 +75,3 @@ Description: Arbitrary Waveform Experimental Control
  .
  This package includes the systemd service control files for the Arbwave backend
  service of the AFRL Arbitrary Timing cape for the BeagleBone Black.
-
-#Package: python3-arbwave
-#Architecture: all
-#Depends: ${python3:Depends}, ${misc:Depends}, python3-physical
-#Description: Arbitrary Waveform Experimental Control
-# Arbwave is part of an effort from the Air Force Research Laboratory (AFRL)
-# Cold-Atoms group to develop a platform suitable for typical atomic physics
-# experiments.  One of the goals of this effort is to provide a simple,
-# consistent view and control of experimental timing parameters.  This software
-# is released to the public in the form of an Open Source Software (OSS) project.
-# This is done with the intent and hope that the community in general can benefit
-# from AFRL's work on Arbwave and to also foster collaboration for and sharing of
-# special experimental expertise permeating throughout the scientific community.
-# .
-# This package includes the main Arbwave application.
-#Provides: ${python3:Provides}
