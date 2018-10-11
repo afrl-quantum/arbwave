@@ -85,15 +85,15 @@ class AsyncCaller:
   def __init__(self, ui_notify = lambda x : None):
     # used to provide one-level deep asynchronous calling of a few driver
     # functions (these are dictionaries of the drivers-> Pyro4.FutureResult):
-    self.async = dict()
+    self.asyncD = dict()
     self.ui_notify = ui_notify
 
   def cleanup_async(self, limit = None):
-    while self.async and (limit is None or limit > 0):
+    while self.asyncD and (limit is None or limit > 0):
       # go through all items still there and remove the finished ones
-      for driver_func, result in list(self.async.items()):
+      for driver_func, result in list(self.asyncD.items()):
         if result.ready:
-          self.async.pop(driver_func)
+          self.asyncD.pop(driver_func)
 
       # sleep until the next iteration.  not much sleep is required, just to
       # make sure we relinquish the CPU
@@ -102,9 +102,9 @@ class AsyncCaller:
         limit -= 1
 
   def __call__(self, driver, func, *a, **kw):
-    if (driver,func) in self.async:
-      self.async[(driver,func)].wait()
-      self.async.pop((driver,func))
+    if (driver,func) in self.asyncD:
+      self.asyncD[(driver,func)].wait()
+      self.asyncD.pop((driver,func))
 
     def handle_backend_exception(exc_value):
       logging.critical('Arbwave Backend Exception--%s: %s',
@@ -120,7 +120,7 @@ class AsyncCaller:
       )
 
     f = Future(getattr(driver,func)).iferror(handle_backend_exception)
-    self.async[(driver,func)] = f(*a, **kw)
+    self.asyncD[(driver,func)] = f(*a, **kw)
 
   def __enter__(self):
     # we cannot start new execution chains until all old ones are complete.
@@ -134,11 +134,11 @@ class AsyncCaller:
     if exc_type:
       self.cleanup_async(10) # error occurred, we'll just try to cleanup nicely
       # forget trying to be clean.  We're just removing all ....
-      if self.async:
+      if self.asyncD:
         logging.warn('to_driver.send: %d asynchronous functions still in play',
-                     len(self.async))
+                     len(self.asyncD))
         logging.warn('                ignoring the rest')
-      self.async.clear()
+      self.asyncD.clear()
     else:
       self.cleanup_async()
 

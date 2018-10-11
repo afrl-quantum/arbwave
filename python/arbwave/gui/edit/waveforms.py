@@ -336,10 +336,10 @@ class Waveforms:
 
     markup = ''
     sep = ''
-    script, async = waveform.get(iter, waveform.SCRIPT, waveform.ASYNC)
+    script, async_ = waveform.get(iter, waveform.SCRIPT, waveform.ASYNC)
 
     if is_group( waveform, path ): # group-only information
-      if async is not None:
+      if async_ is not None:
         desc = {
           True : 'will <u><b>not</b></u>',
           False: '<b>will</b>',
@@ -348,7 +348,7 @@ class Waveforms:
           '<b>Asynchronous:</b>  {a}\n' \
           '    Group {d} be used for calculation of \n' \
           "    natural time 't' for subsequent waveform groups" \
-          ''.format(a=async,d=desc[async])
+          ''.format(a=async_,d=desc[async_])
         sep = '\n'
       if script:
         markup += sep + \
