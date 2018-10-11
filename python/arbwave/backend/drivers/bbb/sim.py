@@ -55,7 +55,7 @@ class Device(object):
     self.URI = uri
     self.n = None
 
-  def _release(self):
+  def _pyroRelease(self):
     pass
   def get_version(self):
     """return the Arbwave version"""

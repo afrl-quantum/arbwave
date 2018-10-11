@@ -32,7 +32,7 @@ class Device(Base):
 
   def close(self):
     if self.proxy is not None:
-      self.proxy._release()
+      self.proxy._pyroRelease()
       del self.proxy
       self.proxy = None
 

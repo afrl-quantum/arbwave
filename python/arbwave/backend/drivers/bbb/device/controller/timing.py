@@ -9,10 +9,26 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 from physical import unit
 import bbb.timing
 
+import Pyro4
+
 from .base import Device as Base
+from . import _main_controller_loop as Main
+from .bbb_pyro import TIMING_PYRO4_PORT as PYRO4_PORT
 
 
 class Device(Base, bbb.timing.Device):
+  # need to export a number of things from the device
+  # generic items
+  exec_waveform    = Pyro4.expose(bbb.timing.Device.exec_waveform)
+  waitfor_waveform = Pyro4.expose(bbb.timing.Device.waitfor_waveform)
+  stop             = Pyro4.expose(bbb.timing.Device.stop)
+  # timing specific items
+  triggered        = Pyro4.expose(bbb.timing.Device.triggered)
+  retrigger        = Pyro4.expose(bbb.timing.Device.retrigger)
+  start_delay      = Pyro4.expose(bbb.timing.Device.start_delay)
+  trigger_level    = Pyro4.expose(bbb.timing.Device.trigger_level)
+  trigger_pull     = Pyro4.expose(bbb.timing.Device.trigger_pull)
+
   """
   Timing Logical Device for a single instance of the BeagleBone Black using AFRL
   firmware/hardware.
@@ -26,6 +42,7 @@ class Device(Base, bbb.timing.Device):
     self.reset()
 
 
+  @Pyro4.expose
   def set_output(self, values):
     """
     Immediately force the output on several channels; all others are
@@ -53,6 +70,7 @@ class Device(Base, bbb.timing.Device):
     self.data = value
 
 
+  @Pyro4.expose
   def set_waveforms(self, waveforms, clock_transitions, t_max):
     """
     Set the output waveforms for the AFRL/BeagleBone Black device.
@@ -114,7 +132,7 @@ class Device(Base, bbb.timing.Device):
         # add clock edges to the transtion map
         # FIXME: it would not be too hard to support inverted channels...
         transition_map.setdefault(edge, {})[channel] = True
-        transition_map.setdefault(edge + period/2, {})[channel] = False
+        transition_map.setdefault(edge + period//2, {})[channel] = False
 
     # add a dummy transition to the end to finish the sequence
     # convert to #minimum_period#s, then to unit_time
@@ -160,9 +178,9 @@ class Device(Base, bbb.timing.Device):
 
 
 def main():
-  import sys, _main_controller_loop as Main
+  import sys
 
-  Main.main(Device)
+  Main.main(Device, PYRO4_PORT)
   sys.exit()
 
 if __name__ == '__main__':

@@ -7,13 +7,13 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 
 import sys
 from os.path import join as path_join, dirname, pardir
-sys.path.insert(0, path_join( dirname(__file__), *((pardir,)*5) ) )
 
+import Pyro4
 
 import bbb
 from logging import debug
 
-from version import version as arbwave_version
+from ......version import version as arbwave_version
 from .bbb_pyro import format_objectId
 
 BBB_VERSION = 'bbb-0.2.0'
@@ -50,11 +50,11 @@ class Device(object):
   def __del__(self):
     self.close()
 
-
+  @Pyro4.expose
   def get_version(self):
     """return the Arbwave version"""
     return arbwave_version()
 
-
+  @Pyro4.expose
   def get_objectId(self):
     return self.objectId

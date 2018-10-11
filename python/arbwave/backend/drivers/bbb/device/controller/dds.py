@@ -7,12 +7,26 @@ Remote device interface for the BeagleBone Black using AFRL firmware/hardware.
 
 import bbb.ad9959
 
+import Pyro4
+
 from .base import Device as Base
+from . import _main_controller_loop as Main
+from .bbb_pyro import DDS_PYRO4_PORT as PYRO4_PORT
 
 CHARGE_PUMP = bbb.Dict(bbb.ad9959.regs.FR1.CHARGE_PUMP)
 CHARGE_PUMP.pop('Default')
 
 class Device(Base, bbb.ad9959.Device):
+  # need to export a number of things from the device
+  # generic items
+  exec_waveform    = Pyro4.expose(bbb.ad9959.Device.exec_waveform)
+  waitfor_waveform = Pyro4.expose(bbb.ad9959.Device.waitfor_waveform)
+  stop             = Pyro4.expose(bbb.ad9959.Device.stop)
+  # dds specific items
+  refclk_src       = Pyro4.expose(bbb.ad9959.Device.refclk_src)
+  update_src       = Pyro4.expose(bbb.ad9959.Device.update_src)
+  get_minimum_period=Pyro4.expose(bbb.ad9959.Device.get_minimum_period)
+
   """
   DDS Logical Device for a single instance of the BeagleBone Black using AFRL
   firmware/hardware.
@@ -27,6 +41,7 @@ class Device(Base, bbb.ad9959.Device):
     self.powered = True # turn the power on
 
 
+  @Pyro4.expose
   def set_sysclk_float(self, refclk, sysclk, charge_pump):
     refclk_MHz = int(refclk / 1e6) # must be in MHz
     sysclk_MHz = int(sysclk / 1e6) # must be in MHz
@@ -34,6 +49,7 @@ class Device(Base, bbb.ad9959.Device):
     super(Device,self).set_sysclk(refclk_MHz, sysclk_MHz, charge_pump)
 
 
+  @Pyro4.expose
   def get_sysclk_float(self):
     D = super(Device,self).get_sysclk()
     D.sysclk = D.pop('sysclk_MHz') * 1e6
@@ -45,6 +61,7 @@ class Device(Base, bbb.ad9959.Device):
     return dict(D)
 
 
+  @Pyro4.expose
   def get_charge_pump_values(self):
     """
     Return a list of string representations for all possible PLL charge pump
@@ -54,6 +71,7 @@ class Device(Base, bbb.ad9959.Device):
     return tuple(v[1:] for v in CHARGE_PUMP.keys())
 
 
+  @Pyro4.expose
   def set_output(self, values):
     """
     Immediately force the output on several channels; all others are
@@ -73,6 +91,7 @@ class Device(Base, bbb.ad9959.Device):
       self.set_frequency(val, 1 << ch)
 
 
+  @Pyro4.expose
   def set_waveforms(self, waveforms, n_chans):
     """
     Set the output waveforms for the AFRL/BeagleBone Black device.
@@ -194,9 +213,9 @@ class Device(Base, bbb.ad9959.Device):
 
 
 def main():
-  import sys, _main_controller_loop as Main
+  import sys
 
-  Main.main(Device)
+  Main.main(Device, PYRO4_PORT)
   sys.exit()
 
 if __name__ == '__main__':

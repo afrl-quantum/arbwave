@@ -9,7 +9,7 @@ from .bbb_pyro import BBB_PYRO_GROUP, format_objectId
 import sys
 import Pyro4
 
-def main(klass):
+def main(klass, pyro_port=0):
   import argparse, socket
 
   hostname = socket.gethostname()
@@ -44,25 +44,22 @@ def main(klass):
     print('searching for Naming Service...')
     ns = Pyro4.locateNS(host, port)
 
-    bind_ip = ns._pyroConnection.sock.getsockname()[0]
+    #bind_ip = ns._pyroConnection.sock.getsockname()[0]
   except Pyro4.errors.NamingError:
     print('Could not find name server')
     ns = None
-    bind_ip = args.hostid
+    #bind_ip = args.hostid
 
-  daemon = Pyro4.Daemon(host=bind_ip)
-  if ns:
-    daemon.useNameServer(ns)
+  bind_ip = '0.0.0.0'
+  daemon = Pyro4.Daemon(host=bind_ip, port=pyro_port)
 
-  obj = Pyro.core.ObjBase()
   device = klass(args.hostid)
-  obj.delegateTo(device)
 
-  if args.replace and ns and ns.lookup(device.objectId):
-    ns.remove(device.objectId)
+  uri = daemon.register(device, device.objectId)
+  uri.host = args.hostid
 
-  uri = daemon.register(obj, device.objectId)
-  ns.register(_name_, uri)
+  if ns:
+    ns.register(device.objectId, uri, safe=not args.replace)
   print('my uri is: ', uri)
 
   try:
@@ -70,5 +67,5 @@ def main(klass):
   except:
     if ns:
       # try removing self from Pyro name server
-      try: ns.unregister(device.objectId)
+      try: ns.remove(device.objectId)
       except Pyro4.errors.NamingError: pass
