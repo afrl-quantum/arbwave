@@ -1,0 +1,8 @@
+# This is the firewall port definition for the AFRL BBB DDS Cape
+# An appropriate way to use this might be
+#   ufw allow from any to any app arbwave-bbb-dds
+#
+[arbwave-bbb-dds]
+title=Arbwave BeagleBone Black DDS Cape
+description=Arbwave BBB backend for the DDS device
+ports=1401/tcp

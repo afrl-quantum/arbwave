@@ -1,0 +1,19 @@
+# In pyro, there are three types of network entities:
+#   - clients
+#     This type does not serve any pyro objects, just uses them.  Needs access
+#     to the nameserver.
+#   - servers
+#     This type serves pyro objects.  Needs access to the nameserver.
+#   - nameservers
+#     This is a special server type that uses port 9090 (tcp & udp) to provide a
+#     name service to servers and clients
+# This is for clients to the nameserver
+#
+# An appropriate way to use this might be something like:
+#   ufw allow from 192.168.1.20 app Pyro-ns-broadcast to any
+# if your nameserver were at 192.168.1.20
+#
+[Pyro-ns-broadcast]
+title=Python Remote Objects nameserver client
+description=Pyro is a distributed object system for Python.
+ports=9091/udp|9999/tcp

@@ -1,0 +1,8 @@
+# This is the firewall port definition for the AFRL BBB DDS Cape
+# An appropriate way to use this might be
+#   ufw allow from any to any app arbwave-bbb-timing
+#
+[arbwave-bbb-timing]
+title=Arbwave BeagleBone Black Timing Cape
+description=Arbwave BBB backend for the Timing device
+ports=1402/tcp

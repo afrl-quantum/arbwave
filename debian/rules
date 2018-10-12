@@ -27,7 +27,7 @@ build binary clean :  $(CURDIR)/debian/changelog
 override_dh_auto_build : $(CURDIR)/doc/manual/manual.pdf prep_service_scripts
 	python3 setup.py build --force
 
-override_dh_auto_install : install_service_defaults
+override_dh_auto_install : install_service_defaults install_service_scripts2
 	python3 setup.py install --force --root=$(CURDIR)/debian/python3-arbwave \
 		--no-compile -O0 --install-layout=deb
 
@@ -38,11 +38,23 @@ prep_service_scripts :
 	cp       $(SERVICE_SCRIPTS)/bbb-timing.service \
 	         $(CURDIR)/debian/arbwave-bbb-timing.service
 
+install_service_scripts2 :
+	@echo "Installing service script firewall rules"
+	mkdir -p $(CURDIR)/debian/arbwave-bbb-dds/etc/ufw/applications.d
+	cp       $(SERVICE_SCRIPTS)/bbb-dds.ufw \
+		 $(CURDIR)/debian/arbwave-bbb-dds/etc/ufw/applications.d/
+	mkdir -p $(CURDIR)/debian/arbwave-bbb-timing/etc/ufw/applications.d
+	cp       $(SERVICE_SCRIPTS)/bbb-timing.ufw \
+		 $(CURDIR)/debian/arbwave-bbb-timing/etc/ufw/applications.d/
+
 install_service_defaults :
 	@echo "Installing arbwave-service-defaults"
 	mkdir -p $(CURDIR)/debian/arbwave-service-defaults/etc/default
 	cp       $(SERVICE_SCRIPTS)/arbwave \
 		 $(CURDIR)/debian/arbwave-service-defaults/etc/default/
+	mkdir -p $(CURDIR)/debian/arbwave-service-defaults/etc/ufw/applications.d
+	cp       $(SERVICE_SCRIPTS)/pyro-ns-broadcast.ufw \
+		 $(CURDIR)/debian/arbwave-service-defaults/etc/ufw/applications.d/
 
 $(CURDIR)/debian/changelog : $(CURDIR)/debian/mk_changelog
 	$(CURDIR)/debian/mk_changelog > $(CURDIR)/debian/changelog
