@@ -22,6 +22,7 @@ ni_macros = (
   ('NI_CtrArmStartTrigger', '{dev}/CtrArmStartTrigger({i})',  False),
   ('NI_CtrInternalOutput',  '{dev}/CtrInternalOutput({i})',   False),
   ('NI_CtrOut',             '{dev}/CtrOut({i})',              False),
+  ('NI_CtrSampleClock',     '{dev}/CtrSampleClock({i})',      False),
 )
 
 def entry(native, arbwave, ext_in=False, ext_out=False):
