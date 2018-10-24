@@ -875,11 +875,11 @@ class ComediSim(object):
 
   def comedi_get_driver_name(self, fp):
     debug('comedi_get_driver_name(%d)', fp)
-    return self[fp].driver
+    return self[fp].driver.encode()
 
   def comedi_get_board_name(self, fp):
     debug('comedi_get_board_name(%d)', fp)
-    return self[fp].board
+    return self[fp].board.encode()
 
   def comedi_cancel(self, fp, sub):
     debug('comedi_cancel(%d, %d)', fp, sub)

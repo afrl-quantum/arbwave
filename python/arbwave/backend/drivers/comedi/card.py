@@ -178,8 +178,8 @@ class Card( POINTER(comedi.comedi_t) ):
 
   @cached.property
   def board(self):
-    return str(comedi.get_board_name(self)).lower()
+    return str(comedi.get_board_name(self).decode()).lower()
 
   @cached.property
   def kernel(self):
-    return str(comedi.get_driver_name(self)).lower()
+    return str(comedi.get_driver_name(self).decode()).lower()
