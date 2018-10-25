@@ -31,10 +31,14 @@ class Device(Base):
 
 
   def close(self):
-    if self.proxy is not None:
+    if self.isopen():
       self.proxy._pyroRelease()
       del self.proxy
       self.proxy = None
+
+
+  def isopen(self):
+    return bool(self.proxy)
 
 
   def open(self):
@@ -43,7 +47,7 @@ class Device(Base):
     of devices.  This function is called when a device is added to the devices
     tab of the configuration dialog.
     """
-    if self.proxy:
+    if self.isopen():
       raise RuntimeError('bbb.Device({}): Connection already opened'.format(self))
 
     self.proxy = self.driver.Proxy(self.uri)

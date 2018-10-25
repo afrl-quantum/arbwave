@@ -74,7 +74,7 @@ class Device(Base):
     :return: the configuration template
     """
 
-    if self.proxy is None:
+    if not self.isopen():
       self.open()
 
     D = Dict()
@@ -243,5 +243,5 @@ class Device(Base):
         .format(undefed_clocks)
       )
 
-    if self.proxy:
+    if self.isopen():
       self.proxy.set_waveforms(waveforms, clock_transitions, t_max)

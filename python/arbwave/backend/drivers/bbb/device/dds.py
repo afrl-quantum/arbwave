@@ -63,7 +63,7 @@ class Device(Base):
     :return: the configuration template
     """
 
-    if self.proxy is None:
+    if not self.isopen():
       self.open()
 
     D = Dict(self.proxy.get_sysclk_float())
@@ -221,5 +221,5 @@ class Device(Base):
                               (see processor/engine/compute.py for format)
     :param t_max: the maximum duration of any channel in units of time.
     """
-    if self.proxy:
+    if self.isopen():
       self.proxy.set_waveforms(waveforms, self.number_configured_channels)
