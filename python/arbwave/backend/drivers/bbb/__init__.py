@@ -12,6 +12,7 @@ import Pyro4
 
 from .... import options
 from ....tools.path import collect_prefix
+from ....tools import cached
 from ...driver import Driver as Base
 from .device import BBB_PYRO_GROUP, create_device
 
@@ -87,6 +88,10 @@ class Driver(Base):
 
 
   def get_devices(self):
+    return self._devices
+
+  @cached.property(ttl=5)
+  def _devices(self):
     """
     Return list of  devices.  This will return all known devices, whether
     configured or not.
@@ -94,6 +99,7 @@ class Driver(Base):
     This list is built from all known device URIs, from the name server (if
     available) and from the set of extra URIs.
     """
+    debug('bbb: refreshing device list')
     # first all URIs from the name server
     uris = dict() # uri --> objectId
     if self._ns:
@@ -120,9 +126,20 @@ class Driver(Base):
       if uri in active_devices:
         # copy over the forgotten object
         self.all_devices[uri] = active_devices[uri]
+        continue
 
       # no prior device found, so create an un'opened' one
-      self.all_devices[uri] = create_device(self, uri, objectId)
+      dev = create_device(self, uri, objectId)
+      if not dev.isopen():
+        try:
+          # open a temporary connection to ensure that the remote device is
+          # compatible
+          dev.open()
+          dev.close()
+        except:
+          # not compatible, so don't add
+          continue
+      self.all_devices[uri] = dev
 
     return self.all_devices.values()
 
