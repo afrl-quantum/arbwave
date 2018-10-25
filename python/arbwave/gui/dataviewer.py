@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vim: ts=2:sw=2:tw=80:nowrap
 import sys
 
@@ -36,15 +36,16 @@ class DataViewer(mp.Process):
     self.kwargs = kwargs
     self.daemon = True
 
-  def __del__(self):
-    if self.q is not None:
-      self.terminate()
-      self.join()
-      self.q.close()
-      self.cmds[self.CLIENT].close()
-      self.cmds[self.SERVER].close()
-      del self.q, self.cmds
-      self.q = self.cmds = None
+  #Not sure what this really was for
+  #def __del__(self):
+  #  if self.q is not None:
+  #    self.terminate()
+  #    self.join()
+  #    self.q.close()
+  #    self.cmds[self.CLIENT].close()
+  #    self.cmds[self.SERVER].close()
+  #    del self.q, self.cmds
+  #    self.q = self.cmds = None
 
   def show(self):
     # we'll only start if we haven't started before
