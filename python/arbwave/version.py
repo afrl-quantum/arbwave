@@ -1,12 +1,12 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from subprocess import Popen, PIPE
-from os import path
+import os
 from bisect import bisect_left
 from .tools import compatibility
 
-THIS_DIR = path.dirname(__file__)
-VERSION_FILE = path.join( THIS_DIR, 'VERSION' )
+THIS_DIR = os.path.dirname(__file__)
+VERSION_FILE = os.path.join( THIS_DIR, 'VERSION' )
 DEFAULT_PREFIX = 'arbwave'
 
 # The file versions are major points in the development history where file
@@ -35,7 +35,9 @@ def version_tuple( v ):
     vs = v.split('-')
     t = tuple( int(i) for i in vs[0].split('.') )
     if len(vs) > 1:
-      t += ( int(vs[1]), )
+      try:
+        t += ( int(vs[1]), )
+      except: pass
     return t
   except:
     return (-1,-1,-1,v)
@@ -49,7 +51,7 @@ def read_file_version():
   """
   Read (only) the git-version that is stashed in the VERSION_FILE
   """
-  if path.isfile(VERSION_FILE):
+  if os.path.isfile(VERSION_FILE):
     with open( VERSION_FILE ) as f:
       gv = f.readline()
       return gv.strip()
@@ -68,16 +70,16 @@ def write_version_file(v=None):
 
 def _read_git_version():
   try:
-    if path.isdir('.git'):
+    if os.path.isdir('.git'):
       args = {}
     else:
-      args = {'cwd' : THIS_DIR }
-    devnull = open(os.devnull, 'w')
-    p = Popen(['git', 'describe'], stdout=PIPE, stderr=devnull, **args)
-    out,err = p.communicate()
-    if p.returncode:
-      raise RuntimeError('no version defined?')
-    return out.strip().decode()
+      args = {'cwd' : THIS_DIR}
+    with open(os.devnull, 'w') as devnull:
+      p = Popen(['git', 'describe'], stdout=PIPE, stderr=devnull, **args)
+      out,err = p.communicate()
+      if p.returncode:
+        raise RuntimeError('no version defined?')
+      return out.strip().decode()
   except:
     # no git, let's try using a stashed VERSION file
     v = read_file_version()
@@ -85,7 +87,7 @@ def _read_git_version():
       return v
     # no git and not VERSION stash, let's make something up based on latest
     # save-file version known
-    return DEFAULT_PREFIX + '-' + file_versions[-1] + '-g00000000'
+    return DEFAULT_PREFIX + '-' + file_versions[-1]
 
 GIT_VERSION = _read_git_version()
 VERSION = GIT_VERSION[GIT_VERSION.find('-')+1:] 
