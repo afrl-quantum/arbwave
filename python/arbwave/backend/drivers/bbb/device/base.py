@@ -63,7 +63,7 @@ class Device(Base):
     # now tell the driver that this device is configured
     self.driver.device_opened(self)
 
-    info('found BeagleBone Black+AFRL device: %s', self)
+    debug('found BeagleBone Black+AFRL device: %s', self)
 
 
   def set_config(self, config, channels, signal_graph):
