@@ -30,6 +30,13 @@ override_dh_auto_build : $(CURDIR)/doc/manual/manual.pdf prep_service_scripts
 override_dh_auto_install : install_service_defaults install_service_scripts2
 	python3 setup.py install --force --root=$(CURDIR)/debian/python3-arbwave \
 		--no-compile -O0 --install-layout=deb
+	@echo "Moving bbb controller scripts to arbwave-bbb-* packages..."
+	mkdir -p $(CURDIR)/debian/arbwave-bbb-dds/usr/bin \
+		 $(CURDIR)/debian/arbwave-bbb-timing/usr/bin
+	mv	 $(CURDIR)/debian/python3-arbwave/usr/bin/arbwave-bbb_dds_controller \
+		 $(CURDIR)/debian/arbwave-bbb-dds/usr/bin/
+	mv	 $(CURDIR)/debian/python3-arbwave/usr/bin/arbwave-bbb_timing_controller \
+		 $(CURDIR)/debian/arbwave-bbb-timing/usr/bin/
 
 SERVICE_SCRIPTS = $(CURDIR)/python/arbwave/backend/drivers/bbb/device/controller/service-scripts
 prep_service_scripts :
