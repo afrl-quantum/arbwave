@@ -43,6 +43,22 @@ Description: Arbitrary Waveform Experimental Control
  .
  This packages contains the service defaults for Arbwave backend services.
 
+Package: arbwave-backend
+Architecture: all
+Depends: systemd, python3-arbwave, arbwave-service-defaults
+Description: Arbitrary Waveform Experimental Control
+ Arbwave is part of an effort from the Air Force Research Laboratory (AFRL)
+ Cold-Atoms group to develop a platform suitable for typical atomic physics
+ experiments.  One of the goals of this effort is to provide a simple,
+ consistent view and control of experimental timing parameters.  This software
+ is released to the public in the form of an Open Source Software (OSS) project.
+ This is done with the intent and hope that the community in general can benefit
+ from AFRL's work on Arbwave and to also foster collaboration for and sharing of
+ special experimental expertise permeating throughout the scientific community.
+ .
+ This package includes the systemd service control files for the generic Arbwave
+ backend service (i.e. executing as arbwave --service).
+
 Package: arbwave-bbb-dds
 Architecture: all
 Depends: systemd, python3-arbwave, arbwave-service-defaults, python3-afrl-bbb

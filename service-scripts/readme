@@ -1,0 +1,22 @@
+The content of this directory is to facilitate getting portions of Arbwave to
+run as services:
+  - Items for Generic Arbwave service backend
+    - arbwave.service
+    - arbwave.ufw
+
+  - Items for Arbwave BeagleBone Black (BBB) backend for the DDS devices
+    - bbb-dds.service
+      Systemd configuration for arbwave-bbb_dds_controller
+    - bbb-dds.ufw
+      Firewall definition to allow connections in to bbb dds controller
+
+  - Items for Arbwave BeagleBone Black (BBB) backend for the Timing devices
+    - bbb-timing.service
+      Systemd configuration for arbwave-bbb_timing_controller
+    - bbb-timing.ufw
+      Firewall definition to allow connections in to bbb timing controller
+
+  - Items for all services
+    - pyro-ns-broadcast.ufw
+      Firewall definition to help connect to Pyro nameserver
+    - arbwave (to be installed to /etc/default/arbwave)

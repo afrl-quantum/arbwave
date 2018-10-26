@@ -38,8 +38,10 @@ override_dh_auto_install : install_service_defaults install_service_scripts2
 	mv	 $(CURDIR)/debian/python3-arbwave/usr/bin/arbwave-bbb_timing_controller \
 		 $(CURDIR)/debian/arbwave-bbb-timing/usr/bin/
 
-SERVICE_SCRIPTS = $(CURDIR)/python/arbwave/backend/drivers/bbb/device/controller/service-scripts
+SERVICE_SCRIPTS = $(CURDIR)/service-scripts
 prep_service_scripts :
+	cp       $(SERVICE_SCRIPTS)/arbwave.service \
+	         $(CURDIR)/debian/arbwave-backend.service
 	cp       $(SERVICE_SCRIPTS)/bbb-dds.service \
 	         $(CURDIR)/debian/arbwave-bbb-dds.service
 	cp       $(SERVICE_SCRIPTS)/bbb-timing.service \
@@ -47,6 +49,9 @@ prep_service_scripts :
 
 install_service_scripts2 :
 	@echo "Installing service script firewall rules"
+	mkdir -p $(CURDIR)/debian/arbwave-backend/etc/ufw/applications.d
+	cp       $(SERVICE_SCRIPTS)/arbwave.ufw \
+		 $(CURDIR)/debian/arbwave-backend/etc/ufw/applications.d/
 	mkdir -p $(CURDIR)/debian/arbwave-bbb-dds/etc/ufw/applications.d
 	cp       $(SERVICE_SCRIPTS)/bbb-dds.ufw \
 		 $(CURDIR)/debian/arbwave-bbb-dds/etc/ufw/applications.d/

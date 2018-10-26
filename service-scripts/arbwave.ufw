@@ -1,0 +1,8 @@
+# This is the firewall port definition for the generic Arbwave backend service
+# An appropriate way to use this might be
+#   ufw allow from any to any app arbwave
+#
+[arbwave]
+title=Generic Arbwave service backend
+description=Generic backend service for Arbwave
+ports=1400/tcp

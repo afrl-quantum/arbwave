@@ -1,5 +1,13 @@
 # This file belongs in /etc/default/arbwave
 
+###### OPTIONS FOR GENERIC ARBWAVE BACKEND SERVICE
+# typical arbwave command line options are availabe here like:
+# --log-level=DEBUG
+# --disable ...
+# --simulated
+ARBWAVE_ARGS=
+
+###### OPTIONS FOR ARBWAVE BBB BACKEND SERVICES
 # We specify multiple command lines arguments to be passed to the controller
 # processs.
 
