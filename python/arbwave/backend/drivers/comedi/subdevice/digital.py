@@ -2,7 +2,7 @@
 
 from logging import log, debug, info, warn, error, critical, DEBUG
 import re
-from ctypes import c_uint, sizeof
+from ctypes import c_uint, sizeof, byref
 import comedi
 
 from .....tools.float_range import float_range
@@ -69,7 +69,7 @@ class Digital(Base):
       self.card,
       self.subdevice,
       write_mask,
-      bits,
+      byref(bits),
       base_channel=0,
     )
     return bits.value
