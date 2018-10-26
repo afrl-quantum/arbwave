@@ -110,9 +110,14 @@ class Device(Base, bbb.timing.Device):
     unit_time = 5*unit.ns
     transition_map = {}
 
-    # find how time is scaled for our clock
-    base_clk_cfg = clock_transitions.pop('InternalClock')
-    base_clk = int(base_clk_cfg['dt'] / unit_time)
+    base_clk = self.minimum_period
+    base_clk_cfg = clock_transitions.pop('InternalClock', None)
+    if base_clk_cfg is not None:
+      # check to see that Arbwave believes clock to match our minimum_period
+      assert int(round(base_clk_cfg['dt'] / unit_time)) == base_clk, \
+        'bbb.Timing: Arbwave gave internal clock ({}) mismatched to ' \
+        'minimum-period ({})' \
+        .format(int(round(base_clk_cfg['dt'] / unit_time)), base_clk)
 
     # first reformat the waveforms: this is straightforward
     for channel, groups in waveforms.items():
@@ -136,9 +141,8 @@ class Device(Base, bbb.timing.Device):
 
     # add a dummy transition to the end to finish the sequence
     # convert to #minimum_period#s, then to unit_time
-    ts_max = int(round(t_max / (self.minimum_period * unit_time))) \
-           * self.minimum_period
-    ts_max = max([max(transition_map.keys())+self.minimum_period, ts_max])
+    ts_max = int(round(t_max / (base_clk * unit_time))) * base_clk
+    ts_max = max([max(transition_map.keys()) + base_clk, ts_max])
     transition_map[ts_max] = {}
 
     return transition_map
