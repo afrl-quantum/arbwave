@@ -18,6 +18,7 @@ from math import ceil
 from ... import backend
 from ...tools.scaling import calculate as calculate_scaling
 from ...tools.eval import evalIfNeeded
+from ...tools import cached
 from ..functions import Expr
 from . import linearize
 
@@ -740,6 +741,22 @@ def prefix( dev ):
   return dev.partition('/')[0], dev
 
 
+class _TypeCache(object):
+  """
+  An attempt to reduce network traffic when querying just for type.
+  """
+  def __init__(self):
+    self.channels = set()
+  def __call__(self, channels):
+    if not self.channels.issuperset(channels):
+      self.channels = channels
+      self.__dict__.pop('_types', None)
+    return self._types
+  @cached.property
+  def _types(self):
+    return backend.get_output_channels_attrib('type', channels=self.channels)
+
+_type_cache = _TypeCache()
 
 def static( devcfg, channels, globals ):
   """
@@ -752,11 +769,9 @@ def static( devcfg, channels, globals ):
 
   channel_info = make_channel_info(channels)
 
-  output_channels = backend.get_output_channels_attrib('type',
-    channels = {
+  output_channels = _type_cache({
       ch['device'] for ch in channels.values() if ch['device'] and ch['enable']
-    }
-  )
+    })
 
   for chname in channels:
     ci = channel_info[chname]

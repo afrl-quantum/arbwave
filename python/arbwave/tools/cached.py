@@ -25,6 +25,13 @@ class property(object):
     ttl   : time-to-live for cached value [Default: float('inf')]
             if this is float('inf'), the property will be replaced by an
             ordinary value.
+            If an item has been replaced (ttl=inf):
+              cause it to be reset/recalculated the next time it is accessed by
+              deleting the attribute from the instance
+            If an item has been cached:
+              By deleting the cache of this item, the next next access will
+              necessarily recalculate the result:
+                del obj._cache['item']
     lock  : boolean value to indicate that any access to this property in its
             functional form will be controlled via a thread lock.
   """

@@ -73,6 +73,7 @@ def unload_all():
 
 
 def get_devices():
+  debug('backend.generic: get_devices')
   D = dict()
   for d in all_drivers.values():
     for c in d.get_devices():
@@ -86,12 +87,15 @@ def get_devices_attrib(*attribs, devices=None):
     *attribs : list of attributes to collect
     devices  : list of device.names for which to collect data
   """
+  debug('backend.generic: get_devices_attrib(attribs=%s, devices=%s)',
+        attribs, devices)
   D = dict()
   for d in all_drivers.values():
     D.update(d.get_devices_attrib(*attribs, devices=devices))
   return D
 
 def get_output_channels():
+  debug('backend.generic: get_output_channels')
   D = dict()
   for d in all_drivers.values():
     for c in d.get_output_channels():
@@ -106,12 +110,15 @@ def get_output_channels_attrib(*attribs, channels=None):
     *attribs : list of attributes to collect
     channels : list of channels for which to collect data
   """
+  debug('backend.generic: get_output_channels_attrib(attribs=%s, channels=%s)',
+        attribs, channels)
   D = dict()
   for d in all_drivers.values():
     D.update(d.get_output_channels_attrib(*attribs, channels=channels))
   return D
 
 def get_timing_channels():
+  debug('backend.generic: get_timing_channels')
   D = dict()
   for d in all_drivers.values():
     for c in d.get_timing_channels():
@@ -129,12 +136,15 @@ def get_timing_channels_attrib(*attribs, channels=None):
                unless the channels are limited to those that have actually been
                configured.
   """
+  debug('backend.generic: get_timing_channels_attrib(attribs=%s, channels=%s)',
+        attribs, channels)
   D = dict()
   for d in all_drivers.values():
     D.update(d.get_timing_channels_attrib(*attribs, channels=channels))
   return D
 
 def get_routeable_backplane_signals():
+  debug('backend.generic: get_routeable_backplane_signals')
   L = list()
   for d in all_drivers.values():
     L.extend( d.get_routeable_backplane_signals() )
@@ -148,6 +158,8 @@ def get_routeable_backplane_signals_attrib(*attribs, channels=None):
     *attribs : list of attributes to collect
     channels : list of channels for which to collect data
   """
+  debug('backend.generic: get_routeable_backplane_signals_attrib(attribs=%s, '
+        'channels=%s)', attribs, channels)
   L = list()
   for d in all_drivers.values():
     L.extend(
