@@ -7,3 +7,8 @@ adduser --system --no-create-home --disabled-login \
 if getent group tisdk > /dev/null ; then
   usermod -a -G gpio,tisdk arbwave
 fi
+
+# Group(s) for more standard PC-type installs
+if getent group iocard > /dev/null ; then
+  usermod -a -G iocard arbwave
+fi
