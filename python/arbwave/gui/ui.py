@@ -269,7 +269,7 @@ class ArbWave(gtk.Window):
     self.shell_notebook.set_tab_reorderable( shell_sb, True )
 
     def tab_tear( notebook, page, x, y ):
-      notebook.remove_page( notebook.page_num(page) )
+      notebook.detach_tab(page)
       if hasattr(page, 'orig_parent'):
         w = page.orig_parent
       else:

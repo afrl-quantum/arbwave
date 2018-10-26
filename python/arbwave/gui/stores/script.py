@@ -77,7 +77,7 @@ class Script(object):
 
     if not self.editor:
       self.editor = edit.script.Editor( self.title, self.parent, target=self, **kwargs )
-      self.editor.connect('delete-event', self.editor.hide_on_delete)
+      self.editor.connect('delete-event', lambda *a:self.editor.hide_on_delete())
       self.editor.connect('destroy', unset_editor)
 
     self.editor.present()
