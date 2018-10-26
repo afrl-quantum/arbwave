@@ -16,13 +16,12 @@ distributed as a part of the Arbwave project repository are marked below.
 \begin{itemize}
   \item Python packages/libraries:
     \begin{itemize}
-      \item \textbf{python (2.7)} \\
-        Python version 3.X will not currently work.
-      \item \textbf{pygi} \\
-        \textbf{pygi} is the base package of the GObject instropsection library
+      \item \textbf{Python ($\geq$3.4)}
+      \item \textbf{python3-gi} \\
+        \textbf{gi} is the base package of the GObject instropsection library
         interface.  This library provides dynamic access to various other
         libraries, including the Gtk runtime.  In addition to installing
-        \textbf{pygi}, one must also have these installed (often already installed
+        \textbf{gi}, one must also have these installed (often already installed
         on Gnome-based Linux systems):
         \begin{itemize}
           \item Gtk $> 3.10$
@@ -39,11 +38,11 @@ distributed as a part of the Arbwave project repository are marked below.
         components.\\
         You must have either of these installed:
         \begin{itemize}
-          \item \textbf{python-igraph} (\underline{Significantly} faster)
+          \item \textbf{python3-igraph} (\underline{Significantly} faster)
           \item \textbf{networkx} (Apparently more available)
         \end{itemize}
 
-      \item \textbf{Pyro}; version 3, not 4
+      \item \textbf{Pyro4}
 
       \item \textbf{pylibnidaqmx}
         \begin{itemize}
@@ -51,6 +50,13 @@ distributed as a part of the Arbwave project repository are marked below.
           \item Python wrapper library (wraps NI DAQmx nicaiu.dll c library)
             provides actual linkage to the NIDAQmx drivers
           \item Only needed if NIDAQmx relevant hardware is going to be used
+        \end{itemize}
+
+      \item \textbf{python3-comedilib}
+        \begin{itemize}
+          \item Only for Linux installs.
+          \item comedi drivers in Linux kernel staging tree must be installed.
+          \item Must use the new CTypes interface (not the swig interface).
         \end{itemize}
 
       \item \textbf{physical}
@@ -75,15 +81,22 @@ distributed as a part of the Arbwave project repository are marked below.
 
   \item C libraries:
     \begin{itemize}
-    \item \textbf{NI DAQmx (nicaiu.dll)} \\
+    \item \textbf{NI DAQmx (nicaiu.dll)} [Windows] \\
       Only needed if NIDAQmx relevant hardware is going to be used.
-    \item \textbf{Viewpoint DIO64 (dio64\_32.dll)} \\
+    \item \textbf{Viewpoint DIO64 (dio64\_32.dll)} [Windows] \\
       Only needed if Viewpoint's DIO64 digital output/input board will be used.
-    \item \textbf{Marvin GxFpga (libGxFpga.so, or GxFpga.dll)}
+    \item \textbf{Marvin GxFpga (libGxFpga.so, or GxFpga.dll)} [Windows] \\
       Only needed if MarvinTest GxFpga with \acro{AFRL} Timing-Generator
       firmware is used.
-    \item \textbf{Marvin GxAo (libGxAo.so, or GxAo.dll)}
+    \item \textbf{Marvin GxAo (libGxAo.so, or GxAo.dll)} [Windows] \\
       Only needed if MarvinTest GxAo analog output hardware is used.
+    \item \textbf{MarvinTest GtLinux} [Linux] \\
+      This package of libraries and kernel module support all relevant Marvin
+      test hardware.
+    \item \textbf{comedilib} [Linux] \\
+      Supports many hardware pieces from various manufacturers under Linux.
+      Currently, only NI hardware is known to have the requisite interfaces
+      implemented to use with Arbwave.
     \end{itemize}
 \end{itemize}
 
@@ -104,6 +117,7 @@ set https_proxy=http://proxy.server:port
 
 
 The following are a set of steps used to make Arbwave functional on a Windows system:
+\todo{Rework these instructions with Python3}
 \begin{enumerate}
   \item Install Anaconda python (2.7)
   \item install \verb|pygi-aio-3.x.x_ref<N>-setup.exe| \\
@@ -136,9 +150,9 @@ The following are a set of steps used to make Arbwave functional on a Windows sy
 
   \item Install graph library [you can skip this step] \\
     It seems that \textbf{networkx} is already installed by default with
-    anaconda and a clean install of \textbf{python-igraph}
+    anaconda and a clean install of \textbf{python3-igraph}
     was not trivial.  However, note that taking the time to install 
-    \textbf{python-igraph} will result in significant performance improvement.
+    \textbf{python3-igraph} will result in significant performance improvement.
 
   \item Do either of these:
     \begin{enumerate}
@@ -168,8 +182,8 @@ simply does:
 
 \begin{verbatim}
 apt-get install \
-  python-matplotlib python-scipy python-igraph pyro \
-  py-gi libgtk-3-dev libpango1.0-dev
+  python3-matplotlib python3-scipy python3-igraph python3-pyro4 \
+  python3-gi libgtk-3-dev libpango1.0-dev
 \end{verbatim}
 
 
