@@ -2,4 +2,8 @@
 
 adduser --system --no-create-home --disabled-login \
   --gecos "Arbwave daemon,,," arbwave
-usermod -a -G gpio,tisdk arbwave
+
+# These groups are really only for the Beaglebone installs...
+if getent group tisdk > /dev/null ; then
+  usermod -a -G gpio,tisdk arbwave
+fi
