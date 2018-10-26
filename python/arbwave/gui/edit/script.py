@@ -35,32 +35,20 @@ class Editor(gtk.Dialog):
     self.set_default_size(550, 600)
     self.set_border_width(10)
 
-    table = gtk.Table(1, 3, False)
-    self.vbox.pack_start(table, True, True, 0)
-
     ## Create document
     sw = gtk.ScrolledWindow()
     sw.set_policy(gtk.PolicyType.AUTOMATIC, gtk.PolicyType.AUTOMATIC)
     sw.set_shadow_type(gtk.ShadowType.IN)
-    table.attach(sw,
-                 # /* X direction */       /* Y direction */
-                 0, 1,                   1, 2,
-                 gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,
-                 gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,
-                 0,                      0)
+    self.vbox.pack_start(sw, True, True, 0)
 
     self.contents = gtk.TextView()
     self.contents.grab_focus()
     sw.add(self.contents)
 
     ## Create statusbar
-
-    self.statusbar = gtk.Statusbar()
-    table.attach(self.statusbar,
-                 #/* X direction */       /* Y direction */
-                 0, 1,                   2, 3,
-                 gtk.AttachOptions.EXPAND | gtk.AttachOptions.FILL,  0,
-                 0,                      0);
+    self.statusbar = gtk.Label()
+    self.action_area.pack_start(self.statusbar, True, True, 0)
+    self.action_area.reorder_child(self.statusbar, 0)
 
     ## Show text widget info in the statusbar */
     self.buf = self.contents.get_buffer()
@@ -70,7 +58,6 @@ class Editor(gtk.Dialog):
     self.buf.connect_object("changed", self.buffer_changed_callback, None)
     # cursor moved
     self.buf.connect_object("mark_set", self.mark_set_callback, None)
-    self.connect_object("window_state_event", self.update_resize_grip, 0)
     self.connect('response', self.respond)
 
     self.update_statusbar()
@@ -108,8 +95,6 @@ class Editor(gtk.Dialog):
 
 
   def update_statusbar(self, other=''):
-    self.statusbar.pop(0)
-
     iter = self.buf.get_iter_at_mark(self.buf.get_insert())
 
     row = iter.get_line()
@@ -118,7 +103,7 @@ class Editor(gtk.Dialog):
     msg = "%d, %d%s %s" % \
       (row, col, (self.file_changed and " - Modified" or ""), other )
 
-    self.statusbar.push(0, msg)
+    self.statusbar.set_text(msg)
 
   def get_text(self):
     start, end = self.buf.get_bounds()
@@ -147,13 +132,6 @@ class Editor(gtk.Dialog):
 
   def mark_set_callback(self, buf, new_location, mark):
     self.update_statusbar()
-
-  def update_resize_grip(self, widget, event):
-    if event.changed_mask & (gdk.WindowState.MAXIMIZED |
-                             gdk.WindowState.FULLSCREEN):
-      maximized = event.new_window_state & (gdk.WindowState.MAXIMIZED |
-                                            gdk.WindowState.FULLSCREEN)
-      self.statusbar.set_has_resize_grip(not maximized)
 
 
   def respond(self, dialog, response_id):
