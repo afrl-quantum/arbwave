@@ -52,7 +52,6 @@ class Editor(gtk.Dialog):
     self.contents = gtk.TextView()
     self.contents.grab_focus()
     sw.add(self.contents)
-    self.vadj = sw.get_vadjustment()
 
     ## Create statusbar
 
@@ -77,8 +76,6 @@ class Editor(gtk.Dialog):
     self.update_statusbar()
 
     self.present()
-
-    self.reset_cursor_position = False
 
   def _present_prep(self):
     if self.notebook and self.notebook.page_num(self.vbox) < 0:
@@ -149,12 +146,6 @@ class Editor(gtk.Dialog):
 
 
   def mark_set_callback(self, buf, new_location, mark):
-    if (self.reset_cursor_position):
-      self.reset_cursor_position = False
-      self.buf.place_cursor(self.savediter)
-      self.vadj.set_value(self.vadjval)
-      # these should only ever exist when the cursor reset is requested
-      del self.savediter, self.vadjval
     self.update_statusbar()
 
   def update_resize_grip(self, widget, event):
@@ -168,18 +159,9 @@ class Editor(gtk.Dialog):
   def respond(self, dialog, response_id):
     if response_id in [gtk.ResponseType.OK, gtk.ResponseType.APPLY] and self.target:
       try:
-        iter = self.buf.get_iter_at_mark(self.buf.get_insert())
-        saverow = iter.get_line()
-        savecol = iter.get_line_offset()
-
-        self.reset_cursor_position = True
-        self.target.set_text( self.get_text() )
+        self.target.set_text( self.get_text(), from_editor=True )
         self.unset_changes()
-        # recreate the cursor iterator
-        self.savediter = self.buf.get_iter_at_line_offset(saverow, savecol)
-
-        # get ready for cursor reset
-        self.vadjval = self.vadj.get_value()
+        self.update_statusbar()
         self.contents.grab_focus()
 
       except Exception as e:

@@ -38,12 +38,12 @@ class Script(object):
   def clear(self):
     self.set_text('')
 
-  def set_text(self, t, skip_undo=False):
+  def set_text(self, t, skip_undo=False, from_editor=False):
     if not ( skip_undo or self.add_undo is None ):
       self.add_undo( Undo(self.text, t, self) )
 
     self.text = t
-    if self.editor:
+    if self.editor and not from_editor:
       self.editor.set_text( t )
     if self.onchange:
       self.onchange['callable'](
