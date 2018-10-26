@@ -32,7 +32,7 @@ def main():
     import multiprocessing as mp # is this ok for windows?
     mp.set_start_method('spawn')
 
-  parser = argparse.ArgumentParser(prog=version.prefix())
+  parser = argparse.ArgumentParser(prog='Arbwave')
   parser.add_argument( '--version', action='version',
     version='%(prog)s '+version.version() )
   parser.add_argument( 'filename', nargs='?', help='configuration file' )

@@ -98,7 +98,7 @@ def version():
   return VERSION
 
 def prefix():
-  return git_version()[0].split('-')[0]
+  return git_version().split('-')[0]
 
 def get_file_version( test_version=None ):
   """
