@@ -1,7 +1,7 @@
 # This file goes into /etc/systmed/system/
 [Unit]
 Description=Arbwave BBB backend for the Timing device
-After=network.target auditd.service
+After=network.target network-online.target auditd.service
 Requires=afrl-timing-fw.service
 After=afrl-timing-fw.service
 

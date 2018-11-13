@@ -1,7 +1,7 @@
 # This file goes into /etc/systmed/system/
 [Unit]
 Description=Generic Arbwave service backend
-After=network.target auditd.service
+After=network.target network-online.target auditd.service
 # after system modules in case hardware needs modules loaded
 Requires=systemd-modules-load.service
 After=systemd-modules-load.service

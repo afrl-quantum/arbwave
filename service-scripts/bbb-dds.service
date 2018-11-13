@@ -1,7 +1,7 @@
 # This file goes into /etc/systmed/system/
 [Unit]
 Description=Arbwave BBB backend for the DDS device
-After=network.target auditd.service
+After=network.target network-online.target auditd.service
 Requires=afrl-dds-fw.service
 After=afrl-dds-fw.service
 
