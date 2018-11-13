@@ -7,6 +7,7 @@ import sys
 
 from ..packing import Args as PArgs, VBox, hpack, vpack
 from .. import edit
+from ..edit.generic import Range as GenericRange
 from ... import backend
 from ...tools.signal_graphs import accessible_clocks
 
@@ -271,55 +272,18 @@ class ConfigDialog(gtk.Dialog):
       A(action)
 
 
-class Range:
+class Range(GenericRange):
   def __init__(self, dev, cfg_path):
     self.dev = dev
-    self.cfg_path = cfg_path
+    super(Range, self).__init__(None, cfg_path, False)
 
-    cfg = self.cfg()
-    self.doreload = 'doreload' in cfg and cfg['doreload']
-    r = cfg['range']
-    if not self.doreload:
-      self.r = r
+  @property
+  def template(self):
+    return self.dev['config_template']
 
-    # if range is list/tuple or callable, this entry needs a combo box
-    self.combo = type(r) in [list, tuple] or ('combo' in cfg and cfg['combo'])
-
-  def cfg(self):
-    """
-    Return the full config item.
-    """
-    return get_leaf_node( self.dev['config_template'], self.cfg_path )
-
-  def __call__(self):
-    """
-    Return the range.
-    """
-    if self.doreload:
-      r = self.cfg()['range']
-    else:
-      r = self.r
-    if callable(r):
-      return r()
-    else:
-      return r
-
-  def is_combo(self):
-    return self.combo
-
-  def __iter__(self):
-    return iter(self())
-
-  def get_adjustment(self):
-    r = self()
-    if hasattr(r, '__len__') and len(r) == 4:
-      return r[0:4]
-
-    mn = min(r)
-    mx = max(r)
-    step = getattr(r, 'step', None)
-    page = getattr(r, 'page', None)
-    return mn, mx, step, page
+  @template.setter
+  def template(self, value):
+    pass
 
 
 class ClockRange:
@@ -336,13 +300,6 @@ class ClockRange:
   def __iter__(self):
     terms = self.terminals()
     return iter( accessible_clocks(terms, self.clocks, self.signals) )
-
-
-def get_leaf_node( D, path ):
-  if len(path) > 1:
-    return get_leaf_node( D[path[0]], path[1:] )
-  else:
-    return D[path[0]]
 
 
 class RangeFactory:
