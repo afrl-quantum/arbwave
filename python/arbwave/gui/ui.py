@@ -127,7 +127,6 @@ def show_data_viewer(parent):
 
 class ArbWave(gtk.Window):
   TITLE = {False:'',True:'(Sim) '}[options.simulated] + 'Arbitrary Waveform Generator'
-  ALL_ITEMS = -1
 
   def __init__(self, parent=None):
     # delay this import to try and separate arbwave submodules
@@ -327,6 +326,15 @@ class ArbWave(gtk.Window):
     logging.debug( 'trying to del the proc.' )
     self.processor.__del__() # not sure why "del ui" below is not working!
     del self.processor
+
+
+  @property
+  def ALL_ITEMS(self):
+    return set([
+      self.hosts, self.devcfg, self.clocks, self.signals, self.channels,
+      self.waveform_editor.get_waveform(), self.script,
+    ])
+
 
 
   def update_runnables(self, runnables):
@@ -651,7 +659,7 @@ class ArbWave(gtk.Window):
 
     # re-enable updates and directly call for an update
     self.unpause()
-    self.update(self.ALL_ITEMS)
+    self.update(*self.ALL_ITEMS)
 
   def clearvars(self, do_update=False):
     # suspend all updates
@@ -682,7 +690,7 @@ class ArbWave(gtk.Window):
     self.unpause()
     # directly call for an update (?)
     if do_update:
-      self.update(self.ALL_ITEMS)
+      self.update(*self.ALL_ITEMS)
 
 
   def set_file_saved(self, yes=True):
@@ -704,37 +712,35 @@ class ArbWave(gtk.Window):
     return self.config_file
 
 
-  def update(self, item=None, toggle_run=False):
+  def update(self, *items, toggle_run=False):
     """
     This is the main callback function for 'changed' type signals.  This
     callback will collect the current inputs and send them to the processor.
     The processor will transform the descriptions into per-channel waveforms,
     plot them and send them to the backend drivers.
 
-    item : should generally be one of
+    items : should contain one or more of
            [hosts, devcfg, clocks, signals, channels, waveforms, script]
     """
 
     if not self.allow_updates:
       return # updates temporarily disabled
 
+    items = set(items)
+
     try:
-      if item not in [
-        self.ALL_ITEMS, None, self.hosts, self.devcfg, self.clocks,
-        self.signals, self.channels, self.waveform_editor.get_waveform(),
-        self.script,
-      ]:
-        raise TypeError('Unknown item sent to update()')
+      if items - self.ALL_ITEMS:
+        raise TypeError('Unknown item(s) sent to update(): {}'.format(items))
 
       self.processor.update(
-        ( self.hosts.representation(),    item in [ self.ALL_ITEMS, self.hosts] ),
-        ( self.devcfg.representation(),   item in [ self.ALL_ITEMS, self.devcfg] ),
-        ( self.clocks.representation(),   item in [ self.ALL_ITEMS, self.clocks] ),
-        ( self.signals.representation(),  item in [ self.ALL_ITEMS, self.signals] ),
-        ( self.channels.representation(1),item in [ self.ALL_ITEMS, self.channels] ),
+        ( self.hosts.representation(),    self.hosts in items ),
+        ( self.devcfg.representation(),   self.devcfg in items ),
+        ( self.clocks.representation(),   self.clocks in items ),
+        ( self.signals.representation(),  self.signals in items ),
+        ( self.channels.representation(1),self.channels in items ),
         ( self.waveform_editor.get_waveform().representation(store_path=True),
-                                          item in [ self.ALL_ITEMS, self.waveform_editor.get_waveform()] ),
-        ( self.script.representation(),   item in [ self.ALL_ITEMS, self.script] ),
+                                          self.waveform_editor.get_waveform() in items ),
+        ( self.script.representation(),   self.script in items ),
         toggle_run=toggle_run,
       )
       self.next_untested_undo = len(self.undo)
@@ -749,7 +755,7 @@ class ArbWave(gtk.Window):
         .format(len(self.undo) - self.next_untested_undo,
                 str(e).replace('<', '&lt;').replace('>', '&gt;')) )
       #raise e
-    if item in [self.ALL_ITEMS, self.hosts, self.devcfg]:
+    if items.intersection([self.hosts, self.devcfg]):
       # callbacks for host changes...
       hosts_changed.callback()
 
