@@ -23,6 +23,8 @@ def main(klass, pyro_port=0):
   parser.add_argument('--ns', metavar='NAMESERVER[:PORT]',
     help='Specify Pyro nameserver address (in case it cannot be reached by UDP '
          'broadcasts).')
+  parser.add_argument('--bind', metavar='ADDRESS[:PORT]', default='0.0.0.0',
+    help='Specify local interface to bind to')
   parser.add_argument('--nop', action='store_true',
     help='A do-nothing command line argument.  Any number can be used.  This '
          ' helps for writing system start scripts (such as with systemd).')
@@ -44,13 +46,15 @@ def main(klass, pyro_port=0):
     print('searching for Naming Service...')
     ns = Pyro4.locateNS(host, port)
 
-    #bind_ip = ns._pyroConnection.sock.getsockname()[0]
   except Pyro4.errors.NamingError:
     print('Could not find name server')
     ns = None
-    #bind_ip = args.hostid
 
-  bind_ip = '0.0.0.0'
+  ip_port = args.bind.split(':')
+  bind_ip = ip_port[0]
+  if len(ip_port) > 1:
+    pyro_port = int(ip_port[1])
+
   daemon = Pyro4.Daemon(host=bind_ip, port=pyro_port)
 
   device = klass(args.hostid)
