@@ -22,7 +22,7 @@ def main(args):
 
   from . import gui
   from .processor.default import get_globals
-  prog = gui.ArbWave()
+  prog = gui.ArbWave(init_new=not bool(args.filename))
   if args.filename:
     assert os.path.isfile( args.filename ), 'expected configuration filename'
     def load_file():

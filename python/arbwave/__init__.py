@@ -105,8 +105,6 @@ def main():
     except KeyboardInterrupt:
       print('exiting')
   else:
-    # create connection to local drivers by default
-    backend.reconnect( dict( __default__ = 'local', local='localhost' ) )
     # we have to do this import _after_ the options. module is modified
     from . import gui_main
     gui_main.main(args)

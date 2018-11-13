@@ -128,7 +128,7 @@ def show_data_viewer(parent):
 class ArbWave(gtk.Window):
   TITLE = {False:'',True:'(Sim) '}[options.simulated] + 'Arbitrary Waveform Generator'
 
-  def __init__(self, parent=None):
+  def __init__(self, parent=None, *, init_new=False):
     # delay this import to try and separate arbwave submodules
     from ..processor import Processor
 
@@ -319,6 +319,9 @@ class ArbWave(gtk.Window):
     self.processor.exec_script( default_script )
     self.saved = True
     self.set_full_title()
+
+    if init_new:
+      self.clearvars(do_update=True)
 
 
   def __del__(self):
