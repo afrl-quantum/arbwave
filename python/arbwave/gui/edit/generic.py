@@ -75,12 +75,19 @@ class Range:
   def get_adjustment(self):
     r = self()
     if hasattr(r, '__len__') and len(r) == 4:
+      # can't remember at all why this special case exists
       return r[0:4]
 
-    mn = min(r)
-    mx = max(r)
-    step = getattr(r, 'step', None)
-    page = getattr(r, 'page', None)
+    if type(r) is range:
+      mx = r.start + ((r.stop - r.start) // r.step) * r.step
+      mn = r.start
+      step = r.step
+      page = None
+    else:
+      mn = min(r)
+      mx = max(r)
+      step = getattr(r, 'step', None)
+      page = getattr(r, 'page', None)
     return mn, mx, step, page
 
 
