@@ -41,8 +41,12 @@ def main():
   parser.add_argument( '--dataviewer', action='store_true',
     help='Start only the data viewer' )
   parser.add_argument( '--log-level', choices=log_levels, default='INFO' )
-  parser.add_argument( '--service', action='store_true',
-    help='Run headless backend service' )
+  parser.add_argument( '--service', metavar='ADDRESS[:PORT]', action='store',
+    const='0.0.0.0', nargs='?', default='',
+    help='Run headless backend service after binding to the optional address '
+         'and port.  Note that 0.0.0.0 is valid, though the addresses '
+         'returned to the remote client will be set to match whatever '
+         'address/port the client actually connects to.' )
   parser.add_argument( '--ipython', action='store_true',
     help='Attempt to use ipython as embedded shell' )
   parser.add_argument( '--disable', action='append', default=[],
@@ -97,7 +101,7 @@ def main():
     arbwave.gui.dataviewer.main()
   elif args.service:
     try:
-      backend.connection.serve(ns=options.pyro_ns)
+      backend.connection.serve(*args.service.split(':'), ns=options.pyro_ns)
     except KeyboardInterrupt:
       print('exiting')
   else:

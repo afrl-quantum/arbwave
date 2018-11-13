@@ -213,6 +213,20 @@ class Root(Local):
     debug('close all drivers')
     super(Root,self).close()
 
+    debug('unset natLocationStr')
+    self.daemon.natLocationStr = None
+
+  @Pyro4.expose
+  @property
+  def locationStr(self):
+    return self.daemon.natLocationStr
+
+  @Pyro4.expose
+  @locationStr.setter
+  def locationStr(self, value):
+    debug('set natLocationStr = %s', value)
+    self.daemon.natLocationStr = value
+
   @Pyro4.expose
   def open(self):
     """
@@ -230,7 +244,7 @@ class Root(Local):
         self.daemon.register(obj)
 
 
-def serve(ns = None):
+def serve(bind='0.0.0.0', port=PYRO4_PORT, ns = None):
   """
   Serve the backend over Pyro4 in a headless manner.
   Options:
@@ -239,7 +253,7 @@ def serve(ns = None):
          NOT using this yet.  Have to find a way to make this clean.  Just using
          static port for now.
   """
-  daemon = Pyro4.Daemon(port = PYRO4_PORT)
+  daemon = Pyro4.Daemon(host=bind, port=port)
   with Root(daemon, prefix=None, remote_backend=True) as root:
     debug('PYRO4 URI : %s', root.uri)
     daemon.requestLoop()
@@ -251,12 +265,11 @@ class Remote(Pyro4.Proxy):
 
     super(Remote,self).__init__('PYRO:{}@{}:{}'.format(name, host, PYRO4_PORT))
 
-    if self.prefix != prefix:
-      if self.drivers:
-        # re-open all drivers with the new prefix
-        self.close()
-        self.open()
-      self.prefix = prefix
+    self.close()
+    # set the location string for all uris attached to proxy connections
+    self.locationStr = '{}:{}'.format(*self._pyroConnection.sock.getpeername())
+
+    self.prefix = prefix
 
     # negotiate exchange formats
     self.negotiate()
