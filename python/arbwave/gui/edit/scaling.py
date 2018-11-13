@@ -221,7 +221,7 @@ class Editor(gtk.Dialog):
       'Specify an offset for the waveform plot')
 
     self.enforce_scale_factor = \
-      NumberEntryEnforcer(self, self.channels.PLOT_SCALE_FACTOR)
+      NumberEntryEnforcer(self, self.channels.PLOT_SCALE_FACTOR, True)
     self.scale_factor = gtk.Entry()
     self.scale_factor.set_text('1.0')
     self.scale_factor.set_width_chars(15)
