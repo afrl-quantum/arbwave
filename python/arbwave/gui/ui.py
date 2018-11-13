@@ -607,9 +607,16 @@ class ArbWave(gtk.Window):
     self.pause()
 
     if 'hosts' in vardict:
-      logging.debug('hosts.load(...)..........')
+      logging.debug('hosts.load(%s)', vardict['hosts'])
       self.hosts.load( vardict['hosts'] )
       logging.debug('hosts.load(...) finished.')
+
+    # we'll update hosts by themselves first
+    self.unpause()
+    self.update(self.hosts)
+
+    # suspend again
+    self.pause()
 
     if 'channels' in vardict:
       logging.debug('channels.load(...)..........')
@@ -659,7 +666,7 @@ class ArbWave(gtk.Window):
 
     # re-enable updates and directly call for an update
     self.unpause()
-    self.update(*self.ALL_ITEMS)
+    self.update(*(self.ALL_ITEMS - set([self.hosts])))
 
   def clearvars(self, do_update=False):
     # suspend all updates
