@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from gi.repository import Gtk as gtk
+from gi.repository import Gtk as gtk, GObject as gobject
 
 from .dispatcher import TreeModelDispatcher
 
@@ -34,7 +34,7 @@ class Generic(TreeModelDispatcher, gtk.TreeStore):
           object, # range
           bool,   # bool-value
           str,    # str-value
-          int,    # int-value
+          gobject.TYPE_INT64,    # int-value
           float,  # float-value
         ] + ifthen(use_enable,[bool],[])
       ),

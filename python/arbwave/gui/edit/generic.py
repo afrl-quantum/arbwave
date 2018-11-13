@@ -1,6 +1,6 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
-from gi.repository import Gtk as gtk, Gdk as gdk
+from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 from math import log10
 from . import spreadsheet
 from . import helpers
@@ -338,8 +338,8 @@ class Generic:
     V.show()
 
 
-if __name__ == '__main__':
-  model = gtk.TreeStore( str, object, object, bool, str, int, float )
+def main_test():
+  model = gtk.TreeStore( str, object, object, bool, str, gobject.TYPE_INT64, float )
   model.LABEL     = 0
   model.TYPE      = 1
   model.RANGE     = 2
@@ -368,10 +368,11 @@ if __name__ == '__main__':
   #     ]
   #   _OR_:  combo box range object can be a callable that returns list/tuple
 
+  import sys
   template = {
     'Dev1' : {
       'group0' : {
-        'param0' : {'range':range(11)},
+        'param0' : {'range':range(11, sys.maxsize)},
         'param2' : {'range':range(-3,10)},
         'intlst' : {'range':[(0,'zero'), 5, (10,'ten')]},
       },
@@ -410,3 +411,6 @@ if __name__ == '__main__':
   window.add(g.view)
   window.show()
   gtk.main()
+
+if __name__ == '__main__':
+  main_test()
