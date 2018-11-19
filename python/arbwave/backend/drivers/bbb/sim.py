@@ -67,8 +67,8 @@ class Device(object):
   def exec_waveform(self, n):
     self.n = n
     pass
-  def waitfor_waveform(self):
-    time.sleep(.25) # wait an arbitrary time
+  def waitfor_waveform(self, timeout):
+    time.sleep(0.5 * timeout) # wait for t_max amount of time
     n = self.n
     self.n = None
     return n

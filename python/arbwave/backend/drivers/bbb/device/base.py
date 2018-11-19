@@ -5,6 +5,7 @@ Logical device driver for the BeagleBone Black using AFRL firmware/hardware.
 """
 
 from logging import debug, info
+from physical import unit
 
 from .....version import version as arbwave_version, abi_compatible
 from ....device import Device as Base
@@ -24,6 +25,7 @@ class Device(Base):
     self.uri    = uri
     self.proxy  = None
     self.is_continuous = None
+    self.t_max = 0.0 * unit.s
 
 
   def __del__(self):
@@ -135,6 +137,7 @@ class Device(Base):
           self, waveforms, clock_transitions, t_max, continuous)
     self.is_continuous = bool(continuous)
     self.set_waveforms_impl(waveforms, clock_transitions, t_max)
+    self.t_max = t_max
 
 
   def start(self):
@@ -156,7 +159,7 @@ class Device(Base):
     if self.is_continuous:
       raise RuntimeError('cannot wait for continuous waveform to finish')
 
-    reps = self.proxy.waitfor_waveform()
+    reps = self.proxy.waitfor_waveform(timeout = self.t_max.coeff*2)
     debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
 
 
