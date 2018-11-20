@@ -194,7 +194,7 @@ class Device(Base):
     if self.is_continuous:
       raise RuntimeError('cannot wait for continuous waveform to finish')
 
-    reps = self.guard_proxy.waitfor_waveform(timeout = self.t_max.coeff*2)
+    reps = self.guard_proxy.waitfor_waveform(timeout = 2*(self.t_max/unit.ms))
     debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
 
 
