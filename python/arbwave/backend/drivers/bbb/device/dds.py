@@ -64,7 +64,7 @@ class Device(Base):
     """
 
     if not self.isopen():
-      self.open()
+      self.open(take_ownership=True)
 
     D = Dict(self.guard_proxy.get_sysclk_float())
     refclk_src = self.guard_proxy.refclk_src

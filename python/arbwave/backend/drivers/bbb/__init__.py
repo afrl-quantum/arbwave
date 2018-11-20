@@ -202,7 +202,7 @@ class Driver(Base):
       name_to_device = { str(d):d for d in self.all_devices.values() }
       for devname in unopened:
         debug('bbb: reopening connection to %s', devname)
-        name_to_device[devname].open()
+        name_to_device[devname].open(take_ownership=True)
 
 
   def set_device_config( self, config, channels, signal_graph ):

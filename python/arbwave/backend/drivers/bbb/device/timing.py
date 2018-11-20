@@ -75,7 +75,7 @@ class Device(Base):
     """
 
     if not self.isopen():
-      self.open()
+      self.open(take_ownership=True)
 
     D = Dict()
 

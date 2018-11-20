@@ -6,7 +6,7 @@ Logical device driver for the BeagleBone Black using AFRL firmware/hardware.
 
 from logging import debug, error, info
 from physical import unit
-import Pyro4
+import Pyro4, uuid
 
 from .....version import version as arbwave_version, abi_compatible
 from ....device import Device as Base
@@ -61,14 +61,22 @@ class Device(Base):
     self.t_max = 0.0 * unit.s
 
     self.guard_proxy = ProxyCallGuard(self)
+    self.id = str(uuid.uuid1())
 
 
   def __del__(self):
     self.close()
 
 
-  def close(self):
+  def close(self, ignore_owner=False):
     if self.isopen():
+      try:
+        if (not ignore_owner) and self.proxy.owner == self.id:
+          # We try to release ownership and also reset the device
+          self.proxy.owner = None
+          self.proxy.reset()
+      except:
+        pass
       self.proxy._pyroRelease()
       del self.proxy
       self.proxy = None
@@ -78,7 +86,7 @@ class Device(Base):
     return bool(self.proxy)
 
 
-  def open(self):
+  def open(self, take_ownership=False):
     """
     Create the proxy to the remote object and add the device to the drivers list
     of devices.  This function is called when a device is added to the devices
@@ -97,10 +105,18 @@ class Device(Base):
         .format(self, self.uri)
       )
 
-    # now tell the driver that this device is configured
-    self.driver.device_opened(self)
+    if take_ownership:
+      debug('found BeagleBone Black+AFRL device: %s', self)
 
-    debug('found BeagleBone Black+AFRL device: %s', self)
+      if self.guard_proxy.owner != self.id:
+        # We take ownership and also reset the device
+        self.guard_proxy.owner = self.id
+        debug('Ownership taken of %s. Resetting', self)
+        self.guard_proxy.reset()
+
+      # now tell the driver that this device is configured
+      self.driver.device_opened(self)
+
 
 
   def set_config(self, config, channels, signal_graph):
@@ -194,8 +210,14 @@ class Device(Base):
     if self.is_continuous:
       raise RuntimeError('cannot wait for continuous waveform to finish')
 
-    reps = self.guard_proxy.waitfor_waveform(timeout = 2*(self.t_max/unit.ms))
-    debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
+    # Note that the timeouts within afrl-bbb are all specified in milliseconds
+    try:
+      reps = self.guard_proxy.waitfor_waveform(timeout = 2*(self.t_max/unit.ms))
+      debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
+    except:
+      # let's avoid having stuff in the input causing us problems.
+      self.guard_proxy.flush_input()
+      raise
 
 
   def stop(self):

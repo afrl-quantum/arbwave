@@ -22,6 +22,8 @@ class Device(Base, bbb.ad9959.Device):
   exec_waveform    = Pyro4.expose(bbb.ad9959.Device.exec_waveform)
   waitfor_waveform = Pyro4.expose(bbb.ad9959.Device.waitfor_waveform)
   stop             = Pyro4.expose(bbb.ad9959.Device.stop)
+  reset            = Pyro4.expose(bbb.ad9959.Device.reset)
+  flush_input      = Pyro4.expose(bbb.ad9959.Device.flush_input)
   # dds specific items
   refclk_src       = Pyro4.expose(bbb.ad9959.Device.refclk_src)
   update_src       = Pyro4.expose(bbb.ad9959.Device.update_src)
@@ -217,6 +219,3 @@ def main():
 
   Main.main(Device, PYRO4_PORT)
   sys.exit()
-
-if __name__ == '__main__':
-  main()

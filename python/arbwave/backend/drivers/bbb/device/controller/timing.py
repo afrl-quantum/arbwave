@@ -22,6 +22,8 @@ class Device(Base, bbb.timing.Device):
   exec_waveform    = Pyro4.expose(bbb.timing.Device.exec_waveform)
   waitfor_waveform = Pyro4.expose(bbb.timing.Device.waitfor_waveform)
   stop             = Pyro4.expose(bbb.timing.Device.stop)
+  reset            = Pyro4.expose(bbb.timing.Device.reset)
+  flush_input      = Pyro4.expose(bbb.timing.Device.flush_input)
   # timing specific items
   triggered        = Pyro4.expose(bbb.timing.Device.triggered)
   retrigger        = Pyro4.expose(bbb.timing.Device.retrigger)
@@ -186,6 +188,3 @@ def main():
 
   Main.main(Device, PYRO4_PORT)
   sys.exit()
-
-if __name__ == '__main__':
-  main()

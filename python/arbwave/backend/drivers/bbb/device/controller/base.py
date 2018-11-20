@@ -30,6 +30,7 @@ class Device(object):
     super(Device,self).__init__()
     self.hostid = hostid
     self.objectId = format_objectId(hostid, type)
+    self._owner = None
 
     assert bbb.version.compatible(bbb.VERSION, BBB_VERSION), \
       'AFRL/BeagleBone Black version is incompatible'
@@ -49,6 +50,16 @@ class Device(object):
 
   def __del__(self):
     self.close()
+
+  @Pyro4.expose
+  @property
+  def owner(self):
+    return self._owner
+
+  @Pyro4.expose
+  @owner.setter
+  def owner(self, value):
+    self._owner = value
 
   @Pyro4.expose
   def get_version(self):
