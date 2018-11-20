@@ -31,8 +31,8 @@ class Device(Base):
     self.channels = [
       channels.DDS('{}/{}'.format(self,i), self) for i in range(4)
     ]
+    self.configured_channels = set()
     self.config = None
-    self.number_configured_channels = 0
     self.min_period = None
 
 
@@ -138,12 +138,21 @@ class Device(Base):
       # If this is not set yet, this is the first time accessing device
       self.get_config_template()
 
-    if self.number_configured_channels != len(channels):
-      self.number_configured_channels = len(channels)
-      self.min_period = max(
-          self.guard_proxy.get_minimum_period(self.number_configured_channels)
-              .values()
-        ) * 5*units.ns
+    if self.configured_channels != channels.keys():
+      # first set new minium-period for this DDS
+      if len(self.configured_channels) != len(channels):
+        self.min_period = max(
+            self.guard_proxy.get_minimum_period(max(1,len(channels))).values()
+          ) * 5*units.ns
+
+      # we need to turn off channels that have been disabled: set freq to 0
+      old_chans = dict.fromkeys(self.configured_channels - channels.keys(), 0)
+      if old_chans:
+        debug('bbb.Device(%s): shutting off old DDS channels (%s)',
+              self, old_chans)
+        self.guard_proxy.set_output(old_chans)
+
+      self.configured_channels = set(channels)
 
     if self.config == config:
       return
