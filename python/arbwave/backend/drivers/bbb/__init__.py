@@ -238,6 +238,12 @@ class Driver(Base):
     debug('bbb.set_signals(signals=%s)', signals)
     signals = collect_prefix(signals, 0, 3, prefix_list=self.devices)
 
+    # This only happens if we don't have the bbb device opened.  This helps us
+    # ignore this error
+    E = [ i for i in signals if i.startswith('External') ]
+    for i in E:
+      signals.pop(i)
+
     self.open_required_devices(signals.keys())
 
     for devname, sigs in signals.items():
