@@ -66,8 +66,8 @@ class Device(Base):
     if not self.isopen():
       self.open()
 
-    D = Dict(self.proxy.get_sysclk_float())
-    refclk_src = self.proxy.refclk_src
+    D = Dict(self.guard_proxy.get_sysclk_float())
+    refclk_src = self.guard_proxy.refclk_src
 
     config = {
       'sysclk': {
@@ -91,7 +91,7 @@ class Device(Base):
       'pll_chargepump': {
         'value': D.charge_pump,
         'type' : str,
-        'range': self.proxy.get_charge_pump_values(),
+        'range': self.guard_proxy.get_charge_pump_values(),
       },
       'clock': {
         'value': '',
@@ -141,7 +141,7 @@ class Device(Base):
     if self.number_configured_channels != len(channels):
       self.number_configured_channels = len(channels)
       self.min_period = max(
-          self.proxy.get_minimum_period(self.number_configured_channels)
+          self.guard_proxy.get_minimum_period(self.number_configured_channels)
               .values()
         ) * 5*units.ns
 
@@ -151,12 +151,12 @@ class Device(Base):
     if (self.config['sysclk'] != config['sysclk'] or
         self.config['refclk']['frequency'] != config['refclk']['frequency'] or
         self.config['pll_chargepump'] != config['pll_chargepump']):
-      self.proxy.set_sysclk_float(config['refclk']['frequency']['value'],
-                                  config['sysclk']['value'],
-                                  config['pll_chargepump']['value'])
+      self.guard_proxy.set_sysclk_float(config['refclk']['frequency']['value'],
+                                        config['sysclk']['value'],
+                                        config['pll_chargepump']['value'])
 
     if self.config['refclk']['source'] != config['refclk']['source']:
-      self.proxy.refclk_src = config['refclk']['source']['value']
+      self.guard_proxy.refclk_src = config['refclk']['source']['value']
 
     # keep a copy of the config given to us
     old_config = self.config
@@ -179,7 +179,7 @@ class Device(Base):
         debug('bbb.Device(%s).update_src = (terminal=%s, internal=%s)',
               self, clock_terminal, update_src)
 
-        self.proxy.update_src = update_src
+        self.guard_proxy.update_src = update_src
     finally:
       # We'll set this to something that will never be an input
       self.config['clock']['value'] = 'clock selection error'
@@ -203,7 +203,7 @@ class Device(Base):
                    equivalently coercable to a dict
     """
     debug('bbb.Device(%s).set_output(values=%s)', self, values)
-    self.proxy.set_output(values)
+    self.guard_proxy.set_output(values)
 
 
   def set_waveforms_impl(self, waveforms, clock_transitions, t_max):
@@ -222,4 +222,4 @@ class Device(Base):
     :param t_max: the maximum duration of any channel in units of time.
     """
     if self.isopen():
-      self.proxy.set_waveforms(waveforms, self.number_configured_channels)
+      self.guard_proxy.set_waveforms(waveforms, len(self.configured_channels))

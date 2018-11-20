@@ -4,11 +4,44 @@
 Logical device driver for the BeagleBone Black using AFRL firmware/hardware.
 """
 
-from logging import debug, info
+from logging import debug, error, info
 from physical import unit
+import Pyro4
 
 from .....version import version as arbwave_version, abi_compatible
 from ....device import Device as Base
+
+
+class ProxyCallGuard(object):
+  def __init__(self, dev):
+    self.__dict__['dev'] = dev
+
+  def __getattr__(self, attr):
+    if attr in self.dev.proxy._pyroAttrs:
+      try:
+        return getattr(self.dev.proxy, attr)
+      except Exception as e:
+        error('%s.%s exception: %s\n%s', self.dev, attr, e,
+              ''.join(Pyro4.util.getPyroTraceback()))
+        raise
+
+    def call_func(*a, **kw):
+      try:
+        return getattr(self.dev.proxy, attr)(*a, **kw)
+      except Exception as e:
+        error('%s.%s(%s,%s) exception: %s\n%s', self.dev, attr, a, kw, e,
+              ''.join(Pyro4.util.getPyroTraceback()))
+        raise
+    call_func.__name__ = attr
+    return call_func
+
+  def __setattr__(self, attr, value):
+    try:
+      return setattr(self.dev.proxy, attr, value)
+    except Exception as e:
+      error('%s.%s = %s exception: %s\n%s', self.dev, attr, repr(value), e,
+            ''.join(Pyro4.util.getPyroTraceback()))
+      raise
 
 
 class Device(Base):
@@ -26,6 +59,8 @@ class Device(Base):
     self.proxy  = None
     self.is_continuous = None
     self.t_max = 0.0 * unit.s
+
+    self.guard_proxy = ProxyCallGuard(self)
 
 
   def __del__(self):
@@ -55,7 +90,7 @@ class Device(Base):
     self.proxy = self.driver.Proxy(self.uri)
 
     ## test and assert version compatibility
-    if not abi_compatible(arbwave_version(), self.proxy.get_version()):
+    if not abi_compatible(arbwave_version(), self.guard_proxy.get_version()):
       self.close()
       raise RuntimeError(
         'bbb.Device({}): remote AFRL/BeagleBone Black ({}) Arbwave version is incompatible'
@@ -148,7 +183,7 @@ class Device(Base):
       # we don't have any waveforms, so skip starting
       return
     debug('bbb.Device(%s).start()', self)
-    self.proxy.exec_waveform(1 if not self.is_continuous else 0)
+    self.guard_proxy.exec_waveform(1 if not self.is_continuous else 0)
 
 
   def wait(self):
@@ -159,7 +194,7 @@ class Device(Base):
     if self.is_continuous:
       raise RuntimeError('cannot wait for continuous waveform to finish')
 
-    reps = self.proxy.waitfor_waveform(timeout = self.t_max.coeff*2)
+    reps = self.guard_proxy.waitfor_waveform(timeout = self.t_max.coeff*2)
     debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
 
 
@@ -168,5 +203,5 @@ class Device(Base):
     Forceably stop any running sequence.
     """
     debug('bbb.Device(%s).stop()', self)
-    self.proxy.stop()
+    self.guard_proxy.stop()
     self.is_continuous = None

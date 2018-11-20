@@ -82,12 +82,12 @@ class Device(Base):
     config = {
       'trigger' : {
         'enable': {
-          'value': self.proxy.triggered,
+          'value': self.guard_proxy.triggered,
           'type': bool,
           'range': None,
         },
         'retrigger': {
-          'value': self.proxy.retrigger,
+          'value': self.guard_proxy.retrigger,
           'type': bool,
           'range': None,
         },
@@ -103,7 +103,7 @@ class Device(Base):
         },
       },
       'start_delay' : {
-        'value' : self.proxy.start_delay * 5*units.ns,
+        'value' : self.guard_proxy.start_delay * 5*units.ns,
         'type'  : float,
         'range' : float_range(3*5*units.ns, ((2**48)-1)*5*units.ns, step=5*units.ns),
       },
@@ -158,19 +158,19 @@ class Device(Base):
     my_trg_config = self.config['trigger']
     if self.config['trigger'] != trg_config:
       if my_trg_config['enable'] != trg_config['enable']:
-        self.proxy.triggered = trg_config['enable']['value']
+        self.guard_proxy.triggered = trg_config['enable']['value']
 
       if my_trg_config['retrigger'] != trg_config['retrigger']:
-        self.proxy.retrigger = trg_config['retrigger']['value']
+        self.guard_proxy.retrigger = trg_config['retrigger']['value']
 
       if my_trg_config['level'] != trg_config['level']:
-        self.proxy.trigger_level = trg_config['level']['value']
+        self.guard_proxy.trigger_level = trg_config['level']['value']
 
       if my_trg_config['pull'] != trg_config['pull']:
-        self.proxy.trigger_pull = trg_config['pull']['value']
+        self.guard_proxy.trigger_pull = trg_config['pull']['value']
 
     if self.config['start_delay'] != config['start_delay']:
-      self.proxy.start_delay = \
+      self.guard_proxy.start_delay = \
         int(config['start_delay']['value'] / (5*units.ns))
 
 
@@ -217,7 +217,7 @@ class Device(Base):
                    equivalently coercable to a dict
     """
     debug('bbb.Device(%s).set_output(values=%s)', self, values)
-    self.proxy.set_output(values)
+    self.guard_proxy.set_output(values)
 
 
   def set_waveforms_impl(self, waveforms, clock_transitions, t_max):
@@ -244,4 +244,4 @@ class Device(Base):
       )
 
     if self.isopen():
-      self.proxy.set_waveforms(waveforms, clock_transitions, t_max)
+      self.guard_proxy.set_waveforms(waveforms, clock_transitions, t_max)
