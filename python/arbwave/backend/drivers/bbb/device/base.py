@@ -206,6 +206,9 @@ class Device(Base):
     """
     Wait for the sequence to finish.
     """
+    if self.is_continuous is None:
+      # we don't have any waveforms, so skip
+      return
     debug('bbb.Device(%s).wait()', self)
     if self.is_continuous:
       raise RuntimeError('cannot wait for continuous waveform to finish')
@@ -224,6 +227,9 @@ class Device(Base):
     """
     Forceably stop any running sequence.
     """
+    if self.is_continuous is None:
+      # we don't have any waveforms, so skip
+      return
     debug('bbb.Device(%s).stop()', self)
     self.guard_proxy.stop()
     self.is_continuous = None
