@@ -13,11 +13,7 @@ ch_types = None
 polarity_map = None
 
 def load_nidaqmx_h(module):
-  nidaqmx_version = module.get_nidaqmx_version()
-  nidaqmx_h_name = 'nidaqmx_h_%s' % (nidaqmx_version.replace ('.', '_'))
-  exec('from nidaqmx import {} as nidaqmx_h'.format(nidaqmx_h_name))
-  module.libnidaqmx.DAQmx     = nidaqmx_h.DAQmx
-  module.libnidaqmx.error_map = nidaqmx_h.error_map
+  module.libnidaqmx._load_header(None)
 
   global regen_modes, ch_types, polarity_map
   l = module.libnidaqmx
@@ -207,26 +203,27 @@ class NiDAQmx:
 
   def DAQmxGetSysDevNames(self,buf_ref,bufsize):
     devices = sorted(self.devices.keys())
-    buf_ref._obj.value = ', '.join(devices)[:bufsize]
+    buf_ref._obj.value = (', '.join(devices)).encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetSysDevNames() = %s', buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysTasks(self,buf_ref,bufsize):
-    buf_ref._obj.value = ''[:bufsize]
-    log(DEBUG-1, 'DAQmxGetSysTasks(%s) = %s', chan, buf_ref._obj.value)
+    buf_ref._obj.value = b''[:bufsize]
+    log(DEBUG-1, 'DAQmxGetSysTasks() = %s', buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetSysGlobalChans(self,buf_ref,bufsize):
-    buf_ref._obj.value = ''[:bufsize]
-    log(DEBUG-1, 'DAQmxGetSysGlobalChans(%s) = %s', chan, buf_ref._obj.value)
+    buf_ref._obj.value = b''[:bufsize]
+    log(DEBUG-1, 'DAQmxGetSysGlobalChans() = %s', buf_ref._obj.value)
     return 0
 
 
 
   # PHYSICAL CHANNEL INFORMATION
   def DAQmxGetPhysicalChanDOSampClkSupported(self, chan, retval_ref):
+    chan = chan.decode()
     D = self.devices[ chan.partition('/')[0] ]
     retval_ref._obj.value = int( D.do_sample_clock_supported )
     log(DEBUG-1, 'DAQmxGetPhysicalChanDOSampClkSupported(%s) = %s', chan, retval_ref._obj.value)
@@ -236,17 +233,17 @@ class NiDAQmx:
 
   # SIGNALS & ROUTES
   def DAQmxConnectTerms(self, src, dest, invert):
-    log(DEBUG-1, 'DAQmxConnectTerms(%s,%s,%s)', src, dest, polarity_map[invert])
+    log(DEBUG-1, 'DAQmxConnectTerms(%s,%s,%s)', src.decode(), dest.decode(), polarity_map[invert])
     return 0
 
 
   def DAQmxDisconnectTerms(self, src, dest):
-    log(DEBUG-1, 'DAQmxDisonnectTerms(%s,%s)', src, dest)
+    log(DEBUG-1, 'DAQmxDisonnectTerms(%s,%s)', src.decode(), dest.decode())
     return 0
 
 
   def DAQmxTristateOutputTerm(self, term):
-    log(DEBUG-1, 'DAQmxTristateOutputTerm(%s)', term)
+    log(DEBUG-1, 'DAQmxTristateOutputTerm(%s)', term.decode())
     return 0
 
 
@@ -255,65 +252,74 @@ class NiDAQmx:
   #   DEVICE INFORMATION
   def DAQmxGetDevProductType(self, dev, buf_ref, bufsize):
     # for now, we will default to simulating a PCI-6723 ao card
-    buf_ref._obj.value = self.devices[str(dev)].board[:bufsize]
+    dev = dev.decode()
+    buf_ref._obj.value = self.devices[dev].board.encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevProductType(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevProductNum(self, dev, retval_ref):
-    retval_ref._obj.value = self.devices[str(dev)].product_number
+    dev = dev.decode()
+    retval_ref._obj.value = self.devices[dev].product_number
     log(DEBUG-1, 'DAQmxGetDevProductNum(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevSerialNum(self, dev, retval_ref):
-    retval_ref._obj.value = self.devices[str(dev)].serial
+    dev = dev.decode()
+    retval_ref._obj.value = self.devices[dev].serial
     log(DEBUG-1, 'DAQmxGetDevSerialNum(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevAOPhysicalChans(self, dev, buf_ref, bufsize):
+    dev = dev.decode()
     chans = ','.join([ '{}/ao{}'.format(dev,i)
-      for i in range(self.devices[str(dev)].num_ao_channels) ])
-    buf_ref._obj.value = chans[:bufsize]
+      for i in range(self.devices[dev].num_ao_channels) ])
+    buf_ref._obj.value = chans.encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevAOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevDOPorts(self, dev, buf_ref, bufsize):
+    dev = dev.decode()
     chans = ','.join([ '{}/port{}'.format(dev,i)
-      for i in range(self.devices[str(dev)].num_do_ports) ])
-    buf_ref._obj.value = chans[:bufsize]
+      for i in range(self.devices[dev].num_do_ports) ])
+    buf_ref._obj.value = chans.encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevDOPorts(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevDOLines(self, dev, buf_ref, bufsize):
+    dev = dev.decode()
     # this is not really consistent right now, but we're simulating 32 lines
-    D = self.devices[str(dev)]
+    D = self.devices[dev]
     chans = ','.join( chain(* [
       [ '{}/port{}/line{}'.format(dev,pi,li) for li in range(D.port_size) ]
       for pi in range(D.num_do_ports)
     ]) )
-    buf_ref._obj.value = chans[:bufsize]
+    buf_ref._obj.value = chans.encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevDOLines(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevCOPhysicalChans(self, dev, buf_ref, bufsize):
+    dev = dev.decode()
     buf_ref._obj.value = ','.join([
-      '{}/ctr{}'.format(dev,i) for i in range(self.devices[str(dev)].num_counters)
-    ])[:bufsize]
+      '{}/ctr{}'.format(dev,i) for i in range(self.devices[dev].num_counters)
+    ]).encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetDevCOPhysicalChans(%s) = %s', dev, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetDevAOSampClkSupported(self, dev, retval_ref):
-    retval_ref._obj.value = int( self.devices[str(dev)].ao_sample_clock_supported )
+    dev = dev.decode()
+    retval_ref._obj.value = int( self.devices[dev].ao_sample_clock_supported )
     log(DEBUG-1, 'DAQmxGetDevAOSampClkSupported(%s) = %s', dev, retval_ref._obj.value)
     return 0
 
   def DAQmxResetDevice(self, dev):
+    dev = dev.decode()
     log(DEBUG-1, 'DAQmxResetDevice(%s)', dev)
     return 0
 
@@ -321,6 +327,7 @@ class NiDAQmx:
 
   #   TASK INFORMATION
   def DAQmxCreateTask(self,name,task_ref):
+    name = name.decode()
     self.last_task += 1
     task_ref._obj.value = self.last_task
     self.tasks[ self.last_task ] = Task(name)
@@ -329,7 +336,7 @@ class NiDAQmx:
 
 
   def DAQmxGetTaskName(self,task,buf_ref,bufsize):
-    buf_ref._obj.value = self.tasks[task.value].name[:bufsize]
+    buf_ref._obj.value = self.tasks[task.value].name.encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetTaskName(%d) = %s', task.value, buf_ref._obj.value)
     return 0
 
@@ -365,6 +372,7 @@ class NiDAQmx:
     assert phys_chan, 'NIDAQmx:  missing physical channel name'
     if not chname:
       chname = phys_chan
+    chname = chname.decode()
     T = self.tasks[ task.value ]
     assert chname not in T.channels, \
       'NIDAQmx:  channel already exists in task'
@@ -379,6 +387,7 @@ class NiDAQmx:
       'only per_line DO group ing implemented in simulator'
     if not chname:
       chname = phys_chan
+    chname = chname.decode()
     T = self.tasks[ task.value ]
     assert chname not in T.channels, \
       'NIDAQmx:  channel already exists in task'
@@ -389,6 +398,7 @@ class NiDAQmx:
   def DAQmxGetChanType(self, task, chname, retval_ref):
     T = self.tasks[ task.value ]
     if chname:
+      chname = chname.decode()
       retval_ref._obj.value = ch_types[ T.channels[ T.chindx[chname] ].typ ]
     else:
       retval_ref._obj.value = ch_types[ T.channels[ 0 ].typ ]
@@ -404,14 +414,14 @@ class NiDAQmx:
 
   def DAQmxGetTaskChannels(self,task,buf_ref,bufsize):
     chnames = [ str(c)  for c in self.tasks[task.value].channels ]
-    buf_ref._obj.value = ','.join(chnames)[:bufsize]
+    buf_ref._obj.value = ','.join(chnames).encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetTaskChannels(%s) = %s', task, buf_ref._obj.value)
     return 0
 
 
   def DAQmxGetTaskDevices(self,task,buf_ref,bufsize):
     devs = { c.name.partition('/')[0] for c in self.tasks[task.value].channels }
-    buf_ref._obj.value = ','.join(devs)[:bufsize]
+    buf_ref._obj.value = ','.join(devs).encode()[:bufsize]
     log(DEBUG-1, 'DAQmxGetTaskDevices(%s) = %s', task, buf_ref._obj.value)
     return 0
 
