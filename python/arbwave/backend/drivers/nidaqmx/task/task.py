@@ -234,7 +234,7 @@ class Task(Base):
       mode = 'finite'
 
     clock_rate = self.get_clock_rate()
-    min_dt = self.get_min_period().coeff
+    min_dt = self.get_min_period()
 
     debug( 'nidaqmx: configuring task timing for waveform output: %s', self.task )
     if rootlog.getEffectiveLevel() <= (DEBUG-1):
