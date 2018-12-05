@@ -5,6 +5,7 @@ from .helpers import *
 from . import scaling
 from ... import backend
 from .. import hosts_changed
+from ...tools.gui_callbacks import do_gui_operation
 
 ui_info = \
 """<ui>
@@ -136,10 +137,10 @@ def end_drag(w, ctx, parent, channels):
 
 def highlight(selection, plotter):
   model, i = selection.get_selected()
-  try:
-    plotter.highlight( model[i][model.DEVICE].partition('/')[-1] )
-  except:
-    plotter.highlight( None )
+  if i:
+    do_gui_operation(plotter.highlight, model[i][model.DEVICE].partition('/')[-1])
+  else:
+    do_gui_operation(plotter.highlight, None)
 
 
 def clear_selection(w, event):
@@ -204,7 +205,6 @@ class Channels:
     V.set_property( 'hover_selection', True )
     V.set_property( 'has_tooltip', True )
     V.connect('query-tooltip', query_tooltip)
-    V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
     V.append_column( C['label'  ] )
     V.append_column( C['value'  ] )
     V.append_column( C['enable' ] )

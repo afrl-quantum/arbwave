@@ -123,9 +123,9 @@ def highlight(selection, plotter, channels):
   model, i = selection.get_selected()
   if i:
     paths = gather_paths( channels, model, i )
-    plotter.highlight_parts( paths )
+    do_gui_operation(plotter.highlight_parts, paths)
   else:
-    plotter.highlight_parts( list() )
+    do_gui_operation(plotter.highlight_parts, list())
 
 
 def clear_selection(w, event):
@@ -201,7 +201,6 @@ class Waveforms:
     V.set_property( 'hover_selection', True )
     V.set_property( 'has_tooltip', True )
     V.connect('query-tooltip', self.query_tooltip)
-    V.get_selection().connect('changed', lambda s,V: V.trigger_tooltip_query(), V)
     V.append_column( C['channel'  ] )
     V.append_column( C['time'     ] )
     V.append_column( C['duration' ] )
