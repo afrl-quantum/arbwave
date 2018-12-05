@@ -174,7 +174,7 @@ class Device(Base):
 
       # as in processor/engine/compute, dt_clk already should be an integer
       # multiple of 1/scan_rate (where multiple is >= 2)
-      period = int(round( cfg['dt'] * scan_rate ))
+      period = int(round( cfg['dt'].coeff * scan_rate ))
       half_period = period//2
       for t_rise in cfg['transitions']:
         t_rise *= period # rescale t_rise from dt_clk units to 1/scan_rate units
