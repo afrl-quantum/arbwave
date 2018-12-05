@@ -106,7 +106,7 @@ class SinPulse(ScaledFunction):
     self.A = A
     self.average = average
     self.phase_shift = phase_shift
-    if steps_per_cycle > 0:
+    if steps_per_cycle and steps_per_cycle > 0:
       self.steps_per_cycle = steps_per_cycle
     else:
       self.steps_per_cycle = self.default_steps_per_cycle
@@ -203,7 +203,7 @@ class Ramp(ScaledFunction):
     super(Ramp, self).__init__()
     self.to = to
     self.exponent = exponent
-    if steps > 0:
+    if steps and steps > 0:
       self.steps = steps
     else:
       self.steps = Ramp.default_steps
@@ -439,7 +439,7 @@ class Interpolate:
     """
     self.interp = interp1d( (x - min(x)) / float(max(x) - min(x)), y )
     self.unity = getunity( y[0] )
-    if steps > 0:
+    if steps and steps > 0:
       self.steps = steps
     else:
       self.steps = Interpolate.default_steps
