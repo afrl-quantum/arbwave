@@ -24,6 +24,9 @@ class Undo:
     self.row      = row
     self.col      = col
 
+  def __str__(self):
+    return 'Generic edit'
+
   def undo(self):
     self.model[self.row][self.col] = self.old_item
 

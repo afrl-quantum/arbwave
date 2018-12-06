@@ -269,6 +269,9 @@ class ListUndo:
     self.new_row = list(model[iter])
     self.deletion = deletion
 
+  def __str__(self):
+    return 'Channel edit'
+
   def delete(self):
     self.model.remove( self.model.get_iter(self.path) )
 

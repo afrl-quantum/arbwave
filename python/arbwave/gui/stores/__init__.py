@@ -7,3 +7,4 @@ from .signals import Signals
 from .script import Script
 from .generic import Generic
 from .hosts import Hosts
+from .undo import Undo

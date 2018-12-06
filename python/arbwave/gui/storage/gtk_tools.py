@@ -94,7 +94,7 @@ def load_file( filename, stor, globals=globals(), **locals ):
   logging.debug('stor.clearvars()...')
   stor.clearvars()
   logging.debug('stor.clearvars() finished.')
-  stor.set_config_file( filename )
+  stor.set_file_saved(False, filename)
   logging.debug('stor.setvars()...')
   stor.setvars( V )
   logging.debug('stor.setvars() finished.')
@@ -117,7 +117,7 @@ def gtk_save_handler(action, stor, force_new=False):
     else:
       config_file = get_file(False)
       F = open( config_file, 'w' )
-      stor.set_config_file( config_file )
+      stor.set_file_saved(None, config_file)
   except NoFileError:
     return # this happens when get_file returns None
   writevars( F, stor.getvars() )

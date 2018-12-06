@@ -9,6 +9,9 @@ class Undo(object):
     self.new_text = new_text
     self.script = script
 
+  def __str__(self):
+    return 'Script edit'
+
   def undo(self):
     self.script.set_text( self.old_text, skip_undo=True )
     self.script.edit() # show the editor
@@ -72,7 +75,6 @@ class Script(object):
   def edit(self, **kwargs):
 
     def unset_editor(*args):
-      print('unsettling')
       self.editor = None
 
     if not self.editor:

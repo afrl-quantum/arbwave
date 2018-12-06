@@ -407,12 +407,6 @@ class Waveforms:
         self.view.get_selection().select_iter( n )
 
 
-class NullUndo:
-  def undo(self):
-    pass
-  def redo(self):
-    pass
-
 class TreeUndo:
   def __init__(self, iter, model, view, deletion=False):
     self.model = model
@@ -422,6 +416,9 @@ class TreeUndo:
     self.parent_path = self.path[:-1]
     self.new_row = list(model[iter])
     self.deletion = deletion
+
+  def __str_(self):
+    return 'Waveform edit'
 
   def delete(self):
     self.model.remove( self.model.get_iter(self.path) )

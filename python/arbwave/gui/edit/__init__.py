@@ -4,3 +4,4 @@ from .channels import Channels
 from .waveforms import Waveforms
 from . import waveformsset
 from .generic import Generic
+from .undo import Undo

@@ -43,12 +43,10 @@ ui_info = \
       <menuitem action='Quit'/>
     </menu>
     <menu action='EditMenu'>
-      <!-- 
-      <menuitem action='Cut'/>
-      <menuitem action='Copy'/>
-      <menuitem action='Paste'/>
+      <menuitem action='Undo'/>
+      <menuitem action='Redo'/>
+      <menuitem action='ShowUndo'/>
       <separator/>
-      -->
       <menuitem action='Configure'/>
       <menuitem action='Script'/>
     </menu>
@@ -148,25 +146,23 @@ class ArbWave(gtk.Window):
     self.notify = Notification( parent=self,
       get_position=lambda: notify_position(self),
     )
-    self.undo = list()
-    self.redo = list()
+    self.undo = stores.Undo(parent=self,
+      changed=lambda:self.set_file_saved(False),
+    )
     self.connect('key-press-event', self.do_keypress)
-    self.next_untested_undo = 0 # index of the last undo item that successfully
-                                # updated hardware and plots
-    self.saved = True # Whether the config file loaded has been saved
 
     # simple variable to ensure that our signal handlers do not contest
     self.allow_updates = False
 
     # LOAD THE STORAGE
-    self.set_config_file('')
+    self.set_file_saved(filename='')
     self.plotter = Plotter( self )
     self.processor = Processor( self )
     self.script = stores.Script(
       default_script,
       title='Global Variables/Functions...',
       parent=self,
-      add_undo=self.add_undo,
+      add_undo=self.undo.add,
       changed=self.update,
     )
     self.channels = stores.Channels(
@@ -184,10 +180,10 @@ class ArbWave(gtk.Window):
       channels=self.channels,
       processor=self.processor,
       parent=self,
-      add_undo=self.add_undo )
+      add_undo=self.undo.add )
     self.waveform_editor = edit.Waveforms(
       self.waveforms,
-      self.channels, self, self.add_undo )
+      self.channels, self, self.undo.add )
 
     self.allow_updates = True
 
@@ -317,8 +313,7 @@ class ArbWave(gtk.Window):
 
     # ensure that the default_script is executed for default the global env
     self.processor.exec_script( default_script )
-    self.saved = True
-    self.set_full_title()
+    self.set_file_saved()
 
     if init_new:
       self.clearvars(do_update=True)
@@ -412,18 +407,18 @@ class ArbWave(gtk.Window):
         '_Quit', '<control>Q',                     # label, accelerator
         'Quit',                                    # tooltip
         self.activate_action ),
-      # ( 'Cut', gtk.STOCK_CUT,                      # name, stock id
-      #   '_Cut', '<control>X',                      # label, accelerator
-      #   'Cut text',                                # tooltip
-      #   self.activate_action ),
-      # ( 'Copy', gtk.STOCK_COPY,                    # name, stock id
-      #   '_Copy', '<control>C',                     # label, accelerator
-      #   'Copy text',                               # tooltip
-      #   self.activate_action ),
-      # ( 'Paste', gtk.STOCK_PASTE,                  # name, stock id
-      #   '_Paste', '<control>V',                    # label, accelerator
-      #   'Paste text',                              # tooltip
-      #   self.activate_action ),
+      ( 'Undo', gtk.STOCK_UNDO,                    # name, stock id
+        '_Undo', '<control>z',                     # label, accelerator
+        'Undo last change',                        # tooltip
+        self.activate_action ),
+      ( 'Redo', gtk.STOCK_REDO,                    # name, stock id
+        '_Redo', '<control>y',                     # label, accelerator
+        'Redo last undone change',                 # tooltip
+        self.activate_action ),
+      ( 'ShowUndo', gtk.STOCK_INDEX,               # name, stock id
+        '_Show undo/redo', None,                   # label, accelerator
+        'Show undo/redo stacks',                   # tooltip
+        self.activate_action ),
       ( 'Configure', gtk.STOCK_PREFERENCES,        # name, stock id
         '_Configure Devices', None,                # label, accelerator
         'Configure triggers, backplane, etc.',     # tooltip
@@ -509,6 +504,9 @@ class ArbWave(gtk.Window):
       'Save'      : lambda a: self.save(),
       'SaveAs'    : lambda a: self.save(True),
       'Quit'      : lambda a: self.destroy(),
+      'Undo'      : lambda a: self.undo.undo(),
+      'Redo'      : lambda a: self.undo.redo(),
+      'ShowUndo'  : lambda a: self.undo.show(),
       'Configure' : lambda a: configure.show(self, self),
       'Script'    : lambda a: self.script.edit(notebook=self.shell_notebook),
       'Run'       : lambda a: self.update(toggle_run=True),
@@ -570,11 +568,6 @@ class ArbWave(gtk.Window):
       'runnable_settings' : self.runnable_settings,
     }
 
-  def clearundo(self):
-    self.undo = list()  # remove all current undo items
-    self.redo = list()  # remove all current undo items
-    self.next_untested_undo = 0
-
 
   def pause(self):
     self.allow_updates = False
@@ -604,7 +597,7 @@ class ArbWave(gtk.Window):
     for c in conversions:
       vardict = c( vardict )
 
-    self.clearundo()
+    self.undo.clear()
 
     # suspend all updates
     self.pause()
@@ -667,6 +660,8 @@ class ArbWave(gtk.Window):
       self.runnable_settings = vardict['runnable_settings']
       logging.debug('runnable_settings.load(...) finished.')
 
+    self.undo.clear()
+
     # re-enable updates and directly call for an update
     self.unpause()
     self.update(*(self.ALL_ITEMS - set([self.hosts])))
@@ -675,8 +670,6 @@ class ArbWave(gtk.Window):
     # suspend all updates
     self.pause()
 
-    logging.debug('clearundo....')
-    self.clearundo()
     logging.debug('hosts.reset_to_default()....')
     self.hosts.reset_to_default()
     logging.debug('channels.clear()....')
@@ -691,10 +684,11 @@ class ArbWave(gtk.Window):
     self.clocks.clear()
     logging.debug('devcfg.clear()....')
     self.devcfg.clear()
-    self.set_config_file('')
-    self.saved = True
     logging.debug('runnable_settings.clear()....')
     self.runnable_settings.clear()
+
+    self.set_file_saved(filename='')
+    self.undo.clear()
 
     # re-enable updates
     self.unpause()
@@ -703,17 +697,13 @@ class ArbWave(gtk.Window):
       self.update(*self.ALL_ITEMS)
 
 
-  def set_file_saved(self, yes=True):
-    self.saved = yes
-    self.set_full_title()
+  def set_file_saved(self, yes=True, filename=None):
+    if filename is not None:
+      self.config_file = filename
+      default.registered_globals['__file__'] = filename
 
-
-  def set_config_file(self,f):
-    self.config_file = f
-    default.registered_globals['__file__'] = f
-    self.set_full_title()
-
-  def set_full_title(self):
+    if yes is not None:
+      self.saved = yes
     star = {True:'', False:'*'}[self.saved]
     self.set_title( self.TITLE + ':  ' + self.config_file + star )
 
@@ -753,7 +743,7 @@ class ArbWave(gtk.Window):
         ( self.script.representation(),   self.script in items ),
         toggle_run=toggle_run,
       )
-      self.next_untested_undo = len(self.undo)
+      self.undo.mark_good()
     except Exception as e:
       traceback.print_exc()
       self.notify.show(
@@ -762,7 +752,7 @@ class ArbWave(gtk.Window):
         '   Number of changes since last successful update: {} \n' \
         '   {}\n' \
         '</span>\n' \
-        .format(len(self.undo) - self.next_untested_undo,
+        .format(self.undo.number_failed,
                 str(e).replace('<', '&lt;').replace('>', '&gt;')) )
       #raise e
     if items.intersection([self.hosts, self.devcfg]):
@@ -781,29 +771,13 @@ class ArbWave(gtk.Window):
   def channels_rows_reordered(self, model, path, iter, new_order):
     self.update(model)
 
-  def add_undo(self, undo_item ):
-    self.undo.append( undo_item )
-    self.redo = list()  # remove all current undo items
-    self.saved = False # mark the config file as not having been saved
-    self.set_full_title()
-
   def do_keypress(self, widget, event):
     """Implement keypress handlers on the main window"""
-    if   event.state == gdk.ModifierType.CONTROL_MASK and event.keyval == 122:
+    if   event.state & gdk.ModifierType.CONTROL_MASK and event.keyval == gdk.KEY_z:
       # Control-Z  :  UNDO
-      try:
-        change = self.undo.pop()
-        change.undo()
-        self.redo.append( change )
-      except IndexError:
-        pass
+      self.undo.undo()
       return True
-    elif event.state == gdk.ModifierType.CONTROL_MASK and event.keyval == 121:
+    elif event.state & gdk.ModifierType.CONTROL_MASK and event.keyval == gdk.KEY_y:
       # Control-Y  :  REDO
-      try:
-        change = self.redo.pop()
-        change.redo()
-        self.undo.append( change )
-      except IndexError:
-        pass
+      self.undo.redo()
       return True
