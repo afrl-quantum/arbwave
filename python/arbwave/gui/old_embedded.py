@@ -372,7 +372,7 @@ class Python(gtk.Frame):
       elif event.keyval == gdk.KEY_Page_Down:
         self.popup.next(page=True)
         return True
-      elif event.keyval == gdk.KEY_Return:
+      elif event.keyval in [gdk.KEY_Return, gdk.KEY_KP_Enter]:
         self.popup.sel_confirmed()
         self.popup=None
         return True 
@@ -479,7 +479,7 @@ class Python(gtk.Frame):
           self.complete_text()
         return True
 
-      elif event.keyval ==gdk.KEY_Return:
+      elif event.keyval in [gdk.KEY_Return, gdk.KEY_KP_Enter]:
         command=self.get_line()
         self.exec_code(command)
         start,end=self.buffer.get_bounds()

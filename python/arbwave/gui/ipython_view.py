@@ -642,7 +642,7 @@ class IPythonView(ConsoleView, IterableIPShell):
       self.interrupt = True
       self._processLine()
       return True
-    elif event.keyval == gdk.KEY_Return:
+    elif event.keyval in [gdk.KEY_Return, gdk.KEY_KP_Enter]:
       self._processLine()
       return True
     elif event.keyval == gdk.KEY_Up or \
