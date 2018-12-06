@@ -148,6 +148,7 @@ class Waveforms:
     waveform = self.get_waveform()
 
     V = self.view = gtk.TreeView( waveform )
+    V.set_enable_tree_lines(True)
     V.set_reorderable(True)
     V.connect('drag-begin', begin_drag, parent)
     V.connect('drag-end', end_drag, parent, self.get_waveform)
