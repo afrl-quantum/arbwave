@@ -171,9 +171,7 @@ def get_config_path(path, model, CPath=None):
 
 
 def drag_motion(w, ctx, x, y, time):
-  mask = w.get_window().get_pointer()[2]
-  if mask & gdk.ModifierType.CONTROL_MASK:
-    gdk.drag_status( ctx, gdk.DragAction.COPY, time )
+  gdk.drag_status(ctx, gdk.DragAction.COPY, time)
 
 
 class Generic:

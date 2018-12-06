@@ -88,10 +88,8 @@ def begin_drag(w, ctx, parent):
   # pause updates because of waveform updates
   parent.pause()
 
-def drag_motion(w, ctx, x, y, time, parent):
-  mask = w.get_window().get_pointer()[2]
-  if mask & gdk.ModifierType.CONTROL_MASK:
-    gdk.drag_status( ctx, gdk.DragAction.COPY, time )
+def drag_motion(w, ctx, x, y, time):
+  gdk.drag_status( ctx, gdk.DragAction.COPY, time )
 
 def end_drag(w, ctx, parent, wf):
   # unpause updates and force an update based on waveform changes
@@ -152,7 +150,7 @@ class Waveforms:
     V.set_reorderable(True)
     V.connect('drag-begin', begin_drag, parent)
     V.connect('drag-end', end_drag, parent, self.get_waveform)
-    V.connect('drag-motion', drag_motion, parent)
+    V.connect('drag-motion', drag_motion)
     V.get_selection().connect('changed',highlight,self.parent.plotter,channels)
     V.connect('key-press-event', clear_selection)
 

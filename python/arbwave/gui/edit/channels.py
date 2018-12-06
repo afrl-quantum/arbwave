@@ -1,5 +1,5 @@
 # vim: ts=2:sw=2:tw=80:nowrap
-from gi.repository import Gtk as gtk, GObject as gobject
+from gi.repository import Gtk as gtk, Gdk as gdk, GObject as gobject
 
 from .helpers import *
 from . import scaling
@@ -130,6 +130,9 @@ def allows_scaling( channels, path ):
 def begin_drag(w, ctx, parent):
   parent.pause()
 
+def drag_motion(w, ctx, x, y, time):
+  gdk.drag_status( ctx, gdk.DragAction.MOVE, time )
+
 def end_drag(w, ctx, parent, channels):
   parent.unpause()
   parent.update(channels)
@@ -164,6 +167,7 @@ class Channels:
     V = self.view = gtk.TreeView( channels )
     V.set_reorderable(True)
     V.connect('drag-begin', begin_drag, parent)
+    V.connect('drag-motion', drag_motion)
     V.connect('drag-end', end_drag, parent, channels)
     V.get_selection().connect('changed', highlight, self.parent.plotter)
     V.connect('key-press-event', clear_selection)

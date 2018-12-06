@@ -16,9 +16,7 @@ class Dragger(object):
     self.model = None
 
   def drag_motion(self, w, ctx, x, y, time):
-    mask = w.get_window().get_pointer()[2]
-    if mask & gdk.ModifierType.CONTROL_MASK:
-      gdk.drag_status( ctx, gdk.DragAction.COPY, time )
+    gdk.drag_status(ctx, gdk.DragAction.COPY, time)
 
   def drag_data_received(self, w, ctx, x, y, seldata, info, time):
     if self.drop_started:
@@ -28,13 +26,11 @@ class Dragger(object):
       self.drop_info = w.get_dest_row_at_pos(x, y)
 
   def drag_begin(self, w, ctx):
-    print('begin')
     # pause updates because of waveform updates
     self.ui.pause()
     self.drop_started = False
 
   def drag_drop(self, w,ctx,x,y,time):
-    print('drop')
     self.drop_started = True
 
   def drag_end(self, w, ctx):
@@ -53,7 +49,6 @@ class Dragger(object):
       model[path][model.LABEL] = new_label + str(i)
       model[path][model.WAVEFORMS] = model[path][model.WAVEFORMS].copy()
 
-    print('end')
     self.drop_started = False
     # unpause updates, no need to trigger update unless waveform changes
     self.ui.unpause()
