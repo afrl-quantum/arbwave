@@ -4,6 +4,8 @@ from itertools import chain
 import numpy as np
 import physical
 
+from .dict import Dict
+
 def merge_signals_sets( dev_signals ):
   # take components of device-categorized dictionaries to
   D = SignalsSet()
@@ -29,22 +31,35 @@ def create_channel_name_map(channels, clocks):
   return names
 
 class Signals(dict):
-  def simple_dict(self):
-    return dict( chain(* zip(*self.values())[1] ) )
+  """
+  This dictionary instance converts the dictionaries of timing/encoding groups,
+  where the group label/id is the key to a dictionary of nearly the same, only
+  where the first dt_clk step is the key.
+
+  The data is also transitioned from an array of (time,value) pairs to a
+  dictionary of time:value items.
+  """
+  def __init__(self, *args, **kwargs):
+    super(Signals,self).__init__(self._reformat(*args, **kwargs))
+
+  def update(self, *args, **kwargs):
+    super(Signals,self).update(self._reformat(*args, **kwargs))
+
+  @staticmethod
+  def _reformat(*args, **kwargs):
+    D = dict(*args, **kwargs)
+
+    retval = dict()
+    return {
+      data[0][0]: Dict(
+        encoding=enc or 'step', # in case it is *None*
+        times = tuple(t for t,val in data),
+        data  = dict(data),
+      ) for grp, (enc,data) in D.items()
+    }
 
 
 class SignalsSet(dict):
-  def __init__(self, *args, **kwargs):
-    super(SignalsSet,self).__init__(*args, **kwargs)
-    # ensure that each member of this signal set is all of the Signals class
-    for i,v in self.items():
-      self[i] = Signals(v)
-
-  def update(self, other=dict(), **kwargs):
-    other_ = { k:Signals(v) for k,v in other.items() }
-    kwargs_= { k:Signals(v) for k,v in kwargs.items() }
-    super(SignalsSet,self).update( other_, **kwargs_ )
-
   class SignalsArrays(dict):
     def save( self, ff ):
       # get the handle to an open file
@@ -56,54 +71,92 @@ class SignalsSet(dict):
         closeall= lambda :None
       elif '{}' in ff:
         # filename is series format
-        open_i  = lambda clk: open(ff.format(clk.replace('/','-')),'w')
+        open_i  = lambda clk: open(ff.format(clk.replace('/','-')),'wb')
         close_i = lambda f:f.close()
         closeall= lambda :None
       else:
         # single filename
-        f = open(ff, 'w')
+        f = open(ff, 'wb')
         open_i  = lambda clk: f
         close_i = lambda ignore:None
         closeall= lambda :f.close()
 
       for clk,I in self.items():
         f = open_i(clk)
-        f.write('# All signals for clock:  {}\n'.format(clk))
-        f.write('# t\t'+'\t'.join( I['titles'] ) + '\n') # begin with titles
+        f.write('# All signals for clock:  {}\n'.format(clk).encode())
+        f.write(('# t\t'+'\t'.join( I['titles'] ) + '\n').encode()) # begin with titles
         np.savetxt( f, I['table'] )
-        f.write('\n') # end of block
+        f.write(b'\n\n') # end of block
         close_i(f)
       closeall()
 
   def to_arrays( self, transitions, dev_clocks, channels ):
     names = create_channel_name_map( channels, dev_clocks )
 
+    cache = {k: Signals(v) for k,v in self.items()}
+
     output = self.SignalsArrays()
     # Each channel that uses a common clock will create values for a single
     # clock-specific array.
     for clk in { n['clk'] for n in names.values() }:
       # all channels that pertain to clk
-      L = [ (d,n)  for d,n in names.items()  if n['clk'] == clk ]
-      L.sort( key = lambda i: i[1]['order'] ) # sort by channel order
+      chans_w_clk = [ (d,n)  for d,n in names.items()  if n['clk'] == clk ]
+      chans_w_clk.sort( key = lambda i: i[1]['order'] ) # sort by channel order
       dt_clk = float(transitions[clk]['dt']) # strip units
 
       # now we go through each channel and create complete scan table
       TI = [ (t,list()) for t in transitions[clk]['transitions'] ]
       TI.sort( key = lambda x: x[0] ) # sort by clock cycle
 
-      for l in L:
-        signals = self[ l[0] ].simple_dict()
-        last = 0
-        for t,A in TI:
-          if t not in signals:  v = last
-          else:                 v = last = float(signals[t]) #strip units
-          A.append( v )
+      for chname, chinfo in chans_w_clk:
+        signals = cache[ chname ]
+        grp = Dict(encoding='step', data=dict(), times=(-1,))
+        value = 0
+        i_tv = -1 # only really used for 'linear' (, 'bezier'?)
 
-      # now let's save this into the final output array
-      table = np.array( [[i[0]]+i[1] for i in TI] )
+        for t,A in TI:
+          if t in signals:
+            # get new group data
+            grp     = signals[t]
+            value   = float(grp.data[t])
+            i_tv = 0 # the first time for the group
+
+          elif t > grp.times[-1]:
+            # beyond the last seen group; output remains fixed
+            pass
+
+          elif grp.encoding == 'step':
+            # in middle of executing 'step' encoding group
+            if t in grp.data:
+              value = grp.data[t]
+            else:
+              # Not at the next step; output remains fixed
+              pass
+
+          elif grp.encoding == 'linear':
+            # in middle of executing 'linear' encoding group
+            if t in grp.data:
+              value   = grp.data[t]
+              i_tv = grp.times.index(t)
+            else:
+              # we finally have to do a little bit of interpolation
+              # i_tv *must* necessarily be less than (len(grp.times)-1)
+              ti = grp.times[i_tv]
+              tf = grp.times[i_tv+1]
+              di = grp.data[ti]
+              value = di + (grp.data[tf] - di) / (tf - ti) * (t - ti)
+
+          else:
+            raise RuntimeError(
+              'Unkown encoding in flattening output: ' + grp.encoding)
+
+          A.append( value )
+
+      # now let's save this into the final output array; time is first column
+      table = np.array( [[t]+A for t, A in TI] )
       table[:,0] *= dt_clk # scale time by clock rate
       output[clk] = {
-        'titles'  : [ i[1]['name'] for i in L ],
+        'titles'  : [ chinfo['name'] for chname, chinfo in chans_w_clk ],
         'table'   : table,
       }
     return output
@@ -118,12 +171,9 @@ class _FakeStuffCreator(object):
   class to create fake data for testing Signals(Set) classes
   """
   def __init__(self):
-    PLOTDIR = path.join( path.dirname( __file__ ), path.pardir, 'gui', 'plotter' )
-    import sys
-    sys.path.insert( 0, PLOTDIR )
-    import digital, analog
-    from io import StringIO
-    self.StringIO = StringIO
+    from ..gui.plotter import digital, analog
+    from io import BytesIO
+    self.BytesIO = BytesIO
     self.mod_D, self.mod_A = digital, analog
     D, A = self.mod_D.example_signals, self.mod_A.example_signals
     self.channels = _create_fake_channels( D, A )
@@ -142,7 +192,7 @@ class _FakeStuffCreator(object):
 
   def test_gnuplot(self):
     A = self.signals.to_arrays(self.transitions, self.clocks, self.channels)
-    f = self.StringIO()
+    f = self.BytesIO()
     A.save( f )
     return f.getvalue()
     
@@ -171,7 +221,7 @@ def _create_fake_signals(digital, analog):
     'D' : { ('D/'+k):v  for k,v in digital.items() },
   }
   A = {
-    'D' : { ('A/'+k):v  for k,v in analog.items() },
+    'A' : { ('A/'+k):v  for k,v in analog.items() },
   }
   return merge_signals_sets( [D, A] )
 
@@ -184,16 +234,20 @@ def _create_fake_transitions(digital, analog):
   return {
     'D/clock' : {
       'dt'          : 5e-8*physical.unit.s,
-      'transitions' : set(chain(*[ [ i[0] for i in chain(*C.values()) ]
-                                   for C in digital.values() ] ))
+      'transitions' : set([
+        t for t, val in chain.from_iterable([
+          vals for encoding, vals in chain.from_iterable([
+            C.values() for C in digital.values()])])]),
     },
     'A/clock' : {
       'dt'          : 2.4e-6*physical.unit.s,
-      'transitions' : set(chain(*[ [ i[0] for i in chain(*C.values()) ]
-                                   for C in analog.values() ] ))
+      'transitions' : set([
+        t for t, val in chain.from_iterable([
+          vals for encoding, vals in chain.from_iterable([
+            C.values() for C in analog.values()])])]),
     },
   }
 
-if __name__ == '__main__':
+def test_gnuplot():
   fake = _FakeStuffCreator()
-  print(fake.test_gnuplot())
+  return fake.test_gnuplot().decode()

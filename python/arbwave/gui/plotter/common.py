@@ -83,24 +83,23 @@ def get_t_final( signals ):
   """
   t_final = 0.0
   for c in signals.values(): # for each channel's data
-    # sort by group number (i.e. path):
-    L = sorted(c.items(), key = lambda i : i[0])
-    t_final = max( t_final, L[-1][1][1][-1][0] )
+    # sort by time in last (time,value) element:
+    L = sorted(c.values(), key = lambda enc_data : enc_data[1][-1][0])
+    t_final = max( t_final, L[-1][1][-1][0] )
   return t_final
 
 
-def mkdt( signal, t_final ):
-  dt = copy.deepcopy( signal )
+def mkdt( sorted_grp_data, t_final ):
+  dt = dict()
+  for i in range(len(sorted_grp_data)-1):
+    grp, (encoding, data) = sorted_grp_data[i]
+    _,   (_,   next_data) = sorted_grp_data[i+1]
 
-  #append the first item of the next grouping
-  # ensure that these are sorted by group/path:
-  items = sorted(signal.items(), key = lambda i : i[0])
-  for i in range(1,len(items)):
-    dt[ items[i-1][0] ][1].append( items[i][1][1][0] )
-  #append a pseudo-item for the last grouping time length
-  dt[ items[-1][0] ][1].append( (t_final, None) )
+    # append the first item of the next grouping
+    dt[grp] = np.diff([t for t,val in data] + [next_data[-1][0]])
 
-  # here, we remove/ignore the (as yet unused) encoding
-  for i in dt:
-    dt[i] = np.diff( np.array(dt[i][1])[:,0] )
+  #add final-time to the last grouping times
+  grp, (encoding, data) = sorted_grp_data[-1]
+  dt[ grp ] = np.diff([t for t,val in data] + [t_final])
+
   return dt

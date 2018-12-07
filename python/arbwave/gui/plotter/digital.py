@@ -55,17 +55,19 @@ def plot( ax, signals, name_map=None, t_final=None ):
   labels = list()
   i = 0
   group_lines = dict()
-  for c in channels:
-    labels.append( get_label( c[0] ) )
-    xscale = get_scale( c[0] )
-    dt = mkdt( c[1], t_final / xscale )
+  for chname, grp_data in channels:
+    labels.append( get_label( chname ) )
+    xscale = get_scale( chname )
+    # sort groups by time in last (time,value) element
+    groups = sorted(grp_data.items(),
+                    key = lambda grp_encdata : grp_encdata[1][1][-1][0])
+    dt = mkdt( groups, t_final / xscale )
 
-    groups = sorted(c[1].items(), key = lambda v : v[0])
-    for g in groups:
-      group_lines[(g[0],c[0])] = \
+    for grp, (encoding, data) in groups:
+      group_lines[(grp,chname)] = \
         BBWrapper(
           ax.broken_barh(
-            mkbbars(g[1][0], g[1][1], dt[ g[0] ], xscale), (i,1),
+            mkbbars(encoding, data, dt[grp], xscale), (i,1),
             facecolors=cconv.to_rgba(fc(i)), linewidth=2 ) )
     i += 1
 
@@ -134,7 +136,7 @@ example_signals = {
 }
 
 
-if __name__ == '__main__':
+def plot_test():
   import matplotlib.pyplot as plt
   fig = plt.figure()
   ax = fig.add_subplot(111)

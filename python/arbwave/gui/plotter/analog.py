@@ -100,22 +100,24 @@ def plot( ax, signals, name_map=None, t_final=None ):
   i = 0
   group_lines = dict()
   ylim = 1e300, 1e-300
-  for c in channels:
-    labels.append( get_label( c[0] ) )
-    xscale = get_xscale( c[0] )
-    yscale = get_yscale( c[0] )
+  for chname, grp_data in channels:
+    labels.append( get_label( chname ) )
+    xscale = get_xscale( chname )
+    yscale = get_yscale( chname )
 
     x0 = None
     y0 = None
-    groups = sorted(c[1].items(), key = lambda v : v[0] )
-    for g in groups:
-      xg, yg, x0, y0 = mkxy(g[1][0], g[1][1], x0, y0)
+    # sort groups by time in last (time,value) element
+    groups = sorted(grp_data.items(),
+                    key = lambda grp_encdata : grp_encdata[1][1][-1][0])
+    for grp, (encoding, data) in groups:
+      xg, yg, x0, y0 = mkxy(encoding, data, x0, y0)
       xg *= xscale
       apply_yscale(yg, yscale)
 
       ylim = min(ylim[0], yg.min()), max(ylim[1], yg.max())
 
-      group_lines[(g[0],c[0])] = ax.plot(xg, yg, color=fc(i), linewidth=2)[0]
+      group_lines[(grp,chname)] = ax.plot(xg, yg, color=fc(i), linewidth=2)[0]
 
     # By definition, each final transition is supposed to be honored as a fixed
     # value.  This final data point just ensures that this hold is plotted for
@@ -125,7 +127,7 @@ def plot( ax, signals, name_map=None, t_final=None ):
     x1 = t_final
     y1 = y0
 
-    group_lines[((-1,), c[0])] = \
+    group_lines[((-1,), chname)] = \
       ax.plot( [x0, x1], [y0, y1], color=fc(i), linewidth=2 )[0]
     i += 1
 
@@ -321,7 +323,7 @@ example_signals = {
 }
 
 
-if __name__ == '__main__':
+def plot_test():
   import matplotlib.pyplot as plt
   fig = plt.figure()
   ax = fig.add_subplot(111)
