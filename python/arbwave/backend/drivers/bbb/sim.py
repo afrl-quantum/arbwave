@@ -46,7 +46,6 @@ class NS(object):
     hostid = oid.partition('.')[-1].split('/')[0]
     return self.registry[oid](uri, hostid)
 
-
 class Device(object):
   def __init__(self, uri, hostid):
     super(Device,self).__init__()
@@ -54,8 +53,18 @@ class Device(object):
     self.objectId = format_objectId(hostid, self.type)
     self.URI = uri
     self.n = None
+    self._owner = None
+    self._pyroAttrs = dir(self)
 
   def _pyroRelease(self):
+    pass
+  @property
+  def owner(self):
+    return self._owner
+  @owner.setter
+  def owner(self, value):
+    self._owner = value
+  def reset(self):
     pass
   def get_version(self):
     """return the Arbwave version"""
@@ -74,6 +83,8 @@ class Device(object):
     self.n = None
     return n
   def stop(self):
+    pass
+  def flush_input(self):
     pass
 
 
