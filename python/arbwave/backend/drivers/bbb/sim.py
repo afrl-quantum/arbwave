@@ -33,7 +33,7 @@ class NS(object):
 
     return {
       obj : '{protocol}{obj}'.format(protocol=self.protocol, obj=obj)
-      for obj in self.registry if obj.startswith(prefix + '.')
+      for obj in self.registry if obj.startswith(prefix if prefix else '')
     }
 
   def Proxy(self, uri):
