@@ -553,10 +553,10 @@ class DataDialog(gtk.Window):
     try:
       config_file = self.filename
       if (not force_new) and config_file:
-        F = open( config_file, 'w' )
+        F = open( config_file, 'wb' )
       else:
         config_file = get_file(False, filters=self.FILTERS)
-        F = open( config_file, 'w' )
+        F = open( config_file, 'wb' )
         self.filename = config_file
     except NoFileError:
       return # this happens when get_file returns None
@@ -567,12 +567,12 @@ class DataDialog(gtk.Window):
         yield m[i][0]
 
     # save column info
-    F.write( self.COLPREFIX + self.ENABLED + '\t' + \
-             '\t'.join([i for i in Y(self.columns)]) + '\n' )
+    F.write(( self.COLPREFIX + self.ENABLED + '\t' + \
+             '\t'.join([i for i in Y(self.columns)]) + '\n' ).encode())
     # save the script
-    F.write( self.BEGIN_SCRIPT + '\n#' +
+    F.write(( self.BEGIN_SCRIPT + '\n#' +
              '\n#'.join( self.script.representation().strip().split('\n') ) +
-             '\n' + self.END_SCRIPT + '\n' )
+             '\n' + self.END_SCRIPT + '\n' ).encode())
     # finally, save the data
     np.savetxt( F, self.get_all_data(True) )
     F.close()
