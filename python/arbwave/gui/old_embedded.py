@@ -331,8 +331,9 @@ class Python(gtk.Frame):
     #creates the console
     self.popup = None
     #create null history
-    self.history      = [" "]
+    self.history      = []
     self.history_pos  = 0
+    self.tmp_current_line = ''
 
     self.kwargs = NameDict() # storage for persistent kwargs to reset(**)
     self.locals = NameDict()
@@ -390,14 +391,18 @@ class Python(gtk.Frame):
       if event.keyval ==gdk.KEY_Up or \
         (event.keyval == gdk.KEY_p and event.state & gdk.ModifierType.CONTROL_MASK):
         # emacs style
-        if self.history_pos>0:
+        if self.history_pos > 0:
+          if self.history_pos == len(self.history):
+            # save current edits for later...
+            self.tmp_current_line = self.get_line()
+
           # remove text into the line...
           start.forward_chars(4)
           self.buffer.delete(start,end)
           #inset the new text
           pos=self.buffer.get_end_iter()
-          self.buffer.insert(pos, self.history[self.history_pos])
           self.history_pos-=1
+          self.buffer.insert(pos, self.history[self.history_pos])
         else:
           gdk.beep()
         self.view.emit_stop_by_name("key-press-event")
@@ -406,14 +411,19 @@ class Python(gtk.Frame):
       elif event.keyval ==gdk.KEY_Down or \
           (event.keyval == gdk.KEY_n and event.state & gdk.ModifierType.CONTROL_MASK):
         # emacs style
-        if self.history_pos<len(self.history)-1:
+        if self.history_pos < len(self.history):
           # remove text into the line...
           start.forward_chars(4)
           self.buffer.delete(start,end)
           #inset the new text
           pos=self.buffer.get_end_iter()
           self.history_pos+=1
-          self.buffer.insert(pos, self.history[self.history_pos])
+          if self.history_pos == len(self.history):
+            txt = self.tmp_current_line
+            self.tmp_current_line = ''
+          else:
+            txt = self.history[self.history_pos]
+          self.buffer.insert(pos, txt)
 
         else:
           gdk.beep()
@@ -604,8 +614,9 @@ class Python(gtk.Frame):
       self.core=code.InteractiveConsole()
       if history:
         #reset history
-        self.history      = [" "]
+        self.history      = []
         self.history_pos  = 0
+        self.tmp_current_line = ''
       self.update_globals()
       if self.popup:
         self.popup.hide()
@@ -823,13 +834,19 @@ class Python(gtk.Frame):
   def exec_code(self, text):
       """Execute text into the console and display the output into TextView"""
       
-      #update history
-      self.history.append(text)
-      self.history_pos=len(self.history)-1
-      
       self.sdt2files()
       sys.stdout.write("\n")
-      action=self.core.push(text)
+
+      if text == '':
+        action = 0
+      else:
+        action = self.core.push(text)
+        #update history
+        if len(self.history) == 0 or self.history[-1] != text:
+          self.history.append(text)
+        self.history_pos = len(self.history)
+        self.tmp_current_line = ''
+
       if action==0:
           sys.stdout.write(PS1)
       elif action==1:
