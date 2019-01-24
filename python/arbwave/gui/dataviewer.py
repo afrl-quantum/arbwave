@@ -22,7 +22,6 @@ def main():
 
 
 import multiprocessing as mp
-import dill # for better pickling across mp
 
 
 
@@ -59,8 +58,7 @@ class DataViewer(mp.Process):
     self.q      = mp.Queue()
     self.cmds   = mp.Pipe()
     self.args   = args
-    self.tweaks = dill.dumps(self.tweaks)
-    self.kwargs = kwargs
+    self.kwargs = dict(self.tweaks, **kwargs)
     self.daemon = True
 
   #Not sure what this really was for
@@ -85,9 +83,7 @@ class DataViewer(mp.Process):
 
     # This necessarily runs in a new process
     gobject.timeout_add(100, self.deque)
-    kw = dill.loads(self.tweaks)
-    kw.update(self.kwargs)
-    self.viewer = DataDialog(*self.args, **kw)
+    self.viewer = DataDialog(*self.args, **self.kwargs)
     self.viewer.show_all()
     gtk.main()
 
