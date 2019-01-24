@@ -128,6 +128,9 @@ class DataDialog(gtk.Window):
     super(DataDialog,self).__init__( title=title, **kwargs )
 
     self.filename = None
+    self.paused = False
+    self.sigs = list() # no signal handlers by default
+    self.params = None # null param table by default
     self.new_data = False
     self.default_globals = globals
     self.Globals = dict()
@@ -182,7 +185,8 @@ class DataDialog(gtk.Window):
 
     self.x_selection, self.custom_x = mk_xy_combo(True)
     self.y_selection, self.custom_y = mk_xy_combo(False)
-    set_predef( self.x_selection, self.custom_x, True)
+    with self.paused_updates(False):
+      set_predef( self.x_selection, self.custom_x, True)
     self.reuse = gtk.CheckButton('Re-use')
     self.reuse.set_active(True)
     self.autosave = gtk.CheckButton('Autosave')
@@ -195,8 +199,8 @@ class DataDialog(gtk.Window):
     def mkCheckBox(l):
       l = l[0].upper() + l[1:]
       cb = gtk.CheckButton(label=l)
-      cb.connect( 'clicked', self.update_plot )
       cb.set_active(True)
+      cb.connect( 'clicked', self.update_plot )
       return cb
 
     self.line_selection = { l:mkCheckBox(l)  for l in ComputeStats.types }
@@ -298,13 +302,31 @@ class DataDialog(gtk.Window):
 
 
   def update_plot(self, *args, **kwargs):
-    self.new_data = True
+    if not self.paused:
+      self.new_data = True
+
+  def paused_updates(self, update_on_finish=True):
+    class UpdatePause(object):
+      def __enter__(o_self):
+        self.paused = True
+        return o_self
+      def __exit__(o_self, exc_type, exc_value, traceback):
+        self.paused = False
+        if update_on_finish:
+          self.update_plot()
+
+    return UpdatePause()
 
 
   def set_columns(self,columns):
     # clear out all current columns
     for c in self.view.get_columns():
       self.view.remove_column( c )
+
+    # disconnect old signal handlers and delete old table
+    for S in self.sigs:
+      self.params.disconnect(S)
+    del self.params
 
     # add new model and columns
     self.columns = gtk.ListStore( str )
@@ -315,15 +337,15 @@ class DataDialog(gtk.Window):
     self.y_selection.set_model( self.columns )
 
     self.params = gtk.ListStore( bool, *([str]*(len(columns))) )
+    self.sigs = [
+      self.params.connect(i, self.update_plot)
+      for i in ['row-changed', 'row-deleted', 'row-inserted', 'rows-reordered']
+    ]
     self.view.set_model( self.params )
-
-    def TI( c, p, m, i ):
-      toggle_item( c, p, m, i )
-      self.update_plot()
 
     r_enable = gtk.CellRendererToggle()
     r_enable.set_property( 'activatable', True )
-    r_enable.connect( 'toggled', TI, self.params, 0 )
+    r_enable.connect( 'toggled', toggle_item, self.params, 0 )
     c_enable = GTVC( '?', r_enable )
     c_enable.add_attribute( r_enable, 'active', 0 )
     self.view.append_column( c_enable )
@@ -342,7 +364,6 @@ class DataDialog(gtk.Window):
 
       if self.autosave.get_sensitive() and self.autosave.get_active():
         self.gtk_save_handler()
-      self.new_data = True
     do_gui_operation( do_append )
 
 
@@ -433,20 +454,20 @@ class DataDialog(gtk.Window):
 
 
   def set_all_data(self, data, has_enabled=False):
-    self.params.clear()
-    if has_enabled:
-      if len(data) > 0 and len(data[0]) != (len(self.columns)):
-        raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
-                            .format(n=(len(self.columns))) )
-      for i in data:
-        self.params.append( [i[0]] + [str(ii) for ii in i[1:]] )
-    else:
-      if len(data) > 0 and len(data[0]) != (len(self.columns)-1):
-        raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
-                            .format(n=(len(self.columns)-1)) )
-      for i in data:
-        self.params.append( [True] + [str(ii) for ii in i] )
-    self.new_data = True
+    with self.paused_updates():
+      self.params.clear()
+      if has_enabled:
+        if len(data) > 0 and len(data[0]) != (len(self.columns)):
+          raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
+                              .format(n=(len(self.columns))) )
+        for i in data:
+          self.params.append( [i[0]] + [str(ii) for ii in i[1:]] )
+      else:
+        if len(data) > 0 and len(data[0]) != (len(self.columns)-1):
+          raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
+                              .format(n=(len(self.columns)-1)) )
+        for i in data:
+          self.params.append( [True] + [str(ii) for ii in i] )
 
 
   def create_action_group(self):
