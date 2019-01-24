@@ -49,7 +49,12 @@ from numpy import r_
 
 
 class ComputeStats:
-  types = ['raw', 'average', 'error', 'errorOfMean']
+  types = dict(
+    raw = True,
+    average = False,
+    error = False,
+    errorOfMean = True,
+  )
 
   def __init__(self, X, Y):
     self.X = X
@@ -108,13 +113,23 @@ class DataDialog(gtk.Window):
     ('*',     'All files (*)'),
   ]
   COLPREFIX           = '#Columns: '
+  FMTPREFIX           = '#Formats: '
   ENABLED             = '<Enabled>'
   BEGIN_SCRIPT        = '#BEGIN-SCRIPT'
   END_SCRIPT          = '#END_SCRIPT'
-  DEFAULT_LINE_STYLE  = 'o, ro--, kD'
+  DEFAULT_LINE_STYLE  = 'o, r.--, gd, kx'
 
   def __init__(self, columns=['Undefined'], title='Data Viewer',
-               parent=None, globals=default.get_globals()):
+               parent=None, autonamer=None, fmt='%.20g',
+               globals=default.get_globals()):
+    """
+    autonamer:  a routine that can be passed in that provides automatic naming
+      for save files.
+
+    fmt      : Format string/array as specified by numpy.savetxt (only a single
+               string or a sequence of strings are suppored for reading)
+               Default:  '%.20g'
+    """
     kwargs = dict()
     if parent is not None:
       kwargs.update(
@@ -127,6 +142,8 @@ class DataDialog(gtk.Window):
       )
     super(DataDialog,self).__init__( title=title, **kwargs )
 
+    self.autonamer = autonamer
+    self.fmt = fmt
     self.filename = None
     self.paused = False
     self.sigs = list() # no signal handlers by default
@@ -189,21 +206,28 @@ class DataDialog(gtk.Window):
       set_predef( self.x_selection, self.custom_x, True)
     self.reuse = gtk.CheckButton('Re-use')
     self.reuse.set_active(True)
-    self.autosave = gtk.CheckButton('Autosave')
+    self.autosave = gtk.CheckButton('AutoSave')
     self.autosave.set_active(True)
     self.autosave.set_sensitive(False)
+    check_boxes = [self.reuse, self.autosave]
+    if self.autonamer:
+      self.autoname = gtk.CheckButton('AutoName')
+      self.autoname.set_active(True)
+      check_boxes += [self.autoname]
     self.line_style = gtk.Entry()
     self.line_style.set_text( self.DEFAULT_LINE_STYLE )
     self.line_style.connect('activate', self.update_plot)
 
-    def mkCheckBox(l):
+    def mkCheckBox(l, default_value):
       l = l[0].upper() + l[1:]
       cb = gtk.CheckButton(label=l)
-      cb.set_active(True)
+      cb.set_active(default_value)
       cb.connect( 'clicked', self.update_plot )
       return cb
 
-    self.line_selection = { l:mkCheckBox(l)  for l in ComputeStats.types }
+    self.line_selection = {
+      l:mkCheckBox(l,v)  for l,v in ComputeStats.types.items()
+    }
 
     col_sel_box = hpack(
       vpack(
@@ -213,7 +237,7 @@ class DataDialog(gtk.Window):
         hpack(PArgs(gtk.Label('Y'),False,False,0), self.y_selection),
         self.custom_y ),
       vpack(
-        hpack(self.reuse, self.autosave),
+        hpack(*check_boxes),
         hpack(PArgs(gtk.Label('Style'),False,False,0), self.line_style) ),
     )
     col_sel_box.show_all()
@@ -309,6 +333,8 @@ class DataDialog(gtk.Window):
                               get_internal_data_table,
                               paused_updates,
                               update]
+
+    self.shell.ui = self
 
     self.script = stores.Script(
       default_script,
@@ -520,19 +546,30 @@ class DataDialog(gtk.Window):
 
   def set_all_data(self, data, has_enabled=False):
     with self.paused_updates():
+      fmts = self.fmt
+      if type(fmts) is str:
+        fmts = (self.fmt,)
+      fmt = [
+        '{' + fmt_i.replace('%', ':') + '}' for fmt_i in fmts
+      ]
+
       self.params.clear()
       if has_enabled:
         if len(data) > 0 and len(data[0]) != (len(self.columns)):
           raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
                               .format(n=(len(self.columns))) )
         for i in data:
-          self.params.append( [i[0]] + [str(ii) for ii in i[1:]] )
+          self.params.append( [i[0]] +
+            [fmt[j%len(fmt)].format(ii) for j,ii in enumerate(i[1:])]
+          )
       else:
         if len(data) > 0 and len(data[0]) != (len(self.columns)-1):
           raise RuntimeError( 'Cannot load data--Expected N x {n} data' \
                               .format(n=(len(self.columns)-1)) )
         for i in data:
-          self.params.append( [True] + [str(ii) for ii in i] )
+          self.params.append( [True] +
+            [fmt[j%len(fmt)].format(ii) for j,ii in enumerate(i)]
+          )
 
 
   def create_action_group(self):
@@ -596,7 +633,7 @@ class DataDialog(gtk.Window):
       return # this happens when get_file returns None
 
     # first work out column labels if supplied
-    line = F.readline()
+    line = F.readline().strip()
     has_enabled = False
     if line.startswith(self.COLPREFIX):
       cols = line[len(self.COLPREFIX):].split('\t')
@@ -606,9 +643,21 @@ class DataDialog(gtk.Window):
       self.set_columns( cols )
       has_columns = True
 
+    line = F.readline().strip()
+    # set formats, if they were stored in file
+    formats = None
+    if line.startswith(self.FMTPREFIX):
+      formats = line[len(self.FMTPREFIX):].split('\t')
+      if has_enabled:
+        formats = formats[1:]
+
+      self.fmt = formats
+
+      # prepare for next block
+      line = F.readline().strip()
+
     # next, read in the script if supplied
     script = []
-    line = F.readline().strip()
     if line == self.BEGIN_SCRIPT:
       line = F.readline()
       while line.strip() != self.END_SCRIPT:
@@ -639,9 +688,18 @@ class DataDialog(gtk.Window):
     try:
       config_file = self.filename
       if (not force_new) and config_file:
+        # if we have already written to the file and we are not asked to create
+        # a new file, write over the old version
         F = open( config_file, 'wb' )
       else:
-        config_file = get_file(False, filters=self.FILTERS)
+        # if there is not a previous filename, lets attempt to create one
+        get_file_kwargs = dict(doopen=False, filters=self.FILTERS)
+
+        if self.autonamer and self.autoname.get_active():
+          # the calling code requested some control over the naming
+          get_file_kwargs.update(self.autonamer())
+
+        config_file = get_file(**get_file_kwargs)
         F = open( config_file, 'wb' )
         self.filename = config_file
     except NoFileError:
@@ -652,15 +710,23 @@ class DataDialog(gtk.Window):
       for i in range(start,len(m)):
         yield m[i][0]
 
-    # save column info
+    # create formats for columns
+    if type(self.fmt) is str:
+      fmts = ('%d',) + (self.fmt,)*(len(self.columns) - 1)
+    else:
+      fmts = ('%d',) + tuple(self.fmt)
+
+    # save column name info
     F.write(( self.COLPREFIX + self.ENABLED + '\t' + \
              '\t'.join([i for i in Y(self.columns)]) + '\n' ).encode())
+    # save column format info
+    F.write(( self.FMTPREFIX + '\t'.join(fmts) + '\n' ).encode())
     # save the script
     F.write(( self.BEGIN_SCRIPT + '\n#' +
              '\n#'.join( self.script.representation().strip().split('\n') ) +
              '\n' + self.END_SCRIPT + '\n' ).encode())
     # finally, save the data
-    np.savetxt( F, self.get_all_data(True) )
+    np.savetxt( F, self.get_all_data(True), fmt=fmts )
     F.close()
     self.autosave.set_sensitive(True)
 

@@ -22,17 +22,44 @@ def main():
 
 
 import multiprocessing as mp
+import dill # for better pickling across mp
 
 
 
 class DataViewer(mp.Process):
   CLIENT = 0
   SERVER = 1
+  tweaks = dict()
+
+  @classmethod
+  def set_tweaks(cls, **kw):
+    """
+    Tweak aspects of the DataViewer by passing in keyword arguments:
+      fmt      :
+        A single string to specify the formatting of all data columns
+        *or* a sequence of strings that specify the formatting of each data
+        column individually.
+        Note!!:  If a sequence is given, a string must be given for every data
+        column.
+      autonamer:
+        function to change the naming of files when new files are saved.  This
+        function should return a dictionary with any one of the following
+        keywords:
+          filters     : to set the values of the file-extention filters.
+                        Example:  filters=[('*.dat', 'Data Files (*.dat)')]
+          default_dir : Override the default directory in which to open (rather
+                        than just using the last directory selected).
+          default_filename : Suggest a default filename in the filechooser
+                        dialog.
+    """
+    cls.tweaks = kw
+
   def __init__(self, *args, **kwargs):
     super(DataViewer,self).__init__()
     self.q      = mp.Queue()
     self.cmds   = mp.Pipe()
     self.args   = args
+    self.tweaks = dill.dumps(self.tweaks)
     self.kwargs = kwargs
     self.daemon = True
 
@@ -58,7 +85,9 @@ class DataViewer(mp.Process):
 
     # This necessarily runs in a new process
     gobject.timeout_add(100, self.deque)
-    self.viewer = DataDialog(*self.args, **self.kwargs)
+    kw = dill.loads(self.tweaks)
+    kw.update(self.kwargs)
+    self.viewer = DataDialog(*self.args, **kw)
     self.viewer.show_all()
     gtk.main()
 

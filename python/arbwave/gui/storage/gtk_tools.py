@@ -10,7 +10,8 @@ current_dir = '~'
 class NoFileError(Exception):
   pass
 
-def get_file(doopen=True, filters=[('*.py', 'Python Files')]):
+def get_file(doopen=True, filters=[('*.py', 'Python Files')],
+             default_dir=None, default_filename=None):
   info = {
     True : { 'action':gtk.FileChooserAction.OPEN, 'stock':gtk.STOCK_OPEN },
    False : { 'action':gtk.FileChooserAction.SAVE, 'stock':gtk.STOCK_SAVE },
@@ -31,8 +32,13 @@ def get_file(doopen=True, filters=[('*.py', 'Python Files')]):
     chooser.add_filter(filter)
 
   global current_dir
-  folder = os.path.expanduser( current_dir )
+  set_dir = default_dir
+  if set_dir is None:
+    set_dir = current_dir
+  folder = os.path.expanduser( set_dir )
   chooser.set_current_folder(folder)
+  if default_filename is not None:
+    chooser.set_current_name(default_filename)
   response = chooser.run()
   if response == gtk.ResponseType.OK:
     filename = chooser.get_filename()
@@ -43,7 +49,10 @@ def get_file(doopen=True, filters=[('*.py', 'Python Files')]):
   if filename is None:
     raise NoFileError()
 
-  current_dir = os.path.dirname( filename )
+  if not default_dir:
+    # only update the current directory when we are not given a spefic default
+    # directdory
+    current_dir = os.path.dirname( filename )
   return filename
 
 
