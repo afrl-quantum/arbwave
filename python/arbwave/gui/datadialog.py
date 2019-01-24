@@ -245,6 +245,71 @@ class DataDialog(gtk.Window):
       reset = self.exec_script,
     )
 
+    def get_data_labels():
+      """
+      Get a list of names for the data columns used in the current dataset.
+      """
+      return [l[0] for l in self.columns]
+
+    def get_data(include_disabled=True):
+      """
+      Get a fresh numpy.array representation of the data.
+
+      include_disabled:
+
+        False:  Function will return a new copy of the automatically
+          created "data" varaible:  An array that does not include the first
+          column (which represents the value of the "Enable/Disable" checkbox
+          visible in the data table) and which does *not* include any data for
+          which the "Enable/Disable" checkbox is not selected.
+
+        True:  First column of the returned array will be the "Enable/Disable"
+          column and every row will be included regardless of the value of the
+          "Enable/Disable" checkbox.
+
+      Note: the variable 'data' automatically holds the current array of data
+      without (a) the rows that are disabled and (b) without the
+      "Enable/Disable" column.
+      """
+      return self.get_all_data(include_disabled)
+
+    def get_internal_data_table():
+      """
+      Get a handle to the actual Gtk storage (Gtk.ListStore) used to hold the
+      data of the table visible on the dataviewer panel.
+      """
+      return self.params
+
+    def paused_updates(update_on_finish=True):
+      """
+      Use with 'with' statement to temporarily pause plot updates during block
+      operation.  Useful when updating many items in the internal table at once.
+
+      Example:
+        with paused_updates():
+          do_some_stuff
+        # upon exit, a single update will occur
+
+        #or
+        with paused_updates(False):
+          do_some_stuff
+        # upon exit, no updates will occur
+      """
+      return self.paused_updates(update_on_finish)
+
+    def update():
+      """
+      Trigger a plot update and refresh of the 'data' variable that represents
+      the plottable data.
+      """
+      self.update_plot()
+
+    self.shell.shell_cmds += [get_data_labels,
+                              get_data,
+                              get_internal_data_table,
+                              paused_updates,
+                              update]
+
     self.script = stores.Script(
       default_script,
       title='Variables/Functions...',
