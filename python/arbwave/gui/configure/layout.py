@@ -311,7 +311,7 @@ class RangeFactory:
     if self.for_clocks:
       devs = backend.get_timing_channels_attrib('config_template')
     else:
-      devs = backend.get_devices_attrib('config_template')
+      devs = backend.get_devices_attrib('config_template', devices={path[0]})
 
     r = Range( devs[path[0]], path[1:] )
     if path[-1] == 'clock':
