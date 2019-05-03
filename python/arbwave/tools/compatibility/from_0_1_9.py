@@ -17,7 +17,7 @@ def to_1_0_0( vardict ):
     , buttons='ok', ignore_result=True
   )
 
-  for chlabel, chcfg in vardict['channels'].iteritems():
+  for chlabel, chcfg in vardict['channels'].items():
     chcfg.setdefault('plot_scale_factor', 1.0)
     chcfg.setdefault('plot_scale_offset', 0.0)
   return vardict
