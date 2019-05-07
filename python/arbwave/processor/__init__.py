@@ -4,9 +4,10 @@ This package is responsible for the logic that converts waveforms descriptions
 to more explicit channel-specific full waveforms.
 """
 
-import sys, threading, traceback
+import sys, threading, traceback, cProfile
 from . import engine
 from ..tools.gui_callbacks import do_gui_operation
+from .. import options
 from . import default
 from . import messages as msg
 
@@ -148,6 +149,10 @@ class Processor(object):
 
   def run_loop(self, runnable):
     try:
+      if options.pstats:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
       do_restart = False
       do_gui_operation( self.ui.show_started )
 
@@ -182,6 +187,10 @@ class Processor(object):
 
       if not do_restart:
         do_gui_operation( self.ui.show_stopped )
+
+      if options.pstats:
+        profiler.disable()
+        options.pstats.add(profiler)
 
 
   def start(self): # start a continuous (re)cycling

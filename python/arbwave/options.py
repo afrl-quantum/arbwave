@@ -21,3 +21,6 @@ def set_pyro_nameserver(ns):
 
   for i in pyro_resync_set:
     i.resync_ns()
+
+# pstats.Stats object to accumulate profile statistics into (if not None)
+pstats = None

@@ -4,12 +4,7 @@ Arbitrary waveform generator for digital and analog signals.
 """
 
 import sys, argparse, logging
-try:
-  import hotshot
-  import hotshot.stats
-  has_hotshot = True
-except:
-  has_hotshot = False
+import cProfile, pstats
 
 from . import version, options, backend
 from .runnable import Runnable
@@ -58,34 +53,11 @@ def main():
          'the Pyro Nameserver.  The default behavior will be to use a '
          'broadcast search to find the Pyro Nameserver (which only works if it '
          'is on the same subnet).')
-  if has_hotshot:
-    parser.add_argument('--profile',
-      help='Run this script under the observation of a profiler, writing out to '
-           'the given file.  In order to show results, one can use the '
-           '--profile-show,--profile-sort options.  Perhaps an even '
-           'better way to visualize the profliing results is to use '
-           'kcachegrind:  first convert the results file from this '
-           'profile to calltree format by using: '
-           '"hotshot2calltree file.prof > file.calltree"')
-    parser.add_argument('--profile-show', metavar='PROFILE',
-      help='Calculate the results of a previous profile and show the top PROFILE_N '
-           'worst offenders')
-    parser.add_argument('--profile-sort', type=str, default=['time', 'calls'],
-      help='Specify the columns to sort by [Default: time, calls]. All '
-           'possible columns are: ' +
-           ', '.join(hotshot.stats.pstats.Stats.sort_arg_dict_default.keys()))
-    parser.add_argument('--profile-n', type=int, default=20,
-      help='Specify the number of top offenders to show when showing '
-           'profile results [Default: 20]')
+  parser.add_argument('--profile', nargs='?', metavar='FILENAME', default=0,
+    help='Run this script under the observation of a profiler, optionally '
+         'writing out to the given file.  There are a few tools that can '
+         'convert the gprof output to easier material to visualize.')
   args = parser.parse_args()
-
-  if has_hotshot and args.profile_show:
-    # sort the output based on time spent in the function
-    # print the top 20 culprits
-    stats = hotshot.stats.load(args.profile_show)
-    stats.sort_stats(args.profile_sort)
-    stats.print_stats(args.profile_n)
-    return
 
   options.simulated = args.simulated
   options.ipython = args.ipython
@@ -93,9 +65,10 @@ def main():
   options.pyro_ns = args.pyro_ns
   logging.root.setLevel( log_levels[ args.log_level ] )
 
-  if has_hotshot and args.profile:
-    profiler = hotshot.Profile(args.profile)
-    profiler.start()
+  if args.profile != 0:
+    options.pstats = pstats.Stats()
+    profiler = cProfile.Profile()
+    profiler.enable()
   if   args.dataviewer:
     import arbwave.gui.dataviewer
     arbwave.gui.dataviewer.main()
@@ -109,6 +82,10 @@ def main():
     from . import gui_main
     gui_main.main(args)
 
-  if has_hotshot and args.profile:
-    profiler.stop()
-    profiler.close()
+  if args.profile != 0:
+    profiler.disable()
+    options.pstats.add(profiler) # add main gui thread profiler
+    if args.profile is None:
+      options.pstats.print_stats()
+    else:
+      options.pstats.dump_stats(args.profile)
