@@ -23,6 +23,9 @@ ARBWAVE_ARGS=
 #     Specify Pyro nameserver address (in case it cannot be reached by UDP
 #     broadcasts).
 #     default : only try to reach the nameserver via UDP broadcasts
+# --ns-probe=300 : Probe nameserver every given number of seconds to ensure that
+#     the daemon remains registered by the nameserver.
+# --bind=192.168.7.2[:1802] : Bind to specific interface and optional port
 
 ARBWAVE_BBB_CNTRL_ARGS=--replace
 
