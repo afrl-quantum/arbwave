@@ -347,10 +347,10 @@ class PulseTrain(ScaledFunction):
   name = 'pulses'
   def __init__(self, n, duty=0.5, high=True, low=None):
     """
-    Usage:  pulses(n, duty=0.5, high=True, low=False, dt=None)
+    Usage:  pulses(n, duty=0.5, high=True, low=False)
 
     n     : Number of evenly spaced pulses to generate.
-    duty  : Duty cycle (only used if dt is not set) [Default 0.5].
+    duty  : Duty cycle [Default 0.5].
     high  : The value to generate for each pulses [Default:  True].
     low   : The value to return to after the pulse.
             If low is not set (left as None) it will be set differently for
