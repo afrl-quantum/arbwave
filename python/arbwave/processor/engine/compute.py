@@ -8,7 +8,7 @@ from itertools import chain
 
 
 from physical import unit
-from physical.sympy_util import has_sympy
+from physical.sympy_util import has_sympy, from_sympy
 import physical
 if has_sympy:
   import sympy
@@ -423,27 +423,48 @@ class WaveformEvalulator:
       expression = value.subs(Vars)
 
       # only 'x' symbol (or none) should be left
-      assert {self.x}.issuperset(expression.free_symbols)
-
-      # first implementation:  brain dead iteration
-      expr.update_settings(locals)
-
-      try:
-        expr_iter = linearize.evaluators[ expr.settings.expr_fmt ]
-      except:
-        raise NameError('unknown expression formatting: '+expr.settings.expr_fmt)
+      assert {self.x}.issuperset(expression.free_symbols), \
+        "'x' should be only free variable in value expression: " + e['value']
 
       encoding = 'linear' if 'linear' in ci['capabilities'] else 'step'
 
-      # now we finally add everything into the arbwave waveforms
-      for tij, dtij, v in expr_iter(expression, ti, dti,
-                                    channel_scale=ci['scaling'].range,
-                                    channel_caps=ci['capabilities'],
-                                    channel_units=ci['units'],
-                                    **expr.settings):
-        insert_value(tij, dtij, v, dt_clk, encoding, chname, ci, trans,
+      # we are going to do all real calculations scaled to channel units but
+      # without the actual units.  This is done using the sympy.lambdify
+      # function (since evaluation can be up to 100 times faster).
+      # First:
+      #   Check that units are correct for the channel (throw an error if not).
+      ci['units'].unitsMatch(
+        from_sympy(expression.subs(self.x, 0.0).evalf(), ci['units'])
+      )
+      # Second:
+      #   Divide by the channel units and do the math as scaled unitless
+      expression = sympy.simplify(expression / ci['units'])
+
+      if expression.is_constant():
+        # Just emit a single step for the entire waveform element duration.
+        v = float(expression) * ci['units']
+        insert_value(ti, dti, v, dt_clk, encoding, chname, ci, trans,
                      e['path'], parent)
-      del expr
+      else:
+        expr.update_settings(locals)
+        try:
+          expr_iter = linearize.evaluators[ expr.settings.expr_fmt ]
+        except:
+          raise NameError('unknown expression formatting: '+expr.settings.expr_fmt)
+
+        expression = sympy.lambdify(self.x, expression, np)
+
+        # now we finally add everything into the arbwave waveforms
+        for tij, dtij, v in expr_iter(expression, ti, dti,
+                                      channel_scale=ci['scaling'].range,
+                                      channel_caps=ci['capabilities'],
+                                      channel_units=ci['units'],
+                                      **expr.settings):
+          insert_value(tij, dtij, v, dt_clk, encoding, chname, ci, trans,
+                       e['path'], parent)
+        del expr
+
+      # record last value for future use
       ci['last'] = v
 
     elif not hasattr( value, 'set_vars' ):

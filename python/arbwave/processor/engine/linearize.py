@@ -19,7 +19,7 @@ supported:
 
 import numpy as np
 
-from physical.sympy_util import has_sympy, from_sympy
+from physical.sympy_util import has_sympy
 
 if has_sympy:
   import sympy
@@ -91,6 +91,17 @@ calculate_cont_piecewise = \
 
 def optimize(expression, ti, dti, expr_steps, expr_err,
              channel_scale, channel_caps, channel_units, **kw):
+  """
+  expression:  a sympy.lambdify'd, simplified, unitless version of the original
+               sympy expression (to enhance the execution speed).  The only
+               argument of the numpy.lambda function is x.
+  ti: absolute time in units of dt_clk for the particular channel.
+  dti: duration in units of dt_clk for the particular channel.
+  expr_steps: number of fixed-size steps to make over the duration.
+
+  returns an iterator of tuples of the form:
+    (section time/dt_clk, section duration/dt_clk, relative time of section)
+  """
   if 'linear' in channel_caps:
     calc = calculate_cont_piecewise
   elif 'step' in channel_caps:
@@ -101,11 +112,7 @@ def optimize(expression, ti, dti, expr_steps, expr_err,
   dx = 1./expr_steps
 
   # calculate & cache all values of the expression that will be used
-  xsym = sympy.Symbol('x')
-  cache = tuple(
-    from_sympy(expression.subs(xsym,x).evalf(), channel_units)
-    for x in xarange(0,1+10*machine_arch.eps,0.5*dx)
-  )
+  cache = expression(np.r_[0:(1+10*machine_arch.eps):(0.5*dx)]) * channel_units
 
   # this function will simply lookup expression values in the cache
   def func(x):
@@ -130,6 +137,9 @@ def uniform(expression, ti, dti, expr_steps, channel_units, **kw):
   function is to help generate values from a sympy expression for waveform
   elements.
 
+  expression:  a sympy.lambdify'd, simplified, unitless version of the original
+               sympy expression (to enhance the execution speed).  The only
+               argument of the numpy.lambda function is x.
   ti: absolute time in units of dt_clk for the particular channel.
   dti: duration in units of dt_clk for the particular channel.
   expr_steps: number of fixed-size steps to make over the duration.
@@ -141,18 +151,17 @@ def uniform(expression, ti, dti, expr_steps, channel_units, **kw):
   dtij = 1 if dti < expr_steps else int(dti/expr_steps)
   dx = dtij/float(dti) # step size for relative (0-1) time
 
-  xsym = sympy.Symbol('x')
-  for tij, x in zip( range(ti, ti+dti-1 - dtij, dtij),
-                     xarange(0, 1, dx)):
-
-    yield tij, dtij, from_sympy(expression.subs(xsym, x).evalf(), channel_units)
+  for tij, x, val in zip(range(ti, ti+dti-1 - dtij, dtij),
+                         xarange(0, 1, dx),
+                         expression(np.r_[0:1:dx])):
+    yield tij, dtij, val * channel_units
 
   # second to last transition. Make sure it is not too long
   yield tij+dtij, min(dtij, ti+dti-1 - (tij+dtij)), \
-        from_sympy(expression.subs(xsym,x+dx).evalf(), channel_units)
+        expression(x+dx) * channel_units
 
   # last point is added very explicitly to reach the end of time (x=1)
-  yield ti+dti-1, 1, from_sympy(expression.subs(xsym,1).evalf(), channel_units)
+  yield ti+dti-1, 1, expression(1) * channel_units
 
 
 
