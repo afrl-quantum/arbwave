@@ -414,7 +414,7 @@ class WaveformEvalulator:
       # say in the global script, that gets used with global/local variables
       # substituted appropriately.  This might be helpful if the user wants to
       # reuse symbolic expressions.
-      Vars = {sym.name:(L.get(sym.name, None) or G.get(sym.name, None)
+      Vars = {sym.name:(locals.get(sym.name, None) or globals.get(sym.name, None)
                         or SymbolNotFound) # This is intended to be a bad name
         for sym in value.free_symbols - set([self.x, self.U0])
       }
