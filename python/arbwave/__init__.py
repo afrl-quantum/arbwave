@@ -56,7 +56,17 @@ def main():
   parser.add_argument('--profile', nargs='?', metavar='FILENAME', default=0,
     help='Run this script under the observation of a profiler, optionally '
          'writing out to the given file.  There are a few tools that can '
-         'convert the gprof output to easier material to visualize.')
+         'convert the gprof output to easier material to visualize.  '
+         'One very such tool, producing a call-graph in a visual format, is '
+         'gprof2dot (https://github.com/jrfonseca/gprof2dot).  For example, '
+         'a visual representation of the profile and call graph can be '
+         'generated as a PNG image with the command: '
+         '`gprof2dot.py -f pstats output.pstats | dot -Tpng -o output.png`.  '
+         'The Python pstats module can also be used to print/sort these '
+         'statistics: '
+         '`pstats.Stats(filename).sort_stats("cumtime").print_stats(10)` to '
+         'print the 10 top offenders with respect to cumulative execution time.'
+  )
   args = parser.parse_args()
 
   options.simulated = args.simulated
