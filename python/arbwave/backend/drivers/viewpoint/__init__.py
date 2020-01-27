@@ -19,6 +19,7 @@ class Driver(Base):
     super(Driver,self).__init__(*a, **kw)
     # hook the simulated library if needed
     if self.simulated:
+      logging.debug( 'viewpoint.sim: installing simulated library' )
       from . import sim
       import viewpoint as vp
       self._old_dio64 = vp.clib.dio64
@@ -48,9 +49,11 @@ class Driver(Base):
     while self.devices:
       devname, dev = self.devices.popitem()
       logging.debug( 'closing viewpoint device: %s', devname )
+      dev.close()
       del dev
 
     if self.simulated:
+      logging.debug( 'viewpoint.sim: restoring real library' )
       # restore the vp lib
       import viewpoint as vp
       vp.board.dio64 = vp.clib.dio64 = self._old_dio64

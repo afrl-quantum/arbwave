@@ -56,7 +56,7 @@ class Device(Base):
     self.timing_channels = set()
 
 
-  def __del__(self):
+  def close(self):
     self.stop()
 
 
