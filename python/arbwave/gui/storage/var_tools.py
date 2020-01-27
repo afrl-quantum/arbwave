@@ -42,5 +42,6 @@ def writevars( F, vardict ):
     F.write('\n')
 
 def readvars( filename, globals=globals(), **locals ):
-  exec(compile(open(filename).read(), filename, 'exec'), globals, locals)
+  with open(filename) as f:
+    exec(compile(f.read(), filename, 'exec'), globals, locals)
   return locals
