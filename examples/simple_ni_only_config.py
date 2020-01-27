@@ -119,7 +119,7 @@ signals = \
 {}
 
 version = \
-'1.1.0'
+'1.2.0'
 
 runnable_settings = \
 {'Simple:  Loop': {'parameters': [{'enable': True,

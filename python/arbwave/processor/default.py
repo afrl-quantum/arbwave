@@ -20,9 +20,9 @@ registered_globals = {
 
 if has_sympy:
   registered_globals.update(dict(
-    expr_steps = 10,
+    expr_steps = 50,
     expr_err   = 0.1,
-    expr_fmt   = 'uniform',
+    expr_fmt   = 'optimize',
   ))
 
 registered_globals.update( functions.registered )

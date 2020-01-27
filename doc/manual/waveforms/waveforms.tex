@@ -242,14 +242,20 @@ expression:
       constant total err (\var{expr\_err}) is maintained for each linear
       time segment.
     \end{itemize}
-  \item \var{expr\_steps}
-      For \op{expr\_fmt = uniform}, this sets the number of fixed-size steps
-      to make over the duration.
-      For \op{expr\_fmt = optimize}, \op{1/expr\_steps} defines the
-      minimal relative time-step to consider when creating a line segment that
-      maximally incurs a total error equal to \var{expr\_err}.
-  \item \var{expr\_err}
-      See "optimize" above.
+  \item \var{expr\_steps}\\
+    Influences the number of (possible) steps used in evaluating \textit{Value
+    Expressions}.  The exact meaning of \var{expr\_steps} depends on the value of
+    \var{expr\_fmt}:
+    \begin{itemize}
+      \item $\var{expr\_fmt} = \op{uniform}$:\\
+        \var{expr\_steps} sets the number of fixed-size steps to make over the duration.
+      \item $\var{expr\_fmt} = \op{optimize}$:\\
+        \var{1/expr\_steps} defines the minimal relative time-step to consider
+        when creating a line segment that such that error along the line is
+        estimated to be $\le \var{expr\_err}$.
+    \end{itemize}
+  \item \var{expr\_err}\\
+      See $\var{expr\_fmt} = \op{optimize}$ above.
 \end{itemize}
 %
 There are three possible methods to set each of these \textit{Value Expression}

@@ -44,7 +44,6 @@ from physical.constant import *
 from physical import unit
 import Arbwave
 
-expr_steps = 40
 
 class SimpleRun(Arbwave.Runnable):
 	def run(self):
@@ -119,7 +118,7 @@ signals = \
 {('vp/Dev0/A/13', 'TRIG/1'): {'invert': False}}
 
 version = \
-'1.1.0'
+'1.2.0'
 
 runnable_settings = \
 {}
