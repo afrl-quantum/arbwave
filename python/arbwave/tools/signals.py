@@ -81,7 +81,7 @@ class SignalsSet(dict):
         close_i = lambda ignore:None
         closeall= lambda :f.close()
 
-      for clk,I in self.items():
+      for clk,I in sorted(self.items()): # sorted for consistency/testing
         f = open_i(clk)
         f.write('# All signals for clock:  {}\n'.format(clk).encode())
         f.write(('# t\t'+'\t'.join( I['titles'] ) + '\n').encode()) # begin with titles
@@ -194,7 +194,7 @@ class _FakeStuffCreator(object):
     A = self.signals.to_arrays(self.transitions, self.clocks, self.channels)
     f = self.BytesIO()
     A.save( f )
-    return f.getvalue()
+    return f.getvalue().decode()
     
 
 

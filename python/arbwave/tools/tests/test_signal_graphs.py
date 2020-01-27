@@ -43,11 +43,11 @@ class SignalGraphs(unittest.TestCase):
 
   accessible_clocks = ['vp/Dev0/A/13', 'vp/Dev0/A/15']
 
-  nearest_terminals = [
+  nearest_terminals = sorted([
     ('vp/Dev0/A/13', 'TRIG/1'),
     ('vp/Dev0/Internal_XO', None),
     ('vp/Dev0/A/15', 'PFI5'),
-  ]
+  ])
 
   def test_build_graph(self):
     g = signal_graphs.build_graph( self.signals, *self.clocks )
@@ -75,8 +75,8 @@ class SignalGraphs(unittest.TestCase):
     g = signal_graphs.build_graph( self.signals, *self.clocks )
     T = set( self.terminals )
 
-    nearest = [
+    nearest = sorted([
       (clk,signal_graphs.nearest_terminal(clk, T, g)) for clk in self.clocks
-    ]
+    ])
 
     self.assertEqual(self.nearest_terminals, nearest)

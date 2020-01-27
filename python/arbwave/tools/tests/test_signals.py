@@ -10,9 +10,8 @@ gnuplot_test_file = os.path.join(THIS_DIR,'signals_test_results.txt')
 
 class Signals(unittest.TestCase):
   def test_gnuplot_output(self):
-    f = open(gnuplot_test_file)
-    original_data = f.read()
-    f.close()
+    with open(gnuplot_test_file) as f:
+      original_data = f.read()
 
     fake = signals._FakeStuffCreator()
     self.assertEqual( original_data, fake.test_gnuplot() )
