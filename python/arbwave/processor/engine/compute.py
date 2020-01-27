@@ -387,10 +387,6 @@ class WaveformEvalulator:
     if has_sympy:
       # insert symbols in case the user enters a sympy expression
       locals['x'] = self.x
-      locals.setdefault('expr_steps', globals.get('expr_steps', 10))
-      locals.setdefault('expr_err', globals.get('expr_err', 0.1))
-      locals.setdefault('expr_fmt', globals.get('expr_fmt', 'uniform'))
-
       expr = Expr()
       locals['expr'] = expr.__call__
 
@@ -446,7 +442,7 @@ class WaveformEvalulator:
         insert_value(ti, dti, v, dt_clk, encoding, chname, ci, trans,
                      e['path'], parent)
       else:
-        expr.update_settings(locals)
+        expr.update_settings(locals, globals)
         try:
           expr_iter = linearize.evaluators[ expr.settings.expr_fmt ]
         except:

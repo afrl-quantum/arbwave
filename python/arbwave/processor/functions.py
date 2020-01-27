@@ -588,10 +588,13 @@ parameters:
       self.settings.expr_fmt = fmt
     return expression
 
-  def update_settings(self, D):
-    self.settings.setdefault('expr_steps', D['expr_steps'])
-    self.settings.setdefault('expr_err', D['expr_err'])
-    self.settings.setdefault('expr_fmt', D['expr_fmt'])
+  def update_settings(self, locals, globals):
+    self.settings.setdefault('expr_steps', locals.get('expr_steps') or
+                                           globals.get('expr_steps'))
+    self.settings.setdefault('expr_err', locals.get('expr_err') or
+                                         globals.get('expr_err'))
+    self.settings.setdefault('expr_fmt', locals.get('expr_fmt') or
+                                         globals.get('expr_fmt'))
 
 
 registered = {
