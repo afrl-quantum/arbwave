@@ -18,6 +18,7 @@ supported:
 """
 
 import numpy as np
+from logging import log, info, debug, warn, critical, DEBUG, root as rootlog
 
 from physical.sympy_util import has_sympy
 
@@ -30,35 +31,60 @@ machine_arch = np.MachAr()
 
 
 
-def calculate_piecewise_step(xmin, xmax, xstep, func, err_max):
-  b = float(func(xmin))
-  x = min(xmin + xstep, xmax)
-  xL = list()
-  err = 0
-  while x < xmax:
-    xL.append(x - 0.5*xstep)
-    err = sum([abs(float(func(xi)) - b) for xi in xL])
-    if err >= err_max or abs(xmax-x) < 10*machine_arch.eps:
+def calculate_piecewise_step(imin, imax, cache, err_max):
+  # this function expects a cache sampling rate equal to the 1/expr_steps
+  b = cache[imin]
+  ilast = imin
+  err_last = 0
+  for i in range(imin + 1, imax + 1):
+    err = abs(cache[i] - b)
+    if err > err_max:
       break
-    x = min(x + xstep, xmax)
-  return x, err
+    ilast = i
+    err_last = err
 
-def calculate_piecewise_line(xmin, xmax, xstep, func, err_max):
-  b = float(func(xmin))
-  x = min(xmin + xstep, xmax)
-  xL = list()
-  err = 0
-  while x < xmax:
-    xL.append(x - 0.5*xstep)
-    m = (float(func(x)) - b) / (x - xmin)
-    err = sum([abs(float(func(xi)) - (m*(xi-xmin)+b)) for xi in xL])
-    if err >= err_max or abs(xmax-x) < 10*machine_arch.eps:
+  if ilast == imin:
+    raise RuntimeError(
+      'expr_steps to small to provide minimum expression error'
+    )
+  return ilast, err_last
+
+def calculate_piecewise_line(imin, imax, cache, err_max):
+  """
+  Calculate the next step for a piecewise line expression.
+
+  As opposed to the method used for step functions (calculate_piecewise_step),
+  this functions expects twice the cache sampling rate as the minimum step.
+  This twice sampling rate is used to at least provide some level of error
+  detection between each of the linear pieces, even though the maximal number of
+  linear components is given by the user's specified value for expr_steps.
+  """
+  b = cache[imin]
+  ilast = imin
+  err_last = 0
+
+  # stride for following loop is 2 so that segments always align to
+  # user-specified steps.
+  for i in range(imin + 2, imax+1, 2):
+    # test every cached point along the line segment and find the max error
+    m = (cache[i] - b) / (i - imin)
+    err = max([
+      abs(cache[ii] - (m*(ii-imin)+b))
+      for ii in range(imin + 1, i) # don't test end points that have zero error
+    ])
+    if err > err_max:
       break
-    x = min(x + xstep, xmax)
-  return x, err
+    ilast = i
+    err_last = err
+
+  if ilast == imin:
+    raise RuntimeError(
+      'expr_steps to small to provide minimum expression error'
+    )
+  return ilast, err_last
 
 def _create_piecewise_impl(sub_func, name, typ, segs):
-  def calculate_linear_piecewise(xmin, xmax, xstep, func, err_max):
+  def calculate_linear_piecewise(imin, imax, cache, err_max):
     """
     Calculate the piecewise {} function for the given function.
 
@@ -67,11 +93,11 @@ def _create_piecewise_impl(sub_func, name, typ, segs):
 
     This implementation connects points together with {} segments.
     """
-    points = [(xmin,0)]
-    x = xmin
-    while x < xmax:
-      x, err = sub_func(x, xmax, xstep, func, err_max)
-      points.append((x,err))
+    points = [(imin,0)]
+    i = imin
+    while i < imax:
+      i, err = sub_func(i, imax, cache, err_max)
+      points.append((i,err))
     return points
   calculate_linear_piecewise.__doc__ = \
     calculate_linear_piecewise.__doc__.format(typ,segs)
@@ -89,8 +115,8 @@ calculate_cont_piecewise = \
 
 
 
-def optimize(expression, ti, dti, expr_steps, expr_err,
-             channel_scale, channel_caps, channel_units, **kw):
+def optimize(expression, ti, dti, expr_steps, expr_err, channel_caps,
+             channel_units, **kw):
   """
   expression:  a sympy.lambdify'd, simplified, unitless version of the original
                sympy expression (to enhance the execution speed).  The only
@@ -106,29 +132,28 @@ def optimize(expression, ti, dti, expr_steps, expr_err,
     calc = calculate_cont_piecewise
   elif 'step' in channel_caps:
     calc = calculate_step_piecewise
+    expr_steps = expr_steps * 2 # twice sampling rate for error estimation
   else:
     raise NotImplementedError('Channel does not have any reasonable capabilities')
 
-  dx = 1./expr_steps
+  dx = 1. / expr_steps
 
-  # calculate & cache all values of the expression that will be used
-  cache = expression(np.r_[0:(1+10*machine_arch.eps):(0.5*dx)]) * channel_units
-
-  # this function will simply lookup expression values in the cache
-  def func(x):
-    return cache[int(x)]
+  # calculate & cache all unitless values of the expression that will be used
+  cache = expression(np.r_[0:(1+10*machine_arch.eps):dx])
+  err_max = expr_err * (cache.max() - cache.min())
 
   #calculate the time spacing
-  err_max = expr_err * channel_scale
-  xL = calc(0, 2*expr_steps, 2, func, err_max)
+  iL = calc(0, expr_steps, cache, err_max)
 
   # now convert the time spacing into (tij, dtij, v(tij)) tuples
-  for (x0, err0), (x1, err1) in zip(xL[:-1], xL[1:]):
-    x0f = x0 / (2.*expr_steps)
-    x1f = x1 / (2.*expr_steps)
-    yield int(round(ti + x0f*(dti-1))), int((x1f-x0f)*(dti-1)), func(x0)
+  for (i0, err0), (i1, err1) in zip(iL[:-1], iL[1:]):
+    x0f = i0 / expr_steps
+    x1f = i1 / expr_steps
+    yield int(round(ti + x0f*(dti-1))), \
+          int((x1f-x0f)*(dti-1)), \
+          cache[i0] * channel_units
 
-  yield ti + (dti-1), 1, func(2*expr_steps)
+  yield ti + (dti-1), 1, cache[expr_steps] * channel_units
 
 
 def uniform(expression, ti, dti, expr_steps, channel_units, **kw):

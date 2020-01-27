@@ -550,11 +550,12 @@ There are three primary parameters to modify the resulting waveform of an
 expression:
   - <tt>expr_fmt</tt>
     - uniform
-      Causes the output waveform to be uniformly discretized in time.
+      Causes the output waveform to be uniformly discretized in time using
+      <tt>expr_steps</tt> sections.
     - optimize
       Causes the output waveform to be optimally discretized in time such that a
       constant total err (<tt>expr_err</tt>) is maintained for each linear
-      time segment.
+      time segment.  At most <tt>expr_steps</tt> will be used.
   - <tt>expr_steps</tt>
       For <tt>expr_fmt = uniform</tt>, this sets the number of fixed-size steps
       to make over the duration.
