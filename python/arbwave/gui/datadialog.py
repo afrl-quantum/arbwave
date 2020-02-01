@@ -12,8 +12,6 @@ from matplotlib.backends.backend_gtk3agg import \
 from matplotlib.backends.backend_gtk3 import \
   NavigationToolbar2GTK3 as NavigationToolbar
 
-from matplotlib.mlab import find
-
 from ..tools.gui_callbacks import do_gui_operation
 from ..processor import default
 from .edit.helpers import GTVC, GCRT, toggle_item
