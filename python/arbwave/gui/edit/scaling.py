@@ -358,7 +358,7 @@ class Editor(gtk.Dialog):
 
   def plot(self, *args, **kwargs):
     """Send the data to matplotlib"""
-    self.axes.hold(False)
+    self.axes.clear()
     self.axes.plot(*args, **kwargs)
     pylab.setp(self.axes.get_xticklabels(), fontsize=8)
     pylab.setp(self.axes.get_yticklabels(), fontsize=8)
