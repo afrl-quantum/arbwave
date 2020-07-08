@@ -116,52 +116,78 @@ set https_proxy=http://proxy.server:port
 \end{verbatim}
 
 
-The following are a set of steps used to make Arbwave functional on a Windows system:
-\todo{Rework these instructions with Python3}
-\begin{enumerate}
-  \item Install Anaconda python (2.7)
-  \item install \verb|pygi-aio-3.x.x_ref<N>-setup.exe| \\
-    This is available from pygnome project.
-    During the installation process, choose at least the following:
-    \begin{itemize}
-      \item GNOME libraries:
-        \begin{itemize}
-          \item Base packages
-          \item GTK+ 3.x.x
-          \item Pango 1.x.x
-        \end{itemize}
-      \item non-GNOME libraries:
-        \begin{itemize}
-          \item none
-        \end{itemize}
-      \item development packages:
-        \begin{itemize}
-          \item none
-        \end{itemize}
-    \end{itemize}
+The following are a set of steps used to make Arbwave functional on a Windows system.
 
-  \item Install Pyro (v3) \\
-    Anaconda may be able to assist in installing the appropriate version of pyro.
-      Searching, for example, \verb|anaconda search -t conda pyro| yielded a source such
-    that pyro installation was performed by:
+\begin{enumerate}
+  \item Install MSYS2
+
+  \item Open a MSYS2 shell and install Python 3 \\
+    MSYS2 uses pacman as package manager.  When using a 64-bit Windows the
+    command is
     \begin{verbatim}
-      conda install -c david_baddeley pyro
+    pacman -S mingw-w64-x86_64-python3
     \end{verbatim}
 
-  \item Install graph library [you can skip this step] \\
-    It seems that \textbf{networkx} is already installed by default with
-    anaconda and a clean install of \textbf{python3-igraph}
-    was not trivial.  However, note that taking the time to install 
-    \textbf{python3-igraph} will result in significant performance improvement.
+  \item Install GTK+ 3 \\
+    This step is following instructions provided by GTK at
+    http://www.gtk.org/download/windows.php
+    \begin{itemize}
+      \item Install GTK3 and its dependencies:
+      \begin{verbatim}
+      pacman -S mingw-w64-x86_64-gtk3
+      \end{verbatim}
+
+      \item Install GTK core applications:
+      \begin{verbatim}
+      pacman -S mingw-w64-x86_64-devhelp
+      \end{verbatim}
+
+      \item Install the Python bindings:
+      \begin{verbatim}
+      pacman -S mingw-w64-x86_64-python3-gobject
+      \end{verbatim}
+
+      \item Install build tools:
+      \begin{verbatim}
+      pacman -S mingw-w64-x86_64-toolchain base-devel
+      \end{verbatim}
+    \end{itemize}
+
+  \item Install necessary Python packages/libraries (scipy, numpy, Pyro4): \\
+  Scipy is available as MSYS2 package, but Pyro4 not. Therefore package
+  manager \bf{pip} was also installed:
+  \begin{verbatim}
+  pacman -S mingw-w64-x86_64-python-scipy
+  \end{verbatim}
+  \begin{verbatim}
+  pacman -S mingw-w64-x86_64-python-pip
+  \end{verbatim}
+
+  The other packages were installed using pip:
+  \begin{verbatim}
+  pip install Pyro4
+  \end{verbatim}
+
+  \item Install graph library \\
+  It seems that a clean Windows install of \textbf{python3-igraph}
+  was not trivial.  However, note that taking the time to install
+  \textbf{python3-igraph} will result in some performance improvement, though
+  not necessarily noticable.
+
+  Arbwave (1.1.0 as of 2020.01.30) is not compatible with networkx 2.x, so
+  version 1.11 has to be installed:
+  \begin{verbatim}
+  pip install python-networkx==1.11
+  \end{verbatim}
 
   \item Do either of these:
     \begin{enumerate}
       \item  (start cmd.exe)
         \begin{enumerate}
           \item cd path/to/arbwave-project
-          \item Execute 'python project-shell'
+          \item Execute 'python3 project-shell'
           \item cd arbwave/
-          \item 'python run.py [options]'\\
+          \item 'python3 run.py [options]'\\
             use \verb|--help| to see options
         \end{enumerate}
       \item
