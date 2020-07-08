@@ -45,6 +45,7 @@ class Arbwave(object):
     super(Arbwave,self).__init__()
     self._globals_source = globals_source
     self.ui = ui
+    self.hosts = None
     self.devcfg = None
     self.clocks = None
     self.signals = None
