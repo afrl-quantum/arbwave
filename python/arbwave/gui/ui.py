@@ -22,6 +22,7 @@ from .notification import Notification
 from . import embedded
 
 from ..tools.config_template_update import recursive_update
+from ..tools.gui_callbacks import do_gui_operation
 from ..processor import default
 from .. import backend
 from .. import version
@@ -126,9 +127,11 @@ def show_data_viewer(parent):
 class ArbWave(gtk.Window):
   TITLE = {False:'',True:'(Sim) '}[options.simulated] + 'Arbitrary Waveform Generator'
 
+  run_in_ui_thread = staticmethod(do_gui_operation)
+
   def __init__(self, parent=None, *, init_new=False):
     # delay this import to try and separate arbwave submodules
-    from ..processor import Processor
+    from ..processor.for_gui import Processor
 
     #create the toplevel window
     super(ArbWave,self).__init__()
@@ -157,7 +160,7 @@ class ArbWave(gtk.Window):
     # LOAD THE STORAGE
     self.set_file_saved(filename='')
     self.plotter = Plotter( self )
-    self.processor = Processor( self )
+    self.processor = Processor( ui=self )
     self.script = stores.Script(
       default_script,
       title='Global Variables/Functions...',

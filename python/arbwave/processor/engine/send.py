@@ -6,12 +6,11 @@ import physical
 from Pyro4 import Future
 
 from ... import backend
-from ...tools.gui_callbacks import do_gui_operation
 from ...tools.path import collect_prefix
 from ...tools.scaling import calculate as calculate_scaling
 from ...tools import signal_graphs
 from ...tools import signals
-from ...gui.storage.var_tools import writevars
+from ...tools.var_tools import writevars
 
 
 
@@ -41,15 +40,15 @@ def plot_stuff( plotter, analog, digital, names, t_max ):
   if analog or digital:
     plotter.finish()
 
-def to_plotter( plotter, analog, digital, clocks, channels, t_max ):
+def to_plotter( ui, plotter, analog, digital, clocks, channels, t_max ):
   names = signals.create_channel_name_map( channels, clocks )
   # take components of device-categorized dictionaries to
   a = signals.merge_signals_sets( [analog] )
   d = signals.merge_signals_sets( [digital] )
-  do_gui_operation( plot_stuff, plotter, a, d, names, t_max.coeff )
+  ui.run_in_ui_thread( plot_stuff, plotter, a, d, names, t_max.coeff )
 
 def to_ui_notify( ui, message ):
-  do_gui_operation( ui.notify.show, message )
+  ui.run_in_ui_thread( ui.notify.show, message )
 
 def to_file( analog, digital, transitions, clocks, channels, filename,
              fmt='gnuplot' ):

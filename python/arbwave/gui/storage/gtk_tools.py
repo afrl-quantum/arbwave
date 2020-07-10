@@ -3,7 +3,7 @@
 from gi.repository import Gtk as gtk
 import os, sys, traceback, logging
 
-from .var_tools import *
+from ...tools.var_tools import *
 
 current_dir = '~'
 

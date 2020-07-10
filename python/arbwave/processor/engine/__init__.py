@@ -1,6 +1,7 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from ...runnable import Runnable
+from ...tools.dict import Dict
 
 from .callfunc import CallFunc
 from . import send, compute
@@ -26,7 +27,7 @@ class Arbwave(object):
     Singleton access into Arbwave class.
     """
     if cls._instance is None and kw.pop('new',True):
-      cls._instance = Arbwave(*a, **kw)
+      cls._instance = cls(*a, **kw)
     return cls._instance
 
   # make class variables of these so that users can have them
@@ -42,7 +43,6 @@ class Arbwave(object):
     """
     Initializes the fake Arbwave module.
     """
-    super(Arbwave,self).__init__()
     self._globals_source = globals_source
     self.ui = ui
     self.hosts = None
@@ -50,7 +50,7 @@ class Arbwave(object):
     self.clocks = None
     self.signals = None
     self.channels = None
-    self.waveforms = None
+    self.waveform = None
     self.stop_request = False
 
     self.Runnable = Runnable
@@ -71,6 +71,21 @@ class Arbwave(object):
   def dostop(self):
     try: raise StopGeneration( self.stop_request )
     finally: self.stop_request = False
+
+
+  def compile(self, waveform=None, continuous=False):
+    waveform = self.waveform if waveform is None else waveform
+    analog, digital, transitions, dev_clocks, t_max, eval_cache = \
+      compute.waveforms( self.devcfg,
+                         self.clocks,
+                         self.signals,
+                         self.channels,
+                         waveform,
+                         globals=self._globals_source.get_globals(),
+                         continuous=continuous )
+
+    return Dict(analog=analog, digital=digital, transitions=transitions,
+                dev_clocks=dev_clocks, t_max=t_max, eval_cache=eval_cache)
 
 
   def update(self, stop=ANYTIME, continuous=False, wait=True):
@@ -103,18 +118,12 @@ class Arbwave(object):
     if (stop & self.BEFORE) and self.stop_request:
       self.dostop()
 
-    analog, digital, transitions, dev_clocks, t_max, eval_cache = \
-      compute.waveforms( self.devcfg,
-                         self.clocks,
-                         self.signals,
-                         self.channels,
-                         self.waveforms,
-                         globals=self._globals_source.get_globals(),
-                         continuous=continuous )
-
-    self.ui.waveform_editor.set_eval_cache( eval_cache )
-    send.to_plotter( self.ui.plotter, analog, digital, dev_clocks, self.channels, t_max )
-    send.to_driver.waveform( analog, digital, transitions, t_max, continuous )
+    res = self.compile(continuous=continuous)
+    self.ui.waveform_editor.set_eval_cache( res.eval_cache )
+    send.to_plotter( self.ui, self.ui.plotter, res.analog, res.digital,
+                     res.dev_clocks, self.channels, res.t_max )
+    send.to_driver.waveform( res.analog, res.digital, res.transitions,
+                             res.t_max, continuous )
     send.to_driver.start(self.devcfg, self.clocks, self.signals)
     if wait and not continuous:
       excObjs = send.to_driver.wait()
@@ -164,16 +173,11 @@ class Arbwave(object):
     Process inputs to send only to plotter.
     """
 
-    analog, digital, transitions, dev_clocks, t_max, eval_cache = \
-      compute.waveforms( self.devcfg,
-                         self.clocks,
-                         self.signals,
-                         self.channels,
-                         self.waveforms,
-                         globals=self._globals_source.get_globals() )
+    res = self.compile()
 
-    self.ui.waveform_editor.set_eval_cache( eval_cache )
-    send.to_plotter( self.ui.plotter, analog, digital, dev_clocks, self.channels, t_max )
+    self.ui.waveform_editor.set_eval_cache( res.eval_cache )
+    send.to_plotter( self.ui, self.ui.plotter, res.analog, res.digital,
+                     res.dev_clocks, self.channels, res.t_max )
 
 
   def save_waveform(self, filename, fmt='gnuplot'):
@@ -191,16 +195,11 @@ class Arbwave(object):
 
       fmt : either 'gnuplot' or 'python' to specify the output format
     """
-    analog, digital, transitions, dev_clocks, t_max, eval_cache = \
-      compute.waveforms( self.devcfg,
-                         self.clocks,
-                         self.signals,
-                         self.channels,
-                         self.waveforms,
-                         globals=self._globals_source.get_globals() )
+    res = self.compile()
 
-    self.ui.waveform_editor.set_eval_cache( eval_cache )
-    send.to_file( analog, digital, transitions, dev_clocks, self.channels,
+    self.ui.waveform_editor.set_eval_cache( res.eval_cache )
+    send.to_file( res.analog, res.digital, res.transitions, res.dev_clocks,
+                  self.channels,
                   filename, fmt )
 
 
@@ -216,7 +215,7 @@ class Arbwave(object):
       label : name of channel or group
       index : select the ith occurance of a channel/group label
     """
-    return waveform_find( self.waveforms, label, index, ['group-label', 'channel'] )
+    return waveform_find( self.waveform, label, index, ['group-label', 'channel'] )
 
   def find_group(self, label, index=0):
     """
@@ -224,7 +223,7 @@ class Arbwave(object):
       label : name of group
       index : select the ith occurance of a group label
     """
-    return waveform_find( self.waveforms, label, index, ['group-label'] )
+    return waveform_find( self.waveform, label, index, ['group-label'] )
 
   def find_channel(self, label, index=0):
     """
@@ -232,7 +231,7 @@ class Arbwave(object):
       label : name of channel
       index : select the ith occurance of a channel label
     """
-    return waveform_find( self.waveforms, label, index, ['channel'] )
+    return waveform_find( self.waveform, label, index, ['channel'] )
 
 
 def waveform_find(elements, label, index, kind):
