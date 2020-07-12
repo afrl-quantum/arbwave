@@ -13,11 +13,13 @@ consistent with embedded systems where there is no display.
 NOTE:  DO NOT INSTANTIATE THIS CLASS FROM THE GUI.
 """
 
+import numpy as np
 import inspect
 
 from .processor import engine
 from .processor import for_nogui
 from .processor import default
+from .processor import executor
 from .tools.var_tools import readvars
 from .tools.dict import Dict
 from . import options
@@ -64,6 +66,8 @@ class CmdLineUI(object):
   """
   A dummy user interface for use on command line/console.
   """
+  def __init__(self, engine):
+    self.engine = engine
 
   @staticmethod
   def run_in_ui_thread(fun, *args, **kwargs):
@@ -89,6 +93,16 @@ class CmdLineUI(object):
   def update_runnables(self, *a, **kw):
     pass
 
+  def show_started(self):
+    print('started waveform')
+
+  def show_stopped(self):
+    print('stopped waveform')
+
+  def get_active_runnable(self):
+    return self.engine.get_active_runnable()
+
+
 class Arbwave(engine.Arbwave, for_nogui.Processor):
   def __init__(self, filename=None, globals = None, **opts):
     """
@@ -113,10 +127,13 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
         'Optional arguments must match those in arbwave.options'
       setattr(options, k, v)
 
-    ui = CmdLineUI()
+    ui = CmdLineUI(self)
     self.clear_profiles()
+    self._interactive = True
     engine.Arbwave.__init__(self, globals_source=self, ui=ui)
     for_nogui.Processor.__init__(self, ui=ui, globals=G, arbweng=self)
+
+    self.datalog = DataLog()
 
     self._config_filename = None
 
@@ -139,8 +156,10 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
     self._config_filename = filename
     default.registered_globals['__file__'] = filename
     self.waveform_collection = Dict(C['waveforms'])
+    self.runnable_settings = C['runnable_settings']
 
     self.clear_profiles()
+    self._active_runnable = Dict(label='Default', executor='hardware')
 
     for_nogui.Processor.update(self, (C['hosts'],         True),
                                      (C['devices'],       True),
@@ -181,6 +200,92 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
     self._active_profile = None
 
   @property
+  def active_runnable(self):
+    return self._active_runnable.label
+
+  @active_runnable.setter
+  def active_runnable(self, value):
+    assert value in self.runnables, \
+      'No such runnable exists, add it first or select one of ' + \
+      ', '.join(self.runnables.keys())
+    if value == 'Default':
+      self._active_runnable.executor = 'hardware'
+    elif self._active_runnable.executor == 'hardware':
+      self._active_runnable.executor = 'once'
+
+    self._active_runnable.label = value
+
+  @property
+  def executor(self):
+    return self._active_runnable.executor
+
+  valid_executors = ['hardware', 'once', 'loop', 'optimize']
+  @executor.setter
+  def executor(self, value):
+    value = value.lower() if value else ''
+
+    assert value in self.valid_executors, \
+      'Executor must be one of {}'.format(repr(self.valid_executors))
+
+    if self._active_runnable.label == 'Default':
+      assert value =='hardware', 'Default runnable only allows hardware control'
+    self._active_runnable.executor = value
+
+  @property
+  def interactive(self):
+    return self._interactive
+
+  @interactive.setter
+  def interactive(self, value):
+    self._interactive = bool(value)
+
+  def get_active_runnable(self):
+    """
+    Return the runnable label and execution control for the runnable that is
+    selected as active.  This interface is required Processor.start().
+    """
+    # test for the simple case of either run-once, or hardware controlled
+    if self._active_runnable.label == 'Default' or \
+       self._active_runnable.executor == 'once':
+      return self._active_runnable.label, None
+
+    exec_label = self._active_runnable.executor
+    exec_label = exec_label[0].upper() + exec_label[1:]
+    settings_label = '{}:  {}'.format(self._active_runnable.label, exec_label)
+    S = self.runnable_settings[settings_label]
+
+    def prep_cancel(*a, **kw):
+      def make_cancelled(*a, **kw):
+        class Cancelled:
+          def onstart(OSelf): pass
+          def onstop(OSelf): pass
+          def run(OSelf): pass
+        return Cancelled()
+      return make_cancelled
+
+    # Now we have to build the  more complicated case of either loop or
+    # optimize execution control
+    if self._active_runnable.executor == 'loop':
+      exec_make = executor.loop.Make
+      if self.interactive:
+        print('About to execute (nested) for loop(s):')
+        executor.loop.print_loop(S, self.active_runnable)
+        if input('Continue? [Y]/n: ')[:1].lower() not in ['', 'y', 'Y']:
+          exec_make = prep_cancel
+    elif self._active_runnable.executor == 'optimize':
+      exec_make = executor.optimize.Make
+      if self.interactive:
+        print('About to execute optimizer(s):')
+        executor.optimize.print_optimizers(S, self.active_runnable,
+                                           self.get_globals())
+        if input('Continue? [Y]/n: ')[:1].lower() not in ['', 'y', 'Y']:
+          exec_make = prep_cancel
+    else:
+      raise RuntimeError('Unknown executor: ' + self._active_runnable.executor)
+
+    return self._active_runnable.label, exec_make(S, self.datalog)
+
+  @property
   def waveform_label(self):
     return self.waveform_collection.current_waveform
 
@@ -218,3 +323,44 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
       self.clear_globals[k] = self
 
     super().exec_script(*a, **kw)
+
+
+class DataLog(object):
+  class Table(object):
+    def __init__(self, columns, title):
+      self.columns = columns
+      self.title = title
+      self.data = list()
+      self.final = False
+
+    def show(self): pass
+
+    def add(self, *data):
+      assert len(data) == len(self.columns), 'Data should match column length'
+      self.data.append(data)
+
+    @property
+    def ndarray(self):
+      return np.array(self.data)
+
+    def __repr__(self):
+      return 'DataLog.Table(len(cols)={}, N={})' \
+             .format(len(self.columns), len(self.data))
+
+  def __init__(self):
+    self.tables = list()
+    self.keyed = dict()
+
+  def get(self, columns, title=None):
+    key = ( columns, title )
+
+    if key in self.keyed:
+      old = self.keyed.get(key)
+      assert old in self.tables, 'Old data table handle missing'
+      if not old.final:
+        return old
+
+    new = self.Table(columns, title)
+    self.tables.append(new)
+    self.keyed[key] = new
+    return new

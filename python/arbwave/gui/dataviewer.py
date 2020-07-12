@@ -150,7 +150,7 @@ class ViewerDB:
     self.db = dict()
 
   def get(self, columns, title=None):
-    key = ( tuple(columns), title )
+    key = ( columns, title )
     if key in self.db:
       s = self.db[key]
       if s.reusable:

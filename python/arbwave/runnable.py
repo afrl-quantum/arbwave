@@ -37,5 +37,5 @@ class Runnable(object):
     The body of any inner loop.
     """
     # This implementation is for the Default continuous runnable
-    from .processor.engine import Arbwave
-    Arbwave.instance(new=False).update(continuous=True)
+    import Arbwave
+    Arbwave.update(continuous=True)

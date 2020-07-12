@@ -228,7 +228,7 @@ class Processor(object):
       self.ui.show_started()
 
 
-  def stop(self, toggle_run):
+  def stop(self, toggle_run=True):
     if self.engine_thread:
       # we get a copy because self.engine_thread will be nulled by thread
       t = self.engine_thread

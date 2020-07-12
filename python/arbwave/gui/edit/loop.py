@@ -2,20 +2,13 @@
 
 from gi.repository import Gtk as gtk, Gdk as gdk
 
-import sys, re, pydoc
-
-import numpy as np
-from matplotlib import mlab
-
-from ...tools.print_units import M
+from ...processor.executor.loop import Make as executor_loop_make
 
 from . import helpers
 from .helpers import GTVC, GCRT
 
 from .. import dataviewer as viewers
 from .spreadsheet import keys
-
-nan = float('nan')
 
 class Parameters(gtk.TreeStore):
   NAME    = 0
@@ -167,142 +160,29 @@ class Make:
     self.run_label = run_label
     self.settings = settings
 
-  def __call__(self, *args, **kwargs):
-    S = self.settings.get(self.run_label,dict())
-    e = Executor( self.win, settings=S, *args, **kwargs )
-    S = e.get_settings()
+  def __call__(self, runnable, Globals):
+    S = self.settings.get(self.run_label, dict())
+    S = loop_dialog(self.win, settings=S, Globals=Globals)
+
     if S:
       self.settings[self.run_label] = S
-    return e()
+      return executor_loop_make(S, viewers.db)(runnable, Globals)
+    else:
+      class Cancelled:
+        def onstart(OSelf): pass
+        def onstop(OSelf): pass
+        def run(OSelf): pass
 
-class Executor:
-  def __init__(self, parent, runnable, Globals, settings):
-    self.runnable = runnable
-    self.Globals = Globals
+      return Cancelled()
 
-    self.show = None
+def loop_dialog(parent, settings, Globals):
+  loop = LoopView(settings, Globals, parent=parent)
+  try:
+    if loop.run() not in [ gtk.ResponseType.OK ]:
+      return None
+  finally:
+    loop.hide()
 
-    loop = LoopView(settings, Globals, parent=parent)
-    self.cancelled = False
-    try:
-      if loop.run() not in [ gtk.ResponseType.OK ]:
-        print('cancelled!')
-        self.cancelled = True
-        return
-    finally:
-      loop.hide()
-
-    self.parameters = loop.params.representation()
-    V = self.get_columns( self.parameters )
-    self.variables = dict()
-    for i in range(len(V)):
-      if V[i][0] in self.variables: continue # don't overwrite
-      self.variables[ V[i][0] ] = { 'order':i, 'value':nan, 'isglobal':V[i][1] }
-    # now get sorted unique list of variables
-    V = sorted(self.variables.items(), key = lambda v: v[1]['order'])
-
-    self.show = viewers.db.get(
-      columns=([ vi[0] for vi in V] \
-              + ['Merit'] + self.runnable.extra_data_labels()),
-      title='Loop Parameters/Results',
-    )
-
-
-  def get_settings(self):
-    if self.cancelled: return None
-    return {
-      'parameters' : self.parameters,
-    }
-
-
-  def __call__(self):
-    class Cancelled:
-      def onstart(OSelf): pass
-      def onstop(OSelf): pass
-      def run(OSelf): pass
-
-    class ORun:
-      def onstart(OSelf):
-        self.runnable.onstart()
-      def onstop(OSelf):
-        self.runnable.onstop()
-      def run(OSelf):
-        self._for_loop_main()
-
-    if self.cancelled: return Cancelled()
-    else:              return ORun()
-
-
-  def _for_loop_main(self):
-    self.show.show()
-    Locals = dict()
-    for f in self.parameters:
-      if f['enable']:
-        self._for_loop(f, Locals)
-
-  def _for_loop(self, p, Locals):
-    assert p['enable'], 'for loop should be enabled here!'
-    if p['isglobal'] and not re.search('["\'\[(\.]', p['name']):
-      exec('global ' + p['name'])
-
-    iterable = eval( p['iterable'], self.Globals, Locals )
-    for xi in iterable:
-      if p['isglobal']:
-        exec('{n} = {xi}'.format(n=p['name'], xi=M(xi)), self.Globals)
-      else:
-        Locals[ p['name'] ] = xi
-        self.variables[ p['name'] ]['value'] = xi # global values reread below
-
-      if 'children' in p:
-        for child in p['children']:
-          if child['enable']:
-            self._for_loop(child, Locals)
-      else:
-        self._do_run()
-
-      # this variable is now out of scope...!
-      if not p['isglobal']:
-        Locals.pop( p['name'] )
-        self.variables[ p['name'] ]['value'] = nan
-
-  def _do_run(self):
-    def L(r):
-      # need better test like "if iterable"
-      if r is None:
-        return [0]
-      elif type(r) in [ np.ndarray, list, tuple ]:
-        return list(r)
-      else:
-        return [r]
-
-    # We update the globals here to make sure they are all set correctly,
-    # regardless of whether we are currently in a loop that changes them.
-    for vi in self.variables.items():
-      if vi[1]['isglobal']: vi[1]['value'] = eval(vi[0], self.Globals)
-    results = sorted(self.variables.values(), key = lambda v : v['order'])
-    results = [ v['value'] for v in results ] + L( self.runnable.run() )
-    self.show.add( *M(results) )
-
-
-  def get_columns(self, parameters):
-    """
-    Returns a list of (column names, isglobal) for each parameter in order of
-    operation of the for loops.
-    """
-    L = list()
-    for p in parameters:
-      if not p['enable']: continue
-      L.append( (p['name'], p['isglobal']) )
-      L += self.get_columns( p.get('children', list()) )
-    return L
-
-
-main_settings = dict()
-
-def main():
-  import traceback, pprint
-  from .optimize import test
-  e = Make(None, 'func', main_settings)( test.func(), test.get_globals() )
-
-  print('e: ', e)
-  return e
+  return {
+    'parameters' : loop.params.representation(),
+  }

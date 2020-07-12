@@ -2,29 +2,21 @@
 
 from gi.repository import Gtk as gtk, Gdk as gdk
 
+from ...processor.executor.optimize import Make as executor_optimize_make
+from ...processor.executor.optimize.algorithms import algorithms
+
 import sys, re, pydoc
 from logging import warning, debug, info, error
 
-import numpy as np
-from matplotlib import mlab
+from ...tools.print_units import M
+from .. import stores
+from ..packing import *
+from .. import dataviewer as viewers
+from . import generic
+from . import helpers
+from .helpers import GTVC, GCRT
+from .spreadsheet import keys
 
-import physical
-
-from ....tools.print_units import M
-from ... import stores
-from ...packing import *
-from ... import dataviewer as viewers
-from .. import generic
-from .. import helpers
-from ..helpers import GTVC, GCRT
-from ..spreadsheet import keys
-
-from .algorithms import algorithms
-
-# some really big number to use for bad constraint merits.  sys.float_info.max
-# used to be used, but it tends to cause floating point errors--probably because
-# the algorithms do some additional math with the merit values.
-MAX_MERIT = 1e200
 
 class Parameters(gtk.ListStore):
   NAME = 0
@@ -303,215 +295,48 @@ class Make:
     self.run_label = run_label
     self.settings = settings
 
-  def __call__(self, *args, **kwargs):
-    S = self.settings.get(self.run_label,dict())
-    e = Executor( self.win, settings=S, *args, **kwargs )
-    S = e.get_settings()
+  def __call__(self, runnable, Globals):
+    S = self.settings.get(self.run_label, dict())
+    S = optimize_dialog(self.win, settings=S, Globals=Globals)
+
     if S:
       self.settings[self.run_label] = S
-    return e()
-
-class Executor:
-  def __init__(self, parent, runnable, Globals, settings, cache_tolerance=1e-3):
-    self.runnable = runnable
-    self.Globals = Globals
-
-    self._cache = None
-    self.results = dict()
-    self.cache_tolerance = cache_tolerance
-    self.show = None
-    self.pnames = None
-    self.skipped_evals = 0
-
-    opt = OptimView(settings, Globals, parent=parent)
-    self.cancelled = False
-    try:
-      if opt.run() not in [ gtk.ResponseType.OK ]:
-        info('Optimization cancelled!')
-        self.cancelled = True
-        return
-    finally:
-      opt.hide()
-
-    old_pnames = self.pnames
-    self.pnames = list()
-    self.params = list()
-    self.parameters = list()
-    for p in opt.params:
-      if p[opt.params.ENABLE]:
-        self.pnames.append( p[opt.params.NAME] )
-        self.params.append( (
-          M(eval(p[opt.params.NAME],Globals)),
-          M(eval(p[opt.params.MIN],Globals)),
-          M(eval(p[opt.params.MAX],Globals)),
-          M(eval(p[opt.params.SCALE],Globals)),
-        ) )
-      self.parameters.append(
-        { 'name'  : p[opt.params.NAME],
-          'min'   : p[opt.params.MIN],
-          'max'   : p[opt.params.MAX],
-          'scale' : p[opt.params.SCALE],
-          'enable': p[opt.params.ENABLE],
-        }
-      )
-
-    self.params = np.array( self.params )
-
-    self.constraints = list()
-    EQ = Constraints.EQ
-    for c in opt.constraints:
-      if c[EQ]:
-        self.constraints.append( [c[EQ], lambda G : eval(c[EQ], G), Constraints.ENABLE] )
-
-    if old_pnames is None or old_pnames != self.pnames:
-      self.show = viewers.db.get(
-        columns=(self.pnames+['Merit']+self.runnable.extra_data_labels()),
-        title='Optimization Results',
-      )
-
-    algs = opt.algs
-    self.alg_settings = opt.algs.representation()
-    self.algorithms = {
-      alg[algs.LABEL] :
-        {
-          arg[algs.LABEL] :
-            arg[  algs.to_index[ arg[algs.TYPE] ]  ]
-          for arg in alg.iterchildren()  if arg[algs.ENABLE]
-        }
-      for alg in algs  if alg[algs.ENABLE]
-    }
-
-    self.repetitions = opt.repetitions.get_value_as_int()
-
-  def get_settings(self):
-    if self.cancelled: return None
-    return {
-      'algorithms' : self.alg_settings,
-      'parameters' : self.parameters,
-      'constraints': { c[0]:c[2] for c in self.constraints },
-      'repetitions': self.repetitions,
-    }
-
-
-  def __call__(self):
-    class Cancelled:
-      def onstart(OSelf): pass
-      def onstop(OSelf): pass
-      def run(OSelf): pass
-
-    class ORun:
-      def onstart(OSelf):
-        self.runnable.onstart()
-
-      def onstop(OSelf):
-        self.runnable.onstop()
-
-      def run(OSelf):
-        self.show.show()
-        x0 = self.params[:,0]
-        scale = self.params[:,3]
-        # first unscale all parameters
-        x0 /= scale
-        for name, kwargs in self.algorithms.items():
-          self.evals = 0
-          x0, merit = algorithms[name]['func'](self._call_func, x0, **kwargs)
-          info('{} optimization: final state:%s, merit:%g', x0*scale, merit)
-          info('{} optimization: Number waveforms executed: %d', self.evals)
-
-        self.save_globals( x0 * scale )
-
-        return True
-
-    if self.cancelled: return Cancelled()
-    else:              return ORun()
-
-
-  def save_globals(self, x):
-    # only try to make global variables that are fundamental types
-    # (str,int,float, ...)
-    globalize = [ i for i in self.pnames if not re.search('["\'\[]', i) ]
-    if globalize:
-      exec('global ' + ','.join( globalize ))
-    for i in range(len(x)):
-      exec('{n} = {v}'.format(n=self.pnames[i], v=M(x[i])), self.Globals)
-
-
-  def _call_func(self, x):
-    # before using x, ensure that it is rescaled
-    x = x * self.params[:,3] # dont multiply in-place
-
-    cached = self.lookup(x)
-    if cached is not None:
-      self.show.add( *M(list(x) + list(cached)) )
-      self.skipped_evals += 1
-      # the zeroth element of cached is the merit
-      return cached[0]
-
-    self.save_globals(x)
-
-    # now, test constraints before running the function
-    # first test parameter range constraints
-    if np.any(x < self.params[:,1]) or np.any(x > self.params[:,2]):
-      warning('Optimization parameter range constraint(s) failed')
-      c_failed = True
+      return executor_optimize_make(S, viewers.db)(runnable, Globals)
     else:
-      # now test all user-provided constraint equations
-      c_failed = [ True  for c in self.constraints
-                    if c[2] and not c[1](self.Globals) ]
-      warning('Optimization constraint equantion(s) failed')
+      class Cancelled:
+        def onstart(OSelf): pass
+        def onstop(OSelf): pass
+        def run(OSelf): pass
 
-    if c_failed:
-      result = [MAX_MERIT] + [0]*len(self.runnable.extra_data_labels())
-    else:
-      def A(r):
-        # need better test like "if iterable"
-        if type(r) in [ np.ndarray, list, tuple ]:
-          return np.array(r)
-        else:
-          return np.array([r])
-
-      self.evals += 1
-
-      # average result for the given number of repetitions
-      result = np.array([
-        A(self.runnable.run()) for i in range(self.repetitions)
-      ]).mean(axis=0)
-
-      # result is necessarily a numpy array by now
-      self.show.add( *M(list(x) + list(result)) )
-    self.cache( x, result )
-
-    # the zeroth element of result is supposed to be the merit
-    return result[0]
+      return Cancelled()
 
 
-  def lookup(self, x):
-    if self._cache is None:
+def optimize_dialog(parent, Globals, settings, cache_tolerance=1e-3):
+  opt = OptimView(settings, Globals, parent=parent)
+  try:
+    if opt.run() not in [ gtk.ResponseType.OK ]:
       return None
+  finally:
+    opt.hide()
 
-    TINY = list()
-    for xi in x:
-      if type(xi) is physical.Quantity:
-        TINY.append( physical.Quantity(1e-30,xi.units) )
-      else:
-        TINY.append( 1e-30 )
+  parameters = list()
+  for p in opt.params:
+    parameters.append(
+      { 'name'  : p[opt.params.NAME],
+        'min'   : p[opt.params.MIN],
+        'max'   : p[opt.params.MAX],
+        'scale' : p[opt.params.SCALE],
+        'enable': p[opt.params.ENABLE],
+      }
+    )
 
-    cols = self._cache.shape[1]
-    found = mlab.find( abs( (
-        (self._cache - x) / ( self._cache + TINY )
-      ).dot(np.ones(cols)) ) < self.cache_tolerance )
+  EQ = Constraints.EQ
+  EN = Constraints.ENABLE
+  constraints = {c[EQ]:c[EN] for c in opt.constraints}
 
-    if len( found ) == 0:
-      return None
-
-    # if there are for some reason more, ignore them
-    return self.results[ tuple( self._cache[ found[0] ] ) ]
-
-  def cache(self, x, result):
-    if self._cache is None:
-      self._cache = np.array( [x] )
-      self.results[ tuple(x) ] = result
-
-    elif self.lookup(x) is None:
-      self._cache = np.append( self._cache, [x], 0 )
-      self.results[ tuple(x) ] = result
+  return {
+    'algorithms' : opt.algs.representation(),
+    'parameters' : parameters,
+    'constraints': constraints,
+    'repetitions': opt.repetitions.get_value_as_int(),
+  }
