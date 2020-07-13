@@ -383,6 +383,16 @@ class ArbWave(gtk.Window):
         return runnable, None
     return 'Default', None
 
+  def update_t_max(self, t_max):
+    """
+    Update the processors expectation of the waveform duration.  This
+    information is used to help properly close down runnables and not wait
+    beyond the expected duration.
+    """
+    # this does *not* have to run in the gui thread and is already protected by
+    # a thread lock in the processor.
+    self.processor.t_max = t_max
+
   def create_action_group(self):
     # GtkActionEntry
     entries = (

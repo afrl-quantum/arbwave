@@ -120,6 +120,7 @@ class Arbwave(object):
 
     res = self.compile(continuous=continuous)
     self.ui.waveform_editor.set_eval_cache( res.eval_cache )
+    self.ui.update_t_max( res.t_max ) # to help with halting threads
     send.to_plotter( self.ui, self.ui.plotter, res.analog, res.digital,
                      res.dev_clocks, self.channels, res.t_max )
     send.to_driver.waveform( res.analog, res.digital, res.transitions,

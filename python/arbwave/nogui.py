@@ -14,7 +14,8 @@ NOTE:  DO NOT INSTANTIATE THIS CLASS FROM THE GUI.
 """
 
 import numpy as np
-import inspect
+import inspect, threading, time
+from collections import deque
 
 from .processor import engine
 from .processor import for_nogui
@@ -66,12 +67,44 @@ class CmdLineUI(object):
   """
   A dummy user interface for use on command line/console.
   """
+
+  class UIThread(threading.Thread):
+    """Simple thread to simulate GUI thread"""
+    def __init__(self):
+      super().__init__()
+      self.daemon = True # ensure thread exits if program exits
+      self.lock = threading.Lock()
+      self.queue = deque() # queue of functions to execute
+      self.stop_requested = False
+
+    def run(self):
+      while not self.stop_requested:
+        with self.lock:
+          fun_args = None if not self.queue else self.queue.popleft()
+        if fun_args:
+          fun_args[0](*fun_args[1], **fun_args[2])
+        else:
+          time.sleep(.1)
+
+    def push(self, fun, *args, **kwargs):
+      with self.lock:
+        self.queue.append((fun, args, kwargs))
+
+
   def __init__(self, engine):
     self.engine = engine
+    self.ui_thread = CmdLineUI.UIThread()
+    self.ui_thread.start()
 
-  @staticmethod
-  def run_in_ui_thread(fun, *args, **kwargs):
-    fun(*args, **kwargs)
+  def __del__(self):
+    # kill ui thread
+    self.ui_thread.stop_requested = True
+    self.ui_thread.join(10)
+    if self.ui_thread.is_alive():
+      raise RuntimeError('Could not halt UI thread')
+
+  def run_in_ui_thread(self, fun, *args, **kwargs):
+    self.ui_thread.push(fun, *args, **kwargs)
 
   class DummyWaveformEditor(object):
     def set_eval_cache(self, *a, **kw):
@@ -101,6 +134,16 @@ class CmdLineUI(object):
 
   def get_active_runnable(self):
     return self.engine.get_active_runnable()
+
+  def update_t_max(self, t_max):
+    """
+    Update the processors expectation of the waveform duration.  This
+    information is used to help properly close down runnables and not wait
+    beyond the expected duration.
+    """
+    # this does *not* have to run in the gui thread and is already protected by
+    # a thread lock in the processor.
+    self.engine.t_max = t_max
 
 
 class Arbwave(engine.Arbwave, for_nogui.Processor):
@@ -143,6 +186,7 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
   def __del__(self):
     backend.unload_all()
     super().__del__()
+    self.ui.__del__()
 
   def close(self):
     self.__del__()

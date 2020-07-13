@@ -3,9 +3,10 @@
 Base implementation of the processor class.
 """
 
-import sys, threading, traceback, cProfile
+import sys, threading, traceback, cProfile, time
 from . import engine
 from .. import options
+from ..tools.dict import Dict
 from . import default
 
 class ModuleLike(object):
@@ -27,11 +28,10 @@ class Processor(object):
     self.engine.defaults = ModuleLike( default.registered_globals )
     sys.modules['Arbwave'] = self.engine # fake Arbwave module
     sys.modules['Arbwave.defaults'] = self.engine.defaults
-    self.running = None
-    self.engine_thread = None
+    self.running = Dict(runnable=None, thread=None)
 
     self.lock = threading.Lock()
-    self.end_condition = threading.Condition( self.lock )
+    self._t_max = None # last known waveform duration (helps waiting for stop)
     self.script_listeners = list()
 
     super().__init__()
@@ -87,67 +87,66 @@ class Processor(object):
     """
     Updates that are driven from user-interface changes sent to the engine.
     """
-    try:
-      self.lock.acquire()
 
-      if self.running:
-        self.stop(toggle_run) # might be a race condition
-        toggle_run = False
+    needs_start = False
+    if not self.stopped:
+      needs_start = not toggle_run
+      self.stop(toggle_run=toggle_run)
+    else:
+      needs_start = toggle_run
 
-      # First:  update the global script environment
-      if script[1]:
-        kw = dict()
-        if len(script) == 3:
-          kw = script[2]
-        self.exec_script( script[0], kwargs=kw )
+    # First:  update the global script environment
+    if script[1]:
+      kw = dict()
+      if len(script) == 3:
+        kw = script[2]
+      self.exec_script( script[0], kwargs=kw )
 
-      # set engine inputs
-      self.engine.hosts     = hosts[0]
-      self.engine.devcfg    = devcfg[0]
-      self.engine.clocks    = clocks[0]
-      self.engine.signals   = signals[0]
-      self.engine.channels  = channels[0]
-      self.engine.waveform  = waveforms[0]
+    # set engine inputs
+    self.engine.hosts     = hosts[0]
+    self.engine.devcfg    = devcfg[0]
+    self.engine.clocks    = clocks[0]
+    self.engine.signals   = signals[0]
+    self.engine.channels  = channels[0]
+    self.engine.waveform  = waveforms[0]
 
-      # the very first bit of real work should be to re-init all connections
-      if hosts[1]:
-        if engine.send.to_driver.hosts( hosts[0] ):
-          # there was a fundamental change in connections.  We will try to send
-          # all pieces of the puzzle now.
-          devcfg     = ( devcfg[0]   , True )
-          clocks     = ( clocks[0]   , True )
-          signals    = ( signals[0]  , True )
-          channels   = ( channels[0] , True )
-          waveforms  = ( waveforms[0], True )
+    # the very first bit of real work should be to re-init all connections
+    if hosts[1]:
+      if engine.send.to_driver.hosts( hosts[0] ):
+        # there was a fundamental change in connections.  We will try to send
+        # all pieces of the puzzle now.
+        devcfg     = ( devcfg[0]   , True )
+        clocks     = ( clocks[0]   , True )
+        signals    = ( signals[0]  , True )
+        channels   = ( channels[0] , True )
+        waveforms  = ( waveforms[0], True )
 
-      if clocks[1]:
-        engine.send.to_driver.clocks( clocks[0] )
+    if clocks[1]:
+      engine.send.to_driver.clocks( clocks[0] )
 
-      if devcfg[1] or channels[1] or signals[1] or clocks[1]:
-        engine.send.to_driver.config( devcfg[0], channels[0],
-                                      signals[0], clocks[0], self.Globals )
+    if devcfg[1] or channels[1] or signals[1] or clocks[1]:
+      engine.send.to_driver.config( devcfg[0], channels[0],
+                                    signals[0], clocks[0], self.Globals )
 
-      if signals[1]:
-        engine.send.to_driver.signals( signals[0] )
+    if signals[1]:
+      engine.send.to_driver.signals( signals[0] )
 
-      if self.running or toggle_run:
-        self.start()
-      else:
-        if channels[1] or script[1]:
-          self.engine.update_static()
+    if needs_start:
+      self.start()
+    else:
+      if channels[1] or script[1]:
+        self.engine.update_static()
 
-        # TODO:  have more fine-grained change information:
-        #   Instead of just "did channels change" have
-        #   1.  channel labels changed
-        #   2.  channel calibration changed
-        #   3.  channel device(s) changed
-        #   4.  channel static value changed
-        #   With this information, we would more correctly only update plots or
-        #   static output when the corresponding information has changed.
-        if channels[1] or script[1] or waveforms[1]:
-          self.engine.update_plotter()
-    finally:
-      self.lock.release()
+      # TODO:  have more fine-grained change information:
+      #   Instead of just "did channels change" have
+      #   1.  channel labels changed
+      #   2.  channel calibration changed
+      #   3.  channel device(s) changed
+      #   4.  channel static value changed
+      #   With this information, we would more correctly only update plots or
+      #   static output when the corresponding information has changed.
+      if channels[1] or script[1] or waveforms[1]:
+        self.engine.update_plotter()
 
 
   def run_loop(self, runnable):
@@ -157,15 +156,16 @@ class Processor(object):
         profiler.enable()
 
       do_restart = False
+      stop_requested = False
       self.ui.run_in_ui_thread( self.ui.show_started )
 
-      self.running = runnable
       try:
         runnable.onstart()
         runnable.run()
 
       except engine.StopGeneration as e:
         do_restart = e.request & engine.RESTART
+        stop_requested = e.request & engine.STOP
       except Exception as e:
         print('halting waveform output because of unexpected error: ', e)
         traceback.print_exc()
@@ -179,21 +179,16 @@ class Processor(object):
         traceback.print_exc()
 
     finally:
-      try:
-        self.lock.acquire()
-        self.engine_thread = None
-        if not do_restart:
-          self.running = None
-        self.end_condition.notify()
-      finally:
-        self.lock.release()
-
-      if not do_restart:
-        self.ui.run_in_ui_thread( self.ui.show_stopped )
-
       if options.pstats:
         profiler.disable()
         options.pstats.add(profiler)
+
+      # let main thread collect resources and mark toggle button as stopped
+      # only explicitly call for stop from this end if a stop was not already
+      # requested.  If requested, we expect the requester calls the clean up
+      # code directly.
+      if not stop_requested:
+        self.ui.run_in_ui_thread(self.stop, toggle_run=not do_restart)
 
 
   def start(self): # start a continuous (re)cycling
@@ -202,43 +197,101 @@ class Processor(object):
     if run_label not in self.engine.runnables:
       print('Runnable ({r}) not found'.format(r=run_label))
       return
-    runnable = self.engine.runnables[run_label]
 
+    assert self.stopped, 'Already running!!!'
+
+    self.running.runnable = self.engine.runnables[run_label]
     if run_label != 'Default':
-      assert self.engine_thread is None, 'Already existing engine thread?!!'
       if Control:
-        runnable = Control( runnable, self.Globals )
+        # wrap runnable in the control loop
+        self.running.runnable = Control( self.running.runnable, self.Globals )
 
       # run the loop control inside its own thread
-      self.engine_thread = threading.Thread(
+      self.running.thread = threading.Thread(
         target=self.run_loop,
-        kwargs={ 'runnable' : runnable },
+        kwargs={ 'runnable' : self.running.runnable },
       )
-      self.engine_thread.daemon = True # ensure thread exits if program exits
-      self.engine_thread.start()
+      self.running.thread.daemon = True # ensure thread exits if program exits
+      self.running.thread.start()
 
-    else:
+    else: # the Default runnable (only for hardware driven repeats)
       # we try to do continuous recycling
       #--> just call show_started()
       #--> don't call show_stopped()
-      if not self.running:
-        runnable.onstart()
-      self.running = runnable
-      runnable.run()
+      self.running.thread = self
+      self.running.runnable.onstart()
+      self.running.runnable.run()
       self.ui.show_started()
 
 
-  def stop(self, toggle_run=True):
-    if self.engine_thread:
-      # we get a copy because self.engine_thread will be nulled by thread
-      t = self.engine_thread
-      self.engine.request_stop(restart=(not toggle_run))
-      self.end_condition.wait()
-      t.join()
-    else:
+  @property
+  def stopped(self):
+    if self.running.runnable is not None:
+      if self.running.thread is None:
+        raise RuntimeError('Missing thread for runnable')
+
+      # 'Default' hardware-run runnable or thread is still running
+      if self.running.thread == self or self.running.thread.is_alive():
+        return False
+
+      self.running.thread.join()
+      return True
+
+    if self.running.thread is not None:
+      if self.running.thread.is_alive():
+        raise RuntimeError('Child thread running for unknown runnable')
+      self.running.thread.join()
+
+    return True
+
+
+  def stop(self, timeout=None, toggle_run=True):
+    """
+    Instruct the executing thread to stop.  The requested timeout will limit how
+    much time we wait for it to finish.  If no requested timeout is given, 110%
+    of the last known waveform duration will be used.  If there is no last known
+    duration, 10s will be used.
+    """
+    if self.stopped:
+      if toggle_run:
+        self.ui.show_stopped()
+      return
+
+    if self.running.thread == self:
+      # stopping the hardware-timed, continuous 'Default' runnable
       self.engine.halt()
       if toggle_run:
-        self.running.onstop()
-        self.ui.show_stopped()
+        self.running.runnable.onstop()
+    else:
+      # stopping a thread-run runnable
+      if not self.stopped:
+        self.engine.request_stop(restart=(not toggle_run))
+
+      if timeout is None:
+        # The extra 1*s is to allow for overhead of thread management
+        t_max = self.t_max
+        timeout = 10 if t_max is None else 1 + float(1.1*t_max)
+
+      t0 = time.time()
+      self.running.thread.join(timeout=timeout)
+      t1 = time.time()
+      if not self.stopped:
+        raise RuntimeError(
+          'Failed waiting {}s (up to {}s) for executing thread to stop'
+          .format(t1-t0, timeout))
+
+    self.running.runnable = None
+    self.running.thread = None
+
     if toggle_run:
-      self.running = None
+      self.ui.show_stopped()
+
+  @property
+  def t_max(self):
+    with self.lock:
+      return self._t_max
+
+  @t_max.setter
+  def t_max(self, value):
+    with self.lock:
+      self._t_max = value
