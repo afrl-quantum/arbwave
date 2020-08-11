@@ -567,7 +567,8 @@ class WaveformEvalulator:
         self.transitions[clk].add(end_clk_t)
 
       # for simplicity, we just assume that the largest clock was needed.
-      self.t_max += max( self.min_periods.values() )
+      if self.min_periods:
+        self.t_max += max( self.min_periods.values() )
 
 
     debug('final t_max: %s', self.t_max)
