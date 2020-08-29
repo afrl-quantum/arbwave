@@ -16,13 +16,21 @@ BSTINPUTS="../common-tex-sty/gloss:../common-tex-sty:"
 all: $(PAPER).pdf
 
 
-%.pdf: %.tex repeat ../common-tex-sty/arbwave-version.sty
+%.pdf: %.tex repeat ../common-tex-sty/arbwave-version.sty \
+		    nogui/arbwave.nogui.tex
 	(export TEXINPUTS=$(TEXINPUTS) && $(PDFLATEX) $<)
 
 .PHONY: repeat
 
 ../common-tex-sty/arbwave-version.sty: repeat
 	../common-tex-sty/mk_version.py
+
+nogui/arbwave.nogui.tex : ../../python/arbwave/nogui.py
+	echo "\\\\begin{verbatim}" > nogui/arbwave.nogui.tex
+	PYTHONPATH="$$PYTHONPATH:../../python" pydoc3 arbwave.nogui \
+	  | sed -e "s/^.*arbwave\\/nogui.py/    arbwave\\/nogui.py/" \
+	  >> nogui/arbwave.nogui.tex
+	echo "\\\\end{verbatim}" >> nogui/arbwave.nogui.tex
 
 distribution: all clean
 

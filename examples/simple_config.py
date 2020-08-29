@@ -121,5 +121,8 @@ version = \
 '1.2.0'
 
 runnable_settings = \
-{}
+{'Simple:  Loop': {'parameters': [{'enable': True,
+                                   'isglobal': False,
+                                   'iterable': 'range(0,10,2)',
+                                   'name': 'i'}]}}
 

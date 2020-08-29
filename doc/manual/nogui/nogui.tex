@@ -1,0 +1,47 @@
+% vim: ts=2:sw=2:tw=80:et
+\thispagestyle{fancy}
+\pagestyle{fancy}
+
+For some cases, it can be very helpful to control experiments and acquire data
+without the need to have a graphical user interface.  There are several
+situations where a non-gui interface may be preferable.  For example, it may be
+desireable to use an embedded system with limited graphical interface options to
+provide experiment command and control and data acquisition.  It may also be
+necessary to execute waveforms in an environment without user interactions.
+Using a special interface to the Arbwave computational engine, and backend
+drivers, it is possible to load Arbwave configurations built with the gui and
+run them in the same manner that one does through the graphical user interface.
+
+\section{Quick Start}
+
+The following serves to demonstrate a very simple method of loading one of the
+Arbwave examples in simulated mode using the non-graphical interface.
+
+\begin{lstlisting}
+from arbwave.nogui import Arbwave
+
+# Start the Arbwave interface in simulated mode
+arbw = Arbwave(simulated=True)
+arbw.open('examples/simple_config.py')
+
+# start/stop the waveform in Hardware-repeated mode:
+arbw.start()
+arbw.stop()
+
+# run the waveform using the Simple runnable:
+arbw.active_runnable = 'Simple'
+
+# run 'Simple' only 'once' executor
+arbw.start()
+
+# run 'Simple' with the loop executor and get the data from the loop
+arbw.executor = 'loop'
+arbw.start()
+
+# Get the data as a numpy array
+data = arbw.datalog.tables[0]
+\end{lstlisting}
+
+\section{Non Graphical User Interface}
+
+\input{arbwave.nogui}

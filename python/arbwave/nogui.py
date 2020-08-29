@@ -13,6 +13,10 @@ consistent with embedded systems where there is no display.
 NOTE:  DO NOT INSTANTIATE THIS CLASS FROM THE GUI.
 """
 
+__all__ = [
+  'Arbwave',
+]
+
 import numpy as np
 import inspect, threading, time
 from collections import deque
@@ -28,7 +32,7 @@ from . import backend
 
 def open_config(filename):
   """Open an arbwave config file.
-  
+
   This function parses executes the python in the given configuration file for
   Arbwave.  The default global environment is established before parsing this
   file (see arbwave.processor.default).
@@ -184,18 +188,31 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
       self.open(filename)
 
   def __del__(self):
+    """Deinitialize all of arbwave and prepare for a proper and full shutdown"""
     backend.unload_all()
     super().__del__()
     self.ui.__del__()
 
   def close(self):
+    """Explicit call to deinitializing all of Arbwave (including the backend)"""
     self.__del__()
 
   @property
   def filename(self):
+    """The filename of the currently-active arbwave configuration file.
+    """
     return self._config_filename
 
   def open(self, filename):
+    """Open and parses an arbwave config file, then creates the hardware and
+    software configuration described therein.
+
+    This function parses executes the python in the given configuration file for
+    Arbwave.  The default global environment is established before parsing this
+    file (see arbwave.processor.default).
+
+    This is the equivalent of opening a file from the GUI.
+    """
     C = open_config(filename)
     self._config_filename = filename
     default.registered_globals['__file__'] = filename
@@ -216,6 +233,10 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
                                      toggle_run=False)
 
   def compile(self, waveform=None, continuous=False):
+    """
+    Compile the current (or specified) waveform to the backend intermediate
+    format.
+    """
     if self.active_profile is not None:
       return self.profiles[self.active_profile].outputs
 
@@ -224,6 +245,10 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
     return super().compile(waveform=waveform, continuous=continuous)
 
   def compile_profile(self, label, continuous=False, *a, **kw):
+    """
+    Compile the current waveorm and stash the results of the compile for the
+    specified profile label.
+    """
     self.profiles[label] = Dict(
       inputs=dict(continuous=continuous, **kw),
       outputs=self.compile(continuous=continuous, *a, **kw),
@@ -231,6 +256,10 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
 
   @property
   def active_profile(self):
+    """
+    The currently active, compiled profile.  In order to change the active
+    profile, a compiled waveform must be assigned to the profile label.
+    """
     return self._active_profile
 
   @active_profile.setter
@@ -240,11 +269,17 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
     self._active_profile = value
 
   def clear_profiles(self):
+    """
+    Free all compiled waveforms and associated profiles.
+    """
     self.profiles = dict()
     self._active_profile = None
 
   @property
   def active_runnable(self):
+    """
+    The label of the currently-active runnable.
+    """
     return self._active_runnable.label
 
   @active_runnable.setter
@@ -261,6 +296,22 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
 
   @property
   def executor(self):
+    """
+    The current executor used to run the active waveform:
+      hardware:
+        Use the hardware to iterate the waveform repeatedly, until the user
+        otherwise interrupts to operation.
+      once:
+        Execute the current runnable one time.  Whether and how the waveform is
+        executed depends on the content of the runnable.
+      loop:
+        Iterate the current runnable depending on the already-existing loop
+        parameters.  These parameters are mostly easily created and defined
+        using the GUI.
+      optimize:
+        Iterate the current runnable and minimize the first return value of the
+        runnable's run function.
+    """
     return self._active_runnable.executor
 
   valid_executors = ['hardware', 'once', 'loop', 'optimize']
@@ -277,6 +328,11 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
 
   @property
   def interactive(self):
+    """
+    Boolean property for loops and optimizations that defines whether the user
+    should first be shown the loop or optimization parameters and then prompted
+    before actually performing the loop or optimization.
+    """
     return self._interactive
 
   @interactive.setter
@@ -286,7 +342,9 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
   def get_active_runnable(self):
     """
     Return the runnable label and execution control for the runnable that is
-    selected as active.  This interface is required Processor.start().
+    selected as active.  This function is not generally useful for a user, but
+    rather is an interface required Processor.start() (i.e. the bowls of the
+    Arbwave processing engine).
     """
     # test for the simple case of either run-once, or hardware controlled
     if self._active_runnable.label == 'Default' or \
@@ -331,10 +389,19 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
 
   @property
   def waveform_label(self):
+    """
+    String property representing the current waveform from the waveform
+    collection.  An assignment is only possible when the given value represents
+    an existing waveform from the collection of waveforms.
+    """
     return self.waveform_collection.current_waveform
 
   @property
   def all_waveform_labels(self):
+    """
+    Read-only property of all the exiting waveform labels in the waveform
+    collection.
+    """
     return self.waveform_collection.waveforms.keys()
 
   @waveform_label.setter
@@ -345,6 +412,9 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
 
   @property
   def waveform(self):
+    """
+    The current waveform.
+    """
     W = self.waveform_collection.waveforms[self.waveform_label]
     return W
 
@@ -359,6 +429,11 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
 
   def exec_script(self, *a, **kw):
     """
+    Execute the global script.
+
+    This function is not really for use by a user, but rather is meant to
+    satisfy the interfaces required by Arbwave.Processor.
+
     Simple wrapper over Processor.exec_script to ensure that we do not clear the
     variable that points to this class in the global environment.
     """
@@ -370,7 +445,15 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
 
 
 class DataLog(object):
+  """
+  A Collection of data tables that are recorded by arbwave execution.
+  """
+
   class Table(object):
+    """
+    A table of data recorded from an arbwave execution (such as a loop or
+    optimization).
+    """
     def __init__(self, columns, title):
       self.columns = columns
       self.title = title
@@ -396,6 +479,11 @@ class DataLog(object):
     self.keyed = dict()
 
   def get(self, columns, title=None):
+    """
+    Create or retrieve a data table appropriate for the specified columns.
+
+    This function is primarily for internal Arbwave use.
+    """
     key = ( columns, title )
 
     if key in self.keyed:
