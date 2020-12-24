@@ -1,12 +1,14 @@
 # vim: ts=2:sw=2:tw=80:nowrap
 
 from .base import Device
+from . import analog
 from . import dds
 from . import timing
 
 from .controller.bbb_pyro import *
 
 type_to_device_klass_map = {
+  'analog' : analog.Device,
   'dds' : dds.Device,
   'timing' : timing.Device,
 }

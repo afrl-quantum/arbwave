@@ -3,6 +3,7 @@
 BBB_PYRO_GROUP = 'bbb'
 DDS_PYRO4_PORT = 1401
 TIMING_PYRO4_PORT = 1402
+ANALOG_PYRO4_PORT = 1403
 
 def format_objectId(hostid, type):
   return '{}.{}/{}'.format(BBB_PYRO_GROUP, hostid, type)

@@ -20,8 +20,17 @@ from ...channels import Backplane  as BBase
 
 class Analog(ABase):
   """
-  *** Analog hardware/firmware not implemented yet ***
+  Analog output provided by AFRL Analog Cape for Beaglebone Black.  This cape
+  includes a LTC2668, 16-bit, 16-channel analog output chip from Linear
+  Technologies (now Analog Devices).
   """
+
+  def get_min_period(self):
+    """
+    Returns the minimum timing period in units of seconds.
+    *** This needs to be measured again and corrected ***
+    """
+    return self.device.get_min_period()
 
 class DDS(DDSBase):
   """
