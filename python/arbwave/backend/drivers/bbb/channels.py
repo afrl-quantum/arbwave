@@ -22,7 +22,6 @@ class Analog(ABase):
   """
   *** Analog hardware/firmware not implemented yet ***
   """
-  _padded_timing = False
 
 class DDS(DDSBase):
   """
@@ -30,7 +29,6 @@ class DDS(DDSBase):
   chip from Analog Devices.  There are four separate output channels on this
   device.
   """
-  _padded_timing = False
   _capabilities = {'step', 'linear'}
 
   def get_min_period(self):
