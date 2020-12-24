@@ -189,9 +189,10 @@ class Device(Base):
               self, clock_terminal, update_src)
 
         self.guard_proxy.update_src = update_src
-    finally:
+    except:
       # We'll set this to something that will never be an input
       self.config['clock']['value'] = 'clock selection error'
+      raise
 
 
   def get_min_period(self):
