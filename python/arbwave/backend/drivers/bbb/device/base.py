@@ -216,7 +216,7 @@ class Device(Base):
     # Note that the timeouts within afrl-bbb are all specified in milliseconds
     try:
       reps = self.guard_proxy.waitfor_waveform(timeout = 2*(self.t_max/unit.ms))
-      debug('bbb.Device(%s).wait(): dds finished %d iterations', self, reps)
+      debug('bbb.Device(%s).wait(): finished %d iterations', self, reps)
     except:
       # let's avoid having stuff in the input causing us problems.
       self.guard_proxy.flush_input()

@@ -263,7 +263,13 @@ class Driver(Base):
     D =       collect_prefix(digital, 0, 3, 3)
     D.update( collect_prefix(analog,  0, 3, 3) )
 
+    # make it easy to find whether a timing channel is created--we only really
+    # need the prefixes and not the rest of the data restructured since we will
+    # still pass in all transitions--"C" is just used to help detect whether a
+    # device has data to operate on.
     C = collect_prefix(transitions, 0, 3, 3)
     for d,dev in self.devices.items():
       if d in D or d in C:
-        dev.set_waveforms( D.get(d,{}), C.get(d,{}), t_max, continuous )
+        # we still pass in all transitions and let timing device split off what
+        # it wants itsself
+        dev.set_waveforms( D.get(d,{}), transitions, t_max, continuous )
