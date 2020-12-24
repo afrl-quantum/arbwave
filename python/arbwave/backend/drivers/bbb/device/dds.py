@@ -231,4 +231,8 @@ class Device(Base):
     :param t_max: the maximum duration of any channel in units of time.
     """
     if self.isopen():
-      self.guard_proxy.set_waveforms(waveforms, len(self.configured_channels))
+      transitions = sorted(
+        clock_transitions[ self.config['clock']['value'] ]['transitions'])
+
+      self.guard_proxy.set_waveforms(waveforms, len(self.configured_channels),
+                                     transitions)

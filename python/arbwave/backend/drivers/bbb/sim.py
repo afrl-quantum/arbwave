@@ -9,6 +9,8 @@ import Pyro4
 from physical import units
 
 from .device.controller.bbb_pyro import format_objectId
+from .device.controller import dds_details
+from .device.controller import timing_details
 from ....version import version as arbwave_version
 
 class NS(object):
@@ -71,8 +73,6 @@ class Device(object):
     return arbwave_version()
   def set_output(self, values):
     pass
-  def set_waveforms(self, waveforms, clock_transitions, t_max):
-    pass
   def exec_waveform(self, n):
     self.n = n
     pass
@@ -88,7 +88,7 @@ class Device(object):
     pass
 
 
-class DDS(Device):
+class DDS(Device, dds_details.Details):
   type = 'dds'
   sysclk = 500e6
   refclk = 10e6
@@ -130,15 +130,23 @@ class DDS(Device):
       set_frequency_sweep    = ((724-82.5)*n_chans),
       update_frequency_sweep = ((472-82.5)*n_chans),
     )
-  def set_waveforms(self, waveforms, n_chans):
+
+  def load_waveform(self, W):
     pass
 
 
-class Timing(Device):
-  type = 'dds'
+class Timing(Device, timing_details.Details):
+  type = 'timing'
   data = 0
   triggered = False
   retrigger = False
   trigger_level = 'low'
   trigger_pull = 'down'
   start_delay = 3
+  minimum_period = 15
+
+  def set_waveform_size(self, sz):
+    pass
+
+  def _load_transitions(self, transition_map):
+    pass
