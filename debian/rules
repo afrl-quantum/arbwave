@@ -32,11 +32,14 @@ override_dh_auto_install : install_service_defaults install_service_scripts2
 		--no-compile -O0 --install-layout=deb
 	@echo "Moving bbb controller scripts to arbwave-bbb-* packages..."
 	mkdir -p $(CURDIR)/debian/arbwave-bbb-dds/usr/bin \
-		 $(CURDIR)/debian/arbwave-bbb-timing/usr/bin
+		 $(CURDIR)/debian/arbwave-bbb-timing/usr/bin \
+		 $(CURDIR)/debian/arbwave-bbb-analog/usr/bin
 	mv	 $(CURDIR)/debian/python3-arbwave/usr/bin/arbwave-bbb_dds_controller \
 		 $(CURDIR)/debian/arbwave-bbb-dds/usr/bin/
 	mv	 $(CURDIR)/debian/python3-arbwave/usr/bin/arbwave-bbb_timing_controller \
 		 $(CURDIR)/debian/arbwave-bbb-timing/usr/bin/
+	mv	 $(CURDIR)/debian/python3-arbwave/usr/bin/arbwave-bbb_analog_controller \
+		 $(CURDIR)/debian/arbwave-bbb-analog/usr/bin/
 
 SERVICE_SCRIPTS = $(CURDIR)/service-scripts
 prep_service_scripts :
@@ -46,6 +49,8 @@ prep_service_scripts :
 	         $(CURDIR)/debian/arbwave-bbb-dds.service
 	cp       $(SERVICE_SCRIPTS)/bbb-timing.service \
 	         $(CURDIR)/debian/arbwave-bbb-timing.service
+	cp       $(SERVICE_SCRIPTS)/bbb-analog.service \
+	         $(CURDIR)/debian/arbwave-bbb-analog.service
 
 install_service_scripts2 :
 	@echo "Installing service script firewall rules"
@@ -58,6 +63,9 @@ install_service_scripts2 :
 	mkdir -p $(CURDIR)/debian/arbwave-bbb-timing/etc/ufw/applications.d
 	cp       $(SERVICE_SCRIPTS)/bbb-timing.ufw \
 		 $(CURDIR)/debian/arbwave-bbb-timing/etc/ufw/applications.d/
+	mkdir -p $(CURDIR)/debian/arbwave-bbb-analog/etc/ufw/applications.d
+	cp       $(SERVICE_SCRIPTS)/bbb-analog.ufw \
+		 $(CURDIR)/debian/arbwave-bbb-analog/etc/ufw/applications.d/
 
 install_service_defaults :
 	@echo "Installing arbwave-service-defaults"

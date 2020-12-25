@@ -1,0 +1,22 @@
+# This file goes into /etc/systmed/system/
+[Unit]
+Description=Arbwave BBB backend for the Analog device
+After=network.target network-online.target auditd.service
+Requires=afrl-analog-fw.service
+After=afrl-analog-fw.service
+
+[Service]
+EnvironmentFile=/etc/default/arbwave
+User=arbwave
+WorkingDirectory=/tmp/
+# give up to 10 seconds for PRU to boot
+ExecStartPre=/bin/sh -c \
+  "for i in 1 2 3 4 5; do if [ -c /dev/rpmsg_pru31 ] ; then break; else sleep 5; fi ; done"
+ExecStartPre=/usr/bin/test -e /dev/rpmsg_pru31
+ExecStart=/usr/bin/arbwave-bbb_analog_controller $ARBWAVE_BBB_CNTRL_ARGS
+TimeoutStopSec=8
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
+Alias=bbb-analog.service

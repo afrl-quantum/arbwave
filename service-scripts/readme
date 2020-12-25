@@ -16,6 +16,12 @@ run as services:
     - bbb-timing.ufw
       Firewall definition to allow connections in to bbb timing controller
 
+  - Items for Arbwave BeagleBone Black (BBB) backend for the Analog devices
+    - bbb-analog.service
+      Systemd configuration for arbwave-bbb_analog_controller
+    - bbb-analog.ufw
+      Firewall definition to allow connections in to bbb analog controller
+
   - Items for all services
     - pyro-ns-broadcast.ufw
       Firewall definition to help connect to Pyro nameserver

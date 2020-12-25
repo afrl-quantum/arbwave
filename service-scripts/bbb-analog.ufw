@@ -1,0 +1,8 @@
+# This is the firewall port definition for the AFRL BBB Analog Cape
+# An appropriate way to use this might be
+#   ufw allow from any to any app arbwave-bbb-analog
+#
+[arbwave-bbb-analog]
+title=Arbwave BeagleBone Black Analog Cape
+description=Arbwave BBB backend for the Analog device
+ports=1403/tcp

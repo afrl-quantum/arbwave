@@ -13,6 +13,7 @@ debhelper-build-stamp
 arbwave-bbb-dds/
 arbwave-bbb-services/
 arbwave-bbb-timing/
+arbwave-bbb-analog/
 arbwave-backend/
 tmp/
 arbwave-service-defaults

@@ -43,6 +43,7 @@ try :
         'arbwave = arbwave:main',
         'arbwave-bbb_dds_controller = arbwave.backend.drivers.bbb.device.controller.dds:main',
         'arbwave-bbb_timing_controller = arbwave.backend.drivers.bbb.device.controller.timing:main',
+        'arbwave-bbb_analog_controller = arbwave.backend.drivers.bbb.device.controller.analog:main',
       ],
     },
   )
