@@ -156,12 +156,12 @@ class Timing(Device, timing_details.Details):
   trigger_pull = 'down'
   start_delay = 3
   minimum_period = 15
+  waveform = list()
 
   def set_waveform_size(self, sz):
-    pass
+    self.waveform = [Dict() for i in range(sz)]
 
-  def _load_transitions(self, transition_map):
-    pass
+  set_output = timing_details.Details.set_output
 
 
 class Analog(Device, analog_details.Details):
@@ -228,11 +228,18 @@ class Analog(Device, analog_details.Details):
   def volts_to_DAC(self, channel, data):
     rng = ANALOG_RANGE[self.get_span(channel)]
     maxdata = (1 << 16) - 1
-    return min(max((data - rng.min) * (maxdata / ( rng.max - rng.min )), 0),
-               maxdata)
+    return int(
+      min(max((data - rng.min) * (maxdata / (rng.max - rng.min)), 0), maxdata)
+    )
 
   def load_waveform(self, wlen, channel_bits, flat_waveform):
-    pass
+    debug('%s.set_waveform_length(%d, %s)', self.objectId,
+          wlen, bin(channel_bits))
+    debug('%s.waveform[:] = <...>', self.objectId)
+    for val in flat_waveform:
+      if type(val) is not int:
+        raise RuntimeError(
+          'bbb.analog.load_waveform: Waveform components must be integers')
 
   base_set_output = Device.set_output
   set_output = analog_details.Details.set_output

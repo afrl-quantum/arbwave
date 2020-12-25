@@ -7,6 +7,7 @@ these details to be used by the simulation.
 
 from logging import info, error, warn, debug, log, DEBUG, INFO, root as rootlog
 import copy
+import itertools
 
 class Details(object):
   def set_output(self, values):
@@ -83,9 +84,11 @@ class Details(object):
     indx_to_channel = list()
     channel_to_indx = dict()
     channel_bits = 0b0
+
     # loop through each transition and accumulate a list of scans for each
     # channel for each transition.
-    for ch_indx, (ch, grouped_ch_transitions) in enumerate(waveforms.items()):
+    waveforms = sorted(waveforms.items(), key=lambda ch_data : int(ch_data[0]))
+    for ch_indx, (ch, grouped_ch_transitions) in enumerate(waveforms):
       ch = int(ch)
       assert 0 <= ch < 16, 'bbb.analog.set_waveform: unknown channel: ' +str(ch)
 
@@ -101,7 +104,7 @@ class Details(object):
             # first time this timestamp has scan data
             scans[timestamp] = copy.copy( nones )
           # be sure to convert to DAC digital value from volts
-          scans[timestamp][ch] = self.volts_to_DAC(ch, value)
+          scans[timestamp][ch_indx] = self.volts_to_DAC(ch, value)
 
     # fix the beginning of the waveform
     S0 = scans[ transitions[0] ]
@@ -133,15 +136,14 @@ class Details(object):
         last = t_array
 
     # now, we finally build the actual data to send to the hardware
-    flat_waveform = [ scans[t]  for t in transitions ]
+    flat_waveform = list(
+      itertools.chain.from_iterable([ scans[t]  for t in transitions ]))
 
     # 3b.  send data to hardware
     debug( 'bbb.analog: waveform for channel bits "%s"', bin(channel_bits) )
     if rootlog.getEffectiveLevel() <= (DEBUG-1):
-      log(DEBUG-1, 'bbb.analog.waveform[:] = [')
-      for scan in scans:
-        log(debug-1, '          %s', flat_waveform)
-      log(DEBUG-1, ']' )
+      log(DEBUG-1, 'bbb.analog.waveform[:] = %s', repr(flat_waveform))
+      log(DEBUG-1, 'bbb.analog.waveform.times = %s', repr(transitions))
 
     # just some dummy checks
     n_channels = sum([((channel_bits >> i) & 0b1) for i in range(16)])

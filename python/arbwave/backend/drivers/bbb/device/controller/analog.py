@@ -14,8 +14,8 @@ from . import _main_controller_loop as Main
 from .bbb_pyro import ANALOG_PYRO4_PORT as PYRO4_PORT
 from .analog_details import Details
 
-SPANS         = bbb.ltc2668.instruction.device_insructions.Span.OUTPUT_RANGE
-SPANS_reverse = bbb.ltc2668.instruction.device_insructions.Span.RANGE_VAL_TO_STR
+SPANS         = bbb.ltc2668.instruction.device_instructions.Span.OUTPUT_RANGE
+SPANS_reverse = bbb.ltc2668.instruction.device_instructions.Span.RANGE_VAL_TO_STR
 
 class Device(Base, bbb.ltc2668.Device, Details):
   # need to export a number of things from the device
@@ -26,7 +26,7 @@ class Device(Base, bbb.ltc2668.Device, Details):
   reset            = Pyro4.expose(bbb.ltc2668.Device.reset)
   flush_input      = Pyro4.expose(bbb.ltc2668.Device.flush_input)
   set_output       = Pyro4.expose(Details.set_output)
-  # dds specific items
+  # analog specific items
   update_src       = Pyro4.expose(bbb.ltc2668.Device.update_src)
   get_minimum_period=Pyro4.expose(bbb.ltc2668.Device.get_minimum_period)
   set_waveforms    = Pyro4.expose(Details.set_waveforms)
@@ -120,10 +120,11 @@ class Device(Base, bbb.ltc2668.Device, Details):
 
     This version does *not* use numpy and thus does not work with arrays.
     """
-    rng = SPANS_reverse[super(Device,self).get_span(channel).span]
+    rng = SPANS[SPANS_reverse[super(Device,self).get_span(channel).span]]
     maxdata = (1 << 16) - 1
-    return min(max((data - rng.min) * (maxdata / ( rng.max - rng.min )), 0),
-               maxdata)
+    return int(
+      min(max((data - rng.min) * (maxdata / (rng.max - rng.min)), 0), maxdata)
+    )
 
 
   def load_waveform(self, wlen, channel_bits, flat_waveform):

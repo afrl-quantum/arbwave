@@ -85,7 +85,7 @@ class Device(Base):
         },
       },
       'thermal_protection': {
-        'value': not chip_config.disable_thermal_protection,
+        'value': not chip_config['disable_thermal_protection'],
         'type' : bool,
         'range': None,
       },
