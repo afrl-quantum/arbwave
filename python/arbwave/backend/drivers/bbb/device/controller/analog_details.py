@@ -87,7 +87,7 @@ class Details(object):
 
     # loop through each transition and accumulate a list of scans for each
     # channel for each transition.
-    waveforms = sorted(waveforms.items(), key=lambda ch_data : int(ch_data[0]))
+    waveforms = sorted(waveforms.items(), key=lambda ch_data : -int(ch_data[0]))
     for ch_indx, (ch, grouped_ch_transitions) in enumerate(waveforms):
       ch = int(ch)
       assert 0 <= ch < 16, 'bbb.analog.set_waveform: unknown channel: ' +str(ch)
