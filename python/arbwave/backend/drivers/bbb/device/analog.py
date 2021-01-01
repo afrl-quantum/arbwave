@@ -18,6 +18,20 @@ from .....tools.signal_graphs import nearest_terminal
 from .. import channels
 from .base import Device as Base
 
+SPANs =  {
+#           MSPAN Pin Configurations (from pg. 19 of LTC2668 spec sheet)
+#MSPx                   DEF. OUTPUT       RESET
+#                            RANGE        VOLTAGE
+  '0b000' :    Dict(range=(-10, 10),     reset=0,        programmable=False),
+  '0b001' :    Dict(range=(-5, 5),       reset=0,        programmable=False),
+  '0b010' :    Dict(range=(-2.5, 2.5),   reset=0,        programmable=False),
+  '0b011' :    Dict(range=(0, 10),       reset=0,        programmable=False),
+  '0b100' :    Dict(range=(0, 10),       reset=5,        programmable=False),
+  '0b101' :    Dict(range=(0, 5),        reset=0,        programmable=False),
+  '0b110' :    Dict(range=(0, 5),        reset=2.5,      programmable=False),
+  '0b111' :    Dict(range=(0, 5),        reset=0,        programmable=True),
+}
+
 
 class Device(Base):
   """
@@ -32,7 +46,7 @@ class Device(Base):
     self.channels = [
       channels.Analog('{}/{}'.format(self,i), self) for i in range(self._NCHAN)
     ]
-    self.configured_channels = set()
+    self.configured_channels = dict()
     self.config = None
     self.min_period = None
 
@@ -97,7 +111,16 @@ class Device(Base):
         },
         'select': {},
       },
-      'span': {},
+      'MSP[2:0]' : {
+        'value': '0b111',
+        'type' : str,
+        'range': [
+          (k, '({}V, {}V), reset={}V, {}'
+              .format(v.range[0], v.range[1], v.reset,
+                      'programmable' if v.programmable else 'fixed'))
+          for k, v in SPANs.items()
+        ],
+      },
       'clock': {
         'value': '',
         'type': str,
@@ -107,7 +130,6 @@ class Device(Base):
 
     # add per-channel info:
     #   - toggle bits
-    #   - span info
     for ch in range(self._NCHAN):
       chname = str(ch)
 
@@ -115,12 +137,6 @@ class Device(Base):
         'value': bool(toggle_channels & (1 << ch)),
         'type' : bool,
         'range': None,
-      }
-
-      config['span'][chname] = {
-        'value': self.guard_proxy.get_span(channel=ch),
-        'type' : str,
-        'range': self.guard_proxy.get_span_values(),
       }
 
 
@@ -148,7 +164,7 @@ class Device(Base):
     debug('bbb.Device(%s).set_config(config=%s, channels=%s, signal_graph=%s)',
           self, config, channels, signal_graph)
     valid_keys = set([
-      'monitor', 'thermal_protection', 'toggle', 'span', 'clock',
+      'monitor', 'thermal_protection', 'toggle', 'MSP[2:0]', 'clock',
     ])
     assert set(config.keys()).issubset(valid_keys), \
       'bbb.Device({}): Unknown configuration keys for AFRL/BeagleBone Black' \
@@ -168,28 +184,18 @@ class Device(Base):
       # If this is not set yet, this is the first time accessing device
       self.get_config_template()
 
-    if self.configured_channels != channels.keys():
-      # first set new minium-period for this DDS
+
+    # configure channel spans and min period...
+    if self.configured_channels != channels or \
+       self.config['MSP[2:0]'] != config['MSP[2:0]']:
+      # first set new minium-period for this Analog board
       if len(self.configured_channels) != len(channels):
         self.min_period = \
           self.guard_proxy.get_minimum_period(max(1,len(channels))) * 5*unit.ns
 
-      # TODO:
-      # We *may* want to implement this where the unused channels get set to a
-      # predefined value (like 0*V).  This predefined value could also be
-      # defined by the user in the configuration settings for this device.
-      #
-      # # we need to turn off channels that have been disabled: set output = 0.0V
-      # old_chans = {
-      #   ch : 0.0
-      #   for ch in (self.configured_channels - channels.keys())
-      # }
-      # if old_chans:
-      #   debug('bbb.Device(%s): resetting old Analog channels (%s)',
-      #         self, old_chans)
-      #   self.guard_proxy.set_output(old_chans)
+      # finish with setting output spans and resetting channels
+      self._configure_channels(channels, config)
 
-      self.configured_channels = set(channels)
 
     if self.config == config:
       return
@@ -211,14 +217,6 @@ class Device(Base):
           toggle_channels |= (1 << ch)
       # now give bit array as toggle select register value
       self.guard_proxy.set_toggled(toggle_channels)
-
-    if self.config['span'] != config['span']:
-      for ch in range(self._NCHAN):
-        chname = str(ch)
-
-        if self.config['span'][chname] != config['span'][chname]:
-          self.guard_proxy.set_span(channel=ch,
-                                    span=config['span'][chname]['value'])
 
 
     # keep a copy of the config given to us
@@ -247,6 +245,55 @@ class Device(Base):
       # We'll set this to something that will never be an input
       self.config['clock']['value'] = 'clock selection error'
       raise
+
+
+  def _configure_channels(self, channels, config):
+    fmt_range = lambda r : '({}V, {}V)'.format(*r)
+
+    msp20 = SPANs[config['MSP[2:0]']['value']]
+
+    if not msp20.programmable:
+      # all must be on same fixed span
+      debug('bbb.Device(%s).set_span(all=True, span=%s)', self, msp20.range)
+      self.guard_proxy.set_span(all=True, span=fmt_range(msp20.range))
+
+    else:
+      # all ranges sorted in order of least positive to highest bi-polar
+      RANGES = sorted([v.range for v in SPANs.values()],
+                      key=lambda v : (-v[0], v[1]))
+
+      # Pick best span for channel
+      for ch, chinfo in channels.items():
+        ch = int(ch)
+
+        r = msp20.range # this is the default, if we can't find something better
+
+        if 'min' in chinfo:
+          mn, mx = chinfo['min'], chinfo['max']
+          for ri in RANGES:
+            if (ri[0] <= mn <= ri[1]) and (ri[0] <= mx <= ri[1]):
+              r = ri
+              break
+
+        debug('bbb.Device(%s).set_span(channel=%d, span=%s)', self, ch, r)
+        self.guard_proxy.set_span(channel=ch, span=fmt_range(r))
+
+    # TODO:
+    # We *may* want to implement this where the unused channels get set to a
+    # predefined value (like 0*V).  This predefined value could also be
+    # defined by the user in the configuration settings for this device.
+    #
+    # # we need to turn off channels that have been disabled: set output = 0.0V
+    # old_chans = {
+    #   int(ch) : 0.0
+    #   for ch in (set(self.configured_channels) - channels.keys())
+    # }
+    # if old_chans:
+    #   debug('bbb.Device(%s): resetting old Analog channels (%s)',
+    #         self, old_chans)
+    #   self.guard_proxy.set_output(old_chans)
+
+    self.configured_channels = channels
 
 
   def get_min_period(self):

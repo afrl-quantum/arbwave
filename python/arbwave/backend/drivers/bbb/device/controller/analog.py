@@ -104,8 +104,14 @@ class Device(Base, bbb.ltc2668.Device, Details):
 
 
   @Pyro4.expose
-  def set_span(self, channel, span):
-    super(Device,self).set_span(span=SPANS[span].val, channel=channel)
+  def set_span(self, span, channel=None, all=False):
+    if all:
+      super(Device,self).set_span(span=SPANS[span].val, all=True)
+    elif channel is None:
+      raise RuntimeError('bbb.analog: must specify all=True or channel=<num> '
+                         'for setting channel span')
+    else:
+      super(Device,self).set_span(span=SPANS[span].val, channel=channel)
 
 
   @Pyro4.expose

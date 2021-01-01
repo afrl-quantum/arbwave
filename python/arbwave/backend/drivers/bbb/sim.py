@@ -221,9 +221,17 @@ class Analog(Device, analog_details.Details):
   def get_span(self, channel):
     return self.spans[channel]
 
-  def set_span(self, channel, span):
+  def set_span(self, span, channel=None, all=False):
     assert span in ANALOG_RANGE, 'bbb.analog.set_span: invalid span'
-    self.spans[channel] = span
+
+    if all:
+      for ch in range(self.max_channels):
+        self.spans[ch] = span
+    elif channel is None:
+      raise RuntimeError('bbb.analog: must specify all=True or channel=<num> '
+                         'for setting channel span')
+    else:
+      self.spans[channel] = span
 
   def volts_to_DAC(self, channel, data):
     rng = ANALOG_RANGE[self.get_span(channel)]
