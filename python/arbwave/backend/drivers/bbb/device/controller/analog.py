@@ -126,7 +126,7 @@ class Device(Base, bbb.ltc2668.Device, Details):
 
     This version does *not* use numpy and thus does not work with arrays.
     """
-    rng = SPANS[SPANS_reverse[super(Device,self).get_span(channel).span]]
+    rng = SPANS[self.get_span(channel)]
     maxdata = (1 << 16) - 1
     return int(
       min(max((data - rng.min) * (maxdata / (rng.max - rng.min)), 0), maxdata)
