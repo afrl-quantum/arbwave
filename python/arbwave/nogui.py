@@ -193,6 +193,14 @@ class Arbwave(engine.Arbwave, for_nogui.Processor):
     super().__del__()
     self.ui.__del__()
 
+  @property
+  def has_gui(self):
+    """
+    Property indicating that this Arbwave instance is NOT tied to a graphical
+    user interface.
+    """
+    return False
+
   def close(self):
     """Explicit call to deinitializing all of Arbwave (including the backend)"""
     self.__del__()

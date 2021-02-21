@@ -57,6 +57,15 @@ class Arbwave(object):
     self.runnables = dict( Default = Runnable() )
 
 
+  @property
+  def has_gui(self):
+    """
+    Property indicating that this Arbwave instance is also tied to a graphical
+    user interface.
+    """
+    return True
+
+
   def add_runnable( self, label, runnable ):
     """
     Adds a Runnable class to the list of possible runs.
