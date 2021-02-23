@@ -259,7 +259,7 @@ class Device(Base):
 
     else:
       # all ranges sorted in order of least positive to highest bi-polar
-      RANGES = sorted([v.range for v in SPANs.values()],
+      RANGES = sorted(set([v.range for v in SPANs.values()]),
                       key=lambda v : (-v[0], v[1]))
 
       # Pick best span for channel
