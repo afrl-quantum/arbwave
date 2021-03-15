@@ -130,6 +130,9 @@ class Driver(Base):
 
       # no prior device found, so create an un'opened' one
       dev = create_device(self, uri, objectId)
+      if dev is None:
+        warn('unknown BBB device type: %s', objectId)
+        continue
       if not dev.isopen():
         try:
           # open a temporary connection to ensure that the remote device is
